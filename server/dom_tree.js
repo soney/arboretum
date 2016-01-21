@@ -17,6 +17,10 @@ var DOMState = function(doc, chrome) {
 		return new DOMNode(this.getDocument().root, this._getChrome());
 	};
 
+	proto.getRoot = function() {
+		return this.root;
+	};
+
 	proto.getDocument = function() {
 		return this.doc;
 	};
@@ -41,12 +45,32 @@ var DOMNode = function(node, chrome) {
 
 	proto._createChildren = function() {
 		var node = this._getNode(),
-			chrome = this._getChrome(),
-			childNodes = _.map(node.children, function(child) {
+			chrome = this._getChrome();
+
+		return new Promise(function(resolve, reject) {
+			chrome.DOM.setChildNodes(function() {
+				console.log('set child nodes');
+				console.log(arguments);
+			});
+			chrome.DOM.requestChildNodes({
+				nodeId: node.nodeId
+			});
+			/*
+			, function(err, childNodes) {
+				if(err) {
+					reject(err);
+				} else {
+					resolve(childNodes);
+				}
+			});
+			*/
+		}).then(function(children) {
+			console.log('children are: ');
+			console.log(children);
+			return _.map(children, function(child) {
 				return new DOMNode(child, chrome);
 			});
-
-		return childNodes;
+		});
 	};
 
 	proto._getNode = function() {
@@ -57,19 +81,23 @@ var DOMNode = function(node, chrome) {
 		return this.chrome;
 	};
 
+	proto.getChildren = function() {
+		return this.children;
+	};
+
 	proto._addListeners = function() {
 		var chrome = this._getChrome(),
 			node = this._getNode();
-		var eventTypes = ['attributeModified', 'attributeRemoved', 'characterDataModified',
+
+		var eventTypes = [ 'attributeModified', 'attributeRemoved', 'characterDataModified',
 							'childNodeCountUpdated', 'childNodeInserted', 'childNodeRemoved',
-							'documentUpdated', 'setChildNodes'];
+							'documentUpdated', 'setChildNodes' ];
 
 		_.each(eventTypes, function(eventType) {
-			return;
-			chrome.DOM[eventType]({
-				nodeId: node.nodeId
-			}, function(event) {
-				console.log(event);
+			chrome.DOM[eventType](function(event) {
+				console.log(node.children);
+				console.log(eventType);
+				console.log(arguments);
 			});
 		}, this);
 	};
