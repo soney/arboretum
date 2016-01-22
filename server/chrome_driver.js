@@ -34,12 +34,14 @@ function navigate(chrome, url) {
 
 function getDocument(chrome) {
 	return new Promise(function(resolve, reject) {
-		chrome.DOM.getDocument(function(err, doc) {
-			if(err) {
-				reject(err);
-			} else {
-				resolve(new DOMState(doc, chrome));
-			}
+		chrome.Page.loadEventFired(function(evt) {
+			chrome.DOM.getDocument(function(err, doc) {
+				if(err) {
+					reject(err);
+				} else {
+					resolve(new DOMState(doc, chrome));
+				}
+			});
 		});
 	});
 }
