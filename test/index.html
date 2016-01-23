@@ -4,6 +4,19 @@
 		<title>Test page</title>
 	</head>
 	<body>
-		Hello world!
+		<span id='message'>Hello world!</span>
+		<a href="javascript:void(0)">Change message</a>
+		<span id='willRemove'>WILL REMOVE</span>
 	</body>
+	<script>
+		var links = document.getElementsByTagName('a'),
+			link  = links[0];
+		link.addEventListener('click', function() {
+			var message = document.getElementById('message');
+			message.innerText = 'goodbye cruel world';
+			var toRemove = document.getElementById('willRemove');
+			console.log(toRemove);
+			toRemove.parentNode.removeChild(toRemove);
+		});
+	</script>
 </html>

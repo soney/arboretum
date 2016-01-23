@@ -4,23 +4,21 @@
 		<script src="bower_components/jquery/dist/jquery.min.js"></script>
 		<script src="bower_components/underscore/underscore-min.js"></script>
 		<script src="bower_components/jquery-ui/jquery-ui.min.js"></script>
+		<script src="js/tree_node.js"></script>
 		<script src="/socket.io/socket.io.js"></script>
 
 		<script>
 			var socket = io.connect();
 			socket.on('connect', function() {
 				socket.on('fullDOMTree', function (data) {
-					console.log(data);
+					$(document.body).html('');
+					$('<ul />').appendTo(document.body).tree_node({
+						node: data
+					});
 				});
 				socket.emit('getDOM');
 			});
-
-			function getDOMHTML(node) {
-				return node;
-			}
 		</script>
 	</head>
-	<body>
-		goodbye cruel world
-	</body>
+	<body></body>
 </html>

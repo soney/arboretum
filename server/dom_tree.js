@@ -47,7 +47,6 @@ var DOMState = function(chrome) {
 
 		_.each(eventTypes, function(eventType) {
 			chrome.DOM[eventType](_.bind(function(event) {
-				console.log(eventType);
 				if(eventType === 'setChildNodes') {
 					var nodes = event.nodes,
 						parent = this._getWrappedDOMNodeWithID(event.parentId);
@@ -57,6 +56,11 @@ var DOMState = function(chrome) {
 					this._invalidRoot = true;
 					this.emit('beginDocumentUpdate');
 					this.getRoot();
+				} else if(eventType === 'characterDataModified') {
+					var node = this._getWrappedDOMNodeWithID(event.nodeId);
+					node._setCharacterData(event.characterData);
+				} else if(eventType === 'childNodeRemoved') {
+					console.log(event);
 				} else {
 					console.log(eventType);
 				}
@@ -66,7 +70,7 @@ var DOMState = function(chrome) {
 
 	proto.getRoot = function() {
 		var chrome = this._getChrome();
-		if(this._rootPromise) {
+		if(this._rootPromise && !this._invalidRoot) {
 			return this._rootPromise;
 		} else {
 			this._rootPromise = new Promise(function(resolve, reject) {
@@ -97,7 +101,7 @@ var DOMState = function(chrome) {
 					})
 				});
 			}, this)).then(_.bind(function(root) {
-				this.root = root;
+				this._invalidRoot = false;
 				this.emit('documentUpdated');
 				return root;
 			}, this)).catch(function(err) {
@@ -145,9 +149,18 @@ var WrappedDOMNode = function(node, chrome) {
 		return this.children;
 	};
 
-	proto.serialize = function() {
+	proto._setCharacterData = function(characterData) {
 		var node = this._getNode();
-		return node;
+		node.nodeValue = characterData;
+	};
+
+	proto.serialize = function() {
+		return {
+			node: this._getNode(),
+			children: _.map(this.getChildren(), function(child) {
+				return child.serialize();
+			})
+		};
 	};
 
 	proto.toString = function() {
