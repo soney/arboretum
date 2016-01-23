@@ -6,9 +6,10 @@ var DOMState = function(chrome) {
 	this.chrome = chrome;
 
 	this._nodeMap = {};
+	this._invalidRoot = true;
 
 	this._addListeners();
-	this.root = this._createRoot();
+	this.getRoot();
 };
 
 (function(My) {
@@ -21,35 +22,12 @@ var DOMState = function(chrome) {
 		}, this));
 	};
 
-	proto._createRoot = function() {
-		var chrome = this._getChrome(),
-			rootNode = this.getDocument().root,
-			root = this._getWrappedDOMNode(rootNode);
-
-		this._setChildrenRecursive(root, rootNode.children);
-
-		return new Promise(function(resolve, reject) {
-			chrome.DOM.requestChildNodes({
-				nodeId: root.getId(),
-				depth: -1
-			}, function(err, val) {
-				if(err) {
-					reject(val);
-				} else {
-					resolve(root);
-				}
-			});
-		}).catch(function(err) {
-			console.error(err);
-		});
-	};
-
 	proto._getWrappedDOMNode = function(node) {
 		var id = node.nodeId;
 		if(this._hasWrappedDOMNodeWithID(id)) {
 			return this._getWrappedDOMNodeWithID(id);
 		} else {
-			return this._nodeMap[id] = new DOMNode(node, this._getChrome());
+			return this._nodeMap[id] = new WrappedDOMNode(node, this._getChrome());
 		}
 	};
 
@@ -72,45 +50,68 @@ var DOMState = function(chrome) {
 				console.log(eventType);
 				if(eventType === 'setChildNodes') {
 					var nodes = event.nodes,
-						parent = this._getDOMNodeWithID(event.parentId);
+						parent = this._getWrappedDOMNodeWithID(event.parentId);
 
 					return this._setChildrenRecursive(parent, nodes);
 				} else if(eventType === 'documentUpdated') {
-					this._createRoot();
+					this._invalidRoot = true;
+					this.emit('beginDocumentUpdate');
+					this.getRoot();
 				} else {
 					console.log(eventType);
 				}
-				//console.log(node.children);
-				//console.log(eventType);
-				//console.log(arguments);
 			}, this));
 		}, this);
 	};
 
 	proto.getRoot = function() {
-		return this.root;
-	};
-
-	proto.getDocument = function() {
-		return this.doc;
-	};
-
-	proto._createDocument = function() {
 		var chrome = this._getChrome();
-		return new Promise(function(resolve, reject) {
-			chrome.DOM.getDocument(function(err, doc) {
-				if(err) {
-					reject(err);
-				} else {
-					resolve(new DOMState(doc, chrome));
-				}
+		if(this._rootPromise) {
+			return this._rootPromise;
+		} else {
+			this._rootPromise = new Promise(function(resolve, reject) {
+				chrome.DOM.getDocument(function(err, val) {
+					if(err) {
+						reject(val);
+					} else {
+						resolve(val);
+					}
+				});
+			}).then(function(doc) {
+				return doc.root;
+			}).then(_.bind(function(rootNode) {
+				var root = this._getWrappedDOMNode(rootNode);
+				this._setChildrenRecursive(root, rootNode.children);
+				return root;
+			}, this)).then(_.bind(function(root) {
+				return new Promise(function(resolve, reject) {
+					chrome.DOM.requestChildNodes({
+						nodeId: root.getId(),
+						depth: -1
+					}, function(err, val) {
+						if(err) {
+							reject(val);
+						} else {
+							resolve(root);
+						}
+					})
+				});
+			}, this)).then(_.bind(function(root) {
+				this.root = root;
+				this.emit('documentUpdated');
+				return root;
+			}, this)).catch(function(err) {
+				console.error(err);
 			});
-		});
+
+			return this._rootPromise;
+		}
 	};
 
 	proto._getChrome = function() {
 		return this.chrome;
 	};
+
 }(DOMState));
 
 var WrappedDOMNode = function(node, chrome) {
@@ -144,6 +145,11 @@ var WrappedDOMNode = function(node, chrome) {
 		return this.children;
 	};
 
+	proto.serialize = function() {
+		var node = this._getNode();
+		return node;
+	};
+
 	proto.toString = function() {
 		var node = this._getNode();
 		var str = '';
@@ -154,8 +160,6 @@ var WrappedDOMNode = function(node, chrome) {
 		str += '/'+node.nodeName;
 		return str;
 	};
-
-
 }(WrappedDOMNode));
 
 module.exports = {

@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+	<head>
+		<script src="bower_components/jquery/dist/jquery.min.js"></script>
+		<script src="bower_components/underscore/underscore-min.js"></script>
+		<script src="bower_components/jquery-ui/jquery-ui.min.js"></script>
+		<script src="/socket.io/socket.io.js"></script>
+
+		<script>
+			var socket = io.connect();
+			socket.on('connect', function() {
+				socket.on('fullDOMTree', function (data) {
+					console.log(data);
+				});
+				socket.emit('getDOM');
+			});
+
+			function getDOMHTML(node) {
+				return node;
+			}
+		</script>
+	</head>
+	<body>
+		goodbye cruel world
+	</body>
+</html>

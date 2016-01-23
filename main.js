@@ -4,7 +4,7 @@ var serverDriver = require('./server/chrome_driver'),
 
 serverDriver.getInstance().then(function(c) {
 	chrome = c;
-	return serverDriver.navigate(chrome, 'http://umich.edu');
+	return serverDriver.navigate(chrome, 'file:///Users/soney/dev/nrax/test/index.html');
 }).then(function() {
 	return serverDriver.getDocument(chrome);
 }).then(function(doc) {
