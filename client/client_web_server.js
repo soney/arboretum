@@ -5,14 +5,16 @@ module.exports = {
 	createWebServer: function(domTree) {
 		var app = express();
 		domTree.getRoot().then(function(node) {
-			console.log(node.toString());
+			//console.log(node.toString());
 		}).catch(function(err) {
 			console.error(err);
 		});
 
 		app.get('/', function (req, res) {
-			domTree.getRoot().then(function() {
+			domTree.getRoot().then(function(node) {
 				res.send(node.toString());
+			}, function(err) {
+				console.error(err);
 			});
 		});
 

@@ -6,6 +6,7 @@ var DOMState = function(doc, chrome) {
 	this.chrome = chrome;
 	this.doc = doc;
 
+	this._nodeMap = {};
 	this.root = this._createRoot();
 };
 
@@ -16,12 +17,12 @@ var DOMState = function(doc, chrome) {
 
 	proto._createRoot = function() {
 		var chrome = this._getChrome(),
-			root = new DOMNode(this.getDocument().root, chrome);
+			root = this._getDOMNode(this.getDocument().root);
 
 		function createNodeRecursive(parentNode, children) {
 			return parentNode._setChildren(_.map(children, function(child) {
-				return createNodeRecursive(new DOMNode(child, chrome), child.children);
-			}));
+				return createNodeRecursive.call(this, this._getDOMNode(child), child.children);
+			}, this));
 		}
 
 		return new Promise(function(resolve, reject) {
@@ -36,11 +37,57 @@ var DOMState = function(doc, chrome) {
 					reject(val);
 				}
 			});
-		}).then(function(event) {
-			return createNodeRecursive(root, event.nodes)
-		}).catch(function(err) {
+		}).then(_.bind(function(event) {
+			return createNodeRecursive.call(this, root, event.nodes);
+		}, this)).then(_.bind(function(rootNode) {
+			this._addListeners();
+			return rootNode;
+		}, this)).catch(function(err) {
 			console.error(err);
 		});
+	};
+
+	proto._getDOMNode = function(node) {
+		var id = node.nodeId;
+		if(this._hasDOMNodeWithID(id)) {
+			return this._getDOMNodeWithID(id);
+		} else {
+			return this._nodeMap[id] = new DOMNode(node, this._getChrome());
+		}
+	};
+
+	proto._hasDOMNodeWithID = function(id) {
+		return this._nodeMap.hasOwnProperty(id);
+	};
+
+	proto._getDOMNodeWithID = function(id) {
+		return this._nodeMap[id];
+	};
+
+	proto._addListeners = function() {
+		var chrome = this._getChrome();
+		this.getRoot().then(_.bind(function(root) {
+			var node = root._getNode();
+
+			var eventTypes = [ 'attributeModified', 'attributeRemoved', 'characterDataModified',
+								'childNodeCountUpdated', 'childNodeInserted', 'childNodeRemoved',
+								'documentUpdated', 'setChildNodes' ];
+
+			_.each(eventTypes, function(eventType) {
+				chrome.DOM[eventType](_.bind(function(event) {
+					if(eventType === 'setChildNodes') {
+						var nodes = event.nodes,
+							parent = this._getDOMNodeWithID(event.parentId);
+						console.log(parent);
+					} else {
+						console.log(eventType);
+					}
+					//console.log(node.children);
+					//console.log(eventType);
+					//console.log(arguments);
+				}, this));
+			}, this);
+		}, this));
 	};
 
 	proto.getRoot = function() {
@@ -98,22 +145,6 @@ var DOMNode = function(node, chrome) {
 		return str;
 	};
 
-	proto._addListeners = function() {
-		var chrome = this._getChrome(),
-			node = this._getNode();
-
-		var eventTypes = [ 'attributeModified', 'attributeRemoved', 'characterDataModified',
-							'childNodeCountUpdated', 'childNodeInserted', 'childNodeRemoved',
-							'documentUpdated', 'setChildNodes' ];
-
-		_.each(eventTypes, function(eventType) {
-			chrome.DOM[eventType](function(event) {
-				//console.log(node.children);
-				//console.log(eventType);
-				//console.log(arguments);
-			});
-		}, this);
-	};
 
 }(DOMNode));
 
