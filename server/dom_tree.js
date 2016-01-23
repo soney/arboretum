@@ -2,11 +2,12 @@ var _ = require('underscore'),
 	util = require('util'),
 	EventEmitter = require('events');
 
-var DOMState = function(doc, chrome) {
+var DOMState = function(chrome) {
 	this.chrome = chrome;
-	this.doc = doc;
 
 	this._nodeMap = {};
+
+	this._addListeners();
 	this.root = this._createRoot();
 };
 
@@ -14,80 +15,76 @@ var DOMState = function(doc, chrome) {
 	util.inherits(My, EventEmitter);
 	var proto = My.prototype;
 
+	proto._setChildrenRecursive = function(parentNode, children) {
+		return parentNode._setChildren(_.map(children, function(child) {
+			return this._setChildrenRecursive(this._getWrappedDOMNode(child), child.children);
+		}, this));
+	};
 
 	proto._createRoot = function() {
 		var chrome = this._getChrome(),
-			root = this._getDOMNode(this.getDocument().root);
+			rootNode = this.getDocument().root,
+			root = this._getWrappedDOMNode(rootNode);
 
-		function createNodeRecursive(parentNode, children) {
-			return parentNode._setChildren(_.map(children, function(child) {
-				return createNodeRecursive.call(this, this._getDOMNode(child), child.children);
-			}, this));
-		}
+		this._setChildrenRecursive(root, rootNode.children);
 
 		return new Promise(function(resolve, reject) {
-			chrome.DOM.setChildNodes(function(event) {
-				resolve(event);
-			});
 			chrome.DOM.requestChildNodes({
 				nodeId: root.getId(),
 				depth: -1
 			}, function(err, val) {
 				if(err) {
 					reject(val);
+				} else {
+					resolve(root);
 				}
 			});
-		}).then(_.bind(function(event) {
-			return createNodeRecursive.call(this, root, event.nodes);
-		}, this)).then(_.bind(function(rootNode) {
-			this._addListeners();
-			return rootNode;
-		}, this)).catch(function(err) {
+		}).catch(function(err) {
 			console.error(err);
 		});
 	};
 
-	proto._getDOMNode = function(node) {
+	proto._getWrappedDOMNode = function(node) {
 		var id = node.nodeId;
-		if(this._hasDOMNodeWithID(id)) {
-			return this._getDOMNodeWithID(id);
+		if(this._hasWrappedDOMNodeWithID(id)) {
+			return this._getWrappedDOMNodeWithID(id);
 		} else {
 			return this._nodeMap[id] = new DOMNode(node, this._getChrome());
 		}
 	};
 
-	proto._hasDOMNodeWithID = function(id) {
+	proto._hasWrappedDOMNodeWithID = function(id) {
 		return this._nodeMap.hasOwnProperty(id);
 	};
 
-	proto._getDOMNodeWithID = function(id) {
+	proto._getWrappedDOMNodeWithID = function(id) {
 		return this._nodeMap[id];
 	};
 
 	proto._addListeners = function() {
-		var chrome = this._getChrome();
-		this.getRoot().then(_.bind(function(root) {
-			var node = root._getNode();
+		var chrome = this._getChrome(),
+			eventTypes = [ 'attributeModified', 'attributeRemoved', 'characterDataModified',
+							'childNodeCountUpdated', 'childNodeInserted', 'childNodeRemoved',
+							'documentUpdated', 'setChildNodes' ];
 
-			var eventTypes = [ 'attributeModified', 'attributeRemoved', 'characterDataModified',
-								'childNodeCountUpdated', 'childNodeInserted', 'childNodeRemoved',
-								'documentUpdated', 'setChildNodes' ];
+		_.each(eventTypes, function(eventType) {
+			chrome.DOM[eventType](_.bind(function(event) {
+				console.log(eventType);
+				if(eventType === 'setChildNodes') {
+					var nodes = event.nodes,
+						parent = this._getDOMNodeWithID(event.parentId);
 
-			_.each(eventTypes, function(eventType) {
-				chrome.DOM[eventType](_.bind(function(event) {
-					if(eventType === 'setChildNodes') {
-						var nodes = event.nodes,
-							parent = this._getDOMNodeWithID(event.parentId);
-						console.log(parent);
-					} else {
-						console.log(eventType);
-					}
-					//console.log(node.children);
-					//console.log(eventType);
-					//console.log(arguments);
-				}, this));
-			}, this);
-		}, this));
+					return this._setChildrenRecursive(parent, nodes);
+				} else if(eventType === 'documentUpdated') {
+					this._createRoot();
+				} else {
+					console.log(eventType);
+				}
+				//console.log(node.children);
+				//console.log(eventType);
+				//console.log(arguments);
+			}, this));
+		}, this);
 	};
 
 	proto.getRoot = function() {
@@ -98,12 +95,25 @@ var DOMState = function(doc, chrome) {
 		return this.doc;
 	};
 
+	proto._createDocument = function() {
+		var chrome = this._getChrome();
+		return new Promise(function(resolve, reject) {
+			chrome.DOM.getDocument(function(err, doc) {
+				if(err) {
+					reject(err);
+				} else {
+					resolve(new DOMState(doc, chrome));
+				}
+			});
+		});
+	};
+
 	proto._getChrome = function() {
 		return this.chrome;
 	};
 }(DOMState));
 
-var DOMNode = function(node, chrome) {
+var WrappedDOMNode = function(node, chrome) {
 	this.node = node;
 	this.chrome = chrome;
 };
@@ -146,7 +156,7 @@ var DOMNode = function(node, chrome) {
 	};
 
 
-}(DOMNode));
+}(WrappedDOMNode));
 
 module.exports = {
 	DOMState: DOMState
