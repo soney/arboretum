@@ -1,40 +1,47 @@
 var express = require('express'),
 	socket = require('socket.io'),
-	path = require('path');
+	path = require('path'),
+	DOMTreeShadow = require('./tree_shadow').DOMTreeShadow;
 
 module.exports = {
 	createWebServer: function(domTree) {
 		var app = express();
-		/*
-		domTree.getRoot().then(function(node) {
-			//console.log(node.toString());
-		}).catch(function(err) {
-			console.error(err);
-		});
-		*/
 
 		app.use(express.static(path.join(__dirname, 'client_pages')));
-		/*
-
-		app.get('/', function (req, res) {
-			domTree.getRoot().then(function(node) {
-				res.send(node.toString());
-			}, function(err) {
-				console.error(err);
-			});
-		});
-		*/
 
 		var server = app.listen(3000, function () {
 			console.log('NRAX listening on port 3000!');
 		});
 		var io = socket(server);
 
+		var shadows = {};
+
+
 		io.on('connection', function (socket) {
-			socket.on('getDOM', function() {
-				domTree.getRoot().then(function(node) {
-					socket.emit('fullDOMTree', node.serialize());
-				});
+			var id = socket.id,
+				shadow;
+
+			domTree.getRoot().then(function(node) {
+				shadow = new DOMTreeShadow({ tree: node });
+				socket.emit('treeReady', shadow.serialize());
+			}).catch(function(err) {
+				console.error(err);
+				console.error(err.stack);
+			});
+
+			socket.on('highlightNode', function(info) {
+				var nodeId = info.nodeId;
+				domTree.highlight(nodeId);
+			});
+			socket.on('removeHighlight', function(info) {
+				var nodeId = info.nodeId;
+				domTree.removeHighlight(nodeId);
+			});
+
+			socket.on('disconnect', function() {
+				if(shadow) {
+					shadow.destroy();
+				}
 			});
 		});
 	}

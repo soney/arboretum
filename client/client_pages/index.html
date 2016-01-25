@@ -10,13 +10,13 @@
 		<script>
 			var socket = io.connect();
 			socket.on('connect', function() {
-				socket.on('fullDOMTree', function (data) {
+				socket.on('treeReady', function (data) {
 					$(document.body).html('');
 					$('<ul />').appendTo(document.body).tree_node({
-						node: data
+						node: data,
+						socket: socket
 					});
 				});
-				socket.emit('getDOM');
 			});
 		</script>
 	</head>

@@ -4,7 +4,7 @@
 		<title>Test page</title>
 	</head>
 	<body>
-		<span id='message'>Hello world!</span>
+		<span id='message' name='something'>Hello world!</span>
 		<a href="javascript:void(0)">Change message</a>
 		<span id='willRemove'>WILL REMOVE</span>
 	</body>
@@ -15,8 +15,17 @@
 			var message = document.getElementById('message');
 			message.innerText = 'goodbye cruel world';
 			var toRemove = document.getElementById('willRemove');
-			console.log(toRemove);
 			toRemove.parentNode.removeChild(toRemove);
+
+			var newDiv = document.createElement("div");
+			var newContent = document.createTextNode("a new hope");
+			newDiv.appendChild(newContent); //add the text node to the newly created div.
+
+			// add the newly created element and its content into the DOM
+			document.body.appendChild(newDiv)
+			//, message);
+			message.setAttribute('a', 1);
+			message.removeAttribute('name');
 		});
 	</script>
 </html>

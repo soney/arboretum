@@ -16,6 +16,45 @@ var DOMState = function(chrome) {
 	util.inherits(My, EventEmitter);
 	var proto = My.prototype;
 
+	proto.highlight = function(nodeId) {
+		var chrome = this._getChrome();
+
+		chrome.DOM.highlightNode({
+			nodeId: nodeId,
+			highlightConfig: {
+				borderColor: {
+					r: 255,
+					g: 0,
+					b: 0,
+					a: 1
+				},
+				contentColor: {
+					r: 255,
+					g: 0,
+					b: 0,
+					a: 0.5
+				},
+				showInfo: true
+			}
+		}, function(err, value) {
+			if(err) {
+				console.error(value);
+			}
+		});
+	};
+
+	proto.removeHighlight = function(nodeId) {
+		var chrome = this._getChrome();
+
+		chrome.DOM.hideHighlight({
+			nodeId: nodeId
+		}, function(err, value) {
+			if(err) {
+				console.error(value);
+			}
+		});
+	};
+
 	proto._setChildrenRecursive = function(parentNode, children) {
 		return parentNode._setChildren(_.map(children, function(child) {
 			return this._setChildrenRecursive(this._getWrappedDOMNode(child), child.children);
@@ -60,12 +99,79 @@ var DOMState = function(chrome) {
 					var node = this._getWrappedDOMNodeWithID(event.nodeId);
 					node._setCharacterData(event.characterData);
 				} else if(eventType === 'childNodeRemoved') {
-					console.log(event);
+					var node = this._getWrappedDOMNodeWithID(event.nodeId),
+						parentNode = this._getWrappedDOMNodeWithID(event.parentNodeId);
+					parentNode._removeChild(node);
+				} else if(eventType === 'childNodeInserted') {
+					var parentNode = this._getWrappedDOMNodeWithID(event.parentNodeId),
+						previousNode = event.previousNodeId > 0 ? this._getWrappedDOMNodeWithID(event.previousNodeId) : false,
+						wrappedNode = this._getWrappedDOMNode(event.node);
+
+					this._setChildrenRecursive(wrappedNode, event.node.children);
+
+					parentNode._insertChild(wrappedNode, previousNode);
+				} else if(eventType === 'attributeModified') {
+					var node = this._getWrappedDOMNodeWithID(event.nodeId);
+					node._setAttribute(event.name, event.value);
+				} else if(eventType === 'attributeRemoved') {
+					var node = this._getWrappedDOMNodeWithID(event.nodeId);
+					node._removeAttribute(event.name);
+				} else if(eventType === 'childNodeCountUpdated') {
+					var node = this._getWrappedDOMNodeWithID(event.nodeId);
+					if(node) {
+						node._childCountUpdated(event.childNodeCount);
+						this._requestChildNodes(node);
+					} else {
+						this._requestNode(event.nodeId);
+					}
 				} else {
 					console.log(eventType);
 				}
 			}, this));
 		}, this);
+	};
+
+	proto._requestChildNodes = function(wrappedNode) {
+		var chrome = this._getChrome();
+		return new Promise(function(resolve, reject) {
+			chrome.DOM.requestChildNodes({
+				nodeId: wrappedNode.getId(),
+				depth: -1
+			}, function(err, val) {
+				if(err) {
+					reject(val);
+				} else {
+					resolve(wrappedNode);
+				}
+			})
+		});
+	};
+
+	proto._requestNode = function(node_id) {
+		var chrome = this._getChrome();
+		return new Promise(function(resolve, reject) {
+			chrome.DOM.resolveNode({
+				nodeId: node_id
+			}, function(err, val) {
+				if(err) {
+					reject(val);
+				} else {
+					resolve(val.object);
+				}
+			});
+		}).then(function(nodeInfo) {
+			return new Promise(function(resolve, reject) {
+				chrome.DOM.requestNode({
+					objectId: nodeInfo.objectId
+				}, function(err, val) {
+					if(err) {
+						reject(val);
+					} else {
+						resolve(val);
+					}
+				});
+			});
+		});
 	};
 
 	proto.getRoot = function() {
@@ -88,18 +194,7 @@ var DOMState = function(chrome) {
 				this._setChildrenRecursive(root, rootNode.children);
 				return root;
 			}, this)).then(_.bind(function(root) {
-				return new Promise(function(resolve, reject) {
-					chrome.DOM.requestChildNodes({
-						nodeId: root.getId(),
-						depth: -1
-					}, function(err, val) {
-						if(err) {
-							reject(val);
-						} else {
-							resolve(root);
-						}
-					})
-				});
+				return this._requestChildNodes(root);
 			}, this)).then(_.bind(function(root) {
 				this._invalidRoot = false;
 				this.emit('documentUpdated');
@@ -134,11 +229,52 @@ var WrappedDOMNode = function(node, chrome) {
 
 	proto._setChildren = function(children) {
 		this.children = children;
+		this.emit('childrenChanged');
 		return this;
 	};
 
 	proto._getNode = function() {
 		return this.node;
+	};
+
+	proto._removeChild = function(child) {
+		var index = _.indexOf(this.getChildren(), child);
+		if(index >= 0) {
+			this.children.splice(index, 1);
+			this.emit('childrenChanged');
+		}
+		return this;
+	};
+
+	proto._insertChild = function(child, previousNode) {
+		if(previousNode) {
+			var index = _.indexOf(this.getChildren(), previousNode);
+			this.children.splice(index, 0, child);
+		} else {
+			this._setChildren(([child]).concat(this.getChildren()));
+		}
+
+		this.emit('childrenChanged');
+	};
+
+	proto._setAttribute = function(name, value) {
+		var node = this._getNode();
+		node.attributes.push(name, value);
+		this.emit('attributesChanged');
+	};
+
+	proto._removeAttribute = function(name) {
+		var node = this._getNode();
+		var attributeIndex = _.indexOf(node.attributes, name);
+		if(attributeIndex >= 0) {
+			node.attributes.splice(attributeIndex, 2);
+			this.emit('attributesChanged');
+		}
+	};
+
+	proto.getAttributes = function() {
+		var node = this._getNode();
+		return node.attributes;
 	};
 
 	proto._getChrome = function() {
@@ -152,26 +288,11 @@ var WrappedDOMNode = function(node, chrome) {
 	proto._setCharacterData = function(characterData) {
 		var node = this._getNode();
 		node.nodeValue = characterData;
+		this.emit('nodeValueChanged');
 	};
 
-	proto.serialize = function() {
-		return {
-			node: this._getNode(),
-			children: _.map(this.getChildren(), function(child) {
-				return child.serialize();
-			})
-		};
-	};
-
-	proto.toString = function() {
+	proto._childCountUpdated = function(count) {
 		var node = this._getNode();
-		var str = '';
-		str += node.nodeName;
-		_.each(this.getChildren(), function(child) {
-			str += child.toString();
-		});
-		str += '/'+node.nodeName;
-		return str;
 	};
 }(WrappedDOMNode));
 
