@@ -14,7 +14,8 @@
 					$(document.body).html('');
 					$('<ul />').appendTo(document.body).tree_node({
 						node: data,
-						socket: socket
+						socket: socket,
+						root: true
 					});
 				});
 			});

@@ -9,12 +9,22 @@ var DOMState = function(chrome) {
 	this._invalidRoot = true;
 
 	this._addListeners();
-	this.getRoot();
+
+	//chrome.Page.frameNavigated(_.bind(function(evt) {
+	chrome.Page.loadEventFired(_.bind(function() {
+		this._invalidateRoot();
+	}, this));
+	//}, this));
 };
 
 (function(My) {
 	util.inherits(My, EventEmitter);
 	var proto = My.prototype;
+
+	proto._invalidateRoot = function() {
+		this._invalidRoot = true;
+		this.emit('rootInvalidated');
+	};
 
 	proto.highlight = function(nodeId) {
 		var chrome = this._getChrome();
@@ -92,9 +102,7 @@ var DOMState = function(chrome) {
 
 					return this._setChildrenRecursive(parent, nodes);
 				} else if(eventType === 'documentUpdated') {
-					this._invalidRoot = true;
-					this.emit('beginDocumentUpdate');
-					this.getRoot();
+					this._invalidateRoot();
 				} else if(eventType === 'characterDataModified') {
 					var node = this._getWrappedDOMNodeWithID(event.nodeId);
 					node._setCharacterData(event.characterData);

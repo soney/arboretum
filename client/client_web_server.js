@@ -21,13 +21,28 @@ module.exports = {
 			var id = socket.id,
 				shadow;
 
-			domTree.getRoot().then(function(node) {
-				shadow = new DOMTreeShadow({ tree: node });
-				socket.emit('treeReady', shadow.serialize());
-			}).catch(function(err) {
-				console.error(err);
-				console.error(err.stack);
+			function updateShadow() {
+				domTree.getRoot().then(function(node) {
+					if(shadow) {
+						shadow.destroy();
+					}
+					shadow = new DOMTreeShadow({ tree: node });
+
+					socket.emit('treeReady', shadow.serialize());
+
+					shadow.on('updated', function() {
+						socket.emit('treeUpdated', shadow.serialize());
+					});
+				}).catch(function(err) {
+					console.error(err);
+					console.error(err.stack);
+				});
+			}
+
+			domTree.on('rootInvalidated', function() {
+				updateShadow();
 			});
+			updateShadow();
 
 			socket.on('highlightNode', function(info) {
 				var nodeId = info.nodeId;

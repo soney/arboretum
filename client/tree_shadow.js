@@ -6,9 +6,14 @@ var DOMTreeShadow = function(options) {
 	this.options = _.extend({
 		tree: false,
 		childMapFunction: function(child) {
-			return new DOMTreeShadow({
+			var shadow = new DOMTreeShadow({
 				tree: child
-			})
+			});
+			shadow.on('updated', _.bind(function() {
+				this.emit('updated');
+			}, this));
+
+			return shadow;
 		},
 		childFilterFunction: function(child) {
 			var node = child._getNode(),
@@ -38,6 +43,8 @@ var DOMTreeShadow = function(options) {
 							.filter(this.options.childFilterFunction, this)
 							.map(this.options.childMapFunction, this)
 							.value();
+
+		this.emit('updated');
 	};
 
 
@@ -69,7 +76,9 @@ var DOMTreeShadow = function(options) {
 
 	proto.destroy = function() {
 		var tree = this.getTree();
-
+		_.each(this.getChildren(), function(child) {
+			child.destroy();
+		});
 		tree.removeListener('childrenChanged', this.$_updateChildren);
 	};
 }(DOMTreeShadow));
