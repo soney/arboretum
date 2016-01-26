@@ -2,11 +2,16 @@
 <html>
 	<head>
 		<title>Test page</title>
+		<style>
+			#message{
+				color: orange;
+			}
+		</style>
 	</head>
 	<body>
 		<span id='message' name='something'>Hello world!</span>
 		<a href="javascript:void(0)">Change message</a>
-		<span id='willRemove'>WILL REMOVE</span>
+		<span id='willRemove' style='background-color: red;'>WILL REMOVE</span>
 	</body>
 	<script>
 		var links = document.getElementsByTagName('a'),

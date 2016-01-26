@@ -14,6 +14,13 @@ var DOMState = function(chrome) {
 	chrome.Page.loadEventFired(_.bind(function() {
 		this._invalidateRoot();
 	}, this));
+
+	chrome.CSS.styleSheetAdded(_.bind(function() {
+		console.log('css added');
+	}, this));
+	chrome.CSS.styleSheetRemoved(_.bind(function() {
+		console.log('css removed');
+	}, this));
 	//}, this));
 };
 
@@ -224,6 +231,9 @@ var DOMState = function(chrome) {
 var WrappedDOMNode = function(node, chrome) {
 	this.node = node;
 	this.chrome = chrome;
+	this._getMatchedStyles().then(function(styles) {
+		//console.log(styles);
+	});
 };
 
 (function(My) {
@@ -301,6 +311,40 @@ var WrappedDOMNode = function(node, chrome) {
 
 	proto._childCountUpdated = function(count) {
 		var node = this._getNode();
+	};
+
+	proto._getMatchedStyles = function() {
+		var id = this.getId(),
+			chrome = this._getChrome();
+
+		return new Promise(function(resolve, reject) {
+			chrome.CSS.getMatchedStylesForNode({
+				nodeId: id
+			}, function(err, value) {
+				if(err) {
+					reject(value);
+				} else {
+					resolve(value);
+				}
+			});
+		});
+	};
+
+	proto._getCSSAnimations = function() {
+		var id = this.getId(),
+			chrome = this._getChrome();
+
+		return new Promise(function(resolve, reject) {
+			chrome.CSS.getCSSAnimationsForNode({
+				nodeId: id
+			}, function(err, value) {
+				if(err) {
+					reject(value);
+				} else {
+					resolve(value);
+				}
+			});
+		});
 	};
 }(WrappedDOMNode));
 
