@@ -39,10 +39,22 @@ module.exports = {
 				});
 			}
 
+			function updateSheets() {
+				domTree.getStyleSheets().then(function(sheets) {
+					socket.emit('styleSheetsUpdated', {
+						sheets: sheets
+					});
+				});
+			}
+
 			domTree.on('rootInvalidated', function() {
 				updateShadow();
 			});
+			domTree.on('styleSheetsInvalidated', function() {
+				updateSheets();
+			});
 			updateShadow();
+			updateSheets();
 
 			socket.on('highlightNode', function(info) {
 				var nodeId = info.nodeId;

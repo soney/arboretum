@@ -3,6 +3,9 @@
 	<head>
 		<title>Test page</title>
 		<style>
+			body {
+				background-color: #EFE;
+			}
 			#message{
 				color: orange;
 			}
@@ -12,6 +15,7 @@
 		<span id='message' name='something'>Hello world!</span>
 		<a href="javascript:void(0)">Change message</a>
 		<span id='willRemove' style='background-color: red;'>WILL REMOVE</span>
+		<span id='willChange' style='background-color: orange;'>WILL CHANGE</span>
 	</body>
 	<script>
 		var links = document.getElementsByTagName('a'),
@@ -31,6 +35,9 @@
 			//, message);
 			message.setAttribute('a', 1);
 			message.removeAttribute('name');
+
+			var willChange = document.getElementById('willChange');
+			willChange.setAttribute('style', 'background-color: blue');
 		});
 	</script>
 </html>

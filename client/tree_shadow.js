@@ -27,6 +27,7 @@ var DOMTreeShadow = function(options) {
 		}
 	}, options);
 
+	this._inlineCSS = '';
 	this._updateChildren();
 	this._initialize();
 };
@@ -47,7 +48,6 @@ var DOMTreeShadow = function(options) {
 		this.emit('updated');
 	};
 
-
 	proto.getTree = function() {
 		return this.options.tree;
 	};
@@ -64,14 +64,19 @@ var DOMTreeShadow = function(options) {
 			node: tree._getNode(),
 			children: _.map(this.getChildren(), function(child) {
 				return child.serialize();
-			})
+			}),
+			inlineStyle: this._inlineCSS
 		};
 	};
 
 	proto._initialize = function() {
 		var tree = this.getTree();
 		this.$_updateChildren = _.bind(this._updateChildren, this);
+		this.$_updateInlineStyle = _.bind(this._updateInlineStyle, this);
 		tree.on('childrenChanged', this.$_updateChildren);
+		tree.on('attributesChanged', this.$_updateInlineStyle);
+
+		this._updateInlineStyle();
 	};
 
 	proto.destroy = function() {
@@ -80,6 +85,16 @@ var DOMTreeShadow = function(options) {
 			child.destroy();
 		});
 		tree.removeListener('childrenChanged', this.$_updateChildren);
+		tree.removeListener('attributesChanged', this.$_updateInlineStyle);
+	};
+
+	proto._updateInlineStyle = function() {
+		var tree = this.getTree();
+		tree.getInlineStyles().then(_.bind(function(styleInfo) {
+			var cssText = styleInfo.cssText;
+			this._inlineCSS = cssText;
+			this.emit('updated');
+		}, this));
 	};
 }(DOMTreeShadow));
 

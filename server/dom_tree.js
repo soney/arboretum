@@ -5,28 +5,96 @@ var _ = require('underscore'),
 var DOMState = function(chrome) {
 	this.chrome = chrome;
 
+	this._styleSheets = {};
 	this._nodeMap = {};
 	this._invalidRoot = true;
 
 	this._addListeners();
 
-	//chrome.Page.frameNavigated(_.bind(function(evt) {
 	chrome.Page.loadEventFired(_.bind(function() {
 		this._invalidateRoot();
 	}, this));
 
-	chrome.CSS.styleSheetAdded(_.bind(function() {
-		console.log('css added');
-	}, this));
-	chrome.CSS.styleSheetRemoved(_.bind(function() {
-		console.log('css removed');
-	}, this));
-	//}, this));
+	this._addStyleSheetListeners();
 };
 
 (function(My) {
 	util.inherits(My, EventEmitter);
 	var proto = My.prototype;
+
+	proto.getStyleSheets = function() {
+		var sheets = _.values(this._styleSheets);
+
+		return Promise.all(sheets).then(function(texts) {
+			return texts;
+		});
+	};
+
+	proto._addStyleSheetListeners = function() {
+		var chrome = this._getChrome();
+
+		var notifyStylesheetInvalidation = _.throttle(_.bind(this._notifyStylesheetInvalidation, this), 500);
+
+		chrome.CSS.styleSheetAdded(_.bind(function(sheets) {
+			_.each(sheets, function(stylesheet) {
+				var id = stylesheet.styleSheetId;
+				this._styleSheets[id] = this._requestStylesheetText(id);
+			}, this);
+			notifyStylesheetInvalidation();
+		}, this));
+
+		chrome.CSS.styleSheetRemoved(_.bind(function(sheetInfo) {
+			delete this._styleSheets[sheetInfo.styleSheetId];
+			notifyStylesheetInvalidation();
+		}, this));
+
+		chrome.CSS.styleSheetChanged(_.bind(function(sheetInfo) {
+			var id = sheetInfo.stlyeSheetId;
+			this._styleSheets[id] = this._requestStylesheetText(id);
+			notifyStylesheetInvalidation();
+		}, this));
+
+		chrome.DOM.enable(function(err, val) {
+			if(err) { reject(val); }
+		});
+		chrome.CSS.enable(function(err, val) {
+			if(err) { reject(val); }
+		});
+
+		setTimeout(_.bind(function() {
+			this.getStyleSheets();
+		}, this), 2000);
+	};
+
+	proto._notifyStylesheetInvalidation = function() {
+		this.emit('styleSheetsInvalidated');
+	};
+
+	proto.getStyleSheet = function(id) {
+		if(_.has(this._styleSheets, id)) {
+			return this._styleSheets[id];
+		} else {
+			return new Promise(function(resolve, reject) {
+				reject(new Error('No stylesheet with id ' + id + ' found.'));
+			});
+		}
+	};
+
+	proto._requestStylesheetText = function(id) {
+		var chrome = this._getChrome();
+		return new Promise(function(resolve, reject) {
+			chrome.CSS.getStyleSheetText({
+				styleSheetId: id
+			}, function(err, val) {
+				if(err) {
+					reject(val);
+				} else {
+					resolve(val.text);
+				}
+			});
+		});
+	};
+
 
 	proto._invalidateRoot = function() {
 		this._invalidRoot = true;
@@ -140,7 +208,7 @@ var DOMState = function(chrome) {
 						this._requestNode(event.nodeId);
 					}
 				} else {
-					console.log(eventType);
+					throw new Error('Unknown event type ' + eventType);
 				}
 			}, this));
 		}, this);
@@ -231,9 +299,6 @@ var DOMState = function(chrome) {
 var WrappedDOMNode = function(node, chrome) {
 	this.node = node;
 	this.chrome = chrome;
-	this._getMatchedStyles().then(function(styles) {
-		//console.log(styles);
-	});
 };
 
 (function(My) {
@@ -342,6 +407,23 @@ var WrappedDOMNode = function(node, chrome) {
 					reject(value);
 				} else {
 					resolve(value);
+				}
+			});
+		});
+	};
+
+	proto.getInlineStyles = function() {
+		var id = this.getId(),
+			chrome = this._getChrome();
+
+		return new Promise(function(resolve, reject) {
+			chrome.CSS.getInlineStylesForNode({
+				nodeId: id
+			}, function(err, value) {
+				if(err) {
+					reject(value);
+				} else {
+					resolve(value.inlineStyle);
 				}
 			});
 		});

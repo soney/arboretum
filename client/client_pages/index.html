@@ -6,6 +6,7 @@
 		<script src="bower_components/jquery-ui/jquery-ui.min.js"></script>
 		<script src="js/tree_node.js"></script>
 		<script src="/socket.io/socket.io.js"></script>
+		<style></style>
 
 		<script>
 			var socket = io.connect();
@@ -17,6 +18,10 @@
 						socket: socket,
 						root: true
 					});
+				});
+				socket.on('styleSheetsUpdated', function(event) {
+					var styleElement = $('style');
+					styleElement.text(event.sheets.join('\n'));
 				});
 			});
 		</script>
