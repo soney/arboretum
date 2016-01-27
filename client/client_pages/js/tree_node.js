@@ -5,6 +5,7 @@ $.widget('nrax.tree_node', {
 		root: false
 	},
 	_create: function() {
+		var socket = this.option('socket');
 		this.$_treeUpdated = _.bind(this._treeUpdated, this);
 		if(this.option('root')) {
 			socket.on('treeUpdated', this.$_treeUpdated);
@@ -18,39 +19,31 @@ $.widget('nrax.tree_node', {
 	},
 	_update: function() {
 		var node = this.option('node');
-		var elemInfo = node.node;
 		this.element.html('');
-		this.element.attr('style', node.inlineStyle);
 
-		//var elem = $('<' + elemInfo.localName + '/>').appendTo(this.element);
-		//var li = $('<li />').appendTo(this.element);
-		//li.text(node.node.localName || node.node.nodeValue);
 		_.each(node.children, function(child) {
-			var n = child.node,
-				nodeType = n.nodeType;
-			if(nodeType === 1 || nodeType === 9) {
-				var childElem = $('<'+n.localName+'/>').appendTo(this.element);
+			var childType = child.type;
+			if(childType === 1 || childType === 9) {
+				var childElem = $('<'+child.name+'/>').appendTo(this.element);
 				childElem.tree_node({
 					node: child,
 					socket: this.option('socket')
 				});
-			} else if(nodeType === 3) {
-				var childElem = $(document.createTextNode(n.nodeValue)).appendTo(this.element);
+			} else if(childType === 3) {
+				var childElem = $(document.createTextNode(child.value)).appendTo(this.element);
+			} else {
 			}
 		}, this);
-		this.element.on('mouseover', function() {
-			socket.emit('highlightNode', {nodeId: elemInfo.nodeId});
-		}).on('mouseout', function() {
-			socket.emit('removeHighlight', {nodeId: elemInfo.nodeId});
-		});
 
-		var attributes = elemInfo.attributes;
-		if(attributes) {
-			for(var i = 0; i<attributes.length; i+=2) {
-				var name = attributes[i],
-					value = attributes[i+1];
-				this.element.attr(name, value);
-			}
+		var attributes = node.attributes;
+		_.each(node.attributes, function(value, key) {
+			this.element.attr(key, value);
+		}, this);
+
+		if(node.inlineStyle) {
+			this.element.attr('style', node.inlineStyle);
+		} else {
+			this.element.removeAttr('style');
 		}
 	},
 	_destroy: function() {

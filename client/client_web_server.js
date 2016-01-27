@@ -1,7 +1,9 @@
 var express = require('express'),
 	socket = require('socket.io'),
 	path = require('path'),
-	DOMTreeShadow = require('./tree_shadow').DOMTreeShadow;
+	tree_shadow = require('./tree_shadow'),
+	DOMTreeShadow = tree_shadow.DOMTreeShadow,
+	ShadowState = tree_shadow.ShadowState;
 
 module.exports = {
 	createWebServer: function(domTree) {
@@ -14,15 +16,12 @@ module.exports = {
 		});
 		var io = socket(server);
 
-		var shadows = {};
-
-
 		io.on('connection', function (socket) {
-			var id = socket.id,
-				shadow;
+			var shadow = new ShadowState(domTree);
 
 			function updateShadow() {
 				domTree.getRoot().then(function(node) {
+					console.log('got root', node.getId(), socket.id);
 					if(shadow) {
 						shadow.destroy();
 					}
@@ -47,25 +46,30 @@ module.exports = {
 				});
 			}
 
-			domTree.on('rootInvalidated', function() {
-				updateShadow();
-			});
-			domTree.on('styleSheetsInvalidated', function() {
-				updateSheets();
-			});
+			function highlightNode(info) {
+				var nodeId = info.nodeId;
+				domTree.highlight(nodeId);
+			}
+
+			function removeHighlight(info) {
+				var nodeId = info.nodeId;
+				domTree.removeHighlight(nodeId);
+			}
+
+
 			updateShadow();
 			updateSheets();
 
-			socket.on('highlightNode', function(info) {
-				var nodeId = info.nodeId;
-				domTree.highlight(nodeId);
-			});
-			socket.on('removeHighlight', function(info) {
-				var nodeId = info.nodeId;
-				domTree.removeHighlight(nodeId);
-			});
+			socket.on('highlightNode', highlightNode);
+			socket.on('removeHighlight', removeHighlight);
+			domTree.on('rootInvalidated', updateShadow);
+			domTree.on('styleSheetsInvalidated', updateSheets);
 
 			socket.on('disconnect', function() {
+				domTree.removeListener('rootInvalidated', updateShadow);
+				domTree.removeListener('styleSheetsInvalidated', updateSheets);
+				socket.removeListener('highlightNode', highlightNode);
+				socket.removeListener('removeHighlight', removeHighlight);
 				if(shadow) {
 					shadow.destroy();
 				}

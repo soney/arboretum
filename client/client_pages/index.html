@@ -13,7 +13,7 @@
 			socket.on('connect', function() {
 				socket.on('treeReady', function (data) {
 					$(document.body).html('');
-					$('<ul />').appendTo(document.body).tree_node({
+					$('<div />').appendTo(document.body).tree_node({
 						node: data,
 						socket: socket,
 						root: true

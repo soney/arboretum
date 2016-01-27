@@ -7,13 +7,12 @@ var DOMState = function(chrome) {
 
 	this._styleSheets = {};
 	this._nodeMap = {};
-	this._invalidRoot = true;
 
 	this._addListeners();
 
-	chrome.Page.loadEventFired(_.bind(function() {
-		this._invalidateRoot();
-	}, this));
+	//chrome.Page.loadEventFired(_.bind(function() {
+		//this._invalidateRoot();
+	//}, this));
 
 	this._addStyleSheetListeners();
 };
@@ -33,7 +32,7 @@ var DOMState = function(chrome) {
 	proto._addStyleSheetListeners = function() {
 		var chrome = this._getChrome();
 
-		var notifyStylesheetInvalidation = _.throttle(_.bind(this._notifyStylesheetInvalidation, this), 500);
+		var notifyStylesheetInvalidation = _.debounce(_.bind(this._notifyStylesheetInvalidation, this), 500);
 
 		chrome.CSS.styleSheetAdded(_.bind(function(sheets) {
 			_.each(sheets, function(stylesheet) {
@@ -97,7 +96,7 @@ var DOMState = function(chrome) {
 
 
 	proto._invalidateRoot = function() {
-		this._invalidRoot = true;
+		delete this._rootPromise;
 		this.emit('rootInvalidated');
 	};
 
@@ -163,6 +162,15 @@ var DOMState = function(chrome) {
 		return this._nodeMap[id];
 	};
 
+	proto._destroyWrappedNode = function(node) {
+		var id = node.nodeId;
+		if(this._hasWrappedDOMNodeWithID(id)) {
+			var wrappedNode = this._getWrappedDOMNodeWithID(id);
+			wrappedNode.destroy();
+			delete this._nodeMap[id];
+		}
+	};
+
 	proto._addListeners = function() {
 		var chrome = this._getChrome(),
 			eventTypes = [ 'attributeModified', 'attributeRemoved', 'characterDataModified',
@@ -185,6 +193,7 @@ var DOMState = function(chrome) {
 					var node = this._getWrappedDOMNodeWithID(event.nodeId),
 						parentNode = this._getWrappedDOMNodeWithID(event.parentNodeId);
 					parentNode._removeChild(node);
+					this._destroyWrappedNode(node);
 				} else if(eventType === 'childNodeInserted') {
 					var parentNode = this._getWrappedDOMNodeWithID(event.parentNodeId),
 						previousNode = event.previousNodeId > 0 ? this._getWrappedDOMNodeWithID(event.previousNodeId) : false,
@@ -259,9 +268,8 @@ var DOMState = function(chrome) {
 
 	proto.getRoot = function() {
 		var chrome = this._getChrome();
-		if(this._rootPromise && !this._invalidRoot) {
-			return this._rootPromise;
-		} else {
+
+		if(!this._rootPromise) {
 			this._rootPromise = new Promise(function(resolve, reject) {
 				chrome.DOM.getDocument(function(err, val) {
 					if(err) {
@@ -279,15 +287,14 @@ var DOMState = function(chrome) {
 			}, this)).then(_.bind(function(root) {
 				return this._requestChildNodes(root);
 			}, this)).then(_.bind(function(root) {
-				this._invalidRoot = false;
 				this.emit('documentUpdated');
 				return root;
 			}, this)).catch(function(err) {
 				console.error(err);
 			});
-
-			return this._rootPromise;
 		}
+
+		return this._rootPromise;
 	};
 
 	proto._getChrome = function() {
@@ -299,11 +306,43 @@ var DOMState = function(chrome) {
 var WrappedDOMNode = function(node, chrome) {
 	this.node = node;
 	this.chrome = chrome;
+	this._attributes = {};
+	this.initialize();
 };
 
 (function(My) {
 	util.inherits(My, EventEmitter);
 	var proto = My.prototype;
+
+	proto._initializeAttributesMap = function() {
+		var node = this._getNode(),
+			attributes = node.attributes;
+		if(attributes) {
+			var len = attributes.length,
+				i = 0;
+			while(i < len) {
+				var name = attributes[i],
+					val = attributes[i+1];
+				this._attributes[name] = val;
+				i+=2;
+			}
+		}
+	};
+
+	proto.getAttributesMap = function() {
+		return this._attributes;
+	};
+
+	proto.initialize = function() {
+		this._initializeAttributesMap();
+	};
+	proto.destroy = function() {
+		_.each(this.children, function(child) {
+			child.destroy();
+		});
+		this.emit('destroyed');
+		this.removeAllListeners();
+	};
 
 	proto.getId = function() {
 		var node = this._getNode();
@@ -311,8 +350,16 @@ var WrappedDOMNode = function(node, chrome) {
 	};
 
 	proto._setChildren = function(children) {
+		_.each(this.children, function(child) {
+			if(children.indexOf(child) < 0) {
+				child.destroy();
+			}
+		});
+
 		this.children = children;
-		this.emit('childrenChanged');
+		this.emit('childrenChanged', {
+			children: children
+		});
 		return this;
 	};
 
@@ -324,7 +371,10 @@ var WrappedDOMNode = function(node, chrome) {
 		var index = _.indexOf(this.getChildren(), child);
 		if(index >= 0) {
 			this.children.splice(index, 1);
-			this.emit('childrenChanged');
+			this.emit('childRemoved', {
+				child: child
+			});
+			child.destroy();
 		}
 		return this;
 	};
@@ -334,16 +384,20 @@ var WrappedDOMNode = function(node, chrome) {
 			var index = _.indexOf(this.getChildren(), previousNode);
 			this.children.splice(index, 0, child);
 		} else {
-			this._setChildren(([child]).concat(this.getChildren()));
+			this.children.unshift(child);
 		}
 
-		this.emit('childrenChanged');
+		this.emit('childAdded', {
+			child: child,
+			previousNode: previousNode
+		});
 	};
 
 	proto._setAttribute = function(name, value) {
 		var node = this._getNode();
 		node.attributes.push(name, value);
-		this.emit('attributesChanged');
+		this._attributes[name] = value;
+		this._notifyAttributeChange();
 	};
 
 	proto._removeAttribute = function(name) {
@@ -351,8 +405,13 @@ var WrappedDOMNode = function(node, chrome) {
 		var attributeIndex = _.indexOf(node.attributes, name);
 		if(attributeIndex >= 0) {
 			node.attributes.splice(attributeIndex, 2);
-			this.emit('attributesChanged');
+			delete this._attributes[name];
+			this._notifyAttributeChange();
 		}
+	};
+
+	proto._notifyAttributeChange = function() {
+		this.emit('attributesChanged', this.getAttributesMap());
 	};
 
 	proto.getAttributes = function() {
@@ -371,7 +430,9 @@ var WrappedDOMNode = function(node, chrome) {
 	proto._setCharacterData = function(characterData) {
 		var node = this._getNode();
 		node.nodeValue = characterData;
-		this.emit('nodeValueChanged');
+		this.emit('nodeValueChanged', {
+			value: characterData
+		});
 	};
 
 	proto._childCountUpdated = function(count) {

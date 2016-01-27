@@ -34,19 +34,6 @@ function navigate(chrome, url) {
 
 function getDocument(chrome) {
 	return new DOMState(chrome);
-	/*
-	return new Promise(function(resolve, reject) {
-		//chrome.Page.loadEventFired(function(evt) {
-			chrome.DOM.getDocument(function(err, doc) {
-				if(err) {
-					reject(err);
-				} else {
-					resolve(new DOMState(doc, chrome));
-				}
-			});
-		//});
-	});
-	*/
 }
 
 function close(chrome) {
