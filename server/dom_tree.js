@@ -307,6 +307,7 @@ var WrappedDOMNode = function(node, chrome) {
 	this.node = node;
 	this.chrome = chrome;
 	this._attributes = {};
+	this._inlineStyle = '';
 	this.initialize();
 };
 

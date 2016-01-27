@@ -2,13 +2,128 @@ var _ = require('underscore'),
 	util = require('util'),
 	EventEmitter = require('events');
 
-var ShadowState = function() {
-
+var ShadowState = function(domTree, socket) {
+	this.domTree = domTree;
+	this.socket = socket;
+	this._initialize();
 };
+
 (function(My) {
 	util.inherits(My, EventEmitter);
 	var proto = My.prototype;
 
+	proto._initialize = function() {
+		var domTree = this._getDomTree(),
+			socket = this._getSocket();
+
+		this.$_updateShadowTree = _.bind(this._updateShadowTree, this);
+		this.$_updateSheets = _.bind(this._updateSheets, this);
+		this.$_highlightNode = _.bind(this._highlightNode, this);
+		this.$_removeHighlight = _.bind(this._removeHighlight, this);
+
+		domTree.on('rootInvalidated', this.$_updateShadowTree);
+		domTree.on('styleSheetsInvalidated', this.$_updateSheets);
+		socket.on('highlightNode', this.$_highlightNode);
+		socket.on('removeHighlight', this.$_removeHighlight);
+
+		this._updateShadowTree();
+		this._updateSheets();
+
+		this.on('updated', function() {
+			socket.emit('treeUpdated', this._shadowTree.serialize());
+		});
+	};
+	proto._getDomTree = function() {
+		return this.domTree;
+	};
+	proto._getSocket = function() {
+		return this.socket;
+	}
+	proto._updateShadowTree = function() {
+		var domTree = this._getDomTree(),
+			socket = this._getSocket();
+		if(this._shadowTree) {
+			this._shadowTree.destroy();
+		}
+		domTree.getRoot().then(_.bind(function(node) {
+			var shadow = this._shadowTree = new DOMTreeShadow({
+				tree: node,
+				state: this
+			});
+
+			socket.emit('treeReady', shadow.serialize());
+		}, this)).catch(function(err) {
+			console.error(err);
+			console.error(err.stack);
+		});
+	};
+	proto._updateSheets = function() {
+		var domTree = this._getDomTree(),
+			socket = this._getSocket();
+		domTree.getStyleSheets().then(function(sheets) {
+			socket.emit('styleSheetsUpdated', {
+				sheets: sheets
+			});
+		});
+	};
+	proto.destroy = function() {
+		var domTree = this._getDomTree(),
+			socket = this._getSocket();
+
+		if(this._shadowTree) {
+			this._shadowTree.destroy();
+		}
+
+		domTree.removeListener('rootInvalidated', this.$_updateShadowTree);
+		domTree.removeListener('styleSheetsInvalidated', this.$_updateSheets);
+		socket.removeListener('highlightNode', this.$_highlightNode);
+		socket.removeListener('removeHighlight', this.$_removeHighlight);
+	};
+	proto._highlightNode = function(info) {
+		var nodeId = info.nodeId;
+		domTree.highlight(nodeId);
+	};
+	proto._removeHighlight = function(info) {
+		var nodeId = info.nodeId;
+		domTree.removeHighlight(nodeId);
+	};
+	proto.childAdded = function(parent, child, previousChildId) {
+		var socket = this._getSocket();
+		socket.emit('childAdded', {
+			parentId: parent.getId(),
+			child: child.serialize(),
+			previousChild: previousChildId
+		});
+	};
+	proto.childRemoved = function(parent, child) {
+		var socket = this._getSocket();
+		socket.emit('childRemoved', {
+			parentId: parent.getId(),
+			childId: child.getId()
+		});
+	};
+	proto.childrenChanged = function(parent, children) {
+		var socket = this._getSocket();
+		socket.emit('childrenChanged', {
+			parentId: parent.getId(),
+			children: children.map(function(child) { return child.serialize(); })
+		});
+	};
+	proto.valueChanged = function(node, value) {
+		var socket = this._getSocket();
+		socket.emit('valueChanged', {
+			id: node.getId(),
+			value: value
+		});
+	};
+	proto.attributesChanged = function(node, info) {
+		var socket = this._getSocket();
+		socket.emit('attributesChanged', {
+			id: node.getId(),
+			attributes: info.attributes,
+			inlineStyle: info.inlineStyle
+		});
+	};
 }(ShadowState));
 
 var DOMTreePlaceholder = function(tree) {
@@ -20,17 +135,17 @@ var DOMTreePlaceholder = function(tree) {
 	proto.getId = function() {
 		return this._id;
 	};
-	proto.destroy = function() {
-
-	};
+	proto.destroy = function() { };
 }(DOMTreePlaceholder));
 
 var DOMTreeShadow = function(options) {
 	this.options = _.extend({
 		tree: false,
+		state: false,
 		childMapFunction: function(child) {
 			var shadow = new DOMTreeShadow({
-				tree: child
+				tree: child,
+				state: this._getState()
 			});
 			return shadow;
 		},
@@ -59,7 +174,8 @@ var DOMTreeShadow = function(options) {
 	proto._childAdded = function(info) {
 		var child = info.child,
 			previousNode = info.previousNode,
-			toAdd;
+			toAdd,
+			addedAtIndex;
 
 		if(this.options.childFilterFunction.call(this, child)) {
 			toAdd = this.options.childMapFunction.call(this, child);
@@ -78,17 +194,33 @@ var DOMTreeShadow = function(options) {
 				child = myChildren[i];
 				if(child.getId() === previousNodeId) {
 					this.children.splice(i, 0, toAdd);
+					addedAtIndex = i;
 					break;
 				}
 				i++;
 			}
 		} else {
 			this.children.push(toAdd);
+			addedAtIndex = this.children.length-1;
 		}
 
 		if(toAdd instanceof My) {
-			this.emit('updated');
+			var state = this._getState(),
+				previousNodeId = false,
+				node;
+			for(var i = addedAtIndex-1; i>=0; i--) {
+				node = this.children[i];
+				if(node instanceof My) {
+					previousNodeId = node.getId();
+					break;
+				}
+			}
+			state.childAdded(this, toAdd, previousNodeId);
 		}
+	};
+
+	proto._getState = function() {
+		return this.options.state;
 	};
 
 	proto._childRemoved = function(info) {
@@ -111,23 +243,26 @@ var DOMTreeShadow = function(options) {
 		}
 
 		if(wasRemoved) {
-			wasRemoved.destroy();
 			if(wasRemoved instanceof My) {
-				this.emit('updated');
+				var state = this._getState();
+				state.childRemoved(this, wasRemoved);
 			}
+			wasRemoved.destroy();
 		}
 	};
 
 	proto._childrenChanged = function(info) {
-		var children = info.children;
+		var children = info.children,
+			state = this._getState();
 		this._updateChildren(children);
-		this.emit('updated');
+		state.childrenChanged(this, this.getChildren());
 	};
 
 	proto._nodeValueChanged = function(info) {
-		var value = info.value;
+		var value = info.value,
+			state = this._getState();
 		this._value = value;
-		this.emit('updated');
+		state.valueChanged(this, value);
 	};
 
 	proto._updateChildren = function(treeChildren) {
@@ -226,14 +361,19 @@ var DOMTreeShadow = function(options) {
 
 		var tree = this.getTree();
 		tree.getInlineStyles().then(_.bind(function(styleInfo) {
-			var cssText = styleInfo.cssText;
+			var cssText = styleInfo.cssText,
+				state = this._getState();
+
 			this._inlineCSS = cssText;
-			this.emit('updated');
+			state.attributesChanged(this, {
+				attributes: this._attributes,
+				inlineStyle: this._inlineCSS
+			});
 		}, this));
 	};
 }(DOMTreeShadow));
 
 module.exports = {
 	DOMTreeShadow: DOMTreeShadow,
-	ShadowState: ShadowState 
+	ShadowState: ShadowState
 };

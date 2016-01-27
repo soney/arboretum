@@ -17,62 +17,9 @@ module.exports = {
 		var io = socket(server);
 
 		io.on('connection', function (socket) {
-			var shadow = new ShadowState(domTree);
-
-			function updateShadow() {
-				domTree.getRoot().then(function(node) {
-					console.log('got root', node.getId(), socket.id);
-					if(shadow) {
-						shadow.destroy();
-					}
-					shadow = new DOMTreeShadow({ tree: node });
-
-					socket.emit('treeReady', shadow.serialize());
-
-					shadow.on('updated', function() {
-						socket.emit('treeUpdated', shadow.serialize());
-					});
-				}).catch(function(err) {
-					console.error(err);
-					console.error(err.stack);
-				});
-			}
-
-			function updateSheets() {
-				domTree.getStyleSheets().then(function(sheets) {
-					socket.emit('styleSheetsUpdated', {
-						sheets: sheets
-					});
-				});
-			}
-
-			function highlightNode(info) {
-				var nodeId = info.nodeId;
-				domTree.highlight(nodeId);
-			}
-
-			function removeHighlight(info) {
-				var nodeId = info.nodeId;
-				domTree.removeHighlight(nodeId);
-			}
-
-
-			updateShadow();
-			updateSheets();
-
-			socket.on('highlightNode', highlightNode);
-			socket.on('removeHighlight', removeHighlight);
-			domTree.on('rootInvalidated', updateShadow);
-			domTree.on('styleSheetsInvalidated', updateSheets);
-
+			var shadow = new ShadowState(domTree, socket);
 			socket.on('disconnect', function() {
-				domTree.removeListener('rootInvalidated', updateShadow);
-				domTree.removeListener('styleSheetsInvalidated', updateSheets);
-				socket.removeListener('highlightNode', highlightNode);
-				socket.removeListener('removeHighlight', removeHighlight);
-				if(shadow) {
-					shadow.destroy();
-				}
+				shadow.destroy();
 			});
 		});
 	}

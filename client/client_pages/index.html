@@ -4,25 +4,14 @@
 		<script src="bower_components/jquery/dist/jquery.min.js"></script>
 		<script src="bower_components/underscore/underscore-min.js"></script>
 		<script src="bower_components/jquery-ui/jquery-ui.min.js"></script>
+		<script src="js/tree_state.js"></script>
 		<script src="js/tree_node.js"></script>
 		<script src="/socket.io/socket.io.js"></script>
 		<style></style>
 
 		<script>
-			var socket = io.connect();
-			socket.on('connect', function() {
-				socket.on('treeReady', function (data) {
-					$(document.body).html('');
-					$('<div />').appendTo(document.body).tree_node({
-						node: data,
-						socket: socket,
-						root: true
-					});
-				});
-				socket.on('styleSheetsUpdated', function(event) {
-					var styleElement = $('style');
-					styleElement.text(event.sheets.join('\n'));
-				});
+			$(function() {
+				$('<div />').appendTo(document.body).tree_state({});
 			});
 		</script>
 	</head>
