@@ -7,29 +7,29 @@ var express = require('express'),
 
 module.exports = {
 	createWebServer: function(domState) {
-		var app = express();
+		var app = express(),
+			PORT = 3000;
 
-		app	.use(express.static(path.join(__dirname, 'client_pages')))
-			.all('*', function(req, res, next) {
-				var url = req.url;
-				domState.requestResource(url).then(function(val) {
-					var resourceInfo = val.resourceInfo;
-					if(resourceInfo) { res.set('Content-Type', resourceInfo.mimeType); }
-					
-					if(val.base64Encoded) {
-						var bodyBuffer = new Buffer(val.body, 'base64');
-						res.send(bodyBuffer);
-					} else {
-						res.send(val.body);
-					}
-				}, function(err) {
-					next();
-				});
-			});
+		var server = app.use(express.static(path.join(__dirname, 'client_pages')))
+						.all('*', function(req, res, next) {
+							var url = req.url;
+							domState.requestResource(url).then(function(val) {
+								var resourceInfo = val.resourceInfo;
+								if(resourceInfo) { res.set('Content-Type', resourceInfo.mimeType); }
 
-		var server = app.listen(3000, function () {
-			console.log('arboretum listening on port 3000!');
-		});
+								if(val.base64Encoded) {
+									var bodyBuffer = new Buffer(val.body, 'base64');
+									res.send(bodyBuffer);
+								} else {
+									res.send(val.body);
+								}
+							}, function(err) {
+								next();
+							});
+						})
+						.listen(PORT, function() {
+							console.log('arboretum listening on port ' + PORT + '!');
+						});
 		var io = socket(server);
 
 		io.on('connection', function (socket) {
