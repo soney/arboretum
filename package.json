@@ -1,12 +1,12 @@
 {
-	"name": "NRax",
+	"name": "Arboretum",
 	"description": "Proxy for Handing off Web Browsing Tasks",
 	"author": "Steve Oney <soney@umich.edu>",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/umso/nrax.git"
+		"url": "https://github.com/umso/arboretum.git"
 	},
-	"version": "0.0.1",
+	"version": "0.1.0",
 	"dependencies": {
 		"chrome-remote-interface": "~0.11",
 		"underscore": "~1.8",

@@ -1,6 +1,7 @@
 var _ = require('underscore'),
 	util = require('util'),
-	EventEmitter = require('events');
+	EventEmitter = require('events'),
+	ResourceTracker = require('./resource_tracker').ResourceTracker;
 
 var DOMState = function(chrome) {
 	this.chrome = chrome;
@@ -8,18 +9,9 @@ var DOMState = function(chrome) {
 	this._styleSheets = {};
 	this._nodeMap = {};
 
-	this._addListeners();
+	this._resourceTracker = new ResourceTracker(this._getChrome());
 
-	//chrome.Page.loadEventFired(_.bind(function() {
-		//this._invalidateRoot();
-	//}, this));
-	chrome.Network.enable();
-	chrome.Network.requestWillBeSent(_.bind(function() {
-		console.log(arguments);
-	}, this));
-	chrome.Network.loadingFinished(_.bind(function() {
-		console.log(arguments);
-	}, this));
+	this._addListeners();
 
 	this._addStyleSheetListeners();
 };
