@@ -13,10 +13,13 @@ $.widget('nrax.tree_state', {
 		this._removeListeners();
 	},
 	_treeReady: function(data) {
+		var styleElement = $('style');
+		styleElement.text('');
+
 		if(this.element.data('nrax-tree_node')) {
 			this.element.tree_node('destroy');
 		}
-		
+
 		this.element.tree_node(_.extend({
 			state: this
 		}, data));
