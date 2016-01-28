@@ -1,11 +1,11 @@
-$.widget('nrax.tree_state', {
+$.widget('arboretum.tree_state', {
 	options: { },
 
 	_create: function() {
 		this.nodeMap = {};
 		var socket = this.socket = io.connect();
 		socket.on('treeReady', _.bind(this._treeReady, this));
-		socket.on('styleSheetsUpdated', _.bind(this._stylesheetsUpdated, this));
+		//socket.on('styleSheetsUpdated', _.bind(this._stylesheetsUpdated, this));
 		this._addListeners();
 	},
 	_destroy: function() {
@@ -13,10 +13,9 @@ $.widget('nrax.tree_state', {
 		this._removeListeners();
 	},
 	_treeReady: function(data) {
-		var styleElement = $('style');
-		styleElement.text('');
+		//var styleElement = $('style');
 
-		if(this.element.data('nrax-tree_node')) {
+		if(this.element.data('arboretum-tree_node')) {
 			this.element.tree_node('destroy');
 		}
 
@@ -24,10 +23,12 @@ $.widget('nrax.tree_state', {
 			state: this
 		}, data));
 	},
+	/*
 	_stylesheetsUpdated: function(event) {
 		var styleElement = $('style');
 		styleElement.text(event.sheets.join('\n'));
 	},
+	*/
 	registerNode: function(id, node) {
 		this.nodeMap[id] = node;
 	},

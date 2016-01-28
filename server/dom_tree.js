@@ -1,6 +1,8 @@
 var _ = require('underscore'),
 	util = require('util'),
 	EventEmitter = require('events'),
+	url = require('url'),
+	path = require('path'),
 	ResourceTracker = require('./resource_tracker').ResourceTracker;
 
 var DOMState = function(chrome) {
@@ -13,7 +15,7 @@ var DOMState = function(chrome) {
 
 	this._addListeners();
 
-	this._addStyleSheetListeners();
+	//this._addStyleSheetListeners();
 };
 
 (function(My) {
@@ -25,6 +27,61 @@ var DOMState = function(chrome) {
 
 		return Promise.all(sheets).then(function(texts) {
 			return texts;
+		});
+	};
+
+	proto._getResourceTree = function() {
+		var chrome = this._getChrome();
+
+		return new Promise(function(resolve, reject) {
+			chrome.Page.getResourceTree({}, function(err, val) {
+				if(err) { reject(val); }
+				else { resolve(val); }
+			});
+		});
+	};
+
+	var urlStrategies = [
+		function(frameUrl, resourceUrl) {
+			return url.resolve(frameUrl, resourceUrl);
+		},
+		function(frameUrl, resourceUrl) {
+			var lastSlash = frameUrl.lastIndexOf('/'),
+				frameBase = frameUrl.substr(0, lastSlash);
+
+			return frameBase + resourceUrl;
+		},
+	];
+
+	proto.requestResource = function(resourceUrl) {
+		var resourceTracker = this._resourceTracker;
+
+		return this._getResourceTree().then(_.bind(function(tree) {
+			var frameTree = tree.frameTree,
+				mappedResourceUrl = false;
+
+			_.each(frameTree, function(frame) {
+				var frameUrl = frame.url,
+					candidateUrl;
+
+				if(frameUrl) {
+					_.each(urlStrategies, function(urlStrategy) {
+						candidateUrl = urlStrategy(frameUrl, resourceUrl);
+
+						if(resourceTracker.hasResource(candidateUrl)) {
+							mappedResourceUrl = candidateUrl;
+						}
+					});
+				}
+			});
+
+			if(!mappedResourceUrl) {
+				mappedResourceUrl = resourceUrl;
+			}
+
+			return resourceTracker.getResource(tree, mappedResourceUrl);
+		}, this)).catch(function(err) {
+			console.error(err.stack);
 		});
 	};
 

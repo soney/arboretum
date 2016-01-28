@@ -1,4 +1,4 @@
-$.widget('nrax.tree_node', {
+$.widget('arboretum.tree_node', {
 	options: {
 		id: false,
 		name: '',
@@ -81,7 +81,7 @@ $.widget('nrax.tree_node', {
 					toAdddIndex = -1,
 					toAddAfter;
 				$.each(childElements, function(i, elem) {
-					var tree_node = $(elem).data('nrax-tree_node');
+					var tree_node = $(elem).data('arboretum-tree_node');
 					if(tree_node === previousChild) {
 						toAdddIndex = i;
 						toAddAfter = $(elem);

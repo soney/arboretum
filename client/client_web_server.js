@@ -6,18 +6,34 @@ var express = require('express'),
 	ShadowState = tree_shadow.ShadowState;
 
 module.exports = {
-	createWebServer: function(domTree) {
+	createWebServer: function(domState) {
 		var app = express();
 
-		app.use(express.static(path.join(__dirname, 'client_pages')));
+		app	.use(express.static(path.join(__dirname, 'client_pages')))
+			.all('*', function(req, res, next) {
+				var url = req.url;
+				domState.requestResource(url).then(function(val) {
+					var resourceInfo = val.resourceInfo;
+					if(resourceInfo) { res.set('Content-Type', resourceInfo.mimeType); }
+					
+					if(val.base64Encoded) {
+						var bodyBuffer = new Buffer(val.body, 'base64');
+						res.send(bodyBuffer);
+					} else {
+						res.send(val.body);
+					}
+				}, function(err) {
+					next();
+				});
+			});
 
 		var server = app.listen(3000, function () {
-			console.log('NRAX listening on port 3000!');
+			console.log('arboretum listening on port 3000!');
 		});
 		var io = socket(server);
 
 		io.on('connection', function (socket) {
-			var shadow = new ShadowState(domTree, socket);
+			var shadow = new ShadowState(domState, socket);
 			socket.on('disconnect', function() {
 				shadow.destroy();
 			});

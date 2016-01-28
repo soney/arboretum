@@ -17,17 +17,17 @@ var ShadowState = function(domTree, socket) {
 			socket = this._getSocket();
 
 		this.$_updateShadowTree = _.bind(this._updateShadowTree, this);
-		this.$_updateSheets = _.bind(this._updateSheets, this);
+		//this.$_updateSheets = _.bind(this._updateSheets, this);
 		this.$_highlightNode = _.bind(this._highlightNode, this);
 		this.$_removeHighlight = _.bind(this._removeHighlight, this);
 
 		domTree.on('rootInvalidated', this.$_updateShadowTree);
-		domTree.on('styleSheetsInvalidated', this.$_updateSheets);
+		//domTree.on('styleSheetsInvalidated', this.$_updateSheets);
 		socket.on('highlightNode', this.$_highlightNode);
 		socket.on('removeHighlight', this.$_removeHighlight);
 
 		this._updateShadowTree();
-		this._updateSheets();
+		//this._updateSheets();
 
 		this.on('updated', function() {
 			socket.emit('treeUpdated', this._shadowTree.serialize());
@@ -57,6 +57,7 @@ var ShadowState = function(domTree, socket) {
 			console.error(err.stack);
 		});
 	};
+	/*
 	proto._updateSheets = function() {
 		var domTree = this._getDomTree(),
 			socket = this._getSocket();
@@ -66,6 +67,7 @@ var ShadowState = function(domTree, socket) {
 			});
 		});
 	};
+	*/
 	proto.destroy = function() {
 		var domTree = this._getDomTree(),
 			socket = this._getSocket();
@@ -75,7 +77,7 @@ var ShadowState = function(domTree, socket) {
 		}
 
 		domTree.removeListener('rootInvalidated', this.$_updateShadowTree);
-		domTree.removeListener('styleSheetsInvalidated', this.$_updateSheets);
+		//domTree.removeListener('styleSheetsInvalidated', this.$_updateSheets);
 		socket.removeListener('highlightNode', this.$_highlightNode);
 		socket.removeListener('removeHighlight', this.$_removeHighlight);
 	};
@@ -152,8 +154,8 @@ var DOMTreeShadow = function(options) {
 		childFilterFunction: function(child) {
 			var node = child._getNode(),
 				nodeName = node.nodeName;
-			if(nodeName === 'STYLE' || nodeName === 'SCRIPT' ||
-				nodeName === '#comment' || nodeName === 'LINK') {
+			if(/*nodeName === 'STYLE' || */nodeName === 'SCRIPT' ||
+				nodeName === '#comment'/* || nodeName === 'LINK'*/) {
 				return false;
 			} else {
 				return true;
