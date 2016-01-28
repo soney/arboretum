@@ -13,6 +13,13 @@ var DOMState = function(chrome) {
 	//chrome.Page.loadEventFired(_.bind(function() {
 		//this._invalidateRoot();
 	//}, this));
+	chrome.Network.enable();
+	chrome.Network.requestWillBeSent(_.bind(function() {
+		console.log(arguments);
+	}, this));
+	chrome.Network.loadingFinished(_.bind(function() {
+		console.log(arguments);
+	}, this));
 
 	this._addStyleSheetListeners();
 };
