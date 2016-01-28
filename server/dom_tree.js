@@ -81,7 +81,7 @@ var DOMState = function(chrome) {
 
 			return resourceTracker.getResource(tree, mappedResourceUrl);
 		}, this)).catch(function(err) {
-			console.error(err.stack);
+			console.error(err);
 		});
 	};
 

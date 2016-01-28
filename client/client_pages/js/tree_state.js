@@ -18,10 +18,11 @@ $.widget('arboretum.tree_state', {
 		if(this.element.data('arboretum-tree_node')) {
 			this.element.tree_node('destroy');
 		}
+		var selectedChild = data;
 
 		this.element.tree_node(_.extend({
 			state: this
-		}, data));
+		}, selectedChild));
 	},
 	/*
 	_stylesheetsUpdated: function(event) {
