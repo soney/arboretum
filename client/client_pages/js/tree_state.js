@@ -113,7 +113,9 @@ $.widget('arboretum.tree_state', {
 			node = this.nodeMap[nodeId];
 
 		if(node) {
-			node.setAttributes(attributes, inlineStyle);
+			if(node.setAttributes) {
+				node.setAttributes(attributes, inlineStyle);
+			}
 		} else {
 			throw new Error('Could not find node');
 		}

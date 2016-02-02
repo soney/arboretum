@@ -1,17 +1,21 @@
 {
-	"name": "Arboretum",
-	"description": "Proxy for Handing off Web Browsing Tasks",
-	"author": "Steve Oney <soney@umich.edu>",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/umso/arboretum.git"
-	},
-	"version": "0.1.0",
-	"dependencies": {
-		"chrome-remote-interface": "~0.11",
-		"underscore": "~1.8",
-		"express": "~4.13",
-		"socket.io": "~1.4",
-		"urijs": "~1.17"
-	}
+  "name": "Arboretum",
+  "description": "Proxy for Handing off Web Browsing Tasks",
+  "author": "Steve Oney <soney@umich.edu>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/umso/arboretum.git"
+  },
+  "version": "0.1.0",
+    "scripts": {
+        "start": "electron main.js"
+    },
+  "dependencies": {
+    "chrome-remote-interface": "~0.11",
+    "electron-prebuilt": "^0.36.7",
+    "express": "~4.13",
+    "socket.io": "~1.4",
+    "underscore": "~1.8",
+    "urijs": "~1.17"
+  }
 }

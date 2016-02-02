@@ -22,6 +22,12 @@ var DOMState = function(chrome) {
 	util.inherits(My, EventEmitter);
 	var proto = My.prototype;
 
+	proto.print = function() {
+		this.getRoot().then(function(root) {
+			root.print();
+		});
+	};
+
 	proto.getStyleSheets = function() {
 		var sheets = _.values(this._styleSheets);
 
@@ -242,6 +248,7 @@ var DOMState = function(chrome) {
 					return this._setChildrenRecursive(parent, nodes);
 				} else if(eventType === 'documentUpdated') {
 					this._invalidateRoot();
+					this.getRoot();
 				} else if(eventType === 'characterDataModified') {
 					var node = this._getWrappedDOMNodeWithID(event.nodeId);
 					node._setCharacterData(event.characterData);
@@ -545,6 +552,55 @@ var WrappedDOMNode = function(node, chrome) {
 				}
 			});
 		});
+	};
+	proto._stringifySelf = function() {
+		var MAX_TEXT_LENGTH = 50;
+		var node = this._getNode(),
+			type = node.nodeType,
+			id = node.nodeId;
+		if(type === 9) {
+			return '(' + id + ') ' + node.nodeName;
+		} else if(type === 3) {
+			var text = node.nodeValue.replace(/(\n|\t)/gi, '');
+			if(text.length > MAX_TEXT_LENGTH) {
+				text = text.substr(0, MAX_TEXT_LENGTH) + '...';
+			}
+			return '(' + id + ') text: ' + text;
+		} else if(type === 10) {
+			return '(' + id + ') <' + node.nodeName + '>';
+		} else if(type === 1) {
+			var text = '(' + id + ') <' + node.nodeName;
+			for(var i = 0; i<node.attributes.length; i+=2) {
+				text += ' ' + node.attributes[i] +  ' = "' + node.attributes[i+1] + '"';
+			}
+			text += '>';
+			return text;
+		} else if(type === 8) {
+			var text = '(' + id + ') <!-- ';
+			text += node.nodeValue.replace(/(\n|\t)/gi, '');
+			if(text.length > MAX_TEXT_LENGTH) {
+				text = text.substr(0, MAX_TEXT_LENGTH) + '...';
+			}
+			text +=  ' -->';
+			return text;
+		} else {
+			console.log(node);
+		}
+		return 'node';
+	};
+	proto.print = function(level) {
+		var str = '';
+		if(!level) { level = 0; }
+		for(var i = 0; i<level; i++) {
+			str += '  ';
+		}
+		str += this._stringifySelf();
+		console.log(str);
+		_.each(this.getChildren(), function(child) {
+			child.print(level+1);
+		});
+
+		return this;
 	};
 }(WrappedDOMNode));
 
