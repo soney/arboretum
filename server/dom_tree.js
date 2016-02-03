@@ -158,8 +158,18 @@ var DOMState = function(chrome) {
 
 
 	proto._invalidateRoot = function() {
-		delete this._rootPromise;
-		this.emit('rootInvalidated');
+		if(this._rootPromise) {
+			this._rootPromise.then(_.bind(function(root) {
+				this._destroyWrappedNode(root._getNode());
+			}, this)).then(_.bind(function() {
+				delete this._rootPromise;
+				this.emit('rootInvalidated');
+			}, this)).then(_.bind(function() {
+				this.getRoot();
+			}, this));
+		} else {
+			this.emit('rootInvalidated');
+		}
 	};
 
 	proto.highlight = function(nodeId) {
@@ -212,7 +222,8 @@ var DOMState = function(chrome) {
 		if(this._hasWrappedDOMNodeWithID(id)) {
 			return this._getWrappedDOMNodeWithID(id);
 		} else {
-			return this._nodeMap[id] = new WrappedDOMNode(node, this._getChrome());
+			var node = new WrappedDOMNode(node, this._getChrome());
+			return this._nodeMap[id] = node;
 		}
 	};
 
@@ -226,6 +237,7 @@ var DOMState = function(chrome) {
 
 	proto._destroyWrappedNode = function(node) {
 		var id = node.nodeId;
+		console.log('destroy', id);
 		if(this._hasWrappedDOMNodeWithID(id)) {
 			var wrappedNode = this._getWrappedDOMNodeWithID(id);
 			wrappedNode.destroy();
@@ -239,6 +251,10 @@ var DOMState = function(chrome) {
 							'childNodeCountUpdated', 'childNodeInserted', 'childNodeRemoved',
 							'documentUpdated', 'setChildNodes' ];
 
+		chrome.Page.loadEventFired(_.bind(function() {
+			this.getRoot();
+		}, this));
+
 		_.each(eventTypes, function(eventType) {
 			chrome.DOM[eventType](_.bind(function(event) {
 				if(eventType === 'setChildNodes') {
@@ -248,7 +264,6 @@ var DOMState = function(chrome) {
 					return this._setChildrenRecursive(parent, nodes);
 				} else if(eventType === 'documentUpdated') {
 					this._invalidateRoot();
-					this.getRoot();
 				} else if(eventType === 'characterDataModified') {
 					var node = this._getWrappedDOMNodeWithID(event.nodeId);
 					node._setCharacterData(event.characterData);
@@ -344,6 +359,7 @@ var DOMState = function(chrome) {
 			}).then(function(doc) {
 				return doc.root;
 			}).then(_.bind(function(rootNode) {
+				console.log(rootNode);
 				var root = this._getWrappedDOMNode(rootNode);
 				this._setChildrenRecursive(root, rootNode.children);
 				return root;
