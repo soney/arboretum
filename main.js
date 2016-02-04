@@ -49,8 +49,16 @@ startAll().then(function(info) {
 	replServer.defineCommand('print', {
 		help: 'Print the current state of the DOM tree',
 		action: function(name) {
-			var self = this;
 			doc.print();
+			this.displayPrompt();
+		}
+	});
+
+	replServer.defineCommand('summarize', {
+		help: 'Summarize the current state of the DOM tree',
+		action: function(name) {
+			doc.summarize();
+			this.displayPrompt();
 		}
 	});
 
@@ -74,6 +82,8 @@ startAll().then(function(info) {
 		killAllChromes();
 		process.exit();
 	});
+}).catch(function(err) {
+	console.error(err.stack);
 });
 
 function startAll() {
