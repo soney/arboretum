@@ -1,60 +1,163 @@
-var chrome;
-var serverDriver = require('./server/chrome_driver'),
-	clientDriver = require('./client/client_driver'),
-	repl = require('repl'),
+var repl = require('repl'),
 	child_process = require('child_process'),
-	exec = child_process.exec;
+	_ = require('underscore'),
+	reload = require('require-reload')(require),
+	exec = child_process.exec,
+	replServer;
 
-var replServer = repl.start('> ');
-replServer.defineCommand('chrome', {
-	help: 'Start Chrome with the correct debugging port',
-	action: function(name) {
-		var self = this;
-		startChrome().then(_.bind(function() {
-			self.displayPrompt();
-		}, this));
-	}
+startAll().then(function(info) {
+	var doc = info.doc,
+		serverDriver = info.serverDriver,
+		chrome = info.chrome;
+
+	replServer = repl.start('> ');
+
+	replServer.defineCommand('start', {
+		help: 'Start Chrome and the remote debugger',
+		action: function(name) {
+			var self = this;
+			startAll().then(function() {
+				self.displayPrompt();
+			}).catch(function(err) {
+				console.error(err);
+			});
+		}
+	});
+
+	replServer.defineCommand('chrome', {
+		help: 'Start Chrome with the correct debugging port',
+		action: function(name) {
+			var self = this;
+			startChrome().then(_.bind(function() {
+				console.log('Chromium started');
+				self.displayPrompt();
+			}, this));
+		}
+	});
+
+	replServer.defineCommand('server', {
+		help: 'Start the remote debugger',
+		action: function(name) {
+			var self = this;
+			startServer().then(function(info) {
+				console.log('arboretum listening on port ' + info.clientPort + '!');
+				self.displayPrompt();
+			});
+		}
+	});
+
+	replServer.defineCommand('print', {
+		help: 'Print the current state of the DOM tree',
+		action: function(name) {
+			var self = this;
+			doc.print();
+		}
+	});
+
+	replServer.defineCommand('print', {
+		help: 'Print the current state of the DOM tree',
+		action: function(name) {
+			var self = this;
+			doc.print();
+		}
+	});
+
+	replServer.defineCommand('go', {
+		action: function(addy) {
+			serverDriver.navigate(chrome, addy).catch(function(err) {
+				console.error(err);
+			});
+		}
+	});
+
+	replServer.on('exit', function() {
+		killAllChromes();
+		process.exit();
+	});
 });
 
-replServer.defineCommand('print', {
-	help: 'Print the current state of the DOM tree',
-	action: function(name) {
-		var self = this;
-		startChrome().then(_.bind(function() {
-			self.displayPrompt();
-		}, this));
-	}
-});
+function startAll() {
+	var serverInfo;
+	return startChrome().then(function(chromePort) {
+		console.log('Chromium started');
+		return startServer(chromePort);
+	}).then(function(info) {
+		serverInfo = info;
+		return startChrome({
+			appName: 'Google Chrome Canary',
+			url: 'http://localhost:' + info.clientPort
+		});
+	}).then(function() {
+		return serverInfo;
+	});
+}
 
-function startServer() {
-	return serverDriver.getInstance().then(function(c) {
+function killAllChromes() {
+	var chromiumQuitter = killChrome({appName: 'Chromium' }),
+		canaryQuitter = killChrome({appName: 'Google Chrome Canary'});
+	return Promise.all([chromiumQuitter, canaryQuitter]);
+}
+
+function startServer(chromePort) {
+	var serverDriver = reload('./server/chrome_driver'),
+		clientDriver = reload('./client/client_driver');
+
+	var chrome, doc, port;
+
+	return serverDriver.getInstance({
+		port: chromePort
+	}).then(function(c) {
 		chrome = c;
 		return serverDriver.navigate(chrome, 'http://from.so/arbor/');
-		//return serverDriver.navigate(chrome, 'http://umich.edu/');
 	}).then(function() {
 		return serverDriver.getDocument(chrome);
-	}).then(function(doc) {
-		clientDriver.createClient(doc);
-		//return serverDriver.close(chrome);
-		return doc;
-	}).then(function(doc) {
-		replServer.context.doc = doc;
-
-		replServer.on('exit', function() {
-			process.exit();
-		});
+	}).then(function(d) {
+		doc = d;
+		return clientDriver.createClient(doc);
+	}).then(function(p) {
+		port = p;
+		return {
+			clientPort: port,
+			doc: doc,
+			serverDriver: serverDriver,
+			chrome: chrome
+		};
 	}).catch(function(err) {
 		console.error(err.stack);
 	});
 }
 
-function startChrome() {
+function killChrome(options) {
+	options = _.extend({
+		appName: 'Chromium'
+	}, options);
+
 	return new Promise(function(resolve, reject) {
-		exec('open -a "Google Chrome" --args --remote-debugging-port=9222', function(err,stout,stderr) {
+		exec('osascript -e \'quit app "'+options.appName+'"\'', function(err, stdout, stderr) {
 			if(err) {
 				reject(err);
 			} else {
 				resolve();
+			}
+		});
+	});
+}
+
+function startChrome(options) {
+	options = _.extend({
+		port: 9222,
+		appName: 'Chromium',
+		url: ''
+	}, options);
+
+	return new Promise(function(resolve, reject) {
+		exec('open -a "' + options.appName + '" --args ' + options.url + ' --remote-debugging-port=' + options.port, function(err, stout, stderr) {
+			if(err) {
+				reject(err);
+			} else {
+				setTimeout(function() {
+					resolve(options.port);
+				}, 500);
 			}
 		});
 	});

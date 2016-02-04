@@ -7,13 +7,14 @@
     "url": "https://github.com/umso/arboretum.git"
   },
   "version": "0.1.0",
-    "scripts": {
-        "start": "electron main.js"
-    },
+  "scripts": {
+    "start": "electron main.js"
+  },
   "dependencies": {
     "chrome-remote-interface": "~0.11",
     "electron-prebuilt": "^0.36.7",
     "express": "~4.13",
+    "require-reload": "^0.2.2",
     "socket.io": "~1.4",
     "underscore": "~1.8",
     "urijs": "~1.17"

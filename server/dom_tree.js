@@ -158,7 +158,6 @@ var DOMState = function(chrome) {
 
 
 	proto._invalidateRoot = function() {
-		console.log(this._rootPromise);
 		if(this._rootPromise) {
 			this._rootPromise.then(_.bind(function(root) {
 				root.destroy();
@@ -241,7 +240,6 @@ var DOMState = function(chrome) {
 
 	proto._removeWrappedNode = function(node) {
 		var id = node._getId();
-		console.log(id);
 		if(this._hasWrappedDOMNodeWithID(id)) {
 			//var wrappedNode = this._getWrappedDOMNodeWithID(id);
 			//wrappedNode.destroy();
@@ -256,7 +254,6 @@ var DOMState = function(chrome) {
 							'documentUpdated', 'setChildNodes' ];
 
 		chrome.Page.loadEventFired(_.bind(function() {
-			console.log('load event');
 			//this.getRoot();
 			this._invalidateRoot();
 		}, this));
@@ -269,7 +266,6 @@ var DOMState = function(chrome) {
 
 					return this._setChildrenRecursive(parent, nodes);
 				} else if(eventType === 'documentUpdated') {
-					console.log('doc updated');
 					this._invalidateRoot();
 				} else if(eventType === 'characterDataModified') {
 					var node = this._getWrappedDOMNodeWithID(event.nodeId);
@@ -366,7 +362,6 @@ var DOMState = function(chrome) {
 			}).then(function(doc) {
 				return doc.root;
 			}).then(_.bind(function(rootNode) {
-				console.log(rootNode);
 				var root = this._getWrappedDOMNode(rootNode);
 				this._setChildrenRecursive(root, rootNode.children);
 				return root;
