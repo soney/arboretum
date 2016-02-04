@@ -1,29 +1,64 @@
 var chrome;
 var serverDriver = require('./server/chrome_driver'),
 	clientDriver = require('./client/client_driver'),
-	repl = require('repl');
+	repl = require('repl'),
+	child_process = require('child_process'),
+	exec = child_process.exec;
 
-serverDriver.getInstance().then(function(c) {
-	chrome = c;
-	return serverDriver.navigate(chrome, 'http://from.so/arbor/');
-	//return serverDriver.navigate(chrome, 'http://umich.edu/');
-}).then(function() {
-	return serverDriver.getDocument(chrome);
-}).then(function(doc) {
-	clientDriver.createClient(doc);
-	//return serverDriver.close(chrome);
-	return doc;
-}).then(function(doc) {
-	var replServer = repl.start('> ');
-
-	replServer.context.doc = doc;
-
-	replServer.on('exit', function() {
-		process.exit();
-	});
-}).catch(function(err) {
-	console.error(err.stack);
+var replServer = repl.start('> ');
+replServer.defineCommand('chrome', {
+	help: 'Start Chrome with the correct debugging port',
+	action: function(name) {
+		var self = this;
+		startChrome().then(_.bind(function() {
+			self.displayPrompt();
+		}, this));
+	}
 });
+
+replServer.defineCommand('print', {
+	help: 'Print the current state of the DOM tree',
+	action: function(name) {
+		var self = this;
+		startChrome().then(_.bind(function() {
+			self.displayPrompt();
+		}, this));
+	}
+});
+
+function startServer() {
+	return serverDriver.getInstance().then(function(c) {
+		chrome = c;
+		return serverDriver.navigate(chrome, 'http://from.so/arbor/');
+		//return serverDriver.navigate(chrome, 'http://umich.edu/');
+	}).then(function() {
+		return serverDriver.getDocument(chrome);
+	}).then(function(doc) {
+		clientDriver.createClient(doc);
+		//return serverDriver.close(chrome);
+		return doc;
+	}).then(function(doc) {
+		replServer.context.doc = doc;
+
+		replServer.on('exit', function() {
+			process.exit();
+		});
+	}).catch(function(err) {
+		console.error(err.stack);
+	});
+}
+
+function startChrome() {
+	return new Promise(function(resolve, reject) {
+		exec('open -a "Google Chrome" --args --remote-debugging-port=9222', function(err,stout,stderr) {
+			if(err) {
+				reject(err);
+			} else {
+				resolve();
+			}
+		});
+	});
+}
 
 
 /*

@@ -158,9 +158,10 @@ var DOMState = function(chrome) {
 
 
 	proto._invalidateRoot = function() {
+		console.log(this._rootPromise);
 		if(this._rootPromise) {
 			this._rootPromise.then(_.bind(function(root) {
-				this._destroyWrappedNode(root._getNode());
+				root.destroy();
 			}, this)).then(_.bind(function() {
 				delete this._rootPromise;
 				this.emit('rootInvalidated');
@@ -223,6 +224,9 @@ var DOMState = function(chrome) {
 			return this._getWrappedDOMNodeWithID(id);
 		} else {
 			var node = new WrappedDOMNode(node, this._getChrome());
+			node.once('destroyed', _.bind(function() {
+				this._removeWrappedNode(node);
+			}, this));
 			return this._nodeMap[id] = node;
 		}
 	};
@@ -235,12 +239,12 @@ var DOMState = function(chrome) {
 		return this._nodeMap[id];
 	};
 
-	proto._destroyWrappedNode = function(node) {
-		var id = node.nodeId;
-		console.log('destroy', id);
+	proto._removeWrappedNode = function(node) {
+		var id = node._getId();
+		console.log(id);
 		if(this._hasWrappedDOMNodeWithID(id)) {
-			var wrappedNode = this._getWrappedDOMNodeWithID(id);
-			wrappedNode.destroy();
+			//var wrappedNode = this._getWrappedDOMNodeWithID(id);
+			//wrappedNode.destroy();
 			delete this._nodeMap[id];
 		}
 	};
@@ -252,7 +256,9 @@ var DOMState = function(chrome) {
 							'documentUpdated', 'setChildNodes' ];
 
 		chrome.Page.loadEventFired(_.bind(function() {
-			this.getRoot();
+			console.log('load event');
+			//this.getRoot();
+			this._invalidateRoot();
 		}, this));
 
 		_.each(eventTypes, function(eventType) {
@@ -263,6 +269,7 @@ var DOMState = function(chrome) {
 
 					return this._setChildrenRecursive(parent, nodes);
 				} else if(eventType === 'documentUpdated') {
+					console.log('doc updated');
 					this._invalidateRoot();
 				} else if(eventType === 'characterDataModified') {
 					var node = this._getWrappedDOMNodeWithID(event.nodeId);
@@ -271,7 +278,7 @@ var DOMState = function(chrome) {
 					var node = this._getWrappedDOMNodeWithID(event.nodeId),
 						parentNode = this._getWrappedDOMNodeWithID(event.parentNodeId);
 					parentNode._removeChild(node);
-					this._destroyWrappedNode(node);
+					node.destroy();
 				} else if(eventType === 'childNodeInserted') {
 					var parentNode = this._getWrappedDOMNodeWithID(event.parentNodeId),
 						previousNode = event.previousNodeId > 0 ? this._getWrappedDOMNodeWithID(event.previousNodeId) : false,
@@ -379,7 +386,6 @@ var DOMState = function(chrome) {
 	proto._getChrome = function() {
 		return this.chrome;
 	};
-
 }(DOMState));
 
 var WrappedDOMNode = function(node, chrome) {
