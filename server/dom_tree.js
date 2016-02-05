@@ -19,10 +19,10 @@ var DOMState = function(chrome) {
 	chrome.Page.loadEventFired(_.bind(function() {
 		log.debug('Load event fired');
 		//this.getRoot();
-		this._invalidateRoot();
+		this.refreshRoot();
 	}, this));
 
-	this._addListeners();
+	this.refreshRoot();
 
 	//this._addStyleSheetListeners();
 };
@@ -38,20 +38,34 @@ var DOMState = function(chrome) {
 	};
 
 	proto.refreshRoot = function() {
+		var wasRefreshingRoot = this._refreshingRoot;
+
+		if(!this._refreshingRoot) {
+			this._refreshingRoot = true;
+		}
+
 		this._removeListeners();
+		var promise
+
 		if(this._rootPromise) {
-			this._rootPromise.then(_.bind(function(root) {
+			promise = this._rootPromise.then(_.bind(function(root) {
 				root.destroy();
 			}, this)).then(_.bind(function() {
 				delete this._rootPromise;
 				this.emit('rootInvalidated');
 			}, this)).then(_.bind(function() {
-				this.getRoot();
+				return this.getRoot();
 			}, this));
 		} else {
-			this.emit('rootInvalidated');
+			promise = this.getRoot();
 		}
-		this._addListeners();
+
+		return promise.then(_.bind(function() {
+					if(!wasRefreshingRoot) {
+						this._addListeners();
+						delete this._refreshingRoot;
+					}
+				}, this));
 	};
 
 	proto.summarize = function() {
@@ -291,7 +305,7 @@ var DOMState = function(chrome) {
 	};
 	proto._onDocumentUpdated = function(event) {
 		log.debug('Document Updated');
-		this._invalidateRoot();
+		this.refreshRoot();
 	};
 	proto._onCharacterDataModified = function(event) {
 		var node = this._getWrappedDOMNodeWithID(event.nodeId);
@@ -345,6 +359,7 @@ var DOMState = function(chrome) {
 							'documentUpdated', 'setChildNodes' ];
 
 	proto._addListeners = function() {
+		console.log('add listeners');
 		var chrome = this._getChrome();
 
 		_.each(eventTypes, function(eventType) {
@@ -355,10 +370,15 @@ var DOMState = function(chrome) {
 	};
 
 	proto._removeListeners = function() {
+		console.log('remove listeners');
+		var chrome = this._getChrome();
+
 		_.each(eventTypes, function(eventType) {
 			var capitalizedEventType = eventType[0].toUpperCase() + eventType.substr(1);
 			var func = this['$_on'+capitalizedEventType];
-			chrome.off('DOM.' + eventType, func);
+			if(func) {
+				chrome.removeListener('DOM.' + eventType, func);
+			}
 		}, this);
 	};
 
