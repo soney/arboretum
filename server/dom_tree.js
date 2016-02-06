@@ -16,13 +16,17 @@ var DOMState = function(chrome) {
 
 	this._resourceTracker = new ResourceTracker(this._getChrome());
 
+/*
 	chrome.Page.loadEventFired(_.bind(function() {
 		log.debug('Load event fired');
 		//this.getRoot();
 		this.refreshRoot();
 	}, this));
+	*/
+	this._queuedEvents = [];
 
 	this.refreshRoot();
+	this._addListeners();
 
 	//this._addStyleSheetListeners();
 };
@@ -44,7 +48,6 @@ var DOMState = function(chrome) {
 			this._refreshingRoot = true;
 		}
 
-		this._removeListeners();
 		var promise
 
 		if(this._rootPromise) {
@@ -62,8 +65,11 @@ var DOMState = function(chrome) {
 
 		return promise.then(_.bind(function() {
 					if(!wasRefreshingRoot) {
-						this._addListeners();
+						var event;
 						delete this._refreshingRoot;
+						while(event = this._queuedEvents.unshift()) {
+							this._handleEvent(event);
+						}
 					}
 				}, this));
 	};
@@ -308,55 +314,86 @@ var DOMState = function(chrome) {
 		this.refreshRoot();
 	};
 	proto._onCharacterDataModified = function(event) {
-		var node = this._getWrappedDOMNodeWithID(event.nodeId);
+		if(this._refreshingRoot) {
+			this._queuedEvents.push(event);
+		} else {
+			var node = this._getWrappedDOMNodeWithID(event.nodeId);
 
-		log.debug('Character Data Modified ' + event.nodeId);
+			log.debug('Character Data Modified ' + event.nodeId);
 
-		node._setCharacterData(event.characterData);
+			node._setCharacterData(event.characterData);
+		}
 	};
 	proto._onChildNodeRemoved = function(event) {
-		var node = this._getWrappedDOMNodeWithID(event.nodeId),
-			parentNode = this._getWrappedDOMNodeWithID(event.parentNodeId);
+		if(this._refreshingRoot) {
+			this._queuedEvents.push(event);
+		} else {
+			var node = this._getWrappedDOMNodeWithID(event.nodeId),
+				parentNode = this._getWrappedDOMNodeWithID(event.parentNodeId);
 
-		log.debug('Child Node Removed ' + event.nodeId + ' (parent: ' + event.parentNodeId + ')');
+			log.debug('Child Node Removed ' + event.nodeId + ' (parent: ' + event.parentNodeId + ')');
 
-		parentNode._removeChild(node);
-		node.destroy();
+			parentNode._removeChild(node);
+			node.destroy();
+		}
 	};
 	proto._onChildNodeInserted = function(event) {
-		var parentNode = this._getWrappedDOMNodeWithID(event.parentNodeId),
-			previousNode = event.previousNodeId > 0 ? this._getWrappedDOMNodeWithID(event.previousNodeId) : false,
-			wrappedNode = this._getWrappedDOMNode(event.node);
+		if(this._refreshingRoot) {
+			this._queuedEvents.push(event);
+		} else {
+			var parentNode = this._getWrappedDOMNodeWithID(event.parentNodeId),
+				previousNode = event.previousNodeId > 0 ? this._getWrappedDOMNodeWithID(event.previousNodeId) : false,
+				wrappedNode = this._getWrappedDOMNode(event.node);
 
-		log.debug('Child Node Inserted ' + event.node.nodeId + ' (parent: ' + event.parentNodeId + ' / previous: ' + event.previousNodeId + ')');
-		if(!parentNode) {
-			this.summarize();
+			log.debug('Child Node Inserted ' + event.node.nodeId + ' (parent: ' + event.parentNodeId + ' / previous: ' + event.previousNodeId + ')');
+			if(!parentNode) {
+				this.summarize();
+			}
+
+			this._setChildrenRecursive(wrappedNode, event.node.children);
+			parentNode._insertChild(wrappedNode, previousNode);
 		}
-
-		this._setChildrenRecursive(wrappedNode, event.node.children);
-		parentNode._insertChild(wrappedNode, previousNode);
 	};
 	proto._onAttributeModified = function(event) {
-		var node = this._getWrappedDOMNodeWithID(event.nodeId);
-		node._setAttribute(event.name, event.value);
+		if(this._refreshingRoot) {
+			this._queuedEvents.push(event);
+		} else {
+			var node = this._getWrappedDOMNodeWithID(event.nodeId);
+			node._setAttribute(event.name, event.value);
+		}
 	};
 	proto._onAttributeRemoved = function(event) {
-		var node = this._getWrappedDOMNodeWithID(event.nodeId);
-		node._removeAttribute(event.name);
+		if(this._refreshingRoot) {
+			this._queuedEvents.push(event);
+		} else {
+			var node = this._getWrappedDOMNodeWithID(event.nodeId);
+			node._removeAttribute(event.name);
+		}
 	};
 	proto._onChildNodeCountUpdated = function(event) {
-		var node = this._getWrappedDOMNodeWithID(event.nodeId);
-		if(node) {
-			node._childCountUpdated(event.childNodeCount);
-			this._requestChildNodes(node);
+		if(this._refreshingRoot) {
+			this._queuedEvents.push(event);
 		} else {
-			this._requestNode(event.nodeId);
+			var node = this._getWrappedDOMNodeWithID(event.nodeId);
+			if(node) {
+				node._childCountUpdated(event.childNodeCount);
+				this._requestChildNodes(node);
+			} else {
+				this._requestNode(event.nodeId);
+			}
 		}
 	};
 
 	var eventTypes = [ 'attributeModified', 'attributeRemoved', 'characterDataModified',
 							'childNodeCountUpdated', 'childNodeInserted', 'childNodeRemoved',
 							'documentUpdated', 'setChildNodes' ];
+
+	proto._handleEvent = function(event) {
+		var eventType = event.type;
+		var capitalizedEventType = eventType[0].toUpperCase() + eventType.substr(1);
+
+		return this['_on'+capitalizedEventType](event);
+	};
 
 	proto._addListeners = function() {
 		console.log('add listeners');
