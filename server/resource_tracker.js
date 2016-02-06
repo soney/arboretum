@@ -32,7 +32,7 @@ var ResourceTracker = function(chrome) {
 			url = request.url;
 
 		this._resources[id] = resource;
-		this._urlResourceIds[request.url] = id;
+		this._urlResourceIds[url] = id;
 	};
 
 	proto._getResponseBody = function(requestId) {

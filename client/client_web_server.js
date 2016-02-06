@@ -12,8 +12,8 @@ module.exports = {
 
 		return new Promise(function(resolve, reject) {
 			var server = app.use(express.static(path.join(__dirname, 'client_pages')))
-							.all('*', function(req, res, next) {
-								var url = req.url;
+							.all('/r', function(req, res, next) {
+								var url = req.query.l;
 								domState.requestResource(url).then(function(val) {
 									var resourceInfo = val.resourceInfo;
 									if(resourceInfo) { res.set('Content-Type', resourceInfo.mimeType); }

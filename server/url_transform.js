@@ -51,8 +51,20 @@ var containsURLs = {
 };
 
 function transformURL(url, baseURL) {
-	return URL.resolve(baseURL, url);
+	var absoluteURL = URL.resolve(baseURL, url),
+		relativeURL = URL.format({
+			pathname: 'r',
+			query: {
+				l: absoluteURL
+			}
+		});
+
+	return relativeURL;
 }
+
+module.exports = {
+	urlTransform: containsURLs
+};
 
 /*
 

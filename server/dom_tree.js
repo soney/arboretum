@@ -4,6 +4,7 @@ var _ = require('underscore'),
 	url = require('url'),
 	path = require('path'),
 	log = require('loglevel'),
+	urlTransform = require('./url_transform').urlTransform,
 	ResourceTracker = require('./resource_tracker').ResourceTracker;
 
 log.setLevel('trace');
@@ -48,7 +49,7 @@ var DOMState = function(chrome) {
 			this._refreshingRoot = true;
 		}
 
-		var promise
+		var promise;
 
 		if(this._rootPromise) {
 			promise = this._rootPromise.then(_.bind(function(root) {
@@ -100,6 +101,9 @@ var DOMState = function(chrome) {
 	};
 
 	var urlStrategies = [
+		function(frameUrl, resourceUrl) {
+			return resourceUrl;
+		},
 		function(frameUrl, resourceUrl) {
 			return url.resolve(frameUrl, resourceUrl);
 		},
@@ -276,7 +280,11 @@ var DOMState = function(chrome) {
 		if(this._hasWrappedDOMNodeWithID(id)) {
 			return this._getWrappedDOMNodeWithID(id);
 		} else {
-			var node = new WrappedDOMNode(node, this._getChrome());
+			var node = new WrappedDOMNode({
+				node: node,
+				chrome: this._getChrome(),
+				state: this
+			});
 			node.once('destroyed', _.bind(function() {
 				this._removeWrappedNode(node);
 			}, this));
@@ -396,7 +404,6 @@ var DOMState = function(chrome) {
 	};
 
 	proto._addListeners = function() {
-		console.log('add listeners');
 		var chrome = this._getChrome();
 
 		_.each(eventTypes, function(eventType) {
@@ -407,7 +414,6 @@ var DOMState = function(chrome) {
 	};
 
 	proto._removeListeners = function() {
-		console.log('remove listeners');
 		var chrome = this._getChrome();
 
 		_.each(eventTypes, function(eventType) {
@@ -498,31 +504,79 @@ var DOMState = function(chrome) {
 	};
 }(DOMState));
 
-var WrappedDOMNode = function(node, chrome) {
-	this.node = node;
-	this.chrome = chrome;
+var WrappedDOMNode = function(options) {
+	this.node = options.node;
+	this.chrome = options.chrome;
+	this.state = options.state;
+
 	this._attributes = {};
 	this._inlineStyle = '';
-	this.initialize();
+	this._initialized = this.initialize();
 };
 
 (function(My) {
 	util.inherits(My, EventEmitter);
 	var proto = My.prototype;
 
+	proto._getState = function() {
+		return this.state;
+	};
+
 	proto._initializeAttributesMap = function() {
 		var node = this._getNode(),
-			attributes = node.attributes;
+			attributes = node.attributes,
+			attrPromise,
+			attrPromises = [];
 		if(attributes) {
 			var len = attributes.length,
 				i = 0;
 			while(i < len) {
 				var name = attributes[i],
 					val = attributes[i+1];
-				this._attributes[name] = val;
+
+				attrPromise = this._transformAttribute(val, name).then(_.bind(function(attrVal) {
+					this._attributes[name] = attrVal;
+				}, this)).catch(function(err) {
+					console.error(err);
+				});
+
 				i+=2;
 			}
 		}
+		return Promise.all(attrPromises);
+	};
+
+	proto._transformAttribute = function(val, name) {
+		return new Promise(_.bind(function(resolve, reject) {
+			var tagName = this._getTagName(),
+				tagTransform = urlTransform[tagName.toLowerCase()]
+
+			if(tagTransform) {
+				var attributeTransform = tagTransform[name.toLowerCase()];
+				if(attributeTransform) {
+					this._getBaseURL().then(_.bind(function(url) {
+						resolve(attributeTransform.transform(val, url));
+					}, this)).catch(function(err) {
+						console.error(err);
+					});
+					return;
+				}
+			}
+			resolve(val);
+		}, this));
+	};
+
+	proto._getBaseURL = function() {
+		var state = this._getState();
+		return state.getRoot().then(function(root) {
+			var node = root._getNode();
+			return node.baseURL;
+		});
+	};
+
+	proto._getTagName = function() {
+		var node = this._getNode();
+		return node.nodeName;
 	};
 
 	proto.getAttributesMap = function() {
@@ -530,7 +584,7 @@ var WrappedDOMNode = function(node, chrome) {
 	};
 
 	proto.initialize = function() {
-		this._initializeAttributesMap();
+		return this._initializeAttributesMap();
 	};
 	proto.destroy = function() {
 		_.each(this.children, function(child) {
@@ -592,8 +646,13 @@ var WrappedDOMNode = function(node, chrome) {
 	proto._setAttribute = function(name, value) {
 		var node = this._getNode();
 		node.attributes.push(name, value);
-		this._attributes[name] = value;
-		this._notifyAttributeChange();
+
+		this._transformAttribute(value, name).then(_.bind(function(attrVal) {
+			this._attributes[name] = atrVal;
+			this._notifyAttributeChange();
+		}, this)).catch(function(err) {
+			console.error(err);
+		});
 	};
 
 	proto._removeAttribute = function(name) {
@@ -703,9 +762,12 @@ var WrappedDOMNode = function(node, chrome) {
 			return '(' + id + ') <' + node.nodeName + '>';
 		} else if(type === 1) {
 			var text = '(' + id + ') <' + node.nodeName;
-			for(var i = 0; i<node.attributes.length; i+=2) {
-				text += ' ' + node.attributes[i] +  ' = "' + node.attributes[i+1] + '"';
-			}
+			_.each(this.getAttributesMap(), function(val, name) {
+				text += ' ' + name +  ' = "' + val + '"';
+			});
+			//for(var i = 0; i<node.attributes.length; i+=2) {
+				//text += ' ' + node.attributes[i] +  ' = "' + node.attributes[i+1] + '"';
+			//}
 			text += '>';
 			return text;
 		} else if(type === 8) {

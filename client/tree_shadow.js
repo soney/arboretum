@@ -1,7 +1,6 @@
 var _ = require('underscore'),
 	util = require('util'),
-	EventEmitter = require('events'),
-	transformURL = require('url_transform');
+	EventEmitter = require('events');
 
 var ShadowState = function(domTree, socket) {
 	this.domTree = domTree;
@@ -337,7 +336,11 @@ var DOMTreeShadow = function(options) {
 		tree.on('attributesChanged', this.$_updateAttributes);
 		tree.on('nodeValueChanged', this.$_nodeValueChanged);
 
-		this._updateAttributes(tree.getAttributesMap());
+		tree._initialized.then(_.bind(function() {
+			this._updateAttributes(tree.getAttributesMap());
+		}, this)).catch(function(err) {
+			console.log(err);
+		});
 		this._updateChildren(tree.getChildren());
 	};
 

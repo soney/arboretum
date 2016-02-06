@@ -118,7 +118,7 @@ function startServer(chromePort) {
 		port: chromePort
 	}).then(function(c) {
 		chrome = c;
-		return serverDriver.navigate(chrome, 'http://from.so/arbor/');
+		return serverDriver.navigate(chrome, 'file:///Users/soney/dev/arboretum/test/index.html');
 	}).then(function() {
 		return serverDriver.getDocument(chrome);
 	}).then(function(d) {
