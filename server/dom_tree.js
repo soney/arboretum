@@ -534,8 +534,8 @@ var WrappedDOMNode = function(options) {
 				var name = attributes[i],
 					val = attributes[i+1];
 
-				attrPromise = this._transformAttribute(val, name).then(_.bind(function(attrVal) {
-					this._attributes[name] = attrVal;
+				attrPromise = this._transformAttribute(val, name).then(_.bind(function(info) {
+					this._attributes[info.name] = info.value;
 				}, this)).catch(function(err) {
 					console.error(err);
 				});
@@ -555,14 +555,20 @@ var WrappedDOMNode = function(options) {
 				var attributeTransform = tagTransform[name.toLowerCase()];
 				if(attributeTransform) {
 					this._getBaseURL().then(_.bind(function(url) {
-						resolve(attributeTransform.transform(val, url));
+						resolve({
+							value: attributeTransform.transform(val, url),
+							name: name
+						});
 					}, this)).catch(function(err) {
 						console.error(err);
 					});
 					return;
 				}
 			}
-			resolve(val);
+			resolve({
+				value: val,
+				name: name
+			});
 		}, this));
 	};
 
@@ -648,7 +654,7 @@ var WrappedDOMNode = function(options) {
 		node.attributes.push(name, value);
 
 		this._transformAttribute(value, name).then(_.bind(function(attrVal) {
-			this._attributes[name] = atrVal;
+			this._attributes[name] = attrVal;
 			this._notifyAttributeChange();
 		}, this)).catch(function(err) {
 			console.error(err);
