@@ -1,6 +1,7 @@
 var _ = require('underscore'),
 	util = require('util'),
-	EventEmitter = require('events');
+	EventEmitter = require('events'),
+	transformURL = require('url_transform');
 
 var ShadowState = function(domTree, socket) {
 	this.domTree = domTree;
