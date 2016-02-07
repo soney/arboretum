@@ -13,6 +13,7 @@ function processCSSURLs(str, url) {
 								l: absoluteURL
 							}
 						});
+					console.log(m, m.replace(arg2, relativeURL));
 					return m.replace(arg2, relativeURL);
 				});
 }
@@ -38,8 +39,9 @@ function parseCSS(cssStr, url) {
 			return cssStr;
 		}
 	} catch(err) {
+		return processCSSURLs(cssStr, url);
 		//console.log(cssStr);
-		return cssStr;
+		//return cssStr;
 	}
 }
 

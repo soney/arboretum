@@ -28,6 +28,12 @@ var containsURLs = {
 			transform: function(url, baseURL) {
 				return transformURL(url, baseURL);
 			}
+		},
+		'srcset': {
+			strategy: TRANSFORM,
+			transform: function(url, baseURL) {
+				return transformURL(url, baseURL);
+			}
 		}
 	},
 

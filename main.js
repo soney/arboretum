@@ -118,7 +118,7 @@ function startServer(chromePort) {
 		port: chromePort
 	}).then(function(c) {
 		chrome = c;
-		return serverDriver.navigate(chrome, 'http://www.mgoblue.com/');
+		return serverDriver.navigate(chrome, 'http://www.osu.edu/');
 	}).then(function() {
 		return serverDriver.getDocument(chrome);
 	}).then(function(d) {
