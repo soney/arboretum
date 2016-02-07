@@ -1,6 +1,7 @@
 var _ = require('underscore'),
 	util = require('util'),
-	EventEmitter = require('events');
+	EventEmitter = require('events'),
+	processCSS = require('./css_parser').parseCSS;
 
 var ResourceTracker = function(chrome) {
 	this._resources = {};
@@ -70,6 +71,10 @@ var ResourceTracker = function(chrome) {
 			}
 		}, this)).then(function(responseBody) {
 			if(resourceInfo) {
+				var mimeType = resourceInfo.mimeType;
+				if(mimeType === 'text/css') {
+					responseBody.body = processCSS(responseBody.body, url);
+				}
 				return _.extend({
 					resourceInfo : resourceInfo
 				}, responseBody);

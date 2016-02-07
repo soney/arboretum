@@ -155,7 +155,8 @@ var DOMTreeShadow = function(options) {
 			var node = child._getNode(),
 				nodeName = node.nodeName;
 			if(/*nodeName === 'STYLE' || */nodeName === 'SCRIPT' ||
-				nodeName === '#comment'/* || nodeName === 'LINK'*/) {
+				nodeName === '#comment'/* || nodeName === 'LINK'*/ ||
+				nodeName === 'BASE') {
 				return false;
 			} else {
 				return true;

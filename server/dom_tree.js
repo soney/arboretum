@@ -5,7 +5,9 @@ var _ = require('underscore'),
 	path = require('path'),
 	log = require('loglevel'),
 	urlTransform = require('./url_transform').urlTransform,
-	ResourceTracker = require('./resource_tracker').ResourceTracker;
+	ResourceTracker = require('./resource_tracker').ResourceTracker,
+	processCSS = require('./css_parser').parseCSS,
+	processCSSURLs = require('./css_parser').processCSSURLs;
 
 log.setLevel('trace');
 
@@ -736,7 +738,8 @@ var WrappedDOMNode = function(options) {
 
 	proto.getInlineStyles = function() {
 		var id = this.getId(),
-			chrome = this._getChrome();
+			chrome = this._getChrome(),
+			inlineStyle;
 
 		return new Promise(function(resolve, reject) {
 			chrome.CSS.getInlineStylesForNode({
@@ -748,6 +751,12 @@ var WrappedDOMNode = function(options) {
 					resolve(value.inlineStyle);
 				}
 			});
+		}).then(_.bind(function(is) {
+			inlineStyle = is;
+			return this._getBaseURL();
+		}, this)).then(function(url) {
+			inlineStyle.cssText = processCSSURLs(inlineStyle.cssText, url);
+			return inlineStyle;
 		});
 	};
 
