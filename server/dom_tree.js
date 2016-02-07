@@ -9,7 +9,7 @@ var _ = require('underscore'),
 	processCSS = require('./css_parser').parseCSS,
 	processCSSURLs = require('./css_parser').processCSSURLs;
 
-log.setLevel('trace');
+log.setLevel('error');
 
 var DOMState = function(chrome) {
 	this.chrome = chrome;
@@ -368,6 +368,7 @@ var DOMState = function(chrome) {
 		if(this._refreshingRoot) {
 			this._queuedEvents.push(event);
 		} else {
+			log.debug('Attribute modified');
 			var node = this._getWrappedDOMNodeWithID(event.nodeId);
 			node._setAttribute(event.name, event.value);
 		}
@@ -376,6 +377,7 @@ var DOMState = function(chrome) {
 		if(this._refreshingRoot) {
 			this._queuedEvents.push(event);
 		} else {
+			log.debug('Attribute removed');
 			var node = this._getWrappedDOMNodeWithID(event.nodeId);
 			node._removeAttribute(event.name);
 		}
@@ -655,8 +657,8 @@ var WrappedDOMNode = function(options) {
 		var node = this._getNode();
 		node.attributes.push(name, value);
 
-		this._transformAttribute(value, name).then(_.bind(function(attrVal) {
-			this._attributes[name] = attrVal;
+		this._transformAttribute(value, name).then(_.bind(function(info) {
+			this._attributes[info.name] = info.value;
 			this._notifyAttributeChange();
 		}, this)).catch(function(err) {
 			console.error(err);
@@ -753,9 +755,13 @@ var WrappedDOMNode = function(options) {
 			});
 		}).then(_.bind(function(is) {
 			inlineStyle = is;
-			return this._getBaseURL();
+			if(inlineStyle.cssText) {
+				return this._getBaseURL();
+			}
 		}, this)).then(function(url) {
-			inlineStyle.cssText = processCSSURLs(inlineStyle.cssText, url);
+			if(inlineStyle.cssText) {
+				inlineStyle.cssText = processCSSURLs(inlineStyle.cssText, url);
+			}
 			return inlineStyle;
 		});
 	};

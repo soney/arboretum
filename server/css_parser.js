@@ -18,19 +18,27 @@ function processCSSURLs(str, url) {
 }
 
 function parseCSS(cssStr, url) {
-	var ast = css.parse(cssStr);
-	if(ast.type === 'stylesheet') {
-		_.each(ast.stylesheet.rules, function(rule) {
-			_.each(rule.declarations, function(declaration) {
-				var value = declaration.value;
-				declaration.value = processCSSURLs(value, url);
+	try {
+		var ast = css.parse(cssStr);
+
+		if(ast.type === 'stylesheet') {
+			_.each(ast.stylesheet.rules, function(rule) {
+				_.each(rule.declarations, function(declaration) {
+					if(declaration.type === 'declaration') {
+						var value = declaration.value;
+						declaration.value = processCSSURLs(value, url);
+					}
+				});
 			});
-		});
 
-		var stringifiedCSS = css.stringify(ast);
+			var stringifiedCSS = css.stringify(ast);
 
-		return stringifiedCSS;
-	} else {
+			return stringifiedCSS;
+		} else {
+			return cssStr;
+		}
+	} catch(err) {
+		//console.log(cssStr);
 		return cssStr;
 	}
 }
