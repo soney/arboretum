@@ -642,7 +642,7 @@ var WrappedDOMNode = function(options) {
 	proto._insertChild = function(child, previousNode) {
 		if(previousNode) {
 			var index = _.indexOf(this.getChildren(), previousNode);
-			this.children.splice(index, 0, child);
+			this.children.splice(index+1, 0, child);
 		} else {
 			this.children.unshift(child);
 		}

@@ -13,12 +13,13 @@ function processCSSURLs(str, url) {
 								l: absoluteURL
 							}
 						});
-					console.log(m, m.replace(arg2, relativeURL));
 					return m.replace(arg2, relativeURL);
 				});
 }
 
 function parseCSS(cssStr, url) {
+	return processCSSURLs(cssStr, url);
+	/*
 	try {
 		var ast = css.parse(cssStr);
 
@@ -27,6 +28,10 @@ function parseCSS(cssStr, url) {
 				_.each(rule.declarations, function(declaration) {
 					if(declaration.type === 'declaration') {
 						var value = declaration.value;
+						console.log(value);
+						if(value === '#333333 url(../images/bg-subcontent.jpg) 0 0 repeat-x') {
+							console.log(value);
+						}
 						declaration.value = processCSSURLs(value, url);
 					}
 				});
@@ -43,6 +48,7 @@ function parseCSS(cssStr, url) {
 		//console.log(cssStr);
 		//return cssStr;
 	}
+	*/
 }
 
 module.exports = {

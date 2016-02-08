@@ -73,7 +73,12 @@ var ResourceTracker = function(chrome) {
 			if(resourceInfo) {
 				var mimeType = resourceInfo.mimeType;
 				if(mimeType === 'text/css') {
+					//console.log(url);
+					//console.log(mimeType);
 					responseBody.body = processCSS(responseBody.body, url);
+				} else {
+					//console.log(url);
+					//console.log(mimeType);
 				}
 				return _.extend({
 					resourceInfo : resourceInfo

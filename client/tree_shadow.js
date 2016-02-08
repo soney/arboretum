@@ -196,15 +196,15 @@ var DOMTreeShadow = function(options) {
 			while(i < len) {
 				child = myChildren[i];
 				if(child.getId() === previousNodeId) {
-					this.children.splice(i, 0, toAdd);
-					addedAtIndex = i;
+					this.children.splice(i+1, 0, toAdd);
+					addedAtIndex = i+1;
 					break;
 				}
 				i++;
 			}
 		} else {
-			this.children.push(toAdd);
-			addedAtIndex = this.children.length-1;
+			this.children.unshift(toAdd);
+			addedAtIndex = 0;
 		}
 
 		if(toAdd instanceof My) {
