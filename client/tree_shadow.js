@@ -329,6 +329,7 @@ var DOMTreeShadow = function(options) {
 
 		this.$_updateAttributes = _.bind(this._updateAttributes, this);
 		this.$_nodeValueChanged = _.bind(this._nodeValueChanged, this);
+		this.$_inlineStyleChanged = _.bind(this._inlineStyleChanged, this);
 
 		tree.on('childAdded', this.$_childAdded);
 		tree.on('childRemoved', this.$_childRemoved);
@@ -336,9 +337,17 @@ var DOMTreeShadow = function(options) {
 
 		tree.on('attributesChanged', this.$_updateAttributes);
 		tree.on('nodeValueChanged', this.$_nodeValueChanged);
+		tree.on('inlineStyleChanged', this.$_inlineStyleChanged);
 
 		tree._initialized.then(_.bind(function() {
-			this._updateAttributes(tree.getAttributesMap());
+			this._attributes = tree.getAttributesMap();
+			this._inlineCSS = tree.getInlineStyle();
+			//this._updateAttributes(tree.getAttributesMap());
+			var state = this._getState();
+			state.attributesChanged(this, {
+				attributes: this._attributes,
+				inlineStyle: this._inlineCSS
+			});
 		}, this)).catch(function(err) {
 			console.log(err);
 		});
@@ -357,6 +366,7 @@ var DOMTreeShadow = function(options) {
 
 		tree.removeListener('attributesChanged', this.$_updateAttributes);
 		tree.removeListener('nodeValueChanged', this.$_nodeValueChanged);
+		tree.removeListener('inlineStyleChanged', this.$_inlineStyleChanged);
 	};
 
 	proto.getId = function() {
@@ -365,19 +375,27 @@ var DOMTreeShadow = function(options) {
 
 	proto._updateAttributes = function(attributesMap) {
 		this._attributes = attributesMap;
+		var state = this._getState();
 
-		var tree = this.getTree();
-		tree.getInlineStyles().then(_.bind(function(styleInfo) {
-			var cssText = styleInfo.cssText,
-				state = this._getState();
-
-			this._inlineCSS = cssText;
-			state.attributesChanged(this, {
-				attributes: this._attributes,
-				inlineStyle: this._inlineCSS
-			});
-		}, this));
+		state.attributesChanged(this, {
+			attributes: this._attributes,
+			inlineStyle: this._inlineCSS
+		});
 	};
+
+	proto._inlineStyleChanged = function(event) {
+		var inlineStyle = event.inlineStyle;
+
+		this._inlineCSS = inlineStyle;
+
+		var state = this._getState();
+
+		state.attributesChanged(this, {
+			attributes: this._attributes,
+			inlineStyle: this._inlineCSS
+		});
+	};
+
 }(DOMTreeShadow));
 
 module.exports = {
