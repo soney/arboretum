@@ -9,7 +9,7 @@ var _ = require('underscore'),
 	processCSS = require('./css_parser').parseCSS,
 	processCSSURLs = require('./css_parser').processCSSURLs;
 
-log.setLevel('error');
+log.setLevel('trace');
 
 var DOMState = function(chrome) {
 	this.chrome = chrome;
@@ -68,13 +68,17 @@ var DOMState = function(chrome) {
 
 		return promise.then(_.bind(function() {
 					if(!wasRefreshingRoot) {
-						var event;
+						var eventInfo;
+						var oldLength = this._queuedEvents.length;
 						delete this._refreshingRoot;
-						while(event = this._queuedEvents.unshift()) {
-							this._handleEvent(event);
+						while(eventInfo = this._queuedEvents.shift()) {
+							this._handleEvent(eventInfo);
 						}
+						log.debug('Finished ' + oldLength + ' queued events');
 					}
-				}, this));
+				}, this)).catch(function(err) {
+					console.error(err);
+				});
 	};
 
 	proto.summarize = function() {
@@ -325,7 +329,11 @@ var DOMState = function(chrome) {
 	};
 	proto._onCharacterDataModified = function(event) {
 		if(this._refreshingRoot) {
-			this._queuedEvents.push(event);
+			log.debug('(queue) Character Data Modified');
+			this._queuedEvents.push({
+				event: event,
+				type: 'characterDataModified'
+			});
 		} else {
 			var node = this._getWrappedDOMNodeWithID(event.nodeId);
 
@@ -336,7 +344,11 @@ var DOMState = function(chrome) {
 	};
 	proto._onChildNodeRemoved = function(event) {
 		if(this._refreshingRoot) {
-			this._queuedEvents.push(event);
+			log.debug('(queue) Child Node Removed');
+			this._queuedEvents.push({
+				event: event,
+				type: 'childNodeRemoved'
+			});
 		} else {
 			var node = this._getWrappedDOMNodeWithID(event.nodeId),
 				parentNode = this._getWrappedDOMNodeWithID(event.parentNodeId);
@@ -349,7 +361,11 @@ var DOMState = function(chrome) {
 	};
 	proto._onChildNodeInserted = function(event) {
 		if(this._refreshingRoot) {
-			this._queuedEvents.push(event);
+			log.debug('(queue) Child Node Inserted');
+			this._queuedEvents.push({
+				event: event,
+				type: 'childNodeInserted'
+			});
 		} else {
 			var parentNode = this._getWrappedDOMNodeWithID(event.parentNodeId),
 				previousNode = event.previousNodeId > 0 ? this._getWrappedDOMNodeWithID(event.previousNodeId) : false,
@@ -361,12 +377,18 @@ var DOMState = function(chrome) {
 			}
 
 			this._setChildrenRecursive(wrappedNode, event.node.children);
+			this._requestChildNodes(wrappedNode).then(_.bind(function(childNodes) {
+			}, this));
 			parentNode._insertChild(wrappedNode, previousNode);
 		}
 	};
 	proto._onAttributeModified = function(event) {
 		if(this._refreshingRoot) {
-			this._queuedEvents.push(event);
+			log.debug('(queue) Attribute Modified');
+			this._queuedEvents.push({
+				event: event,
+				type: 'attributeModified'
+			});
 		} else {
 			log.debug('Attribute modified');
 			var node = this._getWrappedDOMNodeWithID(event.nodeId);
@@ -375,7 +397,11 @@ var DOMState = function(chrome) {
 	};
 	proto._onAttributeRemoved = function(event) {
 		if(this._refreshingRoot) {
-			this._queuedEvents.push(event);
+			log.debug('(queue) Attribute Removed');
+			this._queuedEvents.push({
+				event: event,
+				type: 'attributeRemoved'
+			});
 		} else {
 			log.debug('Attribute removed');
 			var node = this._getWrappedDOMNodeWithID(event.nodeId);
@@ -384,7 +410,11 @@ var DOMState = function(chrome) {
 	};
 	proto._onChildNodeCountUpdated = function(event) {
 		if(this._refreshingRoot) {
-			this._queuedEvents.push(event);
+			log.debug('(queue) Child Count Updated');
+			this._queuedEvents.push({
+				event: event,
+				type: 'childNodeCountUpdated'
+			});
 		} else {
 			var node = this._getWrappedDOMNodeWithID(event.nodeId);
 			if(node) {
@@ -400,8 +430,9 @@ var DOMState = function(chrome) {
 							'childNodeCountUpdated', 'childNodeInserted', 'childNodeRemoved',
 							'documentUpdated', 'setChildNodes' ];
 
-	proto._handleEvent = function(event) {
-		var eventType = event.type;
+	proto._handleEvent = function(eventInfo) {
+		var eventType = eventInfo.type,
+			event = eventInfo.event;
 		var capitalizedEventType = eventType[0].toUpperCase() + eventType.substr(1);
 
 		return this['_on'+capitalizedEventType](event);
@@ -641,7 +672,7 @@ var WrappedDOMNode = function(options) {
 
 	proto._insertChild = function(child, previousNode) {
 		if(previousNode) {
-			var index = _.indexOf(this.getChildren(), previousNode);
+			var index = _.indexOf(this.children, previousNode);
 			this.children.splice(index+1, 0, child);
 		} else {
 			this.children.unshift(child);

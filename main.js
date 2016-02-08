@@ -118,7 +118,7 @@ function startServer(chromePort) {
 		port: chromePort
 	}).then(function(c) {
 		chrome = c;
-		return serverDriver.navigate(chrome, 'http://www.osu.edu/');
+		return serverDriver.navigate(chrome, 'http://umich.edu/');
 	}).then(function() {
 		return serverDriver.getDocument(chrome);
 	}).then(function(d) {
