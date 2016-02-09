@@ -344,10 +344,12 @@ var DOMTreeShadow = function(options) {
 			this._inlineCSS = tree.getInlineStyle();
 			//this._updateAttributes(tree.getAttributesMap());
 			var state = this._getState();
-			state.attributesChanged(this, {
-				attributes: this._attributes,
-				inlineStyle: this._inlineCSS
-			});
+			if(node.nodeType === 1) {
+				state.attributesChanged(this, {
+					attributes: this._attributes,
+					inlineStyle: this._inlineCSS
+				});
+			}
 		}, this)).catch(function(err) {
 			console.log(err);
 		});

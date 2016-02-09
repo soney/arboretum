@@ -9,7 +9,7 @@ var _ = require('underscore'),
 	processCSS = require('./css_parser').parseCSS,
 	processCSSURLs = require('./css_parser').processCSSURLs;
 
-log.setLevel('trace');
+log.setLevel('error');
 
 var DOMState = function(chrome) {
 	this.chrome = chrome;
@@ -660,7 +660,7 @@ var WrappedDOMNode = function(options) {
 
 	proto.initialize = function() {
 		var inlineStylePromise = this._requestInlineStyle().then(_.bind(function(inlineStyle) {
-				this._inlineStyle = inlineStyle;
+				this._inlineStyle = inlineStyle.cssText;
 			}, this)),
 			attributesPromise = this._initializeAttributesMap();
 
@@ -811,10 +811,10 @@ var WrappedDOMNode = function(options) {
 	proto._updateInlineStyle = function() {
 		var oldInlineStyle = this.getInlineStyle();
 		this._requestInlineStyle().then(_.bind(function(inlineStyle) {
-			this._inlineStyle = inlineStyle;
+			this._inlineStyle = inlineStyle.cssText;
 			if(inlineStyle !== oldInlineStyle) {
 				this.emit('inlineStyleChanged', {
-					inlineStyle: inlineStyle
+					inlineStyle: this._inlineStyle
 				});
 			}
 		}, this));
@@ -851,7 +851,9 @@ var WrappedDOMNode = function(options) {
 			});
 		} else {
 			return new Promise(function(resolve, reject) {
-				resolve('');
+				resolve({
+					cssText: ''
+				});
 			});
 		}
 	};
@@ -877,7 +879,12 @@ var WrappedDOMNode = function(options) {
 			return '(' + id + ') <' + node.nodeName + '>';
 		} else if(type === 1) {
 			var text = '(' + id + ') <' + node.nodeName;
-			_.each(this.getAttributesMap(), function(val, name) {
+			var attributesMap = this.getAttributesMap();
+			var style = this.getInlineStyle();
+			if(style) {
+				attributesMap.style = style;
+			}
+			_.each(attributesMap, function(val, name) {
 				text += ' ' + name +  ' = "' + val + '"';
 			});
 			//for(var i = 0; i<node.attributes.length; i+=2) {
