@@ -1,6 +1,6 @@
 var cri = require('chrome-remote-interface'),
 	_ = require('underscore'),
-	DOMState = require('./dom_tree').DOMState;
+	PageState = require('./page_state').PageState;
 
 var OPTION_DEFAULTS = {
 	host: 'localhost',
@@ -33,7 +33,7 @@ function navigate(chrome, url) {
 }
 
 function getDocument(chrome) {
-	return new DOMState(chrome);
+	return new PageState(chrome);
 }
 
 function close(chrome) {

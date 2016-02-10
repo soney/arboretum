@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "chrome-remote-interface": "~0.11",
+    "colors": "^1.1.2",
     "css": "^2.2.1",
     "electron-prebuilt": "^0.36.7",
     "express": "~4.13",

@@ -2,7 +2,7 @@ var _ = require('underscore'),
 	util = require('util'),
 	EventEmitter = require('events');
 
-var ShadowState = function(domTree, socket) {
+var ShadowFrame = function(domTree, socket) {
 	this.domTree = domTree;
 	this.socket = socket;
 	this._initialize();
@@ -45,17 +45,13 @@ var ShadowState = function(domTree, socket) {
 		if(this._shadowTree) {
 			this._shadowTree.destroy();
 		}
-		domTree.getRoot().then(_.bind(function(node) {
-			var shadow = this._shadowTree = new DOMTreeShadow({
-				tree: node,
-				state: this
-			});
-
-			socket.emit('treeReady', shadow.serialize());
-		}, this)).catch(function(err) {
-			console.error(err);
-			console.error(err.stack);
+		var node = domTree.getRoot();
+		var shadow = this._shadowTree = new DOMTreeShadow({
+			tree: node,
+			state: this
 		});
+
+		socket.emit('treeReady', shadow.serialize());
 	};
 	/*
 	proto._updateSheets = function() {
@@ -126,7 +122,7 @@ var ShadowState = function(domTree, socket) {
 			inlineStyle: info.inlineStyle
 		});
 	};
-}(ShadowState));
+}(ShadowFrame));
 
 var DOMTreePlaceholder = function(tree) {
 	this.tree = tree;
@@ -402,5 +398,5 @@ var DOMTreeShadow = function(options) {
 
 module.exports = {
 	DOMTreeShadow: DOMTreeShadow,
-	ShadowState: ShadowState
+	ShadowFrame: ShadowFrame
 };

@@ -1,9 +1,13 @@
 $.widget('arboretum.tree_state', {
-	options: { },
+	options: {
+		frameId: false
+	},
 
 	_create: function() {
 		this.nodeMap = {};
 		var socket = this.socket = io.connect();
+		socket.emit('setFrame', this.option('frameId'));
+
 		socket.on('treeReady', _.bind(this._treeReady, this));
 		//socket.on('styleSheetsUpdated', _.bind(this._stylesheetsUpdated, this));
 		this._addListeners();

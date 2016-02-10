@@ -1,26 +1,39 @@
 var _ = require('underscore'),
 	util = require('util'),
 	EventEmitter = require('events'),
+	log = require('loglevel'),
 	processCSS = require('./css_parser').parseCSS;
 
-var ResourceTracker = function(chrome) {
+//log.setLevel('trace');
+
+var ResourceTracker = function(chrome, frame, initialResources) {
 	this._resources = {};
-	this._urlResourceIds = {};
+	this.frame = frame;
 	this.chrome = chrome;
-	this._initialize();
+	this._initialize(initialResources);
 };
 
 (function(My) {
 	var proto = My.prototype;
 
-	proto._initialize = function() {
+	proto._initialize = function(initialResources) {
 		var chrome = this._getChrome();
 
-		chrome.Network.enable();
+		_.each(initialResources, function(resource) {
+			this._requestWillBeSent(resource);
+		}, this);
 
 		this.$_requestWillBeSent = _.bind(this._requestWillBeSent, this);
+		this.$_responseReceived = _.bind(this._responseReceived, this);
 
 		chrome.Network.requestWillBeSent(this.$_requestWillBeSent);
+		chrome.Network.responseReceived(this.$_responseReceived);
+	};
+
+	proto.destroy = function() {
+		var chrome = this._getChrome();
+		chrome.removeListener('Network.requestWillBeSent', this.$_requestWillBeSent);
+		chrome.removeListener('Network.responseReceived', this.$_responseReceived);
 	};
 
 	proto._getChrome = function() {
@@ -28,12 +41,21 @@ var ResourceTracker = function(chrome) {
 	};
 
 	proto._requestWillBeSent = function(resource) {
-		var request = resource.request,
-			id = resource.requestId,
-			url = request.url;
+		if(resource.frameId === this._getFrameId()) {
+			var request = resource.request,
+				id = resource.requestId,
+				url = request.url;
 
-		this._resources[id] = resource;
-		this._urlResourceIds[url] = id;
+			this._resources[url] = resource;
+			log.debug('request will be sent ' + url);
+		}
+	};
+	proto._responseReceived = function(event) {
+		if(event.frameId === this._getFrameId()) {
+			var response = event.response;
+			this._resources[response.url] = response;
+			log.debug('response received ' + response.url);
+		}
 	};
 
 	proto._getResponseBody = function(requestId) {
@@ -52,8 +74,10 @@ var ResourceTracker = function(chrome) {
 		});
 	};
 
-	proto.getResource = function(tree, url) {
-		var resourceInfo = false;
+	proto.getResource = function(url) {
+		var frameId = this._getFrameId(),
+			chrome = this._getChrome();
+		/*
 		_.each(tree, function(frame) {
 			var resources = frame.resources;
 			_.each(resources, function(resource) {
@@ -62,20 +86,26 @@ var ResourceTracker = function(chrome) {
 				}
 			});
 		});
+		*/
 		return new Promise(_.bind(function(resolve, reject) {
-			var resourceId = this._urlResourceIds[url];
-			if(resourceId) {
-				resolve(this._getResponseBody(resourceId));
-			} else {
-				reject(new Error('Could not find resource "' + url + '"'));
-			}
-		}, this)).then(function(responseBody) {
+			chrome.Page.getResourceContent({
+				frameId: frameId,
+				url: url
+			}, function(err, val) {
+				if(err) {
+					reject(new Error('Could not find resource "' + url + '"'));
+				} else {
+					resolve(val);
+				}
+			});
+		}, this)).then(_.bind(function(responseBody) {
+			var resourceInfo = this._resources[url];
 			if(resourceInfo) {
 				var mimeType = resourceInfo.mimeType;
 				if(mimeType === 'text/css') {
 					//console.log(url);
 					//console.log(mimeType);
-					responseBody.body = processCSS(responseBody.body, url);
+					responseBody.content = processCSS(responseBody.content, url, frameId);
 				} else {
 					//console.log(url);
 					//console.log(mimeType);
@@ -84,13 +114,18 @@ var ResourceTracker = function(chrome) {
 					resourceInfo : resourceInfo
 				}, responseBody);
 			} else {
+				log.debug('No resource info for ' + url);
 				return responseBody;
 			}
-		});
+		}, this));
 	};
 
-	proto.hasResource = function(url) {
-		return _.has(this._urlResourceIds, url);
+	proto._getFrame = function() {
+		return this.frame;
+	};
+
+	proto._getFrameId = function() {
+		return this._getFrame().getFrameId();
 	};
 
 }(ResourceTracker));

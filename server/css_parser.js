@@ -4,21 +4,22 @@ var css = require('css'),
 
 var urlRegex = /((?:@import\s+)?url\s*\(['"]?)(\S*?)(['"]?\s*\))|(@import\s+['"]?)([^;'"]+)/ig;
 
-function processCSSURLs(str, url) {
+function processCSSURLs(str, url, frameId) {
 	return str.replace(urlRegex, function(m, arg1, arg2, arg3) {
 					var absoluteURL = URL.resolve(url, arg2),
 						relativeURL = URL.format({
 							pathname: 'r',
 							query: {
-								l: absoluteURL
+								l: absoluteURL,
+								f: frameId
 							}
 						});
 					return m.replace(arg2, relativeURL);
 				});
 }
 
-function parseCSS(cssStr, url) {
-	return processCSSURLs(cssStr, url);
+function parseCSS(cssStr, url, frameId) {
+	return processCSSURLs(cssStr, url, frameId);
 	/*
 	try {
 		var ast = css.parse(cssStr);

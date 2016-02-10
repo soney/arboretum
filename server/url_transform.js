@@ -7,7 +7,7 @@ var containsURLs = {
 	'a': {
 		'href': {
 			strategy: REFORMAT,
-			transform: function(url, baseURL) {
+			transform: function(url, baseURL, node) {
 				return 'javascript:void(0);';
 			}
 		}
@@ -16,23 +16,38 @@ var containsURLs = {
 	'body': {
 		'background': {
 			strategy: TRANSFORM,
-			transform: function(url, baseURL) {
-				return transformURL(url, baseURL);
+			transform: function(url, baseURL, node) {
+				return transformURL(url, baseURL, node);
 			}
 		}
+	},
+
+	'iframe': {
+		'src': {
+			strategy: TRANSFORM,
+			transform: function(url, baseURL, node) {
+				var childFrame = node.getChildFrame();
+				return URL.format({
+					pathname: 'f',
+					query: {
+						i: childFrame.getFrameId()
+					}
+				});
+			}
+		},
 	},
 
 	'img': {
 		'src': {
 			strategy: TRANSFORM,
-			transform: function(url, baseURL) {
-				return transformURL(url, baseURL);
+			transform: function(url, baseURL, node) {
+				return transformURL(url, baseURL, node);
 			}
 		},
 		'srcset': {
 			strategy: TRANSFORM,
-			transform: function(url, baseURL) {
-				return transformURL(url, baseURL);
+			transform: function(url, baseURL, node) {
+				return transformURL(url, baseURL, node);
 			}
 		}
 	},
@@ -40,8 +55,8 @@ var containsURLs = {
 	'link': {
 		'href': {
 			strategy: TRANSFORM,
-			transform: function(url, baseURL) {
-				return transformURL(url, baseURL);
+			transform: function(url, baseURL, node) {
+				return transformURL(url, baseURL, node);
 			}
 		}
 	},
@@ -49,19 +64,20 @@ var containsURLs = {
 	'form': {
 		'action': {
 			strategy: REFORMAT,
-			transform: function(url, baseURL) {
+			transform: function(url, baseURL, node) {
 				return '';
 			}
 		}
 	}
 };
 
-function transformURL(url, baseURL) {
+function transformURL(url, baseURL, node) {
 	var absoluteURL = URL.resolve(baseURL, url),
 		relativeURL = URL.format({
 			pathname: 'r',
 			query: {
-				l: absoluteURL
+				l: absoluteURL,
+				f: node.getFrameId()
 			}
 		});
 

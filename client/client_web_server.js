@@ -3,42 +3,86 @@ var express = require('express'),
 	path = require('path'),
 	tree_shadow = require('./tree_shadow'),
 	DOMTreeShadow = tree_shadow.DOMTreeShadow,
-	ShadowState = tree_shadow.ShadowState;
+	fs = require('fs'),
+	ShadowFrame = tree_shadow.ShadowFrame;
 
 module.exports = {
-	createWebServer: function(domState) {
+	createWebServer: function(pageState) {
 		var app = express(),
 			PORT = 3000;
 
 		return new Promise(function(resolve, reject) {
 			var server = app.use(express.static(path.join(__dirname, 'client_pages')))
 							.all('/r', function(req, res, next) {
-								var url = req.query.l;
-								domState.requestResource(url).then(function(val) {
+								var url = req.query.l,
+									frameId = req.query.f;
+
+								pageState.requestResource(url, frameId).then(function(val) {
 									var resourceInfo = val.resourceInfo;
 									if(resourceInfo) { res.set('Content-Type', resourceInfo.mimeType); }
 
 									if(val.base64Encoded) {
-										var bodyBuffer = new Buffer(val.body, 'base64');
+										var bodyBuffer = new Buffer(val.content, 'base64');
 										res.send(bodyBuffer);
 									} else {
-										res.send(val.body);
+										res.send(val.content);
 									}
 								}, function(err) {
+									if(err.stack) { console.error(err.stack); }
+									else { console.error(err); }
+
 									next();
 								});
 							})
+							.all('/f', function(req, res, next) {
+								var frameId = req.query.i;
+								procesFile(path.join(__dirname, 'client_pages', 'index.html'), function(contents) {
+									return contents.replace('frameId: false', 'frameId: "'+frameId+'"');
+								}).then(function(contents) {
+									res.send(contents);
+								});
+							})
+							//.all('favicon.ico', function(req, res, next) {
+								//pageState.requestResource('favicon.ico');
+							//})
 							.listen(PORT, function() {
 								resolve(PORT);
 							});
 			var io = socket(server);
 
 			io.on('connection', function (socket) {
-				var shadow = new ShadowState(domState, socket);
+				var shadow;
+
+				socket.on('setFrame', function(frameId) {
+					var frame;
+
+					if(frameId) {
+						frame = pageState.getFrame(frameId);
+					} else {
+						frame = pageState.getMainFrame()
+					}
+
+					shadow = new ShadowFrame(frame, socket);
+				});
 				socket.on('disconnect', function() {
-					shadow.destroy();
+					if(shadow) {
+						shadow.destroy();
+					}
 				});
 			});
 		});
 	}
 };
+
+function procesFile(filename, onContents) {
+	return new Promise(function(resolve, reject) {
+		fs.readFile(filename, {
+			encoding: 'utf8'
+		}, function(err, data) {
+			if(err) { reject(err); }
+			else { resolve(data); }
+		})
+	}).then(function(contents) {
+		return onContents(contents);
+	});
+}
