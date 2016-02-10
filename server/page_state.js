@@ -34,6 +34,7 @@ var PageState = function(chrome) {
 
 	proto._setMainFrame = function(frame) {
 		this._rootFrame = frame;
+		log.error(colors.red('Set main frame  ' + frame.getFrameId() ));
 		this.emit('mainFrameChanged');
 	};
 
@@ -169,7 +170,7 @@ var PageState = function(chrome) {
 			parentId: frameInfo.parentFrameId
 		}));
 
-		if(!frameInfo.parentId) {
+		if(!frameInfo.parentFrameId) {
 			this._setMainFrame(frameState);
 		}
 
