@@ -1,7 +1,6 @@
 var _ = require('underscore'),
 	util = require('util'),
 	EventEmitter = require('events'),
-	url = require('url'),
 	path = require('path'),
 	log = require('loglevel'),
 	urlTransform = require('./url_transform').urlTransform,
@@ -348,14 +347,19 @@ var WrappedDOMNode = function(options) {
 			str += '  ';
 		}
 		str += this._stringifySelf();
-		console.log(str);
-		_.each(this.getChildren(), function(child) {
-			child.print(level+1);
-		});
 		var childFrame = this.getChildFrame();
+
+		if(childFrame) {
+			str += ' ('+childFrame.getFrameId()+')';
+		}
+		console.log(str);
+
 		if(childFrame) {
 			childFrame.print(level+1);
 		}
+		_.each(this.getChildren(), function(child) {
+			child.print(level+1);
+		});
 
 		return this;
 	};

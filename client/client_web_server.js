@@ -52,6 +52,12 @@ module.exports = {
 
 			io.on('connection', function (socket) {
 				var shadow;
+				function onMainFrameChanged() {
+					if(shadow) {
+						shadow.setFrame(pageState.getMainFrame())
+					}
+				}
+
 
 				socket.on('setFrame', function(frameId) {
 					var frame;
@@ -59,12 +65,15 @@ module.exports = {
 					if(frameId) {
 						frame = pageState.getFrame(frameId);
 					} else {
-						frame = pageState.getMainFrame()
+						frame = pageState.getMainFrame();
+						pageState.on('mainFrameChanged', onMainFrameChanged);
 					}
 
 					shadow = new ShadowFrame(frame, socket);
 				});
 				socket.on('disconnect', function() {
+					pageState.removeListener('mainFrameChanged', onMainFrameChanged);
+
 					if(shadow) {
 						shadow.destroy();
 					}

@@ -1,12 +1,7 @@
 var _ = require('underscore'),
 	util = require('util'),
 	EventEmitter = require('events'),
-	url = require('url'),
-	path = require('path'),
 	log = require('loglevel'),
-	urlTransform = require('./url_transform').urlTransform,
-	processCSS = require('./css_parser').parseCSS,
-	processCSSURLs = require('./css_parser').processCSSURLs,
 	FrameState = require('./frame_state').FrameState
 	colors = require('colors/safe');
 
@@ -17,37 +12,6 @@ var PageState = function(chrome) {
 	this._rootFrame = false;
 	this._frames = {};
 
-	/*
-
-	this._styleSheets = {};
-	this._nodeMap = {};
-
-	this._resourceTracker = new ResourceTracker(this._getChrome());
-
-	chrome.Page.loadEventFired(_.bind(function() {
-		log.debug('Load event fired');
-		//this.getRoot();
-		//this.refreshRoot();
-	}, this));
-
-	this._queuedEvents = [];
-
-	this.refreshRoot();
-	this._addListeners();
-
-	//this._addStyleSheetListeners();
-	/*
-	chrome.CSS.enable();
-	chrome.CSS.styleSheetAdded(function() {
-		console.log(arguments);
-	});
-	chrome.CSS.styleSheetRemoved(function() {
-		console.log(arguments);
-	});
-	chrome.CSS.styleSheetChanged(function() {
-		console.log(arguments);
-	});
-	*/
 	this._initialized = this._initialize();
 };
 
@@ -66,6 +30,11 @@ var PageState = function(chrome) {
 
 	proto.getMainFrame = function() {
 		return this._rootFrame;
+	};
+
+	proto._setMainFrame = function(frame) {
+		this._rootFrame = frame;
+		this.emit('mainFrameChanged');
 	};
 
 	proto._initialize = function() {
@@ -117,7 +86,7 @@ var PageState = function(chrome) {
 		chrome.Page.enable();
 		return this._getResourceTree().then(_.bind(function(tree){
 			var frameTree = tree.frameTree;
-			this._rootFrame = this._createFrame(frameTree);
+			this._createFrame(frameTree);
 
 			chrome.Page.frameAttached(this.$_onFrameAttached);
 			chrome.Page.frameDetached(this.$_onFrameDetached);
@@ -128,7 +97,7 @@ var PageState = function(chrome) {
 		var frameId = frameInfo.frameId,
 			parentFrameId = frameInfo.parentFrameId;
 
-		log.debug(colors.red('Frame attached ') + frameId + ' (parent: ' + parentFrameId + ')');
+		log.error(colors.red('Frame attached  ' + frameId ) + ' (parent: ' + parentFrameId + ')');
 
 		this._createEmptyFrame(frameInfo);
 	};
@@ -137,7 +106,7 @@ var PageState = function(chrome) {
 			frameId = frame.id,
 			frameUrl = frame.url;
 
-		log.debug(colors.red('Frame navigated ' + frameId + ' ') + frameUrl);
+		log.error(colors.red('Frame navigated ' + frameId + ' ') + frameUrl);
 
 		var frame;
 		if(this._hasFrame(frameId)) {
@@ -151,7 +120,7 @@ var PageState = function(chrome) {
 	proto._onFrameDetached = function(frameInfo) {
 		var frameId = frameInfo.frameId;
 
-		log.debug(colors.red('Frame detached ') + frameId);
+		log.error(colors.red('Frame detached ') + frameId);
 
 		this._destroyFrame(frameId);
 	};
@@ -170,11 +139,17 @@ var PageState = function(chrome) {
 			frame = frameInfo.frame,
 			frameId = frame.id;
 
+		log.error(colors.red('Frame created ' + frameId + ' '));
+
 		var frameState = this._frames[frameId] = new FrameState(_.extend({
 			chrome: this._getChrome(),
 			resources: resources,
 			page: this
 		}, frame));
+
+		if(!frame.parentId) {
+			this._setMainFrame(frameState);
+		}
 
 		_.each(childFrames, function(childFrame) {
 			this._createFrame(childFrame);
@@ -193,6 +168,10 @@ var PageState = function(chrome) {
 			page: this,
 			parentId: frameInfo.parentFrameId
 		}));
+
+		if(!frameInfo.parentId) {
+			this._setMainFrame(frameState);
+		}
 
 		return frameState;
 	};
@@ -213,373 +192,6 @@ var PageState = function(chrome) {
 	proto.summarize = function() {
 		return this._rootFrame.summarize();
 	};
-	/*
-
-	proto.print = function() {
-		this.getRoot().then(function(root) {
-			root.print();
-		});
-	};
-
-	proto.refreshRoot = function() {
-		var wasRefreshingRoot = this._refreshingRoot;
-
-		if(!this._refreshingRoot) {
-			this._refreshingRoot = true;
-		}
-
-		var promise;
-
-		if(this._rootPromise) {
-			promise = this._rootPromise.then(_.bind(function(root) {
-				root.destroy();
-			}, this)).then(_.bind(function() {
-				delete this._rootPromise;
-				this.emit('rootInvalidated');
-			}, this)).then(_.bind(function() {
-				return this.getRoot();
-			}, this));
-		} else {
-			promise = this.getRoot();
-		}
-
-		return promise.then(_.bind(function() {
-					if(!wasRefreshingRoot) {
-						var eventInfo;
-						var oldLength = this._queuedEvents.length;
-						delete this._refreshingRoot;
-						while(eventInfo = this._queuedEvents.shift()) {
-							this._handleEvent(eventInfo);
-						}
-						log.debug('Finished ' + oldLength + ' queued events');
-					}
-				}, this)).catch(function(err) {
-					if(err.stack) { console.error(err.stack); }
-					else { console.error(err); }
-				});
-	};
-
-
-	proto.getStyleSheets = function() {
-		var sheets = _.values(this._styleSheets);
-
-		return Promise.all(sheets).then(function(texts) {
-			return texts;
-		});
-	};
-
-	proto._getResourceTree = function() {
-		var chrome = this._getChrome();
-
-		return new Promise(function(resolve, reject) {
-			chrome.Page.getResourceTree({}, function(err, val) {
-				if(err) { reject(val); }
-				else { resolve(val); }
-			});
-		});
-	};
-
-	var urlStrategies = [
-		function(frameUrl, resourceUrl) {
-			return resourceUrl;
-		},
-		function(frameUrl, resourceUrl) {
-			return url.resolve(frameUrl, resourceUrl);
-		},
-		function(frameUrl, resourceUrl) {
-			var lastSlash = frameUrl.lastIndexOf('/'),
-				frameBase = frameUrl.substr(0, lastSlash);
-
-			return frameBase + resourceUrl;
-		},
-	];
-
-	proto.requestResource = function(resourceUrl) {
-		var resourceTracker = this._resourceTracker;
-
-		return this._getResourceTree().then(_.bind(function(tree) {
-			var frameTree = tree.frameTree,
-				mappedResourceUrl = false;
-
-			_.each(frameTree, function(frame) {
-				var frameUrl = frame.url,
-					candidateUrl;
-
-				if(frameUrl) {
-					_.each(urlStrategies, function(urlStrategy) {
-						candidateUrl = urlStrategy(frameUrl, resourceUrl);
-
-						if(resourceTracker.hasResource(candidateUrl)) {
-							mappedResourceUrl = candidateUrl;
-						}
-					});
-				}
-			});
-
-			if(!mappedResourceUrl) {
-				mappedResourceUrl = resourceUrl;
-			}
-
-			return resourceTracker.getResource(tree, mappedResourceUrl);
-		}, this)).catch(function(err) {
-			if(err.stack) { console.error(err.stack); }
-			else { console.error(err); }
-		});
-	};
-
-*/
-/*
-	proto._addStyleSheetListeners = function() {
-		var chrome = this._getChrome();
-
-		var notifyStylesheetInvalidation = _.debounce(_.bind(this._notifyStylesheetInvalidation, this), 500);
-
-		chrome.CSS.styleSheetAdded(_.bind(function(sheets) {
-			_.each(sheets, function(stylesheet) {
-				var id = stylesheet.styleSheetId;
-				this._styleSheets[id] = this._requestStylesheetText(id);
-			}, this);
-			notifyStylesheetInvalidation();
-		}, this));
-
-		chrome.CSS.styleSheetRemoved(_.bind(function(sheetInfo) {
-			delete this._styleSheets[sheetInfo.styleSheetId];
-			notifyStylesheetInvalidation();
-		}, this));
-
-		chrome.CSS.styleSheetChanged(_.bind(function(sheetInfo) {
-			var id = sheetInfo.stlyeSheetId;
-			this._styleSheets[id] = this._requestStylesheetText(id);
-			notifyStylesheetInvalidation();
-		}, this));
-
-		chrome.DOM.enable(function(err, val) {
-			if(err) { reject(val); }
-		});
-		chrome.CSS.enable(function(err, val) {
-			if(err) { reject(val); }
-		});
-
-		setTimeout(_.bind(function() {
-			this.getStyleSheets();
-		}, this), 2000);
-	};
-
-	proto._notifyStylesheetInvalidation = function() {
-		this.emit('styleSheetsInvalidated');
-	};
-
-	proto.getStyleSheet = function(id) {
-		if(_.has(this._styleSheets, id)) {
-			return this._styleSheets[id];
-		} else {
-			return new Promise(function(resolve, reject) {
-				reject(new Error('No stylesheet with id ' + id + ' found.'));
-			});
-		}
-	};
-
-	proto._requestStylesheetText = function(id) {
-		var chrome = this._getChrome();
-		return new Promise(function(resolve, reject) {
-			chrome.CSS.getStyleSheetText({
-				styleSheetId: id
-			}, function(err, val) {
-				if(err) {
-					reject(val);
-				} else {
-					resolve(val.text);
-				}
-			});
-		});
-	};
-	/*
-
-
-	proto._invalidateRoot = function() {
-		if(this._rootPromise) {
-			this._rootPromise.then(_.bind(function(root) {
-				root.destroy();
-			}, this)).then(_.bind(function() {
-				delete this._rootPromise;
-				this.emit('rootInvalidated');
-			}, this)).then(_.bind(function() {
-				this.getRoot();
-			}, this));
-		} else {
-			this.emit('rootInvalidated');
-		}
-	};
-
-*/
-/*
-	proto.highlight = function(nodeId) {
-		var chrome = this._getChrome();
-
-		return new Promise(function(resolve, reject) {
-			chrome.DOM.highlightNode({
-				nodeId: nodeId,
-				highlightConfig: {
-					borderColor: {
-						r: 255,
-						g: 0,
-						b: 0,
-						a: 1
-					},
-					contentColor: {
-						r: 255,
-						g: 0,
-						b: 0,
-						a: 0.5
-					},
-					showInfo: true
-				}
-			}, function(err, value) {
-				if(err) {
-					reject(value);
-				} else {
-					resolve(value);
-				}
-			});
-		});
-	};
-
-	proto.removeHighlight = function(nodeId) {
-		var chrome = this._getChrome();
-
-		return new Promise(function(resolve, reject) {
-			chrome.DOM.hideHighlight({
-				nodeId: nodeId
-			}, function(err, value) {
-				if(err) {
-					reject(value);
-				} else {
-					resolve(value);
-				}
-			});
-		});
-	};
-
-	proto._setChildrenRecursive = function(parentNode, children) {
-		return parentNode._setChildren(_.map(children, function(child) {
-			return this._setChildrenRecursive(this._getWrappedDOMNode(child), child.children);
-		}, this));
-	};
-
-	proto._getWrappedDOMNode = function(node) {
-		var id = node.nodeId;
-		if(this._hasWrappedDOMNodeWithID(id)) {
-			return this._getWrappedDOMNodeWithID(id);
-		} else {
-			var node = new WrappedDOMNode({
-				node: node,
-				chrome: this._getChrome(),
-				state: this
-			});
-			node.once('destroyed', _.bind(function() {
-				this._removeWrappedNode(node);
-			}, this));
-			return this._nodeMap[id] = node;
-		}
-	};
-
-	proto._hasWrappedDOMNodeWithID = function(id) {
-		return this._nodeMap.hasOwnProperty(id);
-	};
-
-	proto._getWrappedDOMNodeWithID = function(id) {
-		return this._nodeMap[id];
-	};
-
-	proto._removeWrappedNode = function(node) {
-		var id = node.getId();
-		if(this._hasWrappedDOMNodeWithID(id)) {
-			//var wrappedNode = this._getWrappedDOMNodeWithID(id);
-			//wrappedNode.destroy();
-			delete this._nodeMap[id];
-		}
-	};
-
-
-	proto._requestChildNodes = function(wrappedNode) {
-		var chrome = this._getChrome();
-		return new Promise(function(resolve, reject) {
-			chrome.DOM.requestChildNodes({
-				nodeId: wrappedNode.getId(),
-				depth: -1
-			}, function(err, val) {
-				if(err) {
-					reject(val);
-				} else {
-					resolve(wrappedNode);
-				}
-			})
-		});
-	};
-
-	proto._requestNode = function(node_id) {
-		var chrome = this._getChrome();
-		return new Promise(function(resolve, reject) {
-			chrome.DOM.resolveNode({
-				nodeId: node_id
-			}, function(err, val) {
-				if(err) {
-					reject(val);
-				} else {
-					resolve(val.object);
-				}
-			});
-		}).then(function(nodeInfo) {
-			return new Promise(function(resolve, reject) {
-				chrome.DOM.requestNode({
-					objectId: nodeInfo.objectId
-				}, function(err, val) {
-					if(err) {
-						reject(val);
-					} else {
-						resolve(val);
-					}
-				});
-			});
-		});
-	};
-
-	*/
-	/*
-	proto.getRoot = function() {
-		var chrome = this._getChrome();
-
-		if(!this._rootPromise) {
-			this._rootPromise = new Promise(function(resolve, reject) {
-				chrome.DOM.getDocument(function(err, val) {
-					if(err) {
-						reject(val);
-					} else {
-						resolve(val);
-					}
-				});
-			}).then(function(doc) {
-				return doc.root;
-			}).then(_.bind(function(rootNode) {
-				var root = this._getWrappedDOMNode(rootNode);
-				this._setChildrenRecursive(root, rootNode.children);
-				return root;
-			}, this)).then(_.bind(function(root) {
-				return this._requestChildNodes(root);
-			}, this)).then(_.bind(function(root) {
-				this.emit('documentUpdated');
-				return root;
-			}, this)).catch(function(err) {
-				if(err.stack) { console.error(err.stack); }
-				else { console.error(err); }
-			});
-		}
-
-		return this._rootPromise;
-	};
-	*/
-
-	//proto._hasWrappedDOMNodeWithID = function(id) {
 	proto._onSetChildNodes = function(event) {
 		var parentId = event.parentId,
 			foundFrame = false;

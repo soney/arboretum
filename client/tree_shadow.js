@@ -21,7 +21,7 @@ var ShadowFrame = function(domTree, socket) {
 		this.$_highlightNode = _.bind(this._highlightNode, this);
 		this.$_removeHighlight = _.bind(this._removeHighlight, this);
 
-		domTree.on('rootInvalidated', this.$_updateShadowTree);
+		this._addListeners();
 		//domTree.on('styleSheetsInvalidated', this.$_updateSheets);
 		socket.on('highlightNode', this.$_highlightNode);
 		socket.on('removeHighlight', this.$_removeHighlight);
@@ -32,6 +32,16 @@ var ShadowFrame = function(domTree, socket) {
 		this.on('updated', function() {
 			socket.emit('treeUpdated', this._shadowTree.serialize());
 		});
+	};
+	proto._addListeners = function() {
+		var domTree = this._getDomTree();
+		domTree.on('rootInvalidated', this.$_updateShadowTree);
+	};
+	proto.setFrame = function(frame) {
+		this._removeListeners();
+		this.domTree = frame;
+		this._addListeners();
+		this._updateShadowTree();
 	};
 	proto._getDomTree = function() {
 		return this.domTree;
@@ -46,12 +56,14 @@ var ShadowFrame = function(domTree, socket) {
 			this._shadowTree.destroy();
 		}
 		var node = domTree.getRoot();
-		var shadow = this._shadowTree = new DOMTreeShadow({
-			tree: node,
-			state: this
-		});
+		if(node) {
+			var shadow = this._shadowTree = new DOMTreeShadow({
+				tree: node,
+				state: this
+			});
 
-		socket.emit('treeReady', shadow.serialize());
+			socket.emit('treeReady', shadow.serialize());
+		}
 	};
 	/*
 	proto._updateSheets = function() {
@@ -64,6 +76,11 @@ var ShadowFrame = function(domTree, socket) {
 		});
 	};
 	*/
+	proto._removeListeners = function() {
+		var domTree = this._getDomTree();
+		domTree.removeListener('rootInvalidated', this.$_updateShadowTree);
+	};
+
 	proto.destroy = function() {
 		var domTree = this._getDomTree(),
 			socket = this._getSocket();
@@ -72,7 +89,8 @@ var ShadowFrame = function(domTree, socket) {
 			this._shadowTree.destroy();
 		}
 
-		domTree.removeListener('rootInvalidated', this.$_updateShadowTree);
+		this._removeListeners();
+
 		//domTree.removeListener('styleSheetsInvalidated', this.$_updateSheets);
 		socket.removeListener('highlightNode', this.$_highlightNode);
 		socket.removeListener('removeHighlight', this.$_removeHighlight);
@@ -159,6 +177,10 @@ var DOMTreeShadow = function(options) {
 			}
 		}
 	}, options);
+
+	if(!this.options.tree) {
+		throw new Error('No Tree');
+	}
 
 	this._attributes = {};
 	this._inlineCSS = '';
@@ -283,7 +305,9 @@ var DOMTreeShadow = function(options) {
 	};
 
 	proto.getNode = function() {
-		return this.getTree()._getNode();
+		var tree = this.getTree();
+		var node = tree._getNode();
+		return node;
 	};
 
 
