@@ -9,12 +9,18 @@ $.widget('arboretum.tree_state', {
 		socket.emit('setFrame', this.option('frameId'));
 
 		socket.on('treeReady', _.bind(this._treeReady, this));
+		socket.on('frameChanged', _.bind(this._frameChanged, this));
 		//socket.on('styleSheetsUpdated', _.bind(this._stylesheetsUpdated, this));
 		this._addListeners();
 	},
 	_destroy: function() {
 		this.element.tree_node('destroy');
 		this._removeListeners();
+	},
+	_frameChanged: function() {
+		if(this.element.data('arboretum-tree_node')) {
+			this.element.tree_node('destroy');
+		}
 	},
 	_treeReady: function(data) {
 		//var styleElement = $('style');

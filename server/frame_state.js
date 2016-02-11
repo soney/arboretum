@@ -168,14 +168,7 @@ var FrameState = function(options) {
 		} else {
 			log.debug('Child Count Updated');
 			var node = this._getWrappedDOMNodeWithID(event.nodeId);
-			if(node) {
-				node._childCountUpdated(event.childNodeCount);
-
-				var page = this.getPage();
-				page.requestChildNodes(node.getId(), -1);
-			} else {
-				this._requestNode(event.nodeId);
-			}
+			node._childCountUpdated(event.childNodeCount);
 		}
 	};
 

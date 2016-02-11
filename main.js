@@ -92,6 +92,8 @@ function startAll() {
 		console.log('Chromium started');
 		return startServer(chromePort);
 	}).then(function(info) {
+		return wait(2000, info);
+	}).then(function(info) {
 		serverInfo = info;
 		return startChrome({
 			appName: 'Google Chrome Canary',
@@ -119,7 +121,11 @@ function startServer(chromePort) {
 	}).then(function(c) {
 		chrome = c;
 		//return serverDriver.navigate(chrome, 'file:///Users/soney/dev/arboretum/test/index.html');
-		return serverDriver.navigate(chrome, 'http://umich.edu/');
+		//return serverDriver.navigate(chrome, 'http://umich.edu/');
+		//return serverDriver.navigate(chrome, 'http://caltech.edu/');
+		return serverDriver.navigate(chrome, 'http://google.com/');
+		//return serverDriver.navigate(chrome, 'http://ucla.edu/');
+		//return serverDriver.navigate(chrome, 'http://gawker.com/');
 	}).then(function() {
 		return serverDriver.getDocument(chrome);
 	}).then(function(d) {
@@ -166,11 +172,19 @@ function startChrome(options) {
 			if(err) {
 				reject(err);
 			} else {
-				setTimeout(function() {
-					resolve(options.port);
-				}, 500);
+				resolve(options.port);
 			}
 		});
+	}).then(function(port) {
+		return wait(500, port);
+	});
+}
+
+function wait(ms, val) {
+	return new Promise(function(resolve) {
+		setTimeout(function() {
+			resolve(val);
+		}, ms);
 	});
 }
 

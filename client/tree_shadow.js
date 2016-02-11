@@ -38,6 +38,8 @@ var ShadowFrame = function(domTree, socket) {
 		domTree.on('rootInvalidated', this.$_updateShadowTree);
 	};
 	proto.setFrame = function(frame) {
+		var socket = this._getSocket();
+		socket.emit('frameChanged');
 		this._removeListeners();
 		this.domTree = frame;
 		this._addListeners();
@@ -167,10 +169,11 @@ var DOMTreeShadow = function(options) {
 		},
 		childFilterFunction: function(child) {
 			var node = child._getNode(),
-				nodeName = node.nodeName;
+				nodeName = node.nodeName,
+				nodeType = node.nodeType;
 			if(/*nodeName === 'STYLE' || */nodeName === 'SCRIPT' ||
 				nodeName === '#comment'/* || nodeName === 'LINK'*/ ||
-				nodeName === 'BASE') {
+				nodeName === 'BASE' || nodeType === 10) {
 				return false;
 			} else {
 				return true;

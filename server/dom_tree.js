@@ -26,6 +26,30 @@ var WrappedDOMNode = function(options) {
 		return this.frame;
 	};
 
+	proto._initializeLongString = function() {
+		var node = this._getNode(),
+			nodeType = node.nodeType,
+			nodeValue = node.nodeValue;
+
+		return new Promise(_.bind(function(resolve, reject) {
+			if(nodeType === 3 && nodeValue && nodeValue.endsWith('…')) {
+				var chrome = this._getChrome();
+				this.chrome.DOM.getOuterHTML({
+					nodeId: this.node.nodeId
+				}, function(err, value) {
+					if(err) {
+						reject(value);
+					} else {
+						var outerHTML = value.outerHTML;
+						node.nodeValue = outerHTML;
+					}
+				})
+			} else {
+				resolve(nodeValue);
+			}
+		}, this));
+	}
+
 	proto._initializeAttributesMap = function() {
 		var node = this._getNode(),
 			attributes = node.attributes,
@@ -99,8 +123,9 @@ var WrappedDOMNode = function(options) {
 		}
 
 		this._initializeAttributesMap();
+		var longStringInitialization = this._initializeLongString();
 
-		return Promise.all([inlineStylePromise]);
+		return Promise.all([inlineStylePromise, longStringInitialization]);
 	};
 	proto.getChildFrame = function() {
 		return this.childFrame;
@@ -205,7 +230,8 @@ var WrappedDOMNode = function(options) {
 	};
 
 	proto._childCountUpdated = function(count) {
-		var node = this._getNode();
+		var page = this._getPage();
+		page.requestChildNodes(this.getId(), -1);
 	};
 
 	proto._getMatchedStyles = function() {
@@ -267,7 +293,7 @@ var WrappedDOMNode = function(options) {
 					nodeId: id
 				}, function(err, value) {
 					if(err) {
-						reject(value);
+						reject(new Error('Could not find node ' + id));
 					} else {
 						resolve(value.inlineStyle);
 					}

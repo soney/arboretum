@@ -127,7 +127,11 @@ $.widget('arboretum.tree_node', {
 
 		var oldAttributeKeys = _.keys(previousAttributes);
 		_.each(attributes, function(val, key) {
-			this.element.attr(key, val);
+			try {
+				this.element.attr(key, val);
+			} catch(e) {
+				console.error(e);
+			}
 		}, this);
 		_.each(_.keys(previousAttributes), function(key) {
 			if(!_.has(attributes, key)) {
