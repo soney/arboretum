@@ -9,6 +9,7 @@ $.widget('arboretum.tree_node', {
 		state: false,
 	},
 	_create: function() {
+		this.initialChildren = this.element.children();
 		this._initialize(this.option('node'));
 	},
 	_initialize: function(data) {
@@ -92,6 +93,8 @@ $.widget('arboretum.tree_node', {
 				} else {
 					throw new Error('Could not find node');
 				}
+			} else if(this.initialChildren.length > 0) {
+				this.initialChildren.last().after(childElem);
 			} else {
 				children.unshift(child);
 				this.element.prepend(childElem);
@@ -113,7 +116,7 @@ $.widget('arboretum.tree_node', {
 		var previousChildren = this.option('children');
 		this.option('children', children);
 
-		this.element.children().remove();
+		this.element.children().not(this.initialChildren).remove();
 		this._initializeChildren(children);
 	},
 	setAttributes: function(attributes, inlineStyle) {

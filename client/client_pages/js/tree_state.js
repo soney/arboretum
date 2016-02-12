@@ -28,6 +28,19 @@ $.widget('arboretum.tree_state', {
 		if(this.element.data('arboretum-tree_node')) {
 			this.element.tree_node('destroy');
 		}
+
+		if(data.type === 9 && data.children.length === 1 && data.children[0].name === 'HTML') { //document
+			this.element.children().remove();
+			this.element.tree_node(_.extend({
+				state: this
+			}, data.children[0]));
+		} else {
+			var body = $('<body/>').appendTo(this.element);
+			var div = $('<div />').appendTo(body).tree_node(_.extend({
+				state: this
+			}, data));
+		}
+		/*
 		var selectedChild = data;
 		console.log(selectedChild);
 		/*
