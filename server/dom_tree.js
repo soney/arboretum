@@ -66,6 +66,14 @@ var WrappedDOMNode = function(options) {
 				i+=2;
 			}
 		}
+
+		var tagName = this._getTagName().toLowerCase();
+		if(tagName === 'iframe') {
+			if(!this._attributes.src) {
+				this._attributes.src = this._transformAttribute('', 'src')
+			}
+		}
+
 		return Promise.all(attrPromises);
 	};
 
@@ -189,12 +197,20 @@ var WrappedDOMNode = function(options) {
 
 	proto._setAttribute = function(name, value) {
 		var node = this._getNode();
+		if(!node.attributes) {
+			log.error('Could not set node attributes');
+		}
 		node.attributes.push(name, value);
 
 		this._attributes[name] = this._transformAttribute(value, name);
 	};
 
 	proto._removeAttribute = function(name) {
+		var tagName = this._getTagName().toLowerCase();
+		if(tagName === 'iframe' && name === 'src') {
+			return;
+		}
+
 		var node = this._getNode();
 		var attributeIndex = _.indexOf(node.attributes, name);
 		if(attributeIndex >= 0) {

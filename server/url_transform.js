@@ -1,7 +1,8 @@
 //http://stackoverflow.com/questions/2725156/complete-list-of-html-tag-attributes-which-have-a-url-value
 var URL = require('url'),
 	srcset = require('srcset'),
-	_ = require('underscore');
+	_ = require('underscore'),
+	log = require('loglevel');
 
 var TRANSFORM = 'transform',
 	REFORMAT = 'reformat';
@@ -30,12 +31,16 @@ var containsURLs = {
 			strategy: TRANSFORM,
 			transform: function(url, baseURL, node) {
 				var childFrame = node.getChildFrame();
-				return URL.format({
-					pathname: 'f',
-					query: {
-						i: childFrame.getFrameId()
-					}
-				});
+				if(childFrame) {
+					return URL.format({
+						pathname: 'f',
+						query: {
+							i: childFrame.getFrameId()
+						}
+					});
+				} else {
+					log.error('No child frame');
+				}
 			}
 		},
 	},
@@ -56,6 +61,12 @@ var containsURLs = {
 	},
 
 	'source': {
+		'src': {
+			strategy: TRANSFORM,
+			transform: function(url, baseURL, node) {
+				return transformURL(url, baseURL, node);
+			}
+		},
 		'srcset': {
 			strategy: TRANSFORM,
 			transform: function(url, baseURL, node) {

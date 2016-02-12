@@ -92,7 +92,7 @@ function startAll() {
 		console.log('Chromium started');
 		return startServer(chromePort);
 	}).then(function(info) {
-		return wait(2000, info);
+		return wait(0, info);
 	}).then(function(info) {
 		serverInfo = info;
 		return startChrome({
@@ -121,9 +121,12 @@ function startServer(chromePort) {
 	}).then(function(c) {
 		chrome = c;
 		//return serverDriver.navigate(chrome, 'file:///Users/soney/dev/arboretum/test/index.html');
+		//return serverDriver.navigate(chrome, 'http://localhost:8000/');
+		//return serverDriver.navigate(chrome, 'http://www.w3schools.com/tags/tryit.asp?filename=tryhtml5_video');
 		//return serverDriver.navigate(chrome, 'http://umich.edu/');
-		//return serverDriver.navigate(chrome, 'http://caltech.edu/');
-		return serverDriver.navigate(chrome, 'http://google.com/');
+		return serverDriver.navigate(chrome, 'http://caltech.edu/');
+		//return serverDriver.navigate(chrome, 'http://cmu.edu/');
+		//return serverDriver.navigate(chrome, 'http://google.com/');
 		//return serverDriver.navigate(chrome, 'http://ucla.edu/');
 		//return serverDriver.navigate(chrome, 'http://gawker.com/');
 	}).then(function() {

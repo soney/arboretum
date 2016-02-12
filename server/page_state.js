@@ -19,6 +19,15 @@ var PageState = function(chrome) {
 	util.inherits(My, EventEmitter);
 	var proto = My.prototype;
 
+	proto.getURL = function() {
+		var mainFrame = this.getMainFrame();
+		if(mainFrame) {
+			return mainFrame.getURL();
+		} else {
+			return '';
+		}
+	};
+
 	proto.isInitialized = function() {
 		return this._initialized;
 	};

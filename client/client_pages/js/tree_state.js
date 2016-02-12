@@ -29,10 +29,13 @@ $.widget('arboretum.tree_state', {
 			this.element.tree_node('destroy');
 		}
 		var selectedChild = data;
+		console.log(selectedChild);
+		/*
 
 		this.element.tree_node(_.extend({
 			state: this
 		}, selectedChild));
+		*/
 	},
 	/*
 	_stylesheetsUpdated: function(event) {

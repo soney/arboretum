@@ -1,7 +1,9 @@
 var express = require('express'),
 	socket = require('socket.io'),
 	path = require('path'),
+	request = require('request'),
 	tree_shadow = require('./tree_shadow'),
+	_ = require('underscore'),
 	DOMTreeShadow = tree_shadow.DOMTreeShadow,
 	fs = require('fs'),
 	ShadowFrame = tree_shadow.ShadowFrame;
@@ -28,10 +30,22 @@ module.exports = {
 										res.send(val.content);
 									}
 								}, function(err) {
-									if(err.stack) { console.error(err.stack); }
-									else { console.error(err); }
-
-									next();
+									req.pipe(request[req.method.toLowerCase().replace('del', 'delete')](url))
+										.pipe(res);
+									/*
+									var baseURL = pageState.getURL();
+									var headers = _.extend({}, req.headers, {
+										referer: baseURL
+									});
+									var newRequest = request({
+										method: req.method,
+										uri: url,
+										headers: headers,
+										timeout: 5000
+									}).on('error', function(err) {
+										next();
+									}).pipe(res);
+									*/
 								});
 							})
 							.all('/f', function(req, res, next) {
