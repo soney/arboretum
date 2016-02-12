@@ -4,7 +4,7 @@ var _ = require('underscore'),
 	log = require('loglevel'),
 	processCSS = require('./css_parser').parseCSS;
 
-//log.setLevel('trace');
+log.setLevel('trace');
 
 var ResourceTracker = function(chrome, frame, initialResources) {
 	this._resources = {};
@@ -22,18 +22,10 @@ var ResourceTracker = function(chrome, frame, initialResources) {
 		_.each(initialResources, function(resource) {
 			this._requestWillBeSent(resource);
 		}, this);
-
-		this.$_requestWillBeSent = _.bind(this._requestWillBeSent, this);
-		this.$_responseReceived = _.bind(this._responseReceived, this);
-
-		chrome.Network.requestWillBeSent(this.$_requestWillBeSent);
-		chrome.Network.responseReceived(this.$_responseReceived);
 	};
 
 	proto.destroy = function() {
 		var chrome = this._getChrome();
-		chrome.removeListener('Network.requestWillBeSent', this.$_requestWillBeSent);
-		chrome.removeListener('Network.responseReceived', this.$_responseReceived);
 	};
 
 	proto._getChrome = function() {

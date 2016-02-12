@@ -5,12 +5,14 @@ var _ = require('underscore'),
 	FrameState = require('./frame_state').FrameState
 	colors = require('colors/safe');
 
-//log.setLevel('debug');
+log.setLevel('error');
 
 var PageState = function(chrome) {
 	this.chrome = chrome;
 	this._rootFrame = false;
 	this._frames = {};
+
+	this._pendingFrameEvents = {};
 
 	this._initialized = this._initialize();
 };
@@ -49,10 +51,11 @@ var PageState = function(chrome) {
 
 	proto._initialize = function() {
 		var chrome = this._getChrome();
-		chrome.Network.enable();
 
 		return  this._addFrameListeners().then(_.bind(function() {
 			return this._addDOMListeners();
+		}, this)).then(_.bind(function() {
+			return this._addNetworkListeners();
 		}, this)).catch(function(err) {
 			if(err.stack) { console.error(err.stack); }
 			else { console.error(err); }
@@ -85,6 +88,58 @@ var PageState = function(chrome) {
 				}
 			});
 		});
+	};
+
+	proto._addNetworkListeners = function() {
+		var chrome = this._getChrome();
+		chrome.Network.enable();
+
+		this.$_requestWillBeSent = _.bind(this._requestWillBeSent, this);
+		this.$_responseReceived = _.bind(this._responseReceived, this);
+
+		chrome.Network.requestWillBeSent(this.$_requestWillBeSent);
+		chrome.Network.responseReceived(this.$_responseReceived);
+	};
+
+	proto._requestWillBeSent = function(resource) {
+		var frameId = resource.frameId;
+		var frame = this.getFrame(frameId);
+		if(frame) {
+			var resourceTracker = frame.getResourceTracker();
+			resourceTracker._requestWillBeSent(resource);
+		} else {
+			var pendingFrameEvents = this._pendingFrameEvents[frameId];
+			var eventInfo = {
+				event: resource,
+				type: 'requestWillBeSent'
+			};
+			if(pendingFrameEvents) {
+				pendingFrameEvents.push(eventInfo);
+			} else {
+				this._pendingFrameEvents[frameId] = [eventInfo];
+			}
+			//log.error('Could not find frame ' + frameId);
+		}
+	};
+	proto._responseReceived = function(event) {
+		var frameId = event.frameId;
+		var frame = this.getFrame(frameId);
+		if(frame) {
+			var resourceTracker = frame.getResourceTracker();
+			resourceTracker._responseReceived(event);
+		} else {
+			var pendingFrameEvents = this._pendingFrameEvents[frameId];
+			var eventInfo = {
+				event: event,
+				type: 'responseReceived'
+			};
+			if(pendingFrameEvents) {
+				pendingFrameEvents.push(eventInfo);
+			} else {
+				this._pendingFrameEvents[frameId] = [eventInfo];
+			}
+			//log.error('Could not find frame ' + frameId);
+		}
 	};
 
 	proto._addFrameListeners = function() {
@@ -165,6 +220,8 @@ var PageState = function(chrome) {
 			this._createFrame(childFrame);
 		}, this);
 
+		this._updateFrameOnEvents(frameState);
+
 		return frameState;
 	};
 
@@ -182,8 +239,29 @@ var PageState = function(chrome) {
 		if(!frameInfo.parentFrameId) {
 			this._setMainFrame(frameState);
 		}
+		this._updateFrameOnEvents(frameState);
 
 		return frameState;
+	};
+
+	proto._updateFrameOnEvents = function(frame) {
+		var frameId = frame.getFrameId();
+		var pendingFrameEvents = this._pendingFrameEvents[frameId];
+
+		if(pendingFrameEvents) {
+			var resourceTracker = frame.getResourceTracker();
+
+			_.each(pendingFrameEvents, function(eventInfo) {
+				var eventType = eventInfo.type,
+					event = eventInfo.event;
+				if(eventType === 'responseReceived') {
+					resourceTracker._responseReceived(event);
+				} else if(eventType === 'requestWillBeSent') {
+					resourceTracker._requestWillBeSent(event);
+				}
+			});
+			delete this._pendingFrameEvents[frameId];
+		}
 	};
 
 	proto._destroyFrame = function(frameId) {
@@ -201,24 +279,6 @@ var PageState = function(chrome) {
 	};
 	proto.summarize = function() {
 		return this._rootFrame.summarize();
-	};
-	proto._onSetChildNodes = function(event) {
-		var parentId = event.parentId,
-			foundFrame = false;
-		_.each(this._frames, function(frame) {
-			if(frame._hasWrappedDOMNodeWithID(parentId)) {
-				frame.setChildNodes(event);
-				foundFrame = true;
-			}
-		});
-
-		if(!foundFrame) {
-			log.error('No frame found for set child nodes event', event);
-		}
-	};
-	proto._onDocumentUpdated = function() {
-		var frame = this.getMainFrame();
-		frame.updateDocument();
 	};
 
 	proto.requestChildNodes = function(nodeId, depth) {
@@ -238,128 +298,143 @@ var PageState = function(chrome) {
 			})
 		});
 	};
-	proto._onCharacterDataModified = function(event) {
-		var nodeId = event.nodeId,
-			foundFrame = false;
 
-		_.each(this._frames, function(frame) {
-			if(frame._hasWrappedDOMNodeWithID(nodeId)) {
-				frame.modifyCharacterData(event);
-				foundFrame = true;
-			}
+	proto._onDocumentUpdated = function() {
+		var frame = this.getMainFrame();
+		frame.documentUpdated();
+	};
+
+	proto._onSetChildNodes = function(event) {
+		var promises = _.map(this._frames, function(frame) {
+			return frame.setChildNodes(event);
 		});
-
-		if(!foundFrame) {
-			log.error('No frame found for character data modified event', event);
-		}
+		return Promise.all(promises).then(function(vals) {
+			return _.any(vals);
+		}).then(function(wasHandled) {
+			if(!wasHandled) {
+				log.error('No frame found for set child nodes event', event);
+			}
+		}).catch(function(err) {
+			if(err.stack) { console.error(err.stack); }
+			else { console.error(err); }
+		});
+	};
+	proto._onCharacterDataModified = function(event) {
+		var promises = _.map(this._frames, function(frame) {
+			return frame.characterDataModified(event);
+		});
+		return Promise.all(promises).then(function(vals) {
+			return _.any(vals);
+		}).then(function(wasHandled) {
+			if(!wasHandled) {
+				log.error('No frame found for character data modified event', event);
+			}
+		}).catch(function(err) {
+			if(err.stack) { console.error(err.stack); }
+			else { console.error(err); }
+		});
 	};
 	proto._onChildNodeRemoved = function(event) {
-		var parentId = event.parentNodeId,
-			foundFrame = false;
-
-		_.each(this._frames, function(frame) {
-			if(frame._hasWrappedDOMNodeWithID(parentId)) {
-				frame.removeChildNode(event);
-				foundFrame = true;
-			}
+		var promises = _.map(this._frames, function(frame) {
+			return frame.childNodeRemoved(event);
 		});
 
-		if(!foundFrame) {
-			log.error('No frame found for child node removed event', event);
-		}
+		return Promise.all(promises).then(function(vals) {
+			return _.any(vals);
+		}).then(function(wasHandled) {
+			if(!wasHandled) {
+				log.error('No frame found for child node removed event', event);
+			}
+		}).catch(function(err) {
+			if(err.stack) { console.error(err.stack); }
+			else { console.error(err); }
+		});
 	};
 	proto._onChildNodeInserted = function(event) {
-		var parentId = event.parentNodeId,
-			foundFrame = false;
-
-		_.each(this._frames, function(frame) {
-			if(frame._hasWrappedDOMNodeWithID(parentId)) {
-				frame.insertChildNode(event);
-				foundFrame = true;
-			}
+		var promises = _.map(this._frames, function(frame) {
+			return frame.childNodeInserted(event);
 		});
 
-		if(!foundFrame) {
-			log.error('No frame found for child node inserted event', event);
-		}
+		return Promise.all(promises).then(function(vals) {
+			return _.any(vals);
+		}).then(function(wasHandled) {
+			if(!wasHandled) {
+				log.error('No frame found for child node inserted event', event);
+			}
+		}).catch(function(err) {
+			if(err.stack) { console.error(err.stack); }
+			else { console.error(err); }
+		});
 	};
 
 	proto._onAttributeModified = function(event) {
-		var nodeId = event.nodeId,
-			foundFrame = false;
-
-		_.each(this._frames, function(frame) {
-			if(frame._hasWrappedDOMNodeWithID(nodeId)) {
-				frame.modifyAttribute(event);
-				foundFrame = true;
-			}
+		var promises = _.map(this._frames, function(frame) {
+			return frame.attributeModified(event);
 		});
 
-		if(!foundFrame) {
-			log.error('No frame found for attribute modified event', event);
-		}
+		return Promise.all(promises).then(function(vals) {
+			return _.any(vals);
+		}).then(function(wasHandled) {
+			if(!wasHandled) {
+				log.error('No frame found for attribute modified event', event);
+			}
+		}).catch(function(err) {
+			if(err.stack) { console.error(err.stack); }
+			else { console.error(err); }
+		});
 	};
 	proto._onAttributeRemoved = function(event) {
-		var nodeId = event.nodeId,
-			foundFrame = false;
-
-		_.each(this._frames, function(frame) {
-			if(frame._hasWrappedDOMNodeWithID(nodeId)) {
-				frame.removeAttribute(event);
-				foundFrame = true;
-			}
+		var promises = _.map(this._frames, function(frame) {
+			return frame.attributeRemoved(event);
 		});
 
-		if(!foundFrame) {
-			log.error('No frame found for attribute removed event', event);
-		}
+		return Promise.all(promises).then(function(vals) {
+			return _.any(vals);
+		}).then(function(wasHandled) {
+			if(!wasHandled) {
+				log.error('No frame found for attribute removed event', event);
+			}
+		}).catch(function(err) {
+			if(err.stack) { console.error(err.stack); }
+			else { console.error(err); }
+		});
 	};
 	proto._onChildNodeCountUpdated = function(event) {
-		var nodeId = event.nodeId,
-			foundFrame = false;
-
-		_.each(this._frames, function(frame) {
-			if(frame._hasWrappedDOMNodeWithID(nodeId)) {
-				frame.updateChildNodeCount(event);
-				foundFrame = true;
-			}
+		var promises = _.map(this._frames, function(frame) {
+			return frame.childNodeCountUpdated(event);
 		});
 
-		if(!foundFrame) {
-			log.error('No frame found for child node count updated event', event);
-		}
+		return Promise.all(promises).then(function(vals) {
+			return _.any(vals);
+		}).then(function(wasHandled) {
+			if(!wasHandled) {
+				log.error('No frame found for child node count updated event', event);
+			}
+		}).catch(function(err) {
+			if(err.stack) { console.error(err.stack); }
+			else { console.error(err); }
+		});
 	};
 	proto._onInlineStyleInvalidated = function(event) {
-		var nodeIds = event.nodeIds,
-			foundFrame = false;
-
-		_.each(this._frames, function(frame) {
-			var hasNodeIds = _.every(nodeIds, function(nodeId) {
-				return frame._hasWrappedDOMNodeWithID(nodeId);
-			});
-
-			if(hasNodeIds) {
-				frame.invalidateInlineStyle(event);
-				foundFrame = true;
-			}
+		var promises = _.map(this._frames, function(frame) {
+			return frame.inlineStyleInvalidated(event);
 		});
 
-		if(!foundFrame) {
-			log.error('No frame found for inline style invalidated event', event);
-		}
+		return Promise.all(promises).then(function(vals) {
+			return _.any(vals);
+		}).then(function(wasHandled) {
+			if(!wasHandled) {
+				log.error('No frame found for inline style invalidated event', event);
+			}
+		}).catch(function(err) {
+			if(err.stack) { console.error(err.stack); }
+			else { console.error(err); }
+		});
 	};
 
 	var eventTypes = [ 'attributeModified', 'attributeRemoved', 'characterDataModified',
 							'childNodeCountUpdated', 'childNodeInserted', 'childNodeRemoved',
 							'documentUpdated', 'setChildNodes', 'inlineStyleInvalidated' ];
-
-	proto._handleEvent = function(eventInfo) {
-		var eventType = eventInfo.type,
-			event = eventInfo.event;
-		var capitalizedEventType = eventType[0].toUpperCase() + eventType.substr(1);
-
-		return this['_on'+capitalizedEventType](event);
-	};
 
 	proto._addDOMListeners = function() {
 		var chrome = this._getChrome();

@@ -120,11 +120,12 @@ function startServer(chromePort) {
 		port: chromePort
 	}).then(function(c) {
 		chrome = c;
-		//return serverDriver.navigate(chrome, 'file:///Users/soney/dev/arboretum/test/index.html');
+		return serverDriver.navigate(chrome, 'file:///Users/soney/dev/arboretum/test/index.html');
 		//return serverDriver.navigate(chrome, 'http://localhost:8000/');
 		//return serverDriver.navigate(chrome, 'http://www.w3schools.com/tags/tryit.asp?filename=tryhtml5_video');
 		//return serverDriver.navigate(chrome, 'http://umich.edu/');
-		return serverDriver.navigate(chrome, 'http://caltech.edu/');
+		//return serverDriver.navigate(chrome, 'http://caltech.edu/');
+		//return serverDriver.navigate(chrome, 'http://msutoday.msu.edu/feature/2016/msu-study-abroad-seeing-the-world-changing-it-for-the-better/');
 		//return serverDriver.navigate(chrome, 'http://cmu.edu/');
 		//return serverDriver.navigate(chrome, 'http://google.com/');
 		//return serverDriver.navigate(chrome, 'http://ucla.edu/');

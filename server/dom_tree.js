@@ -1,4 +1,5 @@
 var _ = require('underscore'),
+	URL = require('url'),
 	util = require('util'),
 	EventEmitter = require('events'),
 	path = require('path'),
@@ -13,8 +14,10 @@ var WrappedDOMNode = function(options) {
 	this.chrome = options.chrome;
 	this.frame = options.frame;
 
+	this._superAttributes = {};
 	this._attributes = {};
 	this._inlineStyle = '';
+	this.children = [];
 	this._initialized = this.initialize();
 };
 
@@ -67,13 +70,6 @@ var WrappedDOMNode = function(options) {
 			}
 		}
 
-		var tagName = this._getTagName().toLowerCase();
-		if(tagName === 'iframe') {
-			if(!this._attributes.src) {
-				this._attributes.src = this._transformAttribute('', 'src')
-			}
-		}
-
 		return Promise.all(attrPromises);
 	};
 
@@ -108,7 +104,7 @@ var WrappedDOMNode = function(options) {
 	};
 
 	proto.getAttributesMap = function() {
-		return this._attributes;
+		return _.extend({}, this._attributes, this._superAttributes);
 	};
 
 	proto.initialize = function() {
@@ -126,6 +122,7 @@ var WrappedDOMNode = function(options) {
 			frame.setRoot(frameRoot);
 
 			this.childFrame = frame;
+			this._superAttributes.src = transformIFrameURL(frame);
 		} else {
 			this.childFrame = false;
 		}
@@ -144,6 +141,7 @@ var WrappedDOMNode = function(options) {
 		});
 		this.emit('destroyed');
 		this.removeAllListeners();
+		this._destroyed = true;
 	};
 
 	proto.getId = function() {
@@ -198,7 +196,8 @@ var WrappedDOMNode = function(options) {
 	proto._setAttribute = function(name, value) {
 		var node = this._getNode();
 		if(!node.attributes) {
-			log.error('Could not set node attributes');
+			log.error('Could not set node attributes', node);
+			return;
 		}
 		node.attributes.push(name, value);
 
@@ -207,9 +206,6 @@ var WrappedDOMNode = function(options) {
 
 	proto._removeAttribute = function(name) {
 		var tagName = this._getTagName().toLowerCase();
-		if(tagName === 'iframe' && name === 'src') {
-			return;
-		}
 
 		var node = this._getNode();
 		var attributeIndex = _.indexOf(node.attributes, name);
@@ -308,7 +304,9 @@ var WrappedDOMNode = function(options) {
 				chrome.CSS.getInlineStylesForNode({
 					nodeId: id
 				}, function(err, value) {
-					if(err) {
+					if(this._destroyed) {
+						reject(new Error('Node ' + id + ' was destroyed'));
+					} else if(err) {
 						reject(new Error('Could not find node ' + id));
 					} else {
 						resolve(value.inlineStyle);
@@ -424,6 +422,19 @@ var WrappedDOMNode = function(options) {
 		return frame.getFrameId();
 	};
 }(WrappedDOMNode));
+
+function transformIFrameURL(childFrame) {
+	if(childFrame) {
+		return URL.format({
+			pathname: 'f',
+			query: {
+				i: childFrame.getFrameId()
+			}
+		});
+	} else {
+		log.error('No child frame');
+	}
+}
 
 module.exports = {
 	WrappedDOMNode: WrappedDOMNode

@@ -25,6 +25,7 @@ var containsURLs = {
 			}
 		}
 	},
+	/*
 
 	'iframe': {
 		'src': {
@@ -44,6 +45,7 @@ var containsURLs = {
 			}
 		},
 	},
+	*/
 
 	'img': {
 		'src': {
