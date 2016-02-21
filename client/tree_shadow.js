@@ -341,10 +341,11 @@ var DOMTreeShadow = function(options) {
 		var tree = this.getTree(),
 			node = this.getNode();
 
-		this._type = node.nodeType;
-		this._id = node.nodeId;
-		this._name = node.nodeName;
-		this._value = node.nodeValue;
+		this._type = tree.getNodeType();
+		this._id = tree.getId();
+		this._name = tree.getNodeName();
+		this._value = tree.getNodeValue();
+
 
 		this.$_childAdded = _.bind(this._childAdded, this);
 		this.$_childRemoved = _.bind(this._childRemoved, this);
@@ -354,25 +355,28 @@ var DOMTreeShadow = function(options) {
 		this.$_nodeValueChanged = _.bind(this._nodeValueChanged, this);
 		this.$_inlineStyleChanged = _.bind(this._inlineStyleChanged, this);
 
-		tree.on('childAdded', this.$_childAdded);
-		tree.on('childRemoved', this.$_childRemoved);
-		tree.on('childrenChanged', this.$_childrenChanged);
-
-		tree.on('attributesChanged', this.$_updateAttributes);
-		tree.on('nodeValueChanged', this.$_nodeValueChanged);
-		tree.on('inlineStyleChanged', this.$_inlineStyleChanged);
 
 		tree._initialized.then(_.bind(function() {
+			this._value = tree.getNodeValue();
+
 			this._attributes = tree.getAttributesMap();
 			this._inlineCSS = tree.getInlineStyle();
 			//this._updateAttributes(tree.getAttributesMap());
 			var state = this._getState();
-			if(node.nodeType === 1) {
+			if(tree.getNodeType() === 1) {
 				state.attributesChanged(this, {
 					attributes: this._attributes,
 					inlineStyle: this._inlineCSS
 				});
 			}
+
+			tree.on('childAdded', this.$_childAdded);
+			tree.on('childRemoved', this.$_childRemoved);
+			tree.on('childrenChanged', this.$_childrenChanged);
+
+			tree.on('attributesChanged', this.$_updateAttributes);
+			tree.on('nodeValueChanged', this.$_nodeValueChanged);
+			tree.on('inlineStyleChanged', this.$_inlineStyleChanged);
 		}, this)).catch(function(err) {
 			console.log(err);
 		});

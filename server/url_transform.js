@@ -86,6 +86,21 @@ var containsURLs = {
 		}
 	},
 
+	'object': {
+		'src': {
+			strategy: TRANSFORM,
+			transform: function(url, baseURL, node) {
+				return transformURL(url, baseURL, node);
+			}
+		},
+		'data': {
+			strategy: TRANSFORM,
+			transform: function(url, baseURL, node) {
+				return transformURL(url, baseURL, node);
+			}
+		}
+	},
+
 	'form': {
 		'action': {
 			strategy: REFORMAT,

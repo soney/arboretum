@@ -87,7 +87,6 @@ var ResourceTracker = function(chrome, frame, initialResources) {
 				mimeType = mime.lookup(url);
 			}
 
-
 			if(mimeType === 'text/css') {
 				content = processCSS(content, url, this._getFrameId());
 			}

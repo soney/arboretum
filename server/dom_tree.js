@@ -14,6 +14,8 @@ var WrappedDOMNode = function(options) {
 	this.chrome = options.chrome;
 	this.frame = options.frame;
 
+	this._parent = options.parent;
+
 	this._superAttributes = {};
 	this._attributes = {};
 	this._inlineStyle = '';
@@ -29,6 +31,13 @@ var WrappedDOMNode = function(options) {
 		return this.frame;
 	};
 
+	proto.getParent = function() {
+		return this._parent;
+	};
+	proto.setParent = function(parent) {
+		this._parent = parent;
+	};
+
 	proto._initializeLongString = function() {
 		var node = this._getNode(),
 			nodeType = node.nodeType,
@@ -39,14 +48,14 @@ var WrappedDOMNode = function(options) {
 				var chrome = this._getChrome();
 				this.chrome.DOM.getOuterHTML({
 					nodeId: this.node.nodeId
-				}, function(err, value) {
+				}, _.bind(function(err, value) {
 					if(err) {
 						reject(value);
 					} else {
-						var outerHTML = value.outerHTML;
-						node.nodeValue = outerHTML;
+						node.nodeValue = value.outerHTML;
+						resolve(node.nodeValue);
 					}
-				})
+				}, this))
 			} else {
 				resolve(nodeValue);
 			}
@@ -162,6 +171,11 @@ var WrappedDOMNode = function(options) {
 		});
 
 		this.children = children;
+
+		_.each(this.children, function(child) {
+			child.setParent(this);
+		}, this);
+
 		this.emit('childrenChanged', {
 			children: children
 		});
@@ -191,6 +205,7 @@ var WrappedDOMNode = function(options) {
 		} else {
 			this.children.unshift(child);
 		}
+		child.setParent(this);
 
 		this.emit('childAdded', {
 			child: child,
@@ -250,12 +265,31 @@ var WrappedDOMNode = function(options) {
 		return this.children;
 	};
 
+	proto.isCSSStyle = function() {
+		return this._getTagName().toLowerCase() === 'style';
+	};
+
 	proto._setCharacterData = function(characterData) {
 		var node = this._getNode();
 		node.nodeValue = characterData;
+
 		this.emit('nodeValueChanged', {
-			value: characterData
+			value: this.getNodeValue()
 		});
+	};
+
+	proto.getNodeValue = function() {
+		var node = this._getNode(),
+			parent = this.getParent();
+		if(parent && parent.isCSSStyle()) {
+			return processCSSURLs(node.nodeValue, this._getBaseURL(), this.getFrameId());
+		} else {
+			return node.nodeValue;
+		}
+	};
+	proto.getNodeName = function() {
+		var node = this._getNode();
+		return node.nodeName;
 	};
 
 	proto._childCountUpdated = function(count) {
@@ -307,6 +341,11 @@ var WrappedDOMNode = function(options) {
 				});
 			}
 		}, this));
+	};
+
+	proto.getNodeType = function() {
+		var node = this._getNode();
+		return node.nodeType;
 	};
 
 	proto._requestInlineStyle = function() {
