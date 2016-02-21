@@ -2,12 +2,13 @@ var _ = require('underscore'),
 	util = require('util'),
 	EventEmitter = require('events'),
 	log = require('loglevel'),
-	processCSS = require('./css_parser').parseCSS;
+	processCSS = require('./css_parser').parseCSS,
+	mime = require('mime');
 
 log.setLevel('trace');
 
 var ResourceTracker = function(chrome, frame, initialResources) {
-	this._resources = {};
+	this._resetData();
 	this.frame = frame;
 	this.chrome = chrome;
 	this._initialize(initialResources);
@@ -24,8 +25,15 @@ var ResourceTracker = function(chrome, frame, initialResources) {
 		}, this);
 	};
 
+	proto._resetData = function() {
+		this._requests = {};
+		this._responses = {};
+		this._resourcePromises = {};
+	};
+
 	proto.destroy = function() {
 		var chrome = this._getChrome();
+		this._resetData();
 	};
 
 	proto._getChrome = function() {
@@ -33,21 +41,17 @@ var ResourceTracker = function(chrome, frame, initialResources) {
 	};
 
 	proto._requestWillBeSent = function(resource) {
-		if(resource.frameId === this._getFrameId()) {
-			var request = resource.request,
-				id = resource.requestId,
-				url = request.url;
+		var request = resource.request,
+			id = resource.requestId,
+			url = request.url;
 
-			this._resources[url] = resource;
-			log.debug('request will be sent ' + url);
-		}
+		this._requests[url] = resource;
+		log.debug('request will be sent ' + url);
 	};
 	proto._responseReceived = function(event) {
-		if(event.frameId === this._getFrameId()) {
-			var response = event.response;
-			this._resources[response.url] = response;
-			log.debug('response received ' + response.url);
-		}
+		var response = event.response;
+		this._responses[response.url] = response;
+		log.debug('response received ' + response.url);
 	};
 
 	proto._getResponseBody = function(requestId) {
@@ -67,6 +71,36 @@ var ResourceTracker = function(chrome, frame, initialResources) {
 	};
 
 	proto.getResource = function(url) {
+		var promise = this._resourcePromises[url];
+
+		if(!promise) {
+			promise = this._resourcePromises[url] = this._doGetResource(url);
+		}
+		return promise.then(_.bind(function(responseBody) {
+			var resourceInfo = this._responses[url],
+				content = responseBody.content,
+				mimeType;
+
+			if(resourceInfo) {
+				mimeType = resourceInfo.mimeType;
+			} else {
+				mimeType = mime.lookup(url);
+			}
+
+
+			if(mimeType === 'text/css') {
+				content = processCSS(content, url, this._getFrameId());
+			}
+
+			return {
+				mimeType: mimeType,
+				base64Encoded: responseBody.base64Encoded,
+				content: content
+			};
+		}, this));
+	};
+
+	proto._doGetResource = function(url) {
 		var frameId = this._getFrameId(),
 			chrome = this._getChrome();
 		/*
@@ -90,20 +124,6 @@ var ResourceTracker = function(chrome, frame, initialResources) {
 					resolve(val);
 				}
 			});
-		}, this)).then(_.bind(function(responseBody) {
-			var resourceInfo = this._resources[url];
-			if(resourceInfo) {
-				var mimeType = resourceInfo.mimeType;
-				if(mimeType === 'text/css') {
-					responseBody.content = processCSS(responseBody.content, url, frameId);
-				}
-				return _.extend({
-					resourceInfo : resourceInfo
-				}, responseBody);
-			} else {
-				log.debug('No resource info for ' + url);
-				return responseBody;
-			}
 		}, this));
 	};
 

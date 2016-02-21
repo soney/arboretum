@@ -86,7 +86,12 @@ var WrappedDOMNode = function(options) {
 				var attributeTransform = tagTransform[name.toLowerCase()];
 				if(attributeTransform) {
 					var url = this._getBaseURL();
-					return attributeTransform.transform(val, url, this);
+					if(url) {
+						return attributeTransform.transform(val, url, this);
+					} else {
+						log.debug('no base url');
+						return val;
+					}
 				}
 			}
 		}
@@ -194,14 +199,26 @@ var WrappedDOMNode = function(options) {
 	};
 
 	proto._setAttribute = function(name, value) {
-		var node = this._getNode();
-		if(!node.attributes) {
+		var node = this._getNode(),
+			attributes = node.attributes,
+			found = false;
+		if(!attributes) {
 			log.error('Could not set node attributes', node);
 			return;
 		}
-		node.attributes.push(name, value);
+		for(var i = 0; i<attributes.length; i+=2) {
+			if(attributes[i] === name) {
+				attributes[i+1] = value;
+				found = true;
+				break;
+			}
+		}
+		if(!found) {
+			node.attributes.push(name, value);
+		}
 
 		this._attributes[name] = this._transformAttribute(value, name);
+		this._notifyAttributeChange();
 	};
 
 	proto._removeAttribute = function(name) {

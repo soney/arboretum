@@ -9,6 +9,9 @@
 			#message {
 				color: orange;
 			}
+			.hasClass {
+				color: red;
+			}
 		</style>
 		<link rel="stylesheet" type="text/css" href="bootstrap/css/bootstrap.css" />
 		<link rel="stylesheet" href="font-awesome-4.5.0/css/font-awesome.min.css">
@@ -33,6 +36,9 @@
 		<iframe id='eyeframe' frameborder="0" id="iframeResult">
 			hello world
 		</iframe>
+		<DIV id = "the-id" class = "some_class">
+			the div
+		</div>
 	</body>
 	<script>
 		var links = document.getElementsByTagName('a'),
@@ -42,6 +48,9 @@
 			message.innerText = 'goodbye cruel world';
 			var toRemove = document.getElementById('willRemove');
 			toRemove.parentNode.removeChild(toRemove);
+
+			var theDiv = document.getElementById('the-id');
+			$(theDiv).addClass('hasClass');
 
 			var newDiv = document.createElement("div");
 			var newContent = document.createTextNode("a new hope");

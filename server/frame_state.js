@@ -377,6 +377,9 @@ var FrameState = function(options) {
 	proto.navigated = function(event) {
 		//console.log('new url is', event.frame.url, this.getFrameId());
 		_.extend(this.options, event.frame);
+		if(!this.options.url) {
+			console.error(this.options);
+		}
 	};
 
 	proto.destroy = function() {

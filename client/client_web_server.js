@@ -7,6 +7,8 @@ var express = require('express'),
 	DOMTreeShadow = tree_shadow.DOMTreeShadow,
 	fs = require('fs'),
 	ShadowFrame = tree_shadow.ShadowFrame;
+	
+require('ssl-root-cas').inject();
 
 module.exports = {
 	createWebServer: function(pageState) {
@@ -19,15 +21,16 @@ module.exports = {
 								var url = req.query.l,
 									frameId = req.query.f;
 
-								pageState.requestResource(url, frameId).then(function(val) {
-									var resourceInfo = val.resourceInfo;
-									if(resourceInfo) { res.set('Content-Type', resourceInfo.mimeType); }
+								pageState.requestResource(url, frameId).then(function(resourceInfo) {
+									var content = resourceInfo.content;
+									res.set('Content-Type', resourceInfo.mimeType);
 
-									if(val.base64Encoded) {
-										var bodyBuffer = new Buffer(val.content, 'base64');
+
+									if(resourceInfo.base64Encoded) {
+										var bodyBuffer = new Buffer(content, 'base64');
 										res.send(bodyBuffer);
 									} else {
-										res.send(val.content);
+										res.send(content);
 									}
 								}, function(err) {
 									req.pipe(request[req.method.toLowerCase().replace('del', 'delete')](url))

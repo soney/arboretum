@@ -1,3 +1,11 @@
+var ELEMENT_NODE = Node.ELEMENT_NODE;
+var TEXT_NODE = Node.TEXT_NODE;
+var PROCESSING_INSTRUCTION_NODE = Node.PROCESSING_INSTRUCTION_NODE;
+var COMMENT_NODE = Node.COMMENT_NODE;
+var DOCUMENT_NODE = Node.DOCUMENT_NODE;
+var DOCUMENT_TYPE_NODE = Node.DOCUMENT_TYPE_NODE;
+var DOCUMENT_FRAGMENT_NODE = Node.DOCUMENT_FRAGMENT_NODE;
+
 $.widget('arboretum.tree_node', {
 	options: {
 		id: false,
@@ -39,10 +47,10 @@ $.widget('arboretum.tree_node', {
 		var childType = child.type,
 			childElem;
 
-		if(childType === 1 || childType === 9 || childType === 10) {
+		if(childType === ELEMENT_NODE || childType === DOCUMENT_NODE || childType === DOCUMENT_TYPE_NODE) {
 			var name = child.name,
 				childElem = $('<'+name+'/>');
-		} else if(childType === 3) {
+		} else if(childType === TEXT_NODE) {
 			childElem = document.createTextNode(child.value);
 		} else {
 			childElem = false;
@@ -53,11 +61,11 @@ $.widget('arboretum.tree_node', {
 		var state = this.option('state'),
 			childType = child.type;
 
-		if(childType === 1 || childType === 9) {
+		if(childType === ELEMENT_NODE || childType === DOCUMENT_NODE) {
 			childElem.tree_node(_.extend({
 				state: state
 			}, child));
-		} else if(childType === 3) {
+		} else if(childType === TEXT_NODE) {
 			state.registerNode(child.id, childElem);
 		}
 	},
@@ -105,12 +113,17 @@ $.widget('arboretum.tree_node', {
 		this.option('children', children);
 	},
 	childRemoved: function(child) {
-		var id = child.option('id'),
-			children = this.option('children');
+		if(child.nodeType === TEXT_NODE) {
+			$(child).remove();
+			this.option('children', _.filter(children, function(c) { return c !== child; }));
+		} else {
+			var id = child.option('id'),
+				children = this.option('children');
 
-		child.element.remove();
+			child.element.remove();
 
-		this.option('children', _.filter(children, function(child) { return child.id !== id; }));
+			this.option('children', _.filter(children, function(child) { return child.id !== id; }));
+		}
 	},
 	setChildren: function(children) {
 		var previousChildren = this.option('children');
