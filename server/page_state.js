@@ -2,6 +2,7 @@ var _ = require('underscore'),
 	util = require('util'),
 	EventEmitter = require('events'),
 	log = require('loglevel'),
+	EventManager = require('./event_manager').EventManager,
 	FrameState = require('./frame_state').FrameState
 	colors = require('colors/safe');
 
@@ -9,6 +10,7 @@ log.setLevel('error');
 
 var PageState = function(chrome) {
 	this.chrome = chrome;
+	this.eventManager = new EventManager(chrome);
 	this._rootFrame = false;
 	this._frames = {};
 
@@ -20,6 +22,11 @@ var PageState = function(chrome) {
 (function(My) {
 	util.inherits(My, EventEmitter);
 	var proto = My.prototype;
+
+	proto.emulateMouseEvent = function() {
+		var eventManager = this.eventManager;
+		return eventManager.emulateMouseEvent.apply(eventManager, arguments);
+	};
 
 	proto.getURL = function() {
 		var mainFrame = this.getMainFrame();

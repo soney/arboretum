@@ -21,10 +21,13 @@ var ShadowFrame = function(domTree, socket) {
 		this.$_highlightNode = _.bind(this._highlightNode, this);
 		this.$_removeHighlight = _.bind(this._removeHighlight, this);
 
+		this.$_mouseEvent = _.bind(this._mouseEvent, this);
+
 		this._addListeners();
 		//domTree.on('styleSheetsInvalidated', this.$_updateSheets);
 		socket.on('highlightNode', this.$_highlightNode);
 		socket.on('removeHighlight', this.$_removeHighlight);
+		socket.on('mouseEvent', this.$_mouseEvent);
 
 		this._updateShadowTree();
 		//this._updateSheets();
@@ -36,6 +39,9 @@ var ShadowFrame = function(domTree, socket) {
 	proto._addListeners = function() {
 		var domTree = this._getDomTree();
 		domTree.on('rootInvalidated', this.$_updateShadowTree);
+	};
+	proto._mouseEvent = function(event) {
+		this.emit('mouseEvent', event);
 	};
 	proto.setFrame = function(frame) {
 		var socket = this._getSocket();

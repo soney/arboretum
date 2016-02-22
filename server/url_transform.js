@@ -124,8 +124,8 @@ function transformURL(url, baseURL, node) {
 		relativeURL = URL.format({
 			pathname: 'r',
 			query: {
-				l: absoluteURL,
-				f: node.getFrameId()
+				f: node.getFrameId(),
+				l: absoluteURL
 			}
 		});
 

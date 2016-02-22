@@ -1,6 +1,9 @@
 $.widget('arboretum.tree_state', {
 	options: {
-		frameId: false
+		frameId: false,
+		mouseEventTypes: ['mousemove', 'mousedown', 'mouseup'],
+		keyEventTypes: ['keydown', 'keyup'],
+		touchEventTypes: ['touchstart', 'touchmove', 'touchend']
 	},
 
 	_create: function() {
@@ -12,6 +15,7 @@ $.widget('arboretum.tree_state', {
 		socket.on('frameChanged', _.bind(this._frameChanged, this));
 		//socket.on('styleSheetsUpdated', _.bind(this._stylesheetsUpdated, this));
 		this._addListeners();
+		this._addDeviceListeners();
 	},
 	_destroy: function() {
 		this.element.tree_node('destroy');
@@ -143,5 +147,60 @@ $.widget('arboretum.tree_state', {
 		} else {
 			throw new Error('Could not find node');
 		}
+	},
+	_onMouseEvent: function(event) {
+		var socket = this.socket;
+		var type, button='none', modifiers=0;
+		if(event.type === 'mousemove') {
+			type = 'mouseMoved';
+		} else if(event.type === 'mousedown') {
+			type = 'mousePressed';
+		} else if(event.type === 'mouseup') {
+			type = 'mouseReleased';
+		}
+
+		if(event.altKey)	{ modifiers = modifiers|1; }
+		if(event.ctrlKey)	{ modifiers = modifiers|2; }
+		if(event.metaKey)	{ modifiers = modifiers|4; }
+		if(event.shiftKey)	{ modifiers = modifiers|8; }
+
+		if(event.button === 0) {
+			button = 'left'
+		} else if(event.button === 1) {
+			button = 'middle'
+		} else if(event.button === 2) {
+			button = 'right'
+		}
+
+		if(event.type === 'mouseup') {
+			console.log(event);
+		}
+
+		socket.emit('mouseEvent', {
+			x: event.pageX,
+			y: event.pageY,
+			timestamp: event.timestamp,
+			type: type,
+			clickCount: event.type==='mouseup'? 1 : 0,
+			modifiers: modifiers,
+			button: button
+		});
+	},
+	_onKeyEvent: function(event) {
+		var socket = this.socket;
+	},
+	_onTouchEvent: function(event) {
+		var socket = this.socket;
+	},
+	_addDeviceListeners: function() {
+		_.each(this.option('mouseEventTypes'), function(eventType) {
+			this.element.on(eventType, _.bind(this._onMouseEvent, this));
+		}, this);
+		_.each(this.option('keyEventTypes'), function(eventType) {
+			this.element.on(eventType, this._onKeyEvent);
+		}, this);
+		_.each(this.option('touchEventTypes'), function(eventType) {
+			this.element.on(eventType, this._onTouchEvent);
+		}, this);
 	},
 });

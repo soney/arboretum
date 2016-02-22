@@ -7,7 +7,7 @@ var express = require('express'),
 	DOMTreeShadow = tree_shadow.DOMTreeShadow,
 	fs = require('fs'),
 	ShadowFrame = tree_shadow.ShadowFrame;
-	
+
 require('ssl-root-cas').inject();
 
 module.exports = {
@@ -87,6 +87,10 @@ module.exports = {
 					}
 
 					shadow = new ShadowFrame(frame, socket);
+
+					shadow.on('mouseEvent', function(event) {
+						pageState.emulateMouseEvent(event, frame);
+					});
 				});
 				socket.on('disconnect', function() {
 					pageState.removeListener('mainFrameChanged', onMainFrameChanged);
