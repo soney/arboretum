@@ -181,7 +181,8 @@ $.widget('arboretum.tree_state', {
 			y: event.pageY,
 			timestamp: event.timestamp,
 			type: type,
-			clickCount: event.type==='mouseup'? 1 : 0,
+			clickCount: 1,
+			//event.type==='mouseup'? 1 : 0,
 			modifiers: modifiers,
 			button: button
 		});

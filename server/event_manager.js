@@ -15,6 +15,7 @@ var EventManager = function(chrome) {
 
 	proto.emulateMouseEvent = function(event, frame) {
 		var chrome = this._getChrome();
+		console.log(event);
 		chrome.Input.dispatchMouseEvent(event);
 	};
 
