@@ -15,7 +15,7 @@ $.widget('arboretum.tree_state', {
 		socket.on('frameChanged', _.bind(this._frameChanged, this));
 		//socket.on('styleSheetsUpdated', _.bind(this._stylesheetsUpdated, this));
 		this._addListeners();
-		this._addDeviceListeners();
+		//this._addDeviceListeners();
 	},
 	_destroy: function() {
 		this.element.tree_node('destroy');
@@ -148,6 +148,11 @@ $.widget('arboretum.tree_state', {
 			throw new Error('Could not find node');
 		}
 	},
+
+	deviceEvent: function(eventInfo) {
+		this.socket.emit('deviceEvent', eventInfo);
+	},
+	/*
 	_onMouseEvent: function(event) {
 		var socket = this.socket;
 		var type, button='none', modifiers=0;
@@ -204,4 +209,5 @@ $.widget('arboretum.tree_state', {
 			this.element.on(eventType, this._onTouchEvent);
 		}, this);
 	},
+	*/
 });

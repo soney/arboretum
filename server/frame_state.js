@@ -16,6 +16,7 @@ var FrameState = function(options) {
 
 	this._nodeMap = {};
 	this._queuedEvents = [];
+	this._executionContext = false;
 	this._root = false;
 
 	this._resourceTracker = new ResourceTracker(chrome, this, options.resources);
@@ -24,6 +25,14 @@ var FrameState = function(options) {
 (function(My) {
 	util.inherits(My, EventEmitter);
 	var proto = My.prototype;
+
+	proto.executionContextCreated = function(context) {
+		this._executionContext = context;
+	};
+
+	proto.getExecutionContext = function() {
+		return this._executionContext;
+	};
 
 	proto.getResourceTracker = function() {
 		return this._resourceTracker;

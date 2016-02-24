@@ -1,7 +1,8 @@
 var _ = require('underscore'),
 	util = require('util'),
 	EventEmitter = require('events'),
-	log = require('loglevel');
+	log = require('loglevel'),
+	driver = require('./hack_driver/hack_driver');
 
 log.setLevel('error');
 
@@ -13,10 +14,12 @@ var EventManager = function(chrome) {
 	util.inherits(My, EventEmitter);
 	var proto = My.prototype;
 
-	proto.emulateMouseEvent = function(event, frame) {
+	proto.onDeviceEvent = function(event, frame) {
 		var chrome = this._getChrome();
-		console.log(event);
-		chrome.Input.dispatchMouseEvent(event);
+		var type = event.type;
+		if(type === 'click') {
+			driver.click(chrome, event, frame);
+		}
 	};
 
 	proto._getChrome = function() {

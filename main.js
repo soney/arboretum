@@ -54,19 +54,24 @@ startAll().then(function(info) {
 		}
 	});
 
+	replServer.defineCommand('eval', {
+		help: 'Print the current state of the DOM tree',
+		action: function(expr) {
+			doc.evaluate(expr).then(_.bind(function(rv) {
+				console.log(result);
+				this.displayPrompt();
+			}, this), _.bind(function(err) {
+				console.log(err);
+				this.displayPrompt();
+			}, this));
+		}
+	});
+
 	replServer.defineCommand('summarize', {
 		help: 'Summarize the current state of the DOM tree',
 		action: function(name) {
 			doc.summarize();
 			this.displayPrompt();
-		}
-	});
-
-	replServer.defineCommand('print', {
-		help: 'Print the current state of the DOM tree',
-		action: function(name) {
-			var self = this;
-			doc.print();
 		}
 	});
 

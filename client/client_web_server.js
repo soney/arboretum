@@ -88,8 +88,8 @@ module.exports = {
 
 					shadow = new ShadowFrame(frame, socket);
 
-					shadow.on('mouseEvent', function(event) {
-						pageState.emulateMouseEvent(event, frame);
+					socket.on('deviceEvent', function(event) {
+						pageState.onDeviceEvent(event, frame);
 					});
 				});
 				socket.on('disconnect', function() {

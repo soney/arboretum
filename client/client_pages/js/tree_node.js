@@ -27,6 +27,7 @@ $.widget('arboretum.tree_node', {
 		this._initializeAttributes(this.option('attributes'));
 		this._initializeInlineStyle(this.option('inlineStyle'));
 		this._initializeChildren(this.option('children'));
+		this._addDeviceListeners();
 	},
 	_setOption: function(key, value) {
 		this._super(key, value);
@@ -163,7 +164,52 @@ $.widget('arboretum.tree_node', {
 	},
 	_destroy: function() {
 		var state = this.option('state');
+		this._removeDeviceListeners();
 		state.unregisterNode(this.option('id'), this);
 		this.element.children().remove();
+	},
+	_getModifiers: function(event) {
+		var modifiers = 0;
+
+		if(event.altKey)	{ modifiers = modifiers|1; }
+		if(event.ctrlKey)	{ modifiers = modifiers|2; }
+		if(event.metaKey)	{ modifiers = modifiers|4; }
+		if(event.shiftKey)	{ modifiers = modifiers|8; }
+
+		return modifiers;
+	},
+	_getButton: function(event) {
+		var button='none';
+		if(event.button === 0) {
+			button = 'left'
+		} else if(event.button === 1) {
+			button = 'middle'
+		} else if(event.button === 2) {
+			button = 'right'
+		}
+		return button;
+	},
+	_onClick: function(event) {
+		if(event.target === this.element[0]) {
+			var state = this.option('state');
+
+			state.deviceEvent({
+				id: this.option('id'),
+				button: this._getButton(event),
+				modifiers: this._getModifiers(event),
+				device: 'mouse',
+				type: 'click',
+				timestamp: (new Date()).getTime(),
+				offsetX: event.offsetX,
+				offsetY: event.offsetY
+			});
+		}
+	},
+	_addDeviceListeners: function() {
+		this.$_onClick = $.proxy(this._onClick, this);
+		this.element.on('click', this.$_onClick);
+	},
+	_removeDeviceListeners: function() {
+		this.element.off('click', this.$_onClick);
 	}
 });

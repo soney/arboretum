@@ -3,7 +3,7 @@ var _ = require('underscore'),
 	EventEmitter = require('events'),
 	log = require('loglevel'),
 	EventManager = require('./event_manager').EventManager,
-	FrameState = require('./frame_state').FrameState
+	FrameState = require('./frame_state').FrameState,
 	colors = require('colors/safe');
 
 log.setLevel('error');
@@ -23,9 +23,24 @@ var PageState = function(chrome) {
 	util.inherits(My, EventEmitter);
 	var proto = My.prototype;
 
-	proto.emulateMouseEvent = function() {
-		var eventManager = this.eventManager;
-		return eventManager.emulateMouseEvent.apply(eventManager, arguments);
+	proto.evaluate = function(expression, frameId) {
+		var frame;
+
+		if(frameId) {
+			frame = this.getFrame(frameId);
+		} else {
+			frame = this.getMainFrame();
+		}
+
+		var executionContext = frame.getExecutionContext();
+		return chromeDriver.evaluate(this._getChrome(), executionContext, {
+			expression: expression
+		});
+		return frame.evaluate(expression);
+	};
+
+	proto.onDeviceEvent = function() {
+		return this.eventManager.onDeviceEvent.apply(this.eventManager, arguments);
 	};
 
 	proto.getURL = function() {
@@ -68,10 +83,37 @@ var PageState = function(chrome) {
 			return this._addDOMListeners();
 		}, this)).then(_.bind(function() {
 			return this._addNetworkListeners();
+		}, this)).then(_.bind(function() {
+			return this._addExecutionContextListeners();
 		}, this)).catch(function(err) {
 			if(err.stack) { console.error(err.stack); }
 			else { console.error(err); }
 		});
+	};
+
+	proto._executionContextCreated = function(event) {
+		var context = event.context,
+			frameId = context.frameId,
+			frame = this.getFrame(frameId);
+
+		if(frame) {
+			frame.executionContextCreated(context);
+		} else {
+			log.error('Could not find frame ' + frameId);
+		}
+	};
+
+	proto._addExecutionContextListeners = function() {
+		var chrome = this._getChrome();
+
+		this.$_executionContextCreated = _.bind(this._executionContextCreated, this);
+
+		return new Promise(_.bind(function(resolve, reject) {
+			chrome.Runtime.enable();
+			chrome.Runtime.executionContextCreated(this.$_executionContextCreated);
+
+			resolve();
+		}, this));
 	};
 
 	proto._getResourceTree = function() {
