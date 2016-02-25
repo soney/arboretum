@@ -27,10 +27,6 @@ function readShallowObject(chrome, objectId) {
 	});
 }
 
-function getElementValue(chrome, elementId) {
-	var methodStr = "function(elem) { return elem['value'] }";
-}
-
 function callFNOnElement(chrome, fn_promise, nodeId, additional_args) {
 	var objectId;
 	var rv;
@@ -56,9 +52,18 @@ function callFNOnElement(chrome, fn_promise, nodeId, additional_args) {
 	});
 }
 
-function click(chrome, event, frame) {
-	return callFNOnElement(chrome, SIMULATE_CLICK, event.id);
+function click(chrome, nodeId) {
+	return callFNOnElement(chrome, SIMULATE_CLICK, nodeId);
 }
+
+function getElementValue(chrome, nodeId) {
+	return callFNOnElement(chrome, GET_ELEMENT_VALUE, nodeId);
+}
+
+function setElementValue(chrome, nodeId, value) {
+	return callFNOnElement(chrome, SET_ELEMENT_VALUE, nodeId, [{value: value}]);
+}
+
 
 function releaseObject(chrome, objectId) {
 	return new Promise(function(resolve, reject) {
@@ -154,5 +159,6 @@ function readFile(filename) {
 }
 
 module.exports = {
-	click: click
+	click: click,
+	setElementValue: setElementValue
 };

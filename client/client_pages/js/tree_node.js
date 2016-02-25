@@ -205,11 +205,27 @@ $.widget('arboretum.tree_node', {
 			});
 		}
 	},
+	_onInput: function(event) {
+		if(event.target === this.element[0]) {
+			var state = this.option('state');
+
+			state.deviceEvent({
+				id: this.option('id'),
+				device: 'keyboard',
+				type: 'input',
+				timestamp: (new Date()).getTime(),
+				value: this.element.val()
+			});
+		}
+	},
 	_addDeviceListeners: function() {
 		this.$_onClick = $.proxy(this._onClick, this);
+		this.$_onInput = $.proxy(this._onInput, this);
 		this.element.on('click', this.$_onClick);
+		this.element.on('input', this.$_onInput);
 	},
 	_removeDeviceListeners: function() {
 		this.element.off('click', this.$_onClick);
+		this.element.off('input', this.$_onInput);
 	}
 });
