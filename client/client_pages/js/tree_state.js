@@ -44,6 +44,12 @@ $.widget('arboretum.tree_state', {
 				state: this
 			}, data));
 		}
+
+		if(!this.option('frameId')) { // top-level
+			this.element.menu({
+				state: this
+			});
+		}
 		/*
 		var selectedChild = data;
 		console.log(selectedChild);

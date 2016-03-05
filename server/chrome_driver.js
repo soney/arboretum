@@ -12,7 +12,7 @@ function getChromeInstance(options) {
 
 	return new Promise(function(resolve, reject) {
 		var chromeInstance = cri(options);
-		chromeInstance.once('connect', function(chrome) {
+		chromeInstance.on('connect', function(chrome) {
 			resolve(chrome);
 		}).once('error', function(err) {
 			reject(err);
@@ -28,6 +28,22 @@ function navigate(chrome, url) {
 				url: url
 			});
 			resolve(chrome);
+		});
+	});
+}
+
+function getTabs(options) {
+	options = _.extend({}, OPTION_DEFAULTS, options);
+
+	return new Promise(function(resolve, reject) {
+		cri.List(options, function(err, tabs) {
+			if(err) {
+				reject(tabs);
+			} else {
+				resolve(_.filter(tabs, function(tab) {
+					return tab.type === 'page';
+				}));
+			}
 		});
 	});
 }
@@ -49,6 +65,9 @@ module.exports = {
 	},
 	getDocument: function(chrome) {
 		return getDocument(chrome);
+	},
+	getTabs: function(options) {
+		return getTabs(options);
 	},
 	close: function(chrome) {
 		return close(chrome);

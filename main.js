@@ -54,6 +54,19 @@ startAll().then(function(info) {
 		}
 	});
 
+	replServer.defineCommand('tabs', {
+		help: 'List tabs',
+		action: function() {
+			var serverDriver = reload('./server/chrome_driver');
+
+			serverDriver.getTabs().then(function(rv) {
+				console.log(rv);
+			}), function(err) {
+				console.error(err);
+			};
+		}
+	});
+
 	replServer.defineCommand('eval', {
 		help: 'Print the current state of the DOM tree',
 		action: function(expr) {
