@@ -75,7 +75,6 @@ module.exports = {
 					}
 				}
 
-
 				socket.on('setFrame', function(frameId) {
 					var frame;
 
@@ -84,6 +83,15 @@ module.exports = {
 					} else {
 						frame = pageState.getMainFrame();
 						pageState.on('mainFrameChanged', onMainFrameChanged);
+						socket.on('addTab', function(info) {
+							pageState.addTab();
+						}).on('closeTab', function(info) {
+							pageState.closeTab(info.tabId);
+						}).on('focusTab', function(info) {
+							pageState.focusTab(info.tabId);
+						}).on('openURL', function(info) {
+							pageState.openURL(info.url);
+						});
 					}
 
 					shadow = new ShadowFrame(frame, socket);

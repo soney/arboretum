@@ -47,7 +47,8 @@ $.widget('arboretum.tree_state', {
 
 		if(!this.option('frameId')) { // top-level
 			this.element.menu({
-				state: this
+				state: this,
+				socket: this.socket
 			});
 		}
 		/*

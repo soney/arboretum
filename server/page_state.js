@@ -22,6 +22,20 @@ var PageState = function(chrome) {
 (function(My) {
 	util.inherits(My, EventEmitter);
 	var proto = My.prototype;
+	proto.addTab = function() {
+		var chrome = this._getChrome();
+	};
+	proto.closeTab = function(tabId) {
+		var chrome = this._getChrome();
+	};
+	proto.focusTab = function(tabId) {
+		var chrome = this._getChrome();
+
+	};
+	proto.openURL = function(url) {
+		var chrome = this._getChrome();
+
+	};
 
 	proto.evaluate = function(expression, frameId) {
 		var frame;
