@@ -8,14 +8,9 @@ var _ = require('underscore'),
 
 log.setLevel('error');
 
-var PageState = function(chrome) {
+var BrowserState = function(chrome) {
 	this.chrome = chrome;
-	this.eventManager = new EventManager(chrome);
-	this._rootFrame = false;
-	this._frames = {};
-
-	this._pendingFrameEvents = {};
-
+	this._tabs = {};
 	this._initialized = this._initialize();
 };
 
@@ -581,7 +576,7 @@ var PageState = function(chrome) {
 	proto._getChrome = function() {
 		return this.chrome;
 	};
-}(PageState));
+}(BrowserState));
 
 module.exports = {
 	PageState: PageState
