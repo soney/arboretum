@@ -1,6 +1,6 @@
 var cri = require('chrome-remote-interface'),
 	_ = require('underscore'),
-	PageState = require('./page_state').PageState;
+	BrowserState = require('./browser_state').BrowserState;
 
 var OPTION_DEFAULTS = {
 	host: 'localhost',
@@ -49,7 +49,7 @@ function getTabs(options) {
 }
 
 function getDocument(chrome) {
-	return new PageState(chrome);
+	return new BrowserState(chrome);
 }
 
 function close(chrome) {
