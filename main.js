@@ -129,10 +129,23 @@ function killAllChromes() {
 }
 
 function startServer(chromePort) {
-	var browserState = reload('./server/browser_state'),
+	var BrowserState = reload('./server/browser_state'),
 		clientDriver = reload('./client/client_driver');
 
 	var chrome, doc, port;
+
+	var browserState = new BrowserState({
+		port: chromePort
+	});
+
+	return clientDriver.createClient(browserState).then(function(port) {
+		return {
+			clientPort: port
+		};
+	}).catch(function(err) {
+		console.error(err.stack);
+	});
+	/*
 
 	return serverDriver.getInstance({
 		port: chromePort
@@ -165,6 +178,7 @@ function startServer(chromePort) {
 	}).catch(function(err) {
 		console.error(err.stack);
 	});
+	*/
 }
 
 function killChrome(options) {

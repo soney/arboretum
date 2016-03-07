@@ -282,7 +282,7 @@ var WrappedDOMNode = function(options) {
 		var node = this._getNode(),
 			parent = this.getParent();
 		if(parent && parent.isCSSStyle()) {
-			return processCSSURLs(node.nodeValue, this._getBaseURL(), this.getFrameId());
+			return processCSSURLs(node.nodeValue, this._getBaseURL(), this.getFrameId(), this.getTabId());
 		} else {
 			return node.nodeValue;
 		}
@@ -375,7 +375,7 @@ var WrappedDOMNode = function(options) {
 				}
 			}, this)).then(_.bind(function(url) {
 				if(inlineStyle.cssText) {
-					inlineStyle.cssText = processCSSURLs(inlineStyle.cssText, url, this.getFrameId());
+					inlineStyle.cssText = processCSSURLs(inlineStyle.cssText, url, this.getFrameId(), this.getTabId());
 				}
 				return inlineStyle;
 			}, this));
@@ -474,8 +474,10 @@ var WrappedDOMNode = function(options) {
 		return frame.getPage();
 	};
 	proto.getFrameId = function() {
-		var frame = this._getFrame();
-		return frame.getFrameId();
+		return this._getFrame().getFrameId();
+	};
+	proto.getTabId = function() {
+		return this._getFrame().getTabId();
 	};
 }(WrappedDOMNode));
 
@@ -484,7 +486,8 @@ function transformIFrameURL(childFrame) {
 		return URL.format({
 			pathname: 'f',
 			query: {
-				i: childFrame.getFrameId()
+				i: childFrame.getFrameId(),
+				t: childFrame.getTabId()
 			}
 		});
 	} else {

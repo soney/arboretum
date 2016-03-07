@@ -6,12 +6,13 @@ var express = require('express'),
 	_ = require('underscore'),
 	DOMTreeShadow = tree_shadow.DOMTreeShadow,
 	fs = require('fs'),
-	ShadowFrame = tree_shadow.ShadowFrame;
+	ShadowFrame = tree_shadow.ShadowFrame,
+	ShadowBrowser = tree_shadow.ShadowBrowser;
 
 require('ssl-root-cas').inject();
 
 module.exports = {
-	createWebServer: function(pageState) {
+	createWebServer: function(browserState) {
 		var app = express(),
 			PORT = 3000;
 
@@ -19,9 +20,10 @@ module.exports = {
 			var server = app.use(express.static(path.join(__dirname, 'client_pages')))
 							.all('/r', function(req, res, next) {
 								var url = req.query.l,
+									tabId = req.query.t,
 									frameId = req.query.f;
 
-								pageState.requestResource(url, frameId).then(function(resourceInfo) {
+								browserState.requestResource(url, frameId, tabId).then(function(resourceInfo) {
 									var content = resourceInfo.content;
 									res.set('Content-Type', resourceInfo.mimeType);
 
@@ -52,9 +54,11 @@ module.exports = {
 								});
 							})
 							.all('/f', function(req, res, next) {
-								var frameId = req.query.i;
+								var frameId = req.query.i,
+									tabId = req.query.t;
 								procesFile(path.join(__dirname, 'client_pages', 'index.html'), function(contents) {
-									return contents.replace('frameId: false', 'frameId: "'+frameId+'"');
+									return contents.replace('frameId: false', 'frameId: "'+frameId+'"')
+													.replace('tabId: false', 'tabId: "'+tabId+'"');
 								}).then(function(contents) {
 									res.send(contents);
 								});
@@ -68,7 +72,16 @@ module.exports = {
 			var io = socket(server);
 
 			io.on('connection', function (socket) {
-				var shadow;
+				var shadowBrowser = new ShadowBrowser(browserState, socket);
+
+				socket.on('disconnect', function() {
+					shadowBrowser.destroy();
+				});
+				socket.on('clientReady', function(info) {
+					shadowBrowser.setFrame(info.frameId, info.tabId);
+				});
+
+				/*
 				function onMainFrameChanged() {
 					if(shadow) {
 						shadow.setFrame(pageState.getMainFrame())
@@ -107,6 +120,7 @@ module.exports = {
 						shadow.destroy();
 					}
 				});
+				*/
 			});
 		});
 	}

@@ -406,6 +406,9 @@ var FrameState = function(options) {
 	proto.getFrameId = function() {
 		return this.options.id;
 	};
+	proto.getTabId = function() {
+		return this.getPage().getTabId();
+	};
 	proto.getURL = function() {
 		//console.log(this.options.url, this.getFrameId());
 		return this.options.url;

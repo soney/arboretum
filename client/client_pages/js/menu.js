@@ -10,6 +10,7 @@ $.widget('arboretum.menu', {
 			right: '5px',
 			top: '5px',
 			position: 'fixed',
+			'z-index': 999999999
 		}).appendTo(this.element);
 
 		this.menu_element = $('<img />', {
@@ -34,7 +35,7 @@ $.widget('arboretum.menu', {
 
 		this._addressRow = $('<div />', {
 		}).css({
-			'width': '170px'
+			'width': '175px'
 		}).appendTo(this._menu);
 
 		this._addressBar = $('<input />', {
@@ -67,8 +68,17 @@ $.widget('arboretum.menu', {
 		.on('click', $.proxy(this._addTab, this));
 
 		this._isExpanded(false);
-		this._updateTabs();
 		this._addTabListeners();
+		this._addSocketListeners();
+	},
+	_addSocketListeners: function() {
+		var socket = this.option('socket');
+		socket.on('currentTabs', $.proxy(function(summarizedTabs) {
+			this._tabs = summarizedTabs;
+			if(this._isExpanded) {
+				this._updateTabs(this._tabs);
+			}
+		}, this));
 	},
 	_addTabListeners: function() {
 		var socket = this.option('socket');
@@ -121,33 +131,11 @@ $.widget('arboretum.menu', {
 		var event = jQuery.Event('addTab');
 		this.element.trigger(event);
 	},
-	_updateTabs: function() {
-		var tabs = [{
-			title: 'tab 1',
-			url: 'http://tab1',
-			active: false,
-			id: '1'
-		}, {
-			title: 'tab 2',
-			url: 'http://tab2',
-			active: true,
-			id: '2'
-		}, {
-			title: 'tab 3',
-			url: 'http://tab3',
-			active: false,
-			id: '3'
-		}, {
-			title: 'tab 4',
-			url: 'http://tab4',
-			active: false,
-			id: '4'
-		}];
+	_updateTabs: function(tabs) {
 		this._tabsRow.children().remove();
 		_.each(tabs, function(tab) {
 			var child = $('<div />').appendTo(this._tabsRow)
-									.tab(tab)
-									;
+									.tab(tab);
 		}, this);
 	},
 	_onMenuMouseover: function() {
@@ -182,6 +170,7 @@ $.widget('arboretum.menu', {
 	},
 	_expand: function() {
 		this._isExpanded(true);
+		this._updateTabs(this._tabs);
 	},
 	_collapse: function() {
 		this._isExpanded(false);
@@ -192,7 +181,6 @@ $.widget('arboretum.menu', {
 
 $.widget('arboretum.tab', {
 	options: {
-		title: 'tab title'
 	},
 	_create: function() {
 		this.element.css({
@@ -203,6 +191,8 @@ $.widget('arboretum.tab', {
 			'padding-bottom': '2px',
 			'padding-left': '5px',
 			'padding-right': '5px',
+		}).attr({
+			title: this.option('url')
 		});
 
 		this._closeButton = $('<div />', {

@@ -21,7 +21,7 @@ var ResourceTracker = function(chrome, frame, initialResources) {
 		var chrome = this._getChrome();
 
 		_.each(initialResources, function(resource) {
-			this._requestWillBeSent(resource);
+			this._recordResponse(resource);
 		}, this);
 	};
 
@@ -49,7 +49,9 @@ var ResourceTracker = function(chrome, frame, initialResources) {
 		log.debug('request will be sent ' + url);
 	};
 	proto._responseReceived = function(event) {
-		var response = event.response;
+		return this._recordResponse(event.response);
+	};
+	proto._recordResponse = function(response) {
 		this._responses[response.url] = response;
 		log.debug('response received ' + response.url);
 	};
@@ -88,7 +90,7 @@ var ResourceTracker = function(chrome, frame, initialResources) {
 			}
 
 			if(mimeType === 'text/css') {
-				content = processCSS(content, url, this._getFrameId());
+				content = processCSS(content, url, this._getFrameId(), this._getTabId());
 			}
 
 			return {
@@ -132,6 +134,9 @@ var ResourceTracker = function(chrome, frame, initialResources) {
 
 	proto._getFrameId = function() {
 		return this._getFrame().getFrameId();
+	};
+	proto._getTabId = function() {
+		return this._getFrame().getTabId();
 	};
 
 }(ResourceTracker));

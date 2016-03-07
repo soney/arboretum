@@ -1,5 +1,6 @@
 var _ = require('underscore'),
 	util = require('util'),
+	URL = require('url'),
 	EventEmitter = require('events'),
 	log = require('loglevel'),
 	EventManager = require('./event_manager').EventManager,
@@ -8,8 +9,9 @@ var _ = require('underscore'),
 
 log.setLevel('error');
 
-var TabState = function(chrome) {
+var TabState = function(tabId, chrome) {
 	this.chrome = chrome;
+	this._tabId = tabId;
 	this.eventManager = new EventManager(chrome);
 	this._rootFrame = false;
 	this._frames = {};
@@ -22,8 +24,21 @@ var TabState = function(chrome) {
 (function(My) {
 	util.inherits(My, EventEmitter);
 	var proto = My.prototype;
-	proto.navigate = function() {
 
+
+	proto.navigate = function(url) {
+		var chrome = this._getChrome();
+		return new Promise(function(resolve, reject) {
+			chrome.Page.navigate({
+				url: url
+			}, function(err, frameId) {
+				if(err) { reject(frameId); }
+				else { resolve(frameId); }
+			})
+		});
+	};
+	proto.getTabId = function() {
+		return this._tabId;
 	};
 
 	proto.evaluate = function(expression, frameId) {
@@ -569,7 +584,8 @@ var TabState = function(chrome) {
 	};
 
 	proto.destroy = function() {
-
+		var chrome = this._getChrome();
+		chrome.close();
 	};
 
 	proto._getChrome = function() {

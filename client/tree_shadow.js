@@ -1,6 +1,92 @@
 var _ = require('underscore'),
 	util = require('util'),
+	URL = require('url'),
 	EventEmitter = require('events');
+
+var ShadowBrowser = function(browserState, socket) {
+	this.browserState = browserState;
+	this.socket = socket;
+	this.tabShadow = false;
+	this._initialize();
+};
+(function(My) {
+	util.inherits(My, EventEmitter);
+	var proto = My.prototype;
+
+	proto._initialize = function() {
+		/*
+		var tabIds = this.browserState.getTabIds();
+		if(tabIds.length > 0) {
+			this.setTab(tabIds[0]);
+		}
+		*/
+		this.socket.on('addTab', _.bind(function(info) {
+			this.browserState.addTab();
+		}, this)).on('closeTab', _.bind(function(info) {
+			this.browserState.closeTab(info.tabId);
+		}, this)).on('focusTab', _.bind(function(info) {
+			this.setTab(info.tabId);
+		}, this)).on('openURL', _.bind(function(info) {
+			var parsedURL = URL.parse(info.url);
+			if(!parsedURL.protocol) { parsedURL.protocol = 'http'; }
+			var url = URL.format(parsedURL);
+			this.browserState.openURL(url);
+		}, this));
+		this.browserState.on('tabCreated', _.bind(this.sendTabs, this));
+		this.browserState.on('tabDestroyed', _.bind(this.sendTabs, this));
+		this.browserState.on('tabUpdated', _.bind(this.sendTabs, this));
+	};
+	proto.sendTabs = function() {
+		var tabs = {};
+		_.each(this.browserState.getTabIds(), function(tabId) {
+			tabs[tabId] = _.extend({
+				active: tabId === this.getActiveTabId()
+			}, this.browserState.summarizeTab(tabId));
+		}, this);
+		this.socket.emit('currentTabs', tabs);
+	};
+	proto.getActiveTabId = function() {
+		return this.activeTabId;
+	};
+	proto.getTabs = function() {
+		var tabIds = this.browserState.getTabIds();
+		console.log(tabIds);
+	};
+	proto.setFrame = function(frameId, tabId) {
+		if(!tabId) {
+			tabId = this.browserState.getActiveTabId();
+		}
+
+		this.setTab(tabId, frameId).then(_.bind(function() {
+			this.sendTabs();
+		}, this));
+	};
+	proto.setTab = function(tabId, frameId) {
+		return this.browserState.getTabState(tabId).then(_.bind(function(tabState) {
+			var frame;
+			if(frameId) {
+				frame = tabState.getFrame(frameId);
+			} else {
+				frame = tabState.getMainFrame();
+			}
+
+			if(this.tabShadow) {
+				this.tabShadow.destroy();
+			}
+			this.tabShadow = new ShadowFrame(frame, this.socket);
+			this.activeTabId = tabId;
+			return tabState;
+		}, this)).catch(function(err) {
+			console.error(err.stack);
+		});
+	};
+	proto.destroy = function() {
+		if(this.tabShadow) {
+			this.tabShadow.destroy();
+			this.tabShadow = false;
+		}
+	};
+}(ShadowBrowser));
 
 var ShadowFrame = function(domTree, socket) {
 	this.domTree = domTree;
@@ -435,5 +521,6 @@ var DOMTreeShadow = function(options) {
 
 module.exports = {
 	DOMTreeShadow: DOMTreeShadow,
-	ShadowFrame: ShadowFrame
+	ShadowFrame: ShadowFrame,
+	ShadowBrowser: ShadowBrowser
 };

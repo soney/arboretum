@@ -1,5 +1,6 @@
 $.widget('arboretum.tree_state', {
 	options: {
+		tabId: false,
 		frameId: false,
 		mouseEventTypes: ['mousemove', 'mousedown', 'mouseup'],
 		keyEventTypes: ['keydown', 'keyup'],
@@ -9,7 +10,11 @@ $.widget('arboretum.tree_state', {
 	_create: function() {
 		this.nodeMap = {};
 		var socket = this.socket = io.connect();
-		socket.emit('setFrame', this.option('frameId'));
+		socket.emit('clientReady', {
+			frameId: this.option('frameId'),
+			tabId: this.option('tabId')
+		});
+		socket.on('serverReady', _.bind(this._serverReady, this));
 
 		socket.on('treeReady', _.bind(this._treeReady, this));
 		socket.on('frameChanged', _.bind(this._frameChanged, this));
@@ -25,6 +30,9 @@ $.widget('arboretum.tree_state', {
 		if(this.element.data('arboretum-tree_node')) {
 			this.element.tree_node('destroy');
 		}
+	},
+	_serverReady: function(info) {
+		console.log(info);
 	},
 	_treeReady: function(data) {
 		//var styleElement = $('style');
