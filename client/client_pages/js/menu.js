@@ -44,9 +44,11 @@ $.widget('arboretum.menu', {
 			'border': '1px solid #333',
 			'color': 'white',
 			'margin': '5px',
-			'width': '130px'
+			'width': '130px',
+			'font-size': 'inherit'
 		}).appendTo(this._addressRow)
 		.on('keydown', $.proxy(this._onKeypress, this))
+		.on('focus', $.proxy(this._onAddressBarFocus, this))
 		;
 
 		this._tabsRow = $('<div />', {
@@ -114,6 +116,9 @@ $.widget('arboretum.menu', {
 			this._updateOpacity();
 		}
 	},
+	_onAddressBarFocus: function(event) {
+		this._addressBar.select();
+	},
 	_onKeypress: function(event) {
 		var keyCode = event.keyCode;
 		if(keyCode === 27) { // esc
@@ -169,8 +174,13 @@ $.widget('arboretum.menu', {
 		}
 	},
 	_expand: function() {
-		this._isExpanded(true);
 		this._updateTabs(this._tabs);
+		_.each(this._tabs, function(tab) {
+			if(tab.active) {
+				this._addressBar.val(tab.url);
+			}
+		}, this);
+		this._isExpanded(true);
 	},
 	_collapse: function() {
 		this._isExpanded(false);
@@ -190,7 +200,7 @@ $.widget('arboretum.tab', {
 			'padding-top': '2px',
 			'padding-bottom': '2px',
 			'padding-left': '5px',
-			'padding-right': '5px',
+			'padding-right': '5px'
 		}).attr({
 			title: this.option('url')
 		});
@@ -212,6 +222,7 @@ $.widget('arboretum.tab', {
 			'max-width': '150px',
 			'overflow': 'hidden',
 			'margin-right': '10px',
+			'max-height': '15px',
 			cursor: 'pointer'
 		}).appendTo(this.element)
 		.on('click', $.proxy(this._focus, this));

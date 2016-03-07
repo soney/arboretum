@@ -26,6 +26,11 @@ var BrowserState = function(options) {
 		setInterval(_.bind(this._refreshTabs, this), 2000);
 		return this._refreshTabs();
 	};
+	proto.onDeviceEvent = function(event, tabId, frameId) {
+		this.getTabState(tabId).then(function(tabState) {
+			tabState.onDeviceEvent(event, frameId);
+		});
+	};
 	proto.summarizeTab = function(tabId) {
 		var info = this._tabs[tabId].tabInfo;
 		return _.extend({

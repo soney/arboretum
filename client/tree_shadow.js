@@ -31,7 +31,10 @@ var ShadowBrowser = function(browserState, socket) {
 			if(!parsedURL.protocol) { parsedURL.protocol = 'http'; }
 			var url = URL.format(parsedURL);
 			this.browserState.openURL(url);
+		}, this)).on('deviceEvent', _.bind(function(event) {
+			this.browserState.onDeviceEvent(event, this.getActiveTabId(), this.getFrameId());
 		}, this));
+
 		this.browserState.on('tabCreated', _.bind(this.sendTabs, this));
 		this.browserState.on('tabDestroyed', _.bind(this.sendTabs, this));
 		this.browserState.on('tabUpdated', _.bind(this.sendTabs, this));
@@ -45,17 +48,17 @@ var ShadowBrowser = function(browserState, socket) {
 		}, this);
 		this.socket.emit('currentTabs', tabs);
 	};
+	proto.getFrameId = function() {
+		return this.frameId;
+	};
 	proto.getActiveTabId = function() {
 		return this.activeTabId;
-	};
-	proto.getTabs = function() {
-		var tabIds = this.browserState.getTabIds();
-		console.log(tabIds);
 	};
 	proto.setFrame = function(frameId, tabId) {
 		if(!tabId) {
 			tabId = this.browserState.getActiveTabId();
 		}
+		this.frameId = frameId;
 
 		this.setTab(tabId, frameId).then(_.bind(function() {
 			this.sendTabs();
@@ -75,6 +78,7 @@ var ShadowBrowser = function(browserState, socket) {
 			}
 			this.tabShadow = new ShadowFrame(frame, this.socket);
 			this.activeTabId = tabId;
+			this.sendTabs();
 			return tabState;
 		}, this)).catch(function(err) {
 			console.error(err.stack);

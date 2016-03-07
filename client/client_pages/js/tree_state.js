@@ -30,6 +30,9 @@ $.widget('arboretum.tree_state', {
 		if(this.element.data('arboretum-tree_node')) {
 			this.element.tree_node('destroy');
 		}
+		if(this.element.data('arboretum-menu')) {
+			this.element.menu('destroy');
+		}
 	},
 	_serverReady: function(info) {
 		console.log(info);
@@ -39,6 +42,9 @@ $.widget('arboretum.tree_state', {
 
 		if(this.element.data('arboretum-tree_node')) {
 			this.element.tree_node('destroy');
+		}
+		if(this.element.data('arboretum-menu')) {
+			this.element.menu('destroy');
 		}
 
 		if(data.type === 9 && data.children.length === 1 && data.children[0].name === 'HTML') { //document
