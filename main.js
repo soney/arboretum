@@ -129,7 +129,7 @@ function killAllChromes() {
 }
 
 function startServer(chromePort) {
-	var BrowserState = reload('./server/browser_state'),
+	var BrowserState = reload('./server/state/browser_state'),
 		clientDriver = reload('./client/client_driver');
 
 	var chrome, doc, port;

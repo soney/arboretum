@@ -3,7 +3,7 @@ var _ = require('underscore'),
 	URL = require('url'),
 	EventEmitter = require('events'),
 	log = require('loglevel'),
-	EventManager = require('./event_manager').EventManager,
+	EventManager = require('../event_manager').EventManager,
 	FrameState = require('./frame_state').FrameState,
 	colors = require('colors/safe');
 

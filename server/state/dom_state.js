@@ -4,12 +4,12 @@ var _ = require('underscore'),
 	EventEmitter = require('events'),
 	path = require('path'),
 	log = require('loglevel'),
-	urlTransform = require('./url_transform').urlTransform,
-	processCSSURLs = require('./css_parser').processCSSURLs;
+	urlTransform = require('../url_transform').urlTransform,
+	processCSSURLs = require('../css_parser').processCSSURLs;
 
 //log.setLevel('trace');
 
-var WrappedDOMNode = function(options) {
+var DOMState = function(options) {
 	this.node = options.node;
 	this.chrome = options.chrome;
 	this.frame = options.frame;
@@ -479,7 +479,7 @@ var WrappedDOMNode = function(options) {
 	proto.getTabId = function() {
 		return this._getFrame().getTabId();
 	};
-}(WrappedDOMNode));
+}(DOMState));
 
 function transformIFrameURL(childFrame) {
 	if(childFrame) {
@@ -496,5 +496,5 @@ function transformIFrameURL(childFrame) {
 }
 
 module.exports = {
-	WrappedDOMNode: WrappedDOMNode
+	DOMState: DOMState
 };

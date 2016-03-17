@@ -2,12 +2,9 @@ var express = require('express'),
 	socket = require('socket.io'),
 	path = require('path'),
 	request = require('request'),
-	tree_shadow = require('./tree_shadow'),
+	ShadowBrowser = require('./shadows/browser_shadow').ShadowBrowser,
 	_ = require('underscore'),
-	DOMTreeShadow = tree_shadow.DOMTreeShadow,
-	fs = require('fs'),
-	ShadowFrame = tree_shadow.ShadowFrame,
-	ShadowBrowser = tree_shadow.ShadowBrowser;
+	fs = require('fs');
 
 require('ssl-root-cas').inject();
 
@@ -80,47 +77,6 @@ module.exports = {
 				socket.on('clientReady', function(info) {
 					shadowBrowser.setFrame(info.frameId, info.tabId);
 				});
-
-				/*
-				function onMainFrameChanged() {
-					if(shadow) {
-						shadow.setFrame(pageState.getMainFrame())
-					}
-				}
-
-				socket.on('setFrame', function(frameId) {
-					var frame;
-
-					if(frameId) {
-						frame = pageState.getFrame(frameId);
-					} else {
-						frame = pageState.getMainFrame();
-						pageState.on('mainFrameChanged', onMainFrameChanged);
-						socket.on('addTab', function(info) {
-							pageState.addTab();
-						}).on('closeTab', function(info) {
-							pageState.closeTab(info.tabId);
-						}).on('focusTab', function(info) {
-							pageState.focusTab(info.tabId);
-						}).on('openURL', function(info) {
-							pageState.openURL(info.url);
-						});
-					}
-
-					shadow = new ShadowFrame(frame, socket);
-
-					socket.on('deviceEvent', function(event) {
-						pageState.onDeviceEvent(event, frame);
-					});
-				});
-				socket.on('disconnect', function() {
-					pageState.removeListener('mainFrameChanged', onMainFrameChanged);
-
-					if(shadow) {
-						shadow.destroy();
-					}
-				});
-				*/
 			});
 		});
 	}

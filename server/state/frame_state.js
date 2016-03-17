@@ -2,8 +2,8 @@ var _ = require('underscore'),
 	util = require('util'),
 	EventEmitter = require('events'),
 	log = require('loglevel'),
-	ResourceTracker = require('./resource_tracker').ResourceTracker,
-	WrappedDOMNode = require('./dom_tree').WrappedDOMNode;
+	ResourceTracker = require('../resource_tracker').ResourceTracker,
+	DOMState = require('./dom_state').DOMState;
 
 //log.setLevel('trace');
 
@@ -310,7 +310,7 @@ var FrameState = function(options) {
 		if(this._hasWrappedDOMNodeWithID(id)) {
 			return this._getWrappedDOMNodeWithID(id);
 		} else {
-			var node = new WrappedDOMNode({
+			var node = new DOMState({
 				node: node,
 				chrome: this._getChrome(),
 				frame: this

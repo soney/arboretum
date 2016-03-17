@@ -231,26 +231,3 @@ function close(chrome) {
 }
 
 module.exports =  BrowserState;
-/*
-{
-	getBrowserState: function() {
-		return browserState;
-	}
-	/*
-	getInstance: function(options) {
-		return getChromeInstance(options);
-	},
-	navigate: function(chrome, url) {
-		return navigate(chrome, url);
-	},
-	getDocument: function(chrome) {
-		return getDocument(chrome);
-	},
-	getTabs: function(options) {
-		return getTabs(options);
-	},
-	close: function(chrome) {
-		return close(chrome);
-	}
-};
-	*/

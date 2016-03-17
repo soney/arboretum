@@ -6,9 +6,9 @@ var _ = require('underscore'),
 	fs = require('fs'),
 	sprintf = require("sprintf-js").sprintf;
 
-var SIMULATE_CLICK = readFile(path.join(__dirname, 'js', 'simulate_click.js'));
-var GET_ELEMENT_VALUE = readFile(path.join(__dirname, 'js', 'get_element_value.js'));
-var SET_ELEMENT_VALUE = readFile(path.join(__dirname, 'js', 'set_element_value.js'));
+var SIMULATE_CLICK = readFile(path.join(__dirname, 'injectable_js', 'simulate_click.js'));
+var GET_ELEMENT_VALUE = readFile(path.join(__dirname, 'injectable_js', 'get_element_value.js'));
+var SET_ELEMENT_VALUE = readFile(path.join(__dirname, 'injectable_js', 'set_element_value.js'));
 
 log.setLevel('error');
 
