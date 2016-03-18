@@ -74,9 +74,6 @@ module.exports = {
 				socket.on('disconnect', function() {
 					shadowBrowser.destroy();
 				});
-				socket.on('clientReady', function(info) {
-					shadowBrowser.setFrame(info.frameId, info.tabId);
-				});
 			});
 		});
 	}
