@@ -1,6 +1,5 @@
 var _ = require('underscore'),
 	util = require('util'),
-	URL = require('url'),
 	EventEmitter = require('events'),
 	ShadowTab = require('./tab_shadow').ShadowTab;
 
@@ -21,7 +20,6 @@ var ShadowBrowser = function(browserState, socket) {
 		this.$_onOpenURL = _.bind(this._onOpenURL, this);
 		this.$_onDeviceEvent = _.bind(this._onDeviceEvent, this);
 
-		this.$mainFrameChanged = _.bind(this.mainFrameChanged, this);
 		this.$sendTabs = _.bind(this.sendTabs, this);
 
 		this._addBrowserStateListeners();
@@ -37,10 +35,8 @@ var ShadowBrowser = function(browserState, socket) {
 		this.setTab(info.tabId);
 	};
 	proto._onOpenURL = function(info) {
-		var parsedURL = URL.parse(info.url);
-		if(!parsedURL.protocol) { parsedURL.protocol = 'http'; }
-		var url = URL.format(parsedURL);
-		this.browserState.openURL(url);
+		var tab = this.getActiveTab();
+		tab.openURL(info.url);
 	};
 	proto._onDeviceEvent = function(event) {
 		this.browserState.onDeviceEvent(event, this.getActiveTabId(), this.getFrameId());
@@ -69,9 +65,6 @@ var ShadowBrowser = function(browserState, socket) {
 					.removeListener('openURL', this.$_onOpenURL)
 					.removeListener('deviceEvent', this.$_onDeviceEvent);
 	};
-	proto.mainFrameChanged = function() {
-		this.setFrame(this.browserState.getMainFrame().getId(), this.getActiveTabId())
-	};
 	proto.sendTabs = function() {
 		var tabs = {};
 		_.each(this.browserState.getTabIds(), function(tabId) {
@@ -81,55 +74,19 @@ var ShadowBrowser = function(browserState, socket) {
 		}, this);
 		this.socket.emit('currentTabs', tabs);
 	};
-	proto.getFrameId = function() {
-		return this.frameId;
-	};
+
 	proto.getActiveTabId = function() {
 		return this.activeTabId;
 	};
-	proto.setFrame = function(frameId, tabId) {
-		if(!tabId) {
-			tabId = this.browserState.getActiveTabId();
-		}
-		this.frameId = frameId;
 
-		this.setTab(tabId, frameId).then(_.bind(function() {
-			this.sendTabs();
-		}, this));
-	};
-	proto._addFrameListener = function() {
-		if(this._tabState) {
-			this._tabState.on('mainFrameChanged', this.$mainFrameChanged);
-		}
-	};
-	proto._removeFrameListener = function() {
-		if(this._tabState) {
-			this._tabState.removeListener('mainFrameChanged', this.$mainFrameChanged);
-		}
-	};
 	proto.setTab = function(tabId, frameId) {
+		if(this.tabShadow) {
+			this.tabShadow.destroy();
+			this.tabShadow = false;
+		}
+
 		return this.browserState.getTabState(tabId).then(_.bind(function(tabState) {
-			this._removeFrameListener();
 			this.tabShadow = new ShadowTab(tabState, this.socket);
-			/*
-			this._tabState = tabState;
-
-			var frame;
-			if(frameId) {
-				frame = tabState.getFrame(frameId);
-			} else {
-				frame = tabState.getMainFrame();
-				this._addFrameListener();
-			}
-
-			if(this.tabShadow) {
-				this.tabShadow.destroy();
-			}
-			this.tabShadow = new ShadowTab(frame, this.socket);
-			this.activeTabId = tabId;
-			this.sendTabs();
-			*/
-			return tabState;
 		}, this)).catch(function(err) {
 			console.error(err.stack);
 		});
@@ -142,7 +99,6 @@ var ShadowBrowser = function(browserState, socket) {
 
 		this._removeBrowserStateListeners();
 		this._removeSocketListeners();
-		this._removeFrameListener();
 	};
 }(ShadowBrowser));
 
