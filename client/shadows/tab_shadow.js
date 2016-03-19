@@ -4,10 +4,12 @@ var _ = require('underscore'),
 	URL = require('url'),
 	ShadowFrame = require('./frame_shadow').ShadowFrame;
 
-var ShadowTab = function(tab, socket) {
+var ShadowTab = function(tab, frameId, socket) {
 	this.socket = socket;
 	this.tab = tab;
+	this.frameId = frameId;
 	this._frames = {};
+	this.isMainFrame = !this.frameId;
 
 	this._initialize();
 };
@@ -17,9 +19,13 @@ var ShadowTab = function(tab, socket) {
 	var proto = My.prototype;
 
 	proto._initialize = function() {
-		this.$mainFrameChanged = _.bind(this.mainFrameChanged, this);
-
-		this.mainFrameChanged();
+		if(this.isMainFrame) {
+			this.$mainFrameChanged = _.bind(this.mainFrameChanged, this);
+			this.mainFrameChanged();
+			this._addFrameListener();
+		} else {
+			this.setFrame(this.frameId);
+		}
 	};
 
 	proto._getTab = function() {
@@ -42,7 +48,9 @@ var ShadowTab = function(tab, socket) {
 
 	proto._addFrameListener = function() {
 		var tab = this._getTab();
-		tab.on('mainFrameChanged', this.$mainFrameChanged);
+		if(!this.frameId) {
+			tab.on('mainFrameChanged', this.$mainFrameChanged);
+		}
 	};
 	proto._removeFrameListener = function() {
 		var tab = this._getTab();
@@ -52,14 +60,16 @@ var ShadowTab = function(tab, socket) {
 		return this.frameId;
 	};
 	proto.openURL = function(url) {
-		var parsedURL = URL.parse(info.url);
+		var parsedURL = URL.parse(url);
 		if(!parsedURL.protocol) { parsedURL.protocol = 'http'; }
 		var url = URL.format(parsedURL);
-		this.getTab().openURL(url);
+		this._getTab().openURL(url);
 	};
 
 	proto.destroy = function() {
-		this._removeFrameListener();
+		if(this.isMainFrame) {
+			this._removeFrameListener();
+		}
 	};
 }(ShadowTab));
 

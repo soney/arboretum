@@ -54,20 +54,13 @@ var ShadowBrowser = function(browserState, socket) {
 		this.browserState.removeListener('tabDestroyed', this.$sendTabs);
 		this.browserState.removeListener('tabUpdated', this.$sendTabs);
 	};
-	proto._onClientReady = function() {
-		var activeTabId = this.browserState.getActiveTabId();
-		this.setTab(activeTabId);
-		/*
-		console.log('client ready');
-		if(!tabId) {
+	proto._onClientReady = function(info) {
+		var tabId = info.tabId,
+			frameId = info.frameId;
+		if(!info.tabId) {
 			tabId = this.browserState.getActiveTabId();
 		}
-		this.frameId = frameId;
-
-		this.setTab(tabId, frameId).then(_.bind(function() {
-			this.sendTabs();
-		}, this));
-		*/
+		this.setTab(tabId, frameId);
 	};
 
 	proto._addSocketListeners = function() {
@@ -100,7 +93,7 @@ var ShadowBrowser = function(browserState, socket) {
 		return this.activeTabId;
 	};
 
-	proto.setTab = function(tabId) {
+	proto.setTab = function(tabId, frameId) {
 		if(this.tabShadow) {
 			this.tabShadow.destroy();
 			this.tabShadow = false;
@@ -109,7 +102,7 @@ var ShadowBrowser = function(browserState, socket) {
 		this.activeTabId = tabId;
 
 		return this.browserState.getTabState(tabId).then(_.bind(function(tabState) {
-			this.tabShadow = new ShadowTab(tabState, this.socket);
+			this.tabShadow = new ShadowTab(tabState, frameId, this.socket);
 		}, this)).catch(function(err) {
 			console.error(err.stack);
 		});
