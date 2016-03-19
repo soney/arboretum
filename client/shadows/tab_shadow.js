@@ -63,7 +63,7 @@ var ShadowTab = function(tab, frameId, socket) {
 		var parsedURL = URL.parse(url);
 		if(!parsedURL.protocol) { parsedURL.protocol = 'http'; }
 		var url = URL.format(parsedURL);
-		this._getTab().openURL(url);
+		this._getTab().navigate(url);
 	};
 
 	proto.destroy = function() {
