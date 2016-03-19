@@ -53,7 +53,19 @@ var ShadowBrowser = function(browserState, socket) {
 		this.browserState.removeListener('tabUpdated', this.$sendTabs);
 	};
 	proto._onClientReady = function() {
+		var activeTabId = this.browserState.getActiveTabId();
+		this.setTab(activeTabId);
+		/*
 		console.log('client ready');
+		if(!tabId) {
+			tabId = this.browserState.getActiveTabId();
+		}
+		this.frameId = frameId;
+
+		this.setTab(tabId, frameId).then(_.bind(function() {
+			this.sendTabs();
+		}, this));
+		*/
 	};
 
 	proto._addSocketListeners = function() {

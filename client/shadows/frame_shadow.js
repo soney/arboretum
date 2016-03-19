@@ -1,7 +1,7 @@
 var _ = require('underscore'),
 	util = require('util'),
 	EventEmitter = require('events'),
-	ShadowDOM = require('./dom_shadow');
+	ShadowDOM = require('./dom_shadow').ShadowDOM;
 
 var ShadowFrame = function(domTree, socket) {
 	this.domTree = domTree;
@@ -66,7 +66,7 @@ var ShadowFrame = function(domTree, socket) {
 		}
 		var node = domTree.getRoot();
 		if(node) {
-			var shadow = this._shadowTree = new DOMTreeShadow({
+			var shadow = this._shadowTree = new ShadowDOM({
 				tree: node,
 				state: this
 			});

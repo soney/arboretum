@@ -2,11 +2,14 @@ var _ = require('underscore'),
 	util = require('util'),
 	EventEmitter = require('events'),
 	URL = require('url'),
-	ShadowTab = require('./frame_shadow').ShadowFrame;
+	ShadowFrame = require('./frame_shadow').ShadowFrame;
 
 var ShadowTab = function(tab, socket) {
+	this.socket = socket;
 	this.tab = tab;
 	this._frames = {};
+
+	this._initialize();
 };
 
 (function(My) {
@@ -15,33 +18,35 @@ var ShadowTab = function(tab, socket) {
 
 	proto._initialize = function() {
 		this.$mainFrameChanged = _.bind(this.mainFrameChanged, this);
+
+		this.mainFrameChanged();
 	};
 
 	proto._getTab = function() {
 		return this.tab;
 	};
 	proto.mainFrameChanged = function() {
-		this.setFrame(this.browserState.getMainFrame().getId(), this.getActiveTabId())
-	};
-	proto.setFrame = function(frameId, tabId) {
-		if(!tabId) {
-			tabId = this.browserState.getActiveTabId();
-		}
-		this.frameId = frameId;
+		var tab = this._getTab(),
+			mainFrame = tab.getMainFrame();
 
-		this.setTab(tabId, frameId).then(_.bind(function() {
-			this.sendTabs();
-		}, this));
+		this.setFrame(mainFrame.getFrameId());
 	};
-	proto._addFrameListener = function() {
-		if(this._tabState) {
-			this._tabState.on('mainFrameChanged', this.$mainFrameChanged);
+	proto.setFrame = function(frameId) {
+		if(this.shadowFrame) {
+			this.shadowFrame.destroy();
 		}
+
+		var frame = this._getTab().getFrame(frameId);
+		this.shadowFrame = new ShadowFrame(frame, this.socket);
+	};
+
+	proto._addFrameListener = function() {
+		var tab = this._getTab();
+		tab.on('mainFrameChanged', this.$mainFrameChanged);
 	};
 	proto._removeFrameListener = function() {
-		if(this._tabState) {
-			this._tabState.removeListener('mainFrameChanged', this.$mainFrameChanged);
-		}
+		var tab = this._getTab();
+		tab.removeListener('mainFrameChanged', this.$mainFrameChanged);
 	};
 	proto.getFrameId = function() {
 		return this.frameId;
