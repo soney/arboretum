@@ -36,11 +36,13 @@ var ShadowBrowser = function(browserState, socket) {
 		this.setTab(info.tabId);
 	};
 	proto._onOpenURL = function(info) {
-		var tab = this.getActiveTab();
-		tab.openURL(info.url);
+		this.tabShadow.openURL(info.url);
 	};
 	proto._onDeviceEvent = function(event) {
-		this.browserState.onDeviceEvent(event, this.getActiveTabId(), this.getFrameId());
+		this.browserState.onDeviceEvent(event, this.getActiveTabId());
+	};
+	proto.getFrameId = function() {
+		return this.tabShadow.getFrameId();
 	};
 	proto._addBrowserStateListeners = function() {
 		this.browserState.on('tabCreated', this.$sendTabs);
@@ -98,11 +100,13 @@ var ShadowBrowser = function(browserState, socket) {
 		return this.activeTabId;
 	};
 
-	proto.setTab = function(tabId, frameId) {
+	proto.setTab = function(tabId) {
 		if(this.tabShadow) {
 			this.tabShadow.destroy();
 			this.tabShadow = false;
 		}
+
+		this.activeTabId = tabId;
 
 		return this.browserState.getTabState(tabId).then(_.bind(function(tabState) {
 			this.tabShadow = new ShadowTab(tabState, this.socket);

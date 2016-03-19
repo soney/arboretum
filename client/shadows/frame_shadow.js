@@ -18,20 +18,18 @@ var ShadowFrame = function(domTree, socket) {
 			socket = this._getSocket();
 
 		this.$_updateShadowTree = _.bind(this._updateShadowTree, this);
-		//this.$_updateSheets = _.bind(this._updateSheets, this);
 		this.$_highlightNode = _.bind(this._highlightNode, this);
 		this.$_removeHighlight = _.bind(this._removeHighlight, this);
 
 		this.$_mouseEvent = _.bind(this._mouseEvent, this);
 
 		this._addListeners();
-		//domTree.on('styleSheetsInvalidated', this.$_updateSheets);
+
 		socket.on('highlightNode', this.$_highlightNode);
 		socket.on('removeHighlight', this.$_removeHighlight);
 		socket.on('mouseEvent', this.$_mouseEvent);
 
 		this._updateShadowTree();
-		//this._updateSheets();
 
 		this.on('updated', function() {
 			socket.emit('treeUpdated', this._shadowTree.serialize());
@@ -74,17 +72,7 @@ var ShadowFrame = function(domTree, socket) {
 			socket.emit('treeReady', shadow.serialize());
 		}
 	};
-	/*
-	proto._updateSheets = function() {
-		var domTree = this._getDomTree(),
-			socket = this._getSocket();
-		domTree.getStyleSheets().then(function(sheets) {
-			socket.emit('styleSheetsUpdated', {
-				sheets: sheets
-			});
-		});
-	};
-	*/
+
 	proto._removeListeners = function() {
 		var domTree = this._getDomTree();
 		domTree.removeListener('rootInvalidated', this.$_updateShadowTree);
@@ -100,7 +88,6 @@ var ShadowFrame = function(domTree, socket) {
 
 		this._removeListeners();
 
-		//domTree.removeListener('styleSheetsInvalidated', this.$_updateSheets);
 		socket.removeListener('highlightNode', this.$_highlightNode);
 		socket.removeListener('removeHighlight', this.$_removeHighlight);
 	};

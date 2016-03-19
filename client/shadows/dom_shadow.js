@@ -63,7 +63,7 @@ var ShadowDOM = function(options) {
 		if(this.options.childFilterFunction.call(this, child)) {
 			toAdd = this.options.childMapFunction.call(this, child);
 		} else {
-			toAdd = new ShadowDOM(child);
+			toAdd = new DOMTreePlaceholder(child);
 		}
 
 		if(previousNode) {
@@ -155,7 +155,7 @@ var ShadowDOM = function(options) {
 								if(this.options.childFilterFunction.call(this, child)) {
 									toAdd = this.options.childMapFunction.call(this, child);
 								} else {
-									toAdd = new ShadowDOM(child);
+									toAdd = new DOMTreePlaceholder(child);
 								}
 								return toAdd;
 							}, this)
