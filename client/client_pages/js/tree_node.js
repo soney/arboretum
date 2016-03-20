@@ -49,8 +49,13 @@ $.widget('arboretum.tree_node', {
 			childElem;
 
 		if(childType === ELEMENT_NODE || childType === DOCUMENT_NODE || childType === DOCUMENT_TYPE_NODE) {
-			var name = child.name,
+			var name = child.name;
+
+			if(child.namespace) {
+				childElem = $(document.createElementNS(child.namespace, name));
+			} else {
 				childElem = $('<'+name+'/>');
+			}
 		} else if(childType === TEXT_NODE) {
 			childElem = document.createTextNode(child.value);
 		} else {

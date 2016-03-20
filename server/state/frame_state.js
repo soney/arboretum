@@ -15,6 +15,7 @@ var FrameState = function(options) {
 	this.options = options;
 
 	this._nodeMap = {};
+	this._oldNodeMap = {};
 	this._queuedEvents = [];
 	this._executionContext = false;
 	this._root = false;
@@ -108,6 +109,9 @@ var FrameState = function(options) {
 				log.debug('Set Child Nodes ' + event.parentId + ' -> ['+_.map(event.nodes, function(node) { return node.nodeId; }).join(', ')+']');
 
 				this._setChildrenRecursive(parent, nodes);
+				return true;
+			} else if(this._oldNodeMap[event.parentId]) {
+				console.log('had old node');
 				return true;
 			} else {
 				return false;
@@ -336,6 +340,7 @@ var FrameState = function(options) {
 			var wrappedNode = this._getWrappedDOMNodeWithID(id);
 			wrappedNode.destroy();
 			delete this._nodeMap[id];
+			this._oldNodeMap[id] = true;
 		}
 	};
 

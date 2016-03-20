@@ -9,6 +9,7 @@ var _ = require('underscore'),
 var SIMULATE_CLICK = readFile(path.join(__dirname, 'injectable_js', 'simulate_click.js'));
 var GET_ELEMENT_VALUE = readFile(path.join(__dirname, 'injectable_js', 'get_element_value.js'));
 var SET_ELEMENT_VALUE = readFile(path.join(__dirname, 'injectable_js', 'set_element_value.js'));
+var GET_NAMESPCE = readFile(path.join(__dirname, 'injectable_js', 'get_namespace.js'));
 
 log.setLevel('error');
 
@@ -50,6 +51,9 @@ function callFNOnElement(chrome, fn_promise, nodeId, additional_args) {
 	}).then(function() {
 		return rv;
 	});
+}
+function getNamespace(chrome, nodeId) {
+	return callFNOnElement(chrome, GET_NAMESPCE, nodeId);
 }
 
 function click(chrome, nodeId) {
@@ -160,5 +164,6 @@ function readFile(filename) {
 
 module.exports = {
 	click: click,
+	getNamespace: getNamespace,
 	setElementValue: setElementValue
 };

@@ -81,6 +81,7 @@ $.widget('arboretum.menu', {
 				this._updateTabs(this._tabs);
 			}
 		}, this));
+		socket.emit('getCurrentTabs');
 	},
 	_addTabListeners: function() {
 		var socket = this.option('socket');

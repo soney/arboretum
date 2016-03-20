@@ -5,7 +5,9 @@ var _ = require('underscore'),
 	path = require('path'),
 	log = require('loglevel'),
 	urlTransform = require('../url_transform').urlTransform,
-	processCSSURLs = require('../css_parser').processCSSURLs;
+	driver = require('../hack_driver/hack_driver');
+	processCSSURLs = require('../css_parser').processCSSURLs,
+	NODE_CODE = require('../../utils/node_code');
 
 //log.setLevel('trace');
 
@@ -16,6 +18,7 @@ var DOMState = function(options) {
 
 	this._parent = options.parent;
 
+	this._namespace = null;
 	this._superAttributes = {};
 	this._attributes = {};
 	this._inlineStyle = '';
@@ -44,7 +47,7 @@ var DOMState = function(options) {
 			nodeValue = node.nodeValue;
 
 		return new Promise(_.bind(function(resolve, reject) {
-			if(nodeType === 3 && nodeValue && nodeValue.endsWith('…')) {
+			if(nodeType === NODE_CODE.TEXT_NODE && nodeValue && nodeValue.endsWith('…')) {
 				var chrome = this._getChrome();
 				this.chrome.DOM.getOuterHTML({
 					nodeId: this.node.nodeId
@@ -55,7 +58,7 @@ var DOMState = function(options) {
 						node.nodeValue = value.outerHTML;
 						resolve(node.nodeValue);
 					}
-				}, this))
+				}, this));
 			} else {
 				resolve(nodeValue);
 			}
@@ -121,6 +124,27 @@ var DOMState = function(options) {
 		return _.extend({}, this._attributes, this._superAttributes);
 	};
 
+	proto.getNamespace = function() {
+		return this._namespace;
+	};
+
+	proto.updateNamespace = function() {
+		var nodeType = this.getNodeType();
+		if(nodeType === NODE_CODE.ELEMENT_NODE) {
+			return driver.getNamespace(this._getChrome(), this.getId()).then(function(result) {
+				if(result.wasThrown) {
+					return null;
+				} else {
+					return result.result.value;
+				}
+			}).then(_.bind(function(namespace) {
+				return this._namespace = namespace;
+			}, this));
+		} else {
+			return false;
+		}
+	};
+
 	proto.initialize = function() {
 		var inlineStylePromise = this._requestInlineStyle().then(_.bind(function(inlineStyle) {
 				this._inlineStyle = inlineStyle.cssText;
@@ -142,9 +166,10 @@ var DOMState = function(options) {
 		}
 
 		this._initializeAttributesMap();
-		var longStringInitialization = this._initializeLongString();
+		var longStringInitialization = this._initializeLongString(),
+			namespaceFetcher = this.updateNamespace();
 
-		return Promise.all([inlineStylePromise, longStringInitialization]);
+		return Promise.all([inlineStylePromise, longStringInitialization, namespaceFetcher]);
 	};
 	proto.getChildFrame = function() {
 		return this.childFrame;
@@ -397,17 +422,17 @@ var DOMState = function(options) {
 		var node = this._getNode(),
 			type = node.nodeType,
 			id = node.nodeId;
-		if(type === 9) {
+		if(type === NODE_CODE.DOCUMENT_NODE) {
 			return '(' + id + ') ' + node.nodeName;
-		} else if(type === 3) {
+		} else if(type === NODE_CODE.TEXT_NODE) {
 			var text = node.nodeValue.replace(/(\n|\t)/gi, '');
 			if(text.length > MAX_TEXT_LENGTH) {
 				text = text.substr(0, MAX_TEXT_LENGTH) + '...';
 			}
 			return '(' + id + ') text: ' + text;
-		} else if(type === 10) {
+		} else if(type === NODE_CODE.DOCUMENT_TYPE_NODE) {
 			return '(' + id + ') <' + node.nodeName + '>';
-		} else if(type === 1) {
+		} else if(type === NODE_CODE.ELEMENT_NODE) {
 			var text = '(' + id + ') <' + node.nodeName;
 			var attributesMap = this.getAttributesMap();
 			var style = this.getInlineStyle();
@@ -422,7 +447,7 @@ var DOMState = function(options) {
 			//}
 			text += '>';
 			return text;
-		} else if(type === 8) {
+		} else if(type === NODE_CODE.COMMENT_NODE) {
 			var text = '(' + id + ') <!-- ';
 			text += node.nodeValue.replace(/(\n|\t)/gi, '');
 			if(text.length > MAX_TEXT_LENGTH) {

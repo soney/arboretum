@@ -1,7 +1,8 @@
 //NO, this has nothing to do with *that* shadow dom
 var _ = require('underscore'),
 	util = require('util'),
-	EventEmitter = require('events');
+	EventEmitter = require('events'),
+	NODE_CODE = require('../../utils/node_code');
 
 var DOMTreePlaceholder = function(tree) {
 	this.tree = tree;
@@ -32,7 +33,7 @@ var ShadowDOM = function(options) {
 				nodeType = node.nodeType;
 			if(/*nodeName === 'STYLE' || */nodeName === 'SCRIPT' ||
 				nodeName === '#comment'/* || nodeName === 'LINK'*/ ||
-				nodeName === 'BASE' || nodeType === 10) {
+				nodeName === 'BASE' || nodeType === NODE_CODE.DOCUMENT_TYPE_NODE) {
 				return false;
 			} else {
 				return true;
@@ -192,7 +193,8 @@ var ShadowDOM = function(options) {
 				return child.serialize();
 			}),
 			inlineStyle: this._inlineCSS,
-			attributes: this._attributes
+			attributes: this._attributes,
+			namespace: this._namespace
 		};
 	};
 
@@ -204,7 +206,6 @@ var ShadowDOM = function(options) {
 		this._id = tree.getId();
 		this._name = tree.getNodeName();
 		this._value = tree.getNodeValue();
-
 
 		this.$_childAdded = _.bind(this._childAdded, this);
 		this.$_childRemoved = _.bind(this._childRemoved, this);
@@ -218,6 +219,8 @@ var ShadowDOM = function(options) {
 		tree._initialized.then(_.bind(function() {
 			this._value = tree.getNodeValue();
 
+			this._namespace = tree.getNamespace();
+			//console.log(tree.getNamespace(), tree.getNodeName());
 			this._attributes = tree.getAttributesMap();
 			this._inlineCSS = tree.getInlineStyle();
 			//this._updateAttributes(tree.getAttributesMap());
