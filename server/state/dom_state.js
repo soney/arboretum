@@ -7,7 +7,8 @@ var _ = require('underscore'),
 	urlTransform = require('../url_transform').urlTransform,
 	driver = require('../hack_driver/hack_driver');
 	processCSSURLs = require('../css_parser').processCSSURLs,
-	NODE_CODE = require('../../utils/node_code');
+	NODE_CODE = require('../../utils/node_code'),
+	Deferred = require('../../utils/deferred');
 
 //log.setLevel('trace');
 
@@ -23,7 +24,9 @@ var DOMState = function(options) {
 	this._attributes = {};
 	this._inlineStyle = '';
 	this.children = [];
-	this._initialized = this.initialize();
+	this._self_initialized = this.initialize();
+	this._children_initialized = new Deferred();
+	this._initialized = Promise.all(this._self_initialized, this._children_initialized);
 };
 
 (function(My) {
@@ -196,6 +199,10 @@ var DOMState = function(options) {
 		});
 
 		this.children = children;
+		var child_initizlied_promises = _.pluck(this.children, '_self_initialized');
+		Promise.all(child_initizlied_promises).then(_.bind(function() {
+			this._children_initialized.resolve();
+		}, this));
 
 		_.each(this.children, function(child) {
 			child.setParent(this);

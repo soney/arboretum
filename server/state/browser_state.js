@@ -181,31 +181,6 @@ module.exports = {
 	BrowserState: BrowserState
 };
 
-function getChromeInstance(options) {
-	options = _.extend({}, OPTION_DEFAULTS, options);
-
-	return new Promise(function(resolve, reject) {
-		var chromeInstance = cri(options);
-		chromeInstance.on('connect', function(chrome) {
-			resolve(chrome);
-		}).once('error', function(err) {
-			reject(err);
-		});
-	});
-}
-
-function navigate(chrome, url) {
-	return new Promise(function(resolve, reject) {
-		chrome.Page.enable();
-		chrome.once('ready', function() {
-			chrome.Page.navigate({
-				url: url
-			});
-			resolve(chrome);
-		});
-	});
-}
-
 function getTabs(options) {
 	options = _.extend({}, OPTION_DEFAULTS, options);
 
@@ -220,14 +195,6 @@ function getTabs(options) {
 			}
 		});
 	});
-}
-
-function getDocument(chrome) {
-	return new BrowserState(chrome);
-}
-
-function close(chrome) {
-	chrome.close();
 }
 
 module.exports =  BrowserState;

@@ -216,7 +216,7 @@ var ShadowDOM = function(options) {
 		this.$_inlineStyleChanged = _.bind(this._inlineStyleChanged, this);
 
 
-		tree._initialized.then(_.bind(function() {
+		tree._self_initialized.then(_.bind(function() {
 			this._value = tree.getNodeValue();
 
 			this._namespace = tree.getNamespace();
