@@ -19,6 +19,7 @@ var TabState = function(tabId, chrome) {
 	this._pendingFrameEvents = {};
 
 	this._initialized = this._initialize();
+	this.navigate('file:///Users/soney/dev/arboretum/test/simple_test.html');
 };
 
 (function(My) {

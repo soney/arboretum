@@ -24,14 +24,31 @@ var DOMState = function(options) {
 	this._attributes = {};
 	this._inlineStyle = '';
 	this.children = [];
-	this._self_initialized = this.initialize();
-	this._children_initialized = new Deferred().resolve();
+	this._self_initialized = this.initialize().then(function() {
+		console.log('done');
+	}, function(err) {
+		console.error(err.stack);
+	});
+	this._updateChildrenInitializedPromise();
 	//this._initialized = Promise.all([this._self_initialized, this._children_initialized]);
 };
 
 (function(My) {
 	util.inherits(My, EventEmitter);
 	var proto = My.prototype;
+
+	proto._updateChildrenInitializedPromise = function() {
+		var initializedPromises = Promise.all(_.pluck(this.children, '_self_initialized'));
+
+		var timeoutPromise = new Promise(function(resolve, reject) {
+			setTimeout(function() {
+				reject('Timed out');
+			}, 1000);
+		});
+		this._children_initialized = Promise.race(initializedPromises, timeoutPromise);
+
+		return this._children_initialized;
+	};
 
 	proto._getFrame = function() {
 		return this.frame;
@@ -199,7 +216,7 @@ var DOMState = function(options) {
 		});
 
 		this.children = children;
-		this._children_initialized = Promise.all(_.pluck(this.children, '_self_initialized'));
+		this._updateChildrenInitializedPromise();
 
 		_.each(this.children, function(child) {
 			child.setParent(this);
@@ -219,7 +236,7 @@ var DOMState = function(options) {
 		var index = _.indexOf(this.getChildren(), child);
 		if(index >= 0) {
 			this.children.splice(index, 1);
-			this._children_initialized = Promise.all(_.pluck(this.children, '_self_initialized'));
+			this._updateChildrenInitializedPromise();
 			this.emit('childRemoved', {
 				child: child
 			});
@@ -237,7 +254,7 @@ var DOMState = function(options) {
 		}
 		child.setParent(this);
 
-		this._children_initialized = Promise.all(_.pluck(this.children, '_self_initialized'));
+		this._updateChildrenInitializedPromise();
 		this.emit('childAdded', {
 			child: child,
 			previousNode: previousNode

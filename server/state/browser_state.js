@@ -175,26 +175,18 @@ var BrowserState = function(options) {
 			});
 		});
 	};
+	proto.print = function() {
+		return Promise.all(_.map(this._tabs, function(tab) {
+			return tab.statePromise.then(function(tabState) {
+				console.log('Tab ' + tab.id);
+				tabState.print();
+			});
+		}, this));
+	};
 }(BrowserState));
 
 module.exports = {
 	BrowserState: BrowserState
 };
-
-function getTabs(options) {
-	options = _.extend({}, OPTION_DEFAULTS, options);
-
-	return new Promise(function(resolve, reject) {
-		cri.List(options, function(err, tabs) {
-			if(err) {
-				reject(tabs);
-			} else {
-				resolve(_.filter(tabs, function(tab) {
-					return tab.type === 'page';
-				}));
-			}
-		});
-	});
-}
 
 module.exports =  BrowserState;

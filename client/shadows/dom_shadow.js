@@ -154,7 +154,9 @@ var ShadowDOM = function(options) {
 
 	proto._updateChildren = function(treeChildren) {
 		var tree = this.getTree();
+		console.log('update');
 		return tree._children_initialized.then(_.bind(function() {
+			console.log('ok');
 			this.children = _	.chain(treeChildren)
 								.map(function(child) {
 									var toAdd;
