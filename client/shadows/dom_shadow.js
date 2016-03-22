@@ -138,8 +138,11 @@ var ShadowDOM = function(options) {
 	proto._childrenChanged = function(info) {
 		var children = info.children,
 			state = this._getState();
-		this._updateChildren(children);
-		state.childrenChanged(this, this.getChildren());
+		this._updateChildren(children).then(_.bind(function() {
+			state.childrenChanged(this, this.getChildren());
+		}, this)).catch(function(e) {
+			console.error(e.stack);
+		});
 	};
 
 	proto._nodeValueChanged = function(info) {
@@ -150,17 +153,20 @@ var ShadowDOM = function(options) {
 	};
 
 	proto._updateChildren = function(treeChildren) {
-		this.children = _	.chain(treeChildren)
-							.map(function(child) {
-								var toAdd;
-								if(this.options.childFilterFunction.call(this, child)) {
-									toAdd = this.options.childMapFunction.call(this, child);
-								} else {
-									toAdd = new DOMTreePlaceholder(child);
-								}
-								return toAdd;
-							}, this)
-							.value();
+		var tree = this.getTree();
+		return tree._children_initialized.then(_.bind(function() {
+			this.children = _	.chain(treeChildren)
+								.map(function(child) {
+									var toAdd;
+									if(this.options.childFilterFunction.call(this, child)) {
+										toAdd = this.options.childMapFunction.call(this, child);
+									} else {
+										toAdd = new DOMTreePlaceholder(child);
+									}
+									return toAdd;
+								}, this)
+								.value();
+		}, this));
 	};
 
 	proto.getTree = function() {
@@ -239,6 +245,7 @@ var ShadowDOM = function(options) {
 			tree.on('attributesChanged', this.$_updateAttributes);
 			tree.on('nodeValueChanged', this.$_nodeValueChanged);
 			tree.on('inlineStyleChanged', this.$_inlineStyleChanged);
+
 		}, this)).catch(function(err) {
 			console.log(err);
 		});
