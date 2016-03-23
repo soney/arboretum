@@ -1,11 +1,9 @@
 var _ = require('underscore'),
 	util = require('util'),
 	EventEmitter = require('events'),
-	log = require('loglevel'),
 	ResourceTracker = require('../resource_tracker').ResourceTracker,
 	DOMState = require('./dom_state').DOMState;
-
-//log.setLevel('trace');
+var log = require('../../utils/logging').getColoredLogger('green');
 
 var FrameState = function(options) {
 	var chrome = options.chrome;
@@ -21,6 +19,7 @@ var FrameState = function(options) {
 	this._root = false;
 
 	this._resourceTracker = new ResourceTracker(chrome, this, options.resources);
+	log.debug('=== CREATED FRAME STATE', this.getFrameId(), ' ====');
 };
 
 (function(My) {
@@ -293,7 +292,7 @@ var FrameState = function(options) {
 			_.each(event.nodeIds, function(nodeId) {
 				var node = this._getWrappedDOMNodeWithID(nodeId);
 				if(node) {
-					node._updateInlineStyle();
+					node.updateInlineStyle();
 					hasAnyNode = true;
 				}
 			}, this);
@@ -403,6 +402,7 @@ var FrameState = function(options) {
 		}
 		var resourceTracker = this.getResourceTracker();
 		resourceTracker.destroy();
+		log.debug('=== DESTROYED FRAME STATE', this.getFrameId(), ' ====');
 	};
 
 	proto._getChrome = function() {

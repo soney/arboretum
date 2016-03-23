@@ -3,6 +3,7 @@ var _ = require('underscore'),
 	util = require('util'),
 	EventEmitter = require('events'),
 	NODE_CODE = require('../../utils/node_code');
+var log = require('../../utils/logging').getColoredLogger('magenta', 'bgBlack');
 
 var DOMTreePlaceholder = function(tree) {
 	this.tree = tree;
@@ -48,6 +49,7 @@ var ShadowDOM = function(options) {
 	this._attributes = {};
 	this._inlineCSS = '';
 
+	log.debug('Shadow for ' + this.getTree().getId());
 	this._initialize();
 };
 
@@ -61,46 +63,50 @@ var ShadowDOM = function(options) {
 			toAdd,
 			addedAtIndex;
 
-		if(this.options.childFilterFunction.call(this, child)) {
-			toAdd = this.options.childMapFunction.call(this, child);
-		} else {
-			toAdd = new DOMTreePlaceholder(child);
-		}
+		var tree = this.getTree();
 
-		if(previousNode) {
-			var previousNodeId = previousNode.getId(),
-				myChildren = this.children,
-				len = myChildren.length,
-				i = 0,
-				child;
-
-			while(i < len) {
-				child = myChildren[i];
-				if(child.getId() === previousNodeId) {
-					this.children.splice(i+1, 0, toAdd);
-					addedAtIndex = i+1;
-					break;
-				}
-				i++;
+		return tree._children_initialized.then(_.bind(function() {
+			if(this.options.childFilterFunction.call(this, child)) {
+				toAdd = this.options.childMapFunction.call(this, child);
+			} else {
+				toAdd = new DOMTreePlaceholder(child);
 			}
-		} else {
-			this.children.unshift(toAdd);
-			addedAtIndex = 0;
-		}
 
-		if(toAdd instanceof My) {
-			var state = this._getState(),
-				previousNodeId = false,
-				node;
-			for(var i = addedAtIndex-1; i>=0; i--) {
-				node = this.children[i];
-				if(node instanceof My) {
-					previousNodeId = node.getId();
-					break;
+			if(previousNode) {
+				var previousNodeId = previousNode.getId(),
+					myChildren = this.children,
+					len = myChildren.length,
+					i = 0,
+					child;
+
+				while(i < len) {
+					child = myChildren[i];
+					if(child.getId() === previousNodeId) {
+						this.children.splice(i+1, 0, toAdd);
+						addedAtIndex = i+1;
+						break;
+					}
+					i++;
 				}
+			} else {
+				this.children.unshift(toAdd);
+				addedAtIndex = 0;
 			}
-			state.childAdded(this, toAdd, previousNodeId);
-		}
+
+			if(toAdd instanceof My) {
+				var state = this._getState(),
+					previousNodeId = false,
+					node;
+				for(var i = addedAtIndex-1; i>=0; i--) {
+					node = this.children[i];
+					if(node instanceof My) {
+						previousNodeId = node.getId();
+						break;
+					}
+				}
+				state.childAdded(this, toAdd, previousNodeId);
+			}
+		}, this));
 	};
 
 	proto._getState = function() {
@@ -154,9 +160,8 @@ var ShadowDOM = function(options) {
 
 	proto._updateChildren = function(treeChildren) {
 		var tree = this.getTree();
-		console.log('update');
 		return tree._children_initialized.then(_.bind(function() {
-			console.log('ok');
+			log.debug('children updated ' + tree.getId());
 			this.children = _	.chain(treeChildren)
 								.map(function(child) {
 									var toAdd;
@@ -168,7 +173,9 @@ var ShadowDOM = function(options) {
 									return toAdd;
 								}, this)
 								.value();
-		}, this));
+		}, this)).catch(function(err) {
+			console.error(err);
+		});
 	};
 
 	proto.getTree = function() {

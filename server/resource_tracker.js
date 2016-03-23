@@ -1,11 +1,9 @@
 var _ = require('underscore'),
 	util = require('util'),
 	EventEmitter = require('events'),
-	log = require('loglevel'),
 	processCSS = require('./css_parser').parseCSS,
 	mime = require('mime');
-
-log.setLevel('trace');
+var log = require('../utils/logging').getColoredLogger('cyan');
 
 var ResourceTracker = function(chrome, frame, initialResources) {
 	this._resetData();
@@ -53,7 +51,7 @@ var ResourceTracker = function(chrome, frame, initialResources) {
 	};
 	proto._recordResponse = function(response) {
 		this._responses[response.url] = response;
-		log.debug('response received ' + response.url);
+		//log.debug('response received ' + response.url);
 	};
 
 	proto._getResponseBody = function(requestId) {

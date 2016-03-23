@@ -2,12 +2,9 @@ var _ = require('underscore'),
 	util = require('util'),
 	URL = require('url'),
 	EventEmitter = require('events'),
-	log = require('loglevel'),
 	EventManager = require('../event_manager').EventManager,
-	FrameState = require('./frame_state').FrameState,
-	colors = require('colors/safe');
-
-log.setLevel('error');
+	FrameState = require('./frame_state').FrameState;
+var log = require('../../utils/logging').getColoredLogger('yellow');
 
 var TabState = function(tabId, chrome) {
 	this.chrome = chrome;
@@ -19,7 +16,7 @@ var TabState = function(tabId, chrome) {
 	this._pendingFrameEvents = {};
 
 	this._initialized = this._initialize();
-	this.navigate('file:///Users/soney/dev/arboretum/test/simple_test.html');
+	log.debug('=== CREATED TAB STATE', this.getTabId(), ' ====');
 };
 
 (function(My) {
@@ -86,7 +83,7 @@ var TabState = function(tabId, chrome) {
 
 	proto._setMainFrame = function(frame) {
 		this._rootFrame = frame;
-		log.error(colors.red('Set main frame  ' + frame.getFrameId() ));
+		log.debug('Set main frame ' + frame.getFrameId());
 
 		return this._getDocument().then(_.bind(function(doc) {
 			var root = doc.root;
@@ -235,7 +232,7 @@ var TabState = function(tabId, chrome) {
 		var frameId = frameInfo.frameId,
 			parentFrameId = frameInfo.parentFrameId;
 
-		log.error(colors.red('Frame attached  ' + frameId ) + ' (parent: ' + parentFrameId + ')');
+		log.debug('Frame attached  ' + frameId + ' (parent: ' + parentFrameId + ')');
 
 		this._createEmptyFrame(frameInfo);
 	};
@@ -244,7 +241,7 @@ var TabState = function(tabId, chrome) {
 			frameId = frame.id,
 			frameUrl = frame.url;
 
-		log.error(colors.red('Frame navigated ' + frameId + ' ') + frameUrl);
+		log.debug('Frame navigated ' + frameId + ' ' + frameUrl);
 
 		var frame;
 		if(this._hasFrame(frameId)) {
@@ -258,7 +255,7 @@ var TabState = function(tabId, chrome) {
 	proto._onFrameDetached = function(frameInfo) {
 		var frameId = frameInfo.frameId;
 
-		log.error(colors.red('Frame detached ') + frameId);
+		log.debug('Frame detached ' + frameId);
 
 		this._destroyFrame(frameId);
 	};
@@ -277,7 +274,7 @@ var TabState = function(tabId, chrome) {
 			frame = frameInfo.frame,
 			frameId = frame.id;
 
-		log.error(colors.red('Frame created ' + frameId + ' '));
+		log.debug('Frame created ' + frameId);
 
 		var frameState = this._frames[frameId] = new FrameState(_.extend({
 			chrome: this._getChrome(),
@@ -587,6 +584,7 @@ var TabState = function(tabId, chrome) {
 	proto.destroy = function() {
 		var chrome = this._getChrome();
 		chrome.close();
+		log.debug('=== DESTROYED TAB STATE', this.getTabId(), ' ====');
 	};
 
 	proto._getChrome = function() {

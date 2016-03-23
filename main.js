@@ -3,7 +3,10 @@ var repl = require('repl'),
 	_ = require('underscore'),
 	reload = require('require-reload')(require),
 	exec = child_process.exec,
+	log = require('./utils/logging'),
 	replServer;
+
+log.setLevel('trace');
 
 startAll().then(function(info) {
 	var browser = info.browser;
@@ -37,7 +40,6 @@ startAll().then(function(info) {
 function startAll() {
 	var serverInfo;
 	return startChrome().then(function(chromePort) {
-		console.log('Chromium started');
 		return startServer(chromePort);
 	}).then(function(info) {
 		return wait(0, info);

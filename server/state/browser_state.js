@@ -2,21 +2,21 @@ var cri = require('chrome-remote-interface'),
 	_ = require('underscore'),
 	util = require('util'),
 	EventEmitter = require('events'),
-	log = require('loglevel'),
-	TabState = require('./tab_state').TabState,
-	colors = require('colors/safe');
+	TabState = require('./tab_state').TabState;
+var log = require('../../utils/logging').getColoredLogger('red');
 
 var OPTION_DEFAULTS = {
 	host: 'localhost',
 	port: 9222
 };
 
-log.setLevel('error');
 
 var BrowserState = function(options) {
 	this._options = _.extend(OPTION_DEFAULTS, options);
 	this._tabs = {};
-	this._initialized = this._initialize();
+	this._initialized = this._initialize().then(function() {
+		log.debug('=== CREATED BROWSER ===');
+	});
 };
 
 (function(My) {

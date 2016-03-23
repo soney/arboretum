@@ -1,8 +1,7 @@
 //http://stackoverflow.com/questions/2725156/complete-list-of-html-tag-attributes-which-have-a-url-value
 var URL = require('url'),
 	srcset = require('srcset'),
-	_ = require('underscore'),
-	log = require('loglevel');
+	_ = require('underscore');
 
 var TRANSFORM = 'transform',
 	REFORMAT = 'reformat';

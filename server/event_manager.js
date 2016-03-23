@@ -1,10 +1,8 @@
 var _ = require('underscore'),
 	util = require('util'),
 	EventEmitter = require('events'),
-	log = require('loglevel'),
 	driver = require('./hack_driver/hack_driver');
-
-log.setLevel('error');
+var log = require('../utils/logging').getColoredLogger('white');
 
 var EventManager = function(chrome) {
 	this.chrome = chrome;

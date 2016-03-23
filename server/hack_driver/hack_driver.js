@@ -1,17 +1,15 @@
 var _ = require('underscore'),
 	util = require('util'),
 	EventEmitter = require('events'),
-	log = require('loglevel'),
 	path = require('path'),
 	fs = require('fs'),
 	sprintf = require("sprintf-js").sprintf;
+var log = require('../../utils/logging').getColoredLogger('red');
 
 var SIMULATE_CLICK = readFile(path.join(__dirname, 'injectable_js', 'simulate_click.js'));
 var GET_ELEMENT_VALUE = readFile(path.join(__dirname, 'injectable_js', 'get_element_value.js'));
 var SET_ELEMENT_VALUE = readFile(path.join(__dirname, 'injectable_js', 'set_element_value.js'));
 var GET_NAMESPCE = readFile(path.join(__dirname, 'injectable_js', 'get_namespace.js'));
-
-log.setLevel('error');
 
 function readShallowObject(chrome, objectId) {
 	return getProperties(chrome, objectId, true).then(function(properties) {

@@ -3,14 +3,12 @@ var _ = require('underscore'),
 	util = require('util'),
 	EventEmitter = require('events'),
 	path = require('path'),
-	log = require('loglevel'),
 	urlTransform = require('../url_transform').urlTransform,
 	driver = require('../hack_driver/hack_driver');
 	processCSSURLs = require('../css_parser').processCSSURLs,
 	NODE_CODE = require('../../utils/node_code'),
 	Deferred = require('../../utils/deferred');
-
-//log.setLevel('trace');
+var log = require('../../utils/logging').getColoredLogger('magenta');
 
 var DOMState = function(options) {
 	this.node = options.node;
@@ -24,13 +22,15 @@ var DOMState = function(options) {
 	this._attributes = {};
 	this._inlineStyle = '';
 	this.children = [];
-	this._self_initialized = this.initialize().then(function() {
-		console.log('done');
-	}, function(err) {
-		console.error(err.stack);
+	this._self_initialized = this.initialize().catch(function(err) {
+		console.error(err);
 	});
+
+	this._self_initialized._node = this.node;
+
 	this._updateChildrenInitializedPromise();
 	//this._initialized = Promise.all([this._self_initialized, this._children_initialized]);
+	log.debug('=== CREATED DOM STATE', this.getId(), ' ====');
 };
 
 (function(My) {
@@ -39,13 +39,10 @@ var DOMState = function(options) {
 
 	proto._updateChildrenInitializedPromise = function() {
 		var initializedPromises = Promise.all(_.pluck(this.children, '_self_initialized'));
-
-		var timeoutPromise = new Promise(function(resolve, reject) {
-			setTimeout(function() {
-				reject('Timed out');
-			}, 1000);
-		});
-		this._children_initialized = Promise.race(initializedPromises, timeoutPromise);
+		if(this.children.length > 0) {
+			log.debug('Update children initialized ' + this.getId());
+		}
+		this._children_initialized = initializedPromises;//Promise.race(initializedPromises, timeoutPromise);
 
 		return this._children_initialized;
 	};
@@ -168,7 +165,9 @@ var DOMState = function(options) {
 	proto.initialize = function() {
 		var inlineStylePromise = this._requestInlineStyle().then(_.bind(function(inlineStyle) {
 				this._inlineStyle = inlineStyle.cssText;
-			}, this));
+			}, this)).catch(function(err) {
+				console.error(err);
+			});
 
 		var node = this._getNode();
 
@@ -201,6 +200,7 @@ var DOMState = function(options) {
 		this.emit('destroyed');
 		this.removeAllListeners();
 		this._destroyed = true;
+		log.debug('=== DESTROYED DOM STATE', this.getId(), ' ====');
 	};
 
 	proto.getId = function() {
@@ -379,9 +379,9 @@ var DOMState = function(options) {
 		});
 	};
 
-	proto._updateInlineStyle = function() {
+	proto.updateInlineStyle = function() {
 		var oldInlineStyle = this.getInlineStyle();
-		this._requestInlineStyle().then(_.bind(function(inlineStyle) {
+		return this._requestInlineStyle().then(_.bind(function(inlineStyle) {
 			this._inlineStyle = inlineStyle.cssText;
 			if(inlineStyle !== oldInlineStyle) {
 				this.emit('inlineStyleChanged', {
