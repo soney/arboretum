@@ -3,9 +3,13 @@ var _ = require('underscore'),
 	EventEmitter = require('events'),
 	ShadowDOM = require('./dom_shadow').ShadowDOM;
 
+var log = require('../../utils/logging').getColoredLogger('green', 'bgBlack');
+
 var ShadowFrame = function(domTree, socket) {
 	this.domTree = domTree;
 	this.socket = socket;
+	log.debug('::: CREATED FRAME SHADOW ' + this.domTree.getFrameId() + ' :::');
+
 	this._initialize();
 };
 
@@ -90,6 +94,8 @@ var ShadowFrame = function(domTree, socket) {
 
 		socket.removeListener('highlightNode', this.$_highlightNode);
 		socket.removeListener('removeHighlight', this.$_removeHighlight);
+
+		log.debug('::: DESTROYED FRAME SHADOW ' + this._getDomTree().getFrameId() + ' :::');
 	};
 	proto._highlightNode = function(info) {
 		var nodeId = info.nodeId;
@@ -116,6 +122,7 @@ var ShadowFrame = function(domTree, socket) {
 	};
 	proto.childrenChanged = function(parent, children) {
 		var socket = this._getSocket();
+		log.debug('Children changed ' + parent.getId());
 		socket.emit('childrenChanged', {
 			parentId: parent.getId(),
 			children: children.map(function(child) { return child.serialize(); })

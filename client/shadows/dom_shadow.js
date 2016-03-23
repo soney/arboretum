@@ -49,7 +49,7 @@ var ShadowDOM = function(options) {
 	this._attributes = {};
 	this._inlineCSS = '';
 
-	log.debug('Shadow for ' + this.getTree().getId());
+	log.debug('::: CREATED DOM SHADOW ' + this.getTree().getId() + ' :::');
 	this._initialize();
 };
 
@@ -274,6 +274,8 @@ var ShadowDOM = function(options) {
 		tree.removeListener('attributesChanged', this.$_updateAttributes);
 		tree.removeListener('nodeValueChanged', this.$_nodeValueChanged);
 		tree.removeListener('inlineStyleChanged', this.$_inlineStyleChanged);
+
+		log.debug('::: DESTROYED DOM SHADOW ' + this.getTree().getId() + ' :::');
 	};
 
 	proto.getId = function() {

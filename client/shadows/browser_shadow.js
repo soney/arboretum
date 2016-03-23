@@ -3,10 +3,13 @@ var _ = require('underscore'),
 	EventEmitter = require('events'),
 	ShadowTab = require('./tab_shadow').ShadowTab;
 
+var log = require('../../utils/logging').getColoredLogger('red', 'bgBlack');
+
 var ShadowBrowser = function(browserState, socket) {
 	this.browserState = browserState;
 	this.socket = socket;
 	this.tabShadow = false;
+	log.debug('::: CREATED BROWSER SHADOW :::');
 	this._initialize();
 };
 (function(My) {
@@ -119,6 +122,7 @@ var ShadowBrowser = function(browserState, socket) {
 
 		this._removeBrowserStateListeners();
 		this._removeSocketListeners();
+		log.debug('::: DESTROYED BROWSER SHADOW :::');
 	};
 }(ShadowBrowser));
 

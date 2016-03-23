@@ -4,12 +4,16 @@ var _ = require('underscore'),
 	URL = require('url'),
 	ShadowFrame = require('./frame_shadow').ShadowFrame;
 
+var log = require('../../utils/logging').getColoredLogger('yellow', 'bgBlack');
+
 var ShadowTab = function(tab, frameId, socket) {
 	this.socket = socket;
 	this.tab = tab;
 	this.frameId = frameId;
 	this._frames = {};
 	this.isMainFrame = !this.frameId;
+
+	log.debug('::: CREATED TAB SHADOW ' + this._getTab().getTabId() + ' :::');
 
 	this._initialize();
 };
@@ -69,7 +73,11 @@ var ShadowTab = function(tab, frameId, socket) {
 	proto.destroy = function() {
 		if(this.isMainFrame) {
 			this._removeFrameListener();
+			if(this.shadowFrame) {
+				this.shadowFrame.destroy();
+			}
 		}
+		log.debug('::: DESTROYED TAB SHADOW ' + this._getTab().getTabId() + ' :::');
 	};
 }(ShadowTab));
 

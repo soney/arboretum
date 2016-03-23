@@ -21,10 +21,14 @@ $.widget('arboretum.tree_state', {
 		//socket.on('styleSheetsUpdated', _.bind(this._stylesheetsUpdated, this));
 		this._addListeners();
 		//this._addDeviceListeners();
+		$(window).on('unload', _.bind(function() {
+			this.element.tree_state('destroy');
+		}, this));
 	},
 	_destroy: function() {
 		this.element.tree_node('destroy');
 		this._removeListeners();
+		this.socket.disconnect();
 	},
 	_frameChanged: function() {
 		if(this.element.data('arboretum-tree_node')) {

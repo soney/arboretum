@@ -22,7 +22,9 @@ var DOMState = function(options) {
 	this._attributes = {};
 	this._inlineStyle = '';
 	this.children = [];
-	this._self_initialized = this.initialize().catch(function(err) {
+	this._self_initialized = this.initialize().then(_.bind(function() {
+		log.debug('DOM state ' + this.getId() + ' initialized');
+	}, this)).catch(function(err) {
 		console.error(err);
 	});
 
@@ -40,7 +42,7 @@ var DOMState = function(options) {
 	proto._updateChildrenInitializedPromise = function() {
 		var initializedPromises = Promise.all(_.pluck(this.children, '_self_initialized'));
 		if(this.children.length > 0) {
-			log.debug('Update children initialized ' + this.getId());
+			log.debug('Update children_initialized ' + this.getId() + ' to wait for ' + this.children.length + ' children');
 		}
 		this._children_initialized = initializedPromises;//Promise.race(initializedPromises, timeoutPromise);
 

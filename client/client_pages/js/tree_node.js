@@ -19,6 +19,7 @@ $.widget('arboretum.tree_node', {
 	_create: function() {
 		this.initialChildren = this.element.children();
 		this._initialize(this.option('node'));
+		console.log('create', this.option('id'));
 	},
 	_initialize: function(data) {
 		var state = this.option('state');
