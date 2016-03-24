@@ -337,7 +337,6 @@ var FrameState = function(options) {
 		var id = node.getId();
 		if(this._hasWrappedDOMNodeWithID(id)) {
 			var wrappedNode = this._getWrappedDOMNodeWithID(id);
-			wrappedNode.destroy();
 			delete this._nodeMap[id];
 			this._oldNodeMap[id] = true;
 		}

@@ -66,6 +66,7 @@ var ShadowDOM = function(options) {
 		var tree = this.getTree();
 
 		return tree._children_initialized.then(_.bind(function() {
+			log.debug('children updated ' + tree.getId());
 			if(this.options.childFilterFunction.call(this, child)) {
 				toAdd = this.options.childMapFunction.call(this, child);
 			} else {
@@ -106,7 +107,9 @@ var ShadowDOM = function(options) {
 				}
 				state.childAdded(this, toAdd, previousNodeId);
 			}
-		}, this));
+		}, this)).catch(function(err) {
+			log.error(err);
+		});
 	};
 
 	proto._getState = function() {
@@ -147,7 +150,7 @@ var ShadowDOM = function(options) {
 		this._updateChildren(children).then(_.bind(function() {
 			state.childrenChanged(this, this.getChildren());
 		}, this)).catch(function(e) {
-			console.error(e.stack);
+			log.error(e.stack);
 		});
 	};
 

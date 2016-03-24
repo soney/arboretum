@@ -44,7 +44,11 @@ var DOMState = function(options) {
 		if(this.children.length > 0) {
 			log.debug('Update children_initialized ' + this.getId() + ' to wait for ' + this.children.length + ' children');
 		}
-		this._children_initialized = initializedPromises;//Promise.race(initializedPromises, timeoutPromise);
+		this._children_initialized = initializedPromises.then(_.bind(function() {
+			log.debug('Node ' + this.getId() + ' children initialized');
+		}, this)).catch(function(err) {
+			log.error(err);
+		});//Promise.race(initializedPromises, timeoutPromise);
 
 		return this._children_initialized;
 	};
@@ -196,6 +200,11 @@ var DOMState = function(options) {
 		return this.childFrame;
 	};
 	proto.destroy = function() {
+		debugger;
+		if(this._destroyed) {
+			debugger;
+		}
+
 		_.each(this.children, function(child) {
 			child.destroy();
 		});
@@ -409,7 +418,7 @@ var DOMState = function(options) {
 			return new Promise(function(resolve, reject) {
 				chrome.CSS.getInlineStylesForNode({
 					nodeId: id
-				}, function(err, value) {
+				}, _.bind(function(err, value) {
 					if(this._destroyed) {
 						reject(new Error('Node ' + id + ' was destroyed'));
 					} else if(err) {
@@ -417,7 +426,7 @@ var DOMState = function(options) {
 					} else {
 						resolve(value.inlineStyle);
 					}
-				});
+				}, this));
 			}).then(_.bind(function(is) {
 				inlineStyle = is;
 				if(inlineStyle.cssText) {
