@@ -19,7 +19,6 @@ $.widget('arboretum.tree_node', {
 	_create: function() {
 		this.initialChildren = this.element.children();
 		this._initialize(this.option('node'));
-		console.log('create', this.option('id'));
 	},
 	_initialize: function(data) {
 		var state = this.option('state');
@@ -52,7 +51,7 @@ $.widget('arboretum.tree_node', {
 		if(childType === ELEMENT_NODE || childType === DOCUMENT_NODE || childType === DOCUMENT_TYPE_NODE) {
 			var name = child.name;
 
-			if(child.namespace) {
+			if(child.namespace && child.namespace !== 'http://www.w3.org/1999/xhtml') {
 				childElem = $(document.createElementNS(child.namespace, name));
 			} else {
 				childElem = $('<'+name+'/>');
@@ -69,12 +68,22 @@ $.widget('arboretum.tree_node', {
 			childType = child.type;
 
 		if(childType === ELEMENT_NODE || childType === DOCUMENT_NODE) {
-			childElem.tree_node(_.extend({
-				state: state
-			}, child));
+			if(child.initialized) {
+				childElem.tree_node(_.extend({
+					state: state
+				}, child));
+			} else {
+				childElem.tree_node_placeholder(_.extend({
+					state: state,
+					parent: this
+				}, child));
+			}
 		} else if(childType === TEXT_NODE) {
 			state.registerNode(child.id, childElem);
 		}
+	},
+	childInitialized: function(child) {
+		console.log(child, 'initialized');
 	},
 	_initializeChildren: function(children) {
 		_.each(children, function(child) {

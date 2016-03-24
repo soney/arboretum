@@ -16,7 +16,6 @@ $.widget('arboretum.tree_state', {
 		});
 		socket.on('serverReady', _.bind(this._serverReady, this));
 
-		socket.on('treeReady', _.bind(this._treeReady, this));
 		socket.on('frameChanged', _.bind(this._frameChanged, this));
 		//socket.on('styleSheetsUpdated', _.bind(this._stylesheetsUpdated, this));
 		this._addListeners();
@@ -38,10 +37,7 @@ $.widget('arboretum.tree_state', {
 			this.element.menu('destroy');
 		}
 	},
-	_serverReady: function(info) {
-		console.log(info);
-	},
-	_treeReady: function(data) {
+	_serverReady: function(data) {
 		//var styleElement = $('style');
 
 		if(this.element.data('arboretum-tree_node')) {
@@ -58,7 +54,7 @@ $.widget('arboretum.tree_state', {
 			}, data.children[0]));
 		} else {
 			var body = $('<body/>').appendTo(this.element);
-			var div = $('<div />').appendTo(body).tree_node(_.extend({
+			var div = $('<div />').appendTo(body).tree_node_placeholder(_.extend({
 				state: this
 			}, data));
 		}
@@ -98,7 +94,9 @@ $.widget('arboretum.tree_state', {
 		this.$_childrenChanged = _.bind(this._childrenChanged, this);
 		this.$_valueChanged = _.bind(this._valueChanged, this);
 		this.$_attributesChanged = _.bind(this._attributesChanged, this);
+		this.$_nodeInitialized = _.bind(this._nodeInitialized, this);
 
+		socket.on('nodeInitialized', this.$_nodeInitialized);
 		socket.on('childAdded', this.$_childAdded);
 		socket.on('childRemoved', this.$_childRemoved);
 		socket.on('childrenChanged', this.$_childrenChanged);
@@ -108,11 +106,24 @@ $.widget('arboretum.tree_state', {
 	_removeListeners: function() {
 		var socket = this.socket;
 
+		socket.off('nodeInitialized', this.$_nodeInitialized);
 		socket.off('childAdded', this.$_childAdded);
 		socket.off('childRemoved', this.$_childRemoved);
 		socket.off('childrenChanged', this.$_childrenChanged);
 		socket.off('valueChanged', this.$_valueChanged);
 		socket.off('attributesChanged', this.$_attributesChanged);
+	},
+	_nodeInitialized: function(info) {
+		console.log(info);
+		var element = this.nodeMap[info.id];
+		if(element) {
+			var parent = element.option('parent');
+			if(parent) {
+				parent.childInitialized(info);
+			}
+		} else {
+			throw new Erorr('Got node initialized before server ready');
+		}
 	},
 	_childAdded: function(info) {
 		var parentId = info.parentId,

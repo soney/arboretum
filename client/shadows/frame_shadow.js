@@ -8,6 +8,7 @@ var log = require('../../utils/logging').getColoredLogger('green', 'bgBlack');
 var ShadowFrame = function(domTree, socket) {
 	this.domTree = domTree;
 	this.socket = socket;
+	this._sentServerReady = false;
 	log.debug('::: CREATED FRAME SHADOW ' + this.domTree.getFrameId() + ' :::');
 
 	this._initialize();
@@ -16,6 +17,10 @@ var ShadowFrame = function(domTree, socket) {
 (function(My) {
 	util.inherits(My, EventEmitter);
 	var proto = My.prototype;
+
+	proto.sentServerReady = function() {
+		return this._sentServerReady;
+	};
 
 	proto._initialize = function() {
 		var domTree = this._getDomTree(),
@@ -35,9 +40,9 @@ var ShadowFrame = function(domTree, socket) {
 
 		this._updateShadowTree();
 
-		this.on('updated', function() {
-			socket.emit('treeUpdated', this._shadowTree.serialize());
-		});
+		//this.on('updated', function() {
+			//socket.emit('treeUpdated', this._shadowTree.serialize());
+		//});
 	};
 	proto._addListeners = function() {
 		var domTree = this._getDomTree();
@@ -61,6 +66,7 @@ var ShadowFrame = function(domTree, socket) {
 		return this.socket;
 	}
 	proto._updateShadowTree = function() {
+		this._sentServerReady = false;
 		var domTree = this._getDomTree(),
 			socket = this._getSocket();
 		if(this._shadowTree) {
@@ -74,10 +80,11 @@ var ShadowFrame = function(domTree, socket) {
 				socket: this._getSocket()
 			});
 
-			log.debug('Tree ready ' + node.getId());
-			shadow._initialized.then(function() {
-				socket.emit('treeReady', shadow.serialize());
-			});
+			shadow.isInitialized().then(_.bind(function() {
+				this._sentServerReady = true;
+				log.debug('Server ready ' + node.getId());
+				socket.emit('serverReady', shadow.serialize());
+			}, this));
 		}
 	};
 

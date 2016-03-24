@@ -48,16 +48,22 @@ var ShadowDOM = function(options) {
 		throw new Error('No Tree');
 	}
 
+	this._is_initialized = false;
 	this._attributes = {};
 	this._inlineCSS = '';
 
-	log.debug('::: CREATED DOM SHADOW ' + this.getTree().getId() + ' :::');
-	this._initialize();
+	this._initialized = this._initialize();
+
+	log.debug('::: CREATED DOM SHADOW ' + this.getId() + ' :::');
 };
 
 (function(My) {
 	util.inherits(My, EventEmitter);
 	var proto = My.prototype;
+
+	proto.isInitialized = function() {
+		return this._initialized;
+	};
 
 	proto._childAdded = function(info) {
 		var child = info.child,
@@ -67,57 +73,53 @@ var ShadowDOM = function(options) {
 
 		var tree = this.getTree();
 
-		return tree._children_initialized.then(_.bind(function() {
-			log.debug('children updated ' + tree.getId());
-			if(this.options.childFilterFunction.call(this, child)) {
-				toAdd = this.options.childMapFunction.call(this, child);
-			} else {
-				toAdd = new DOMTreePlaceholder(child);
-			}
+		log.debug('children updated ' + this.getId());
+		if(this.options.childFilterFunction.call(this, child)) {
+			toAdd = this.options.childMapFunction.call(this, child);
+		} else {
+			toAdd = new DOMTreePlaceholder(child);
+		}
 
-			if(previousNode) {
-				var previousNodeId = previousNode.getId(),
-					myChildren = this.children,
-					len = myChildren.length,
-					i = 0,
-					child;
+		if(previousNode) {
+			var previousNodeId = previousNode.getId(),
+				myChildren = this.children,
+				len = myChildren.length,
+				i = 0,
+				child;
 
-				while(i < len) {
-					child = myChildren[i];
-					if(child.getId() === previousNodeId) {
-						this.children.splice(i+1, 0, toAdd);
-						addedAtIndex = i+1;
-						break;
-					}
-					i++;
+			while(i < len) {
+				child = myChildren[i];
+				if(child.getId() === previousNodeId) {
+					this.children.splice(i+1, 0, toAdd);
+					addedAtIndex = i+1;
+					break;
 				}
-			} else {
-				this.children.unshift(toAdd);
-				addedAtIndex = 0;
+				i++;
 			}
+		} else {
+			this.children.unshift(toAdd);
+			addedAtIndex = 0;
+		}
 
-			if(toAdd instanceof My) {
-				var state = this._getState(),
-					previousNodeId = false,
-					node;
-				for(var i = addedAtIndex-1; i>=0; i--) {
-					node = this.children[i];
-					if(node instanceof My) {
-						previousNodeId = node.getId();
-						break;
-					}
+		if(toAdd instanceof My) {
+			var state = this._getState(),
+				previousNodeId = false,
+				node;
+			for(var i = addedAtIndex-1; i>=0; i--) {
+				node = this.children[i];
+				if(node instanceof My) {
+					previousNodeId = node.getId();
+					break;
 				}
-				var socket = this._getSocket();
-				log.debug('Child ' + child.getId() + ' added to ' + parent.getId());
-				socket.emit('childAdded', {
-					parentId: this.getId(),
-					child: toAdd.serialize(),
-					previousChild: previousNodeId
-				});
 			}
-		}, this)).catch(function(err) {
-			log.error(err);
-		});
+			var socket = this._getSocket();
+			log.debug('Child ' + toAdd.getId() + ' added to ' + this.getId());
+			socket.emit('childAdded', {
+				parentId: this.getId(),
+				child: toAdd.serialize(),
+				previousChild: previousNodeId
+			});
+		}
 	};
 
 	proto._getState = function() {
@@ -235,7 +237,8 @@ var ShadowDOM = function(options) {
 			}),
 			inlineStyle: this._inlineCSS,
 			attributes: this._attributes,
-			namespace: this._namespace
+			namespace: this._namespace,
+			initialized: this._is_initialized
 		};
 	};
 
@@ -264,14 +267,8 @@ var ShadowDOM = function(options) {
 			//console.log(tree.getNamespace(), tree.getNodeName());
 			this._attributes = tree.getAttributesMap();
 			this._inlineCSS = tree.getInlineStyle();
+			this._is_initialized = true;
 			//this._updateAttributes(tree.getAttributesMap());
-			var state = this._getState();
-			if(tree.getNodeType() === 1) {
-				state.attributesChanged(this, {
-					attributes: this._attributes,
-					inlineStyle: this._inlineCSS
-				});
-			}
 
 			tree.on('childAdded', this.$_childAdded);
 			tree.on('childRemoved', this.$_childRemoved);
@@ -280,9 +277,19 @@ var ShadowDOM = function(options) {
 			tree.on('attributesChanged', this.$_updateAttributes);
 			tree.on('nodeValueChanged', this.$_nodeValueChanged);
 			tree.on('inlineStyleChanged', this.$_inlineStyleChanged);
+
+			var state = this._getState();
+
+			if(state.sentServerReady()) {
+				var socket = this._getSocket();
+				log.debug('Initialized ' + this.getId());
+				socket.emit('nodeInitialized', this.serialize());
+			}
 		}, this)).catch(function(err) {
 			console.log(err);
 		});
+
+		return treeInitializedPromise;
 	};
 
 	proto.destroy = function() {
@@ -299,7 +306,7 @@ var ShadowDOM = function(options) {
 		tree.removeListener('nodeValueChanged', this.$_nodeValueChanged);
 		tree.removeListener('inlineStyleChanged', this.$_inlineStyleChanged);
 
-		log.debug('::: DESTROYED DOM SHADOW ' + this.getTree().getId() + ' :::');
+		log.debug('::: DESTROYED DOM SHADOW ' + this.getId() + ' :::');
 	};
 
 	proto.getId = function() {
