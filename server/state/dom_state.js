@@ -17,6 +17,7 @@ var DOMState = function(options) {
 
 	this._parent = options.parent;
 
+	this._destroyed = false;
 	this._namespace = null;
 	this._superAttributes = {};
 	this._attributes = {};
@@ -25,12 +26,13 @@ var DOMState = function(options) {
 	this._self_initialized = this.initialize().then(_.bind(function() {
 		log.debug('DOM state ' + this.getId() + ' initialized');
 	}, this)).catch(function(err) {
-		console.error(err);
+		if(!err.expected) {
+			console.error(err);
+		}
 	});
 
-	this._self_initialized._node = this.node;
-
-	this._updateChildrenInitializedPromise();
+	//this._self_initialized._node = this.node;
+	//this._updateChildrenInitializedPromise();
 	//this._initialized = Promise.all([this._self_initialized, this._children_initialized]);
 	log.debug('=== CREATED DOM STATE', this.getId(), ' ====');
 };
@@ -38,6 +40,11 @@ var DOMState = function(options) {
 (function(My) {
 	util.inherits(My, EventEmitter);
 	var proto = My.prototype;
+
+	proto.isInitialized = function() {
+		return this._self_initialized;
+	};
+	/*
 
 	proto._updateChildrenInitializedPromise = function() {
 		var initializedPromises = Promise.all(_.pluck(this.children, '_self_initialized'));
@@ -52,6 +59,7 @@ var DOMState = function(options) {
 
 		return this._children_initialized;
 	};
+	*/
 
 	proto._getFrame = function() {
 		return this.frame;
@@ -172,7 +180,9 @@ var DOMState = function(options) {
 		var inlineStylePromise = this._requestInlineStyle().then(_.bind(function(inlineStyle) {
 				this._inlineStyle = inlineStyle.cssText;
 			}, this)).catch(function(err) {
-				console.error(err);
+				if(!err.expected) {
+					log.error(err);
+				}
 			});
 
 		var node = this._getNode();
@@ -200,11 +210,6 @@ var DOMState = function(options) {
 		return this.childFrame;
 	};
 	proto.destroy = function() {
-		debugger;
-		if(this._destroyed) {
-			debugger;
-		}
-
 		_.each(this.children, function(child) {
 			child.destroy();
 		});
@@ -227,7 +232,7 @@ var DOMState = function(options) {
 		});
 
 		this.children = children;
-		this._updateChildrenInitializedPromise();
+		//this._updateChildrenInitializedPromise();
 
 		_.each(this.children, function(child) {
 			child.setParent(this);
@@ -247,7 +252,7 @@ var DOMState = function(options) {
 		var index = _.indexOf(this.getChildren(), child);
 		if(index >= 0) {
 			this.children.splice(index, 1);
-			this._updateChildrenInitializedPromise();
+			//this._updateChildrenInitializedPromise();
 			this.emit('childRemoved', {
 				child: child
 			});
@@ -265,7 +270,7 @@ var DOMState = function(options) {
 		}
 		child.setParent(this);
 
-		this._updateChildrenInitializedPromise();
+		//this._updateChildrenInitializedPromise();
 		this.emit('childAdded', {
 			child: child,
 			previousNode: previousNode
@@ -415,19 +420,21 @@ var DOMState = function(options) {
 				chrome = this._getChrome(),
 				inlineStyle;
 
-			return new Promise(function(resolve, reject) {
+			return new Promise(_.bind(function(resolve, reject) {
 				chrome.CSS.getInlineStylesForNode({
 					nodeId: id
 				}, _.bind(function(err, value) {
 					if(this._destroyed) {
-						reject(new Error('Node ' + id + ' was destroyed'));
+						var myError = new Error('Node ' + id + ' was destroyed');
+						myError.expected = true;
+						reject(myError);
 					} else if(err) {
 						reject(new Error('Could not find node ' + id));
 					} else {
 						resolve(value.inlineStyle);
 					}
 				}, this));
-			}).then(_.bind(function(is) {
+			}, this)).then(_.bind(function(is) {
 				inlineStyle = is;
 				if(inlineStyle.cssText) {
 					return this._getBaseURL();

@@ -70,10 +70,14 @@ var ShadowFrame = function(domTree, socket) {
 		if(node) {
 			var shadow = this._shadowTree = new ShadowDOM({
 				tree: node,
-				state: this
+				state: this,
+				socket: this._getSocket()
 			});
 
-			socket.emit('treeReady', shadow.serialize());
+			log.debug('Tree ready ' + node.getId());
+			shadow._initialized.then(function() {
+				socket.emit('treeReady', shadow.serialize());
+			});
 		}
 	};
 
@@ -104,44 +108,6 @@ var ShadowFrame = function(domTree, socket) {
 	proto._removeHighlight = function(info) {
 		var nodeId = info.nodeId;
 		domTree.removeHighlight(nodeId);
-	};
-	proto.childAdded = function(parent, child, previousChildId) {
-		var socket = this._getSocket();
-		socket.emit('childAdded', {
-			parentId: parent.getId(),
-			child: child.serialize(),
-			previousChild: previousChildId
-		});
-	};
-	proto.childRemoved = function(parent, child) {
-		var socket = this._getSocket();
-		socket.emit('childRemoved', {
-			parentId: parent.getId(),
-			childId: child.getId()
-		});
-	};
-	proto.childrenChanged = function(parent, children) {
-		var socket = this._getSocket();
-		log.debug('Children changed ' + parent.getId());
-		socket.emit('childrenChanged', {
-			parentId: parent.getId(),
-			children: children.map(function(child) { return child.serialize(); })
-		});
-	};
-	proto.valueChanged = function(node, value) {
-		var socket = this._getSocket();
-		socket.emit('valueChanged', {
-			id: node.getId(),
-			value: value
-		});
-	};
-	proto.attributesChanged = function(node, info) {
-		var socket = this._getSocket();
-		socket.emit('attributesChanged', {
-			id: node.getId(),
-			attributes: info.attributes,
-			inlineStyle: info.inlineStyle
-		});
 	};
 }(ShadowFrame));
 

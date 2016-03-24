@@ -110,7 +110,6 @@ var FrameState = function(options) {
 				this._setChildrenRecursive(parent, nodes);
 				return true;
 			} else if(this._oldNodeMap[event.parentId]) {
-				console.log('had old node');
 				return true;
 			} else {
 				return false;
@@ -390,7 +389,7 @@ var FrameState = function(options) {
 		//console.log('new url is', event.frame.url, this.getFrameId());
 		_.extend(this.options, event.frame);
 		if(!this.options.url) {
-			console.error(this.options);
+			log.error(this.options);
 		}
 	};
 

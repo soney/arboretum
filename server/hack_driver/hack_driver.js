@@ -10,6 +10,7 @@ var SIMULATE_CLICK = readFile(path.join(__dirname, 'injectable_js', 'simulate_cl
 var GET_ELEMENT_VALUE = readFile(path.join(__dirname, 'injectable_js', 'get_element_value.js'));
 var SET_ELEMENT_VALUE = readFile(path.join(__dirname, 'injectable_js', 'set_element_value.js'));
 var GET_NAMESPCE = readFile(path.join(__dirname, 'injectable_js', 'get_namespace.js'));
+var GET_CANVAS_IMAGE = readFile(path.join(__dirname, 'injectable_js', 'get_canvas_image_data.js'));
 
 function readShallowObject(chrome, objectId) {
 	return getProperties(chrome, objectId, true).then(function(properties) {

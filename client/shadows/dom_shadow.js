@@ -21,10 +21,12 @@ var ShadowDOM = function(options) {
 	this.options = _.extend({
 		tree: false,
 		state: false,
+		socket: false,
 		childMapFunction: function(child) {
 			var shadow = new ShadowDOM({
 				tree: child,
-				state: this._getState()
+				state: this._getState(),
+				socket: this._getSocket()
 			});
 			return shadow;
 		},
@@ -105,7 +107,13 @@ var ShadowDOM = function(options) {
 						break;
 					}
 				}
-				state.childAdded(this, toAdd, previousNodeId);
+				var socket = this._getSocket();
+				log.debug('Child ' + child.getId() + ' added to ' + parent.getId());
+				socket.emit('childAdded', {
+					parentId: this.getId(),
+					child: toAdd.serialize(),
+					previousChild: previousNodeId
+				});
 			}
 		}, this)).catch(function(err) {
 			log.error(err);
@@ -137,48 +145,63 @@ var ShadowDOM = function(options) {
 
 		if(wasRemoved) {
 			if(wasRemoved instanceof My) {
-				var state = this._getState();
-				state.childRemoved(this, wasRemoved);
+				var socket = this._getSocket();
+				log.debug('Child ' + wasRemoved.getId() + ' removed  from ' + this.getId());
+				socket.emit('childRemoved', {
+					parentId: this.getId(),
+					childId: wasRemoved.getId()
+				});
 			}
 			wasRemoved.destroy();
 		}
 	};
 
 	proto._childrenChanged = function(info) {
-		var children = info.children,
-			state = this._getState();
+		var children = info.children;
 		this._updateChildren(children).then(_.bind(function() {
-			state.childrenChanged(this, this.getChildren());
+			var socket = this._getSocket();
+			log.debug('Children changed ' + this.getId());
+			socket.emit('childrenChanged', {
+				parentId: this.getId(),
+				children: this.getChildren().map(function(child) { return child.serialize(); })
+			});
 		}, this)).catch(function(e) {
 			log.error(e.stack);
 		});
 	};
 
 	proto._nodeValueChanged = function(info) {
-		var value = info.value,
-			state = this._getState();
-		this._value = value;
-		state.valueChanged(this, value);
+		this._value = info.value;
+
+		var socket = this._getSocket();
+
+		log.debug('Value changed ' + this.getId());
+		socket.emit('valueChanged', {
+			id: this.getId(),
+			value: this._value
+		});
 	};
 
 	proto._updateChildren = function(treeChildren) {
+		this.children = _	.chain(treeChildren)
+							.map(function(child) {
+								var toAdd;
+								if(this.options.childFilterFunction.call(this, child)) {
+									toAdd = this.options.childMapFunction.call(this, child);
+								} else {
+									toAdd = new DOMTreePlaceholder(child);
+								}
+								return toAdd;
+							}, this)
+							.value();
+							/*
 		var tree = this.getTree();
 		return tree._children_initialized.then(_.bind(function() {
-			log.debug('children updated ' + tree.getId());
-			this.children = _	.chain(treeChildren)
-								.map(function(child) {
-									var toAdd;
-									if(this.options.childFilterFunction.call(this, child)) {
-										toAdd = this.options.childMapFunction.call(this, child);
-									} else {
-										toAdd = new DOMTreePlaceholder(child);
-									}
-									return toAdd;
-								}, this)
-								.value();
+			log.debug('Children initialized ' + tree.getId());
 		}, this)).catch(function(err) {
 			console.error(err);
 		});
+		*/
 	};
 
 	proto.getTree = function() {
@@ -233,8 +256,8 @@ var ShadowDOM = function(options) {
 		this.$_nodeValueChanged = _.bind(this._nodeValueChanged, this);
 		this.$_inlineStyleChanged = _.bind(this._inlineStyleChanged, this);
 
-
-		tree._self_initialized.then(_.bind(function() {
+		this._updateChildren(tree.getChildren());
+		var treeInitializedPromise = tree.isInitialized().then(_.bind(function() {
 			this._value = tree.getNodeValue();
 
 			this._namespace = tree.getNamespace();
@@ -257,11 +280,9 @@ var ShadowDOM = function(options) {
 			tree.on('attributesChanged', this.$_updateAttributes);
 			tree.on('nodeValueChanged', this.$_nodeValueChanged);
 			tree.on('inlineStyleChanged', this.$_inlineStyleChanged);
-
 		}, this)).catch(function(err) {
 			console.log(err);
 		});
-		this._updateChildren(tree.getChildren());
 	};
 
 	proto.destroy = function() {
@@ -285,27 +306,27 @@ var ShadowDOM = function(options) {
 		return this._id;
 	};
 
-	proto._updateAttributes = function(attributesMap) {
-		this._attributes = attributesMap;
-		var state = this._getState();
-
-		state.attributesChanged(this, {
+	proto._postNewAttributes = function() {
+		var socket = this._getSocket();
+		socket.emit('attributesChanged', {
+			id: this.getId(),
 			attributes: this._attributes,
 			inlineStyle: this._inlineCSS
 		});
 	};
 
+	proto._updateAttributes = function(attributesMap) {
+		this._attributes = attributesMap;
+		this._postNewAttributes();
+	};
+
 	proto._inlineStyleChanged = function(event) {
-		var inlineStyle = event.inlineStyle;
+		this._inlineCSS = event.inlineStyle;
+		this._postNewAttributes();
+	};
 
-		this._inlineCSS = inlineStyle;
-
-		var state = this._getState();
-
-		state.attributesChanged(this, {
-			attributes: this._attributes,
-			inlineStyle: this._inlineCSS
-		});
+	proto._getSocket = function() {
+		return this.options.socket;
 	};
 
 }(ShadowDOM));
