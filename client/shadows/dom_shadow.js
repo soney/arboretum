@@ -53,6 +53,15 @@ var ShadowDOM = function(options) {
 	this._inlineCSS = '';
 
 	this._initialized = this._initialize();
+	if(this.getTree().getNodeType() === NODE_CODE.DOCUMENT_NODE) {
+		this._initialized = this._initialized.then(_.bind(function() {
+			var children = this.getChildren();
+			var childInitializedPromises = _.map(children, function(child) {
+				return child.isInitialized();
+			});
+			return Promise.all(childInitializedPromises);
+		}, this));
+	}
 
 	log.debug('::: CREATED DOM SHADOW ' + this.getId() + ' :::');
 };

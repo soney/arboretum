@@ -19,7 +19,6 @@ $.widget('arboretum.tree_node', {
 		socket: false
 	},
 	_create: function() {
-		if(!this.option('initialized')) { debugger; }
 		this.initialChildren = this.element.children();
 		this._initialize(this.option('node'));
 	},
@@ -96,6 +95,7 @@ $.widget('arboretum.tree_node', {
 	childInitialized: function(child) {
 		var children = this.option('children'),
 			childIndex = -1;
+
 		for(var i = 0; i<children.length; i++) {
 			if(children[i].id === child.id) {
 				childIndex = i;
@@ -104,13 +104,14 @@ $.widget('arboretum.tree_node', {
 		}
 
 		if(childIndex >= 0) {
-			console.log(this.element.children());
 			var childElements = this.element.children(),
 				childPlaceholder = $(childElements[childIndex]),
 				childElem = this._getChildElement(child);
 
-			childElem.after(childPlaceholder);
+			childPlaceholder.after(childElem);
 			childPlaceholder.remove();
+
+			this._postChildElementAdded(child, childElem);
 		} else {
 			throw new Error('Could not find child ' + child.id);
 		}
