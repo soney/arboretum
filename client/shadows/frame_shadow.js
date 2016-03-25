@@ -9,7 +9,7 @@ var ShadowFrame = function(domTree, socket) {
 	this.domTree = domTree;
 	this.socket = socket;
 	this._sentServerReady = false;
-	log.debug('::: CREATED FRAME SHADOW ' + this.domTree.getFrameId() + ' :::');
+	log.debug('::: CREATED FRAME SHADOW ' + this._getDomTree().getFrameId() + ' :::');
 
 	this._initialize();
 };
@@ -51,14 +51,6 @@ var ShadowFrame = function(domTree, socket) {
 	proto._mouseEvent = function(event) {
 		this.emit('mouseEvent', event);
 	};
-	proto.setFrame = function(frame) {
-		var socket = this._getSocket();
-		socket.emit('frameChanged');
-		this._removeListeners();
-		this.domTree = frame;
-		this._addListeners();
-		this._updateShadowTree();
-	};
 	proto._getDomTree = function() {
 		return this.domTree;
 	};
@@ -67,6 +59,8 @@ var ShadowFrame = function(domTree, socket) {
 	}
 	proto._updateShadowTree = function() {
 		this._sentServerReady = false;
+		log.debug('Updating shadow tree ' + this._getDomTree().getFrameId());
+
 		var domTree = this._getDomTree(),
 			socket = this._getSocket();
 		if(this._shadowTree) {

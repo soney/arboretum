@@ -38,16 +38,21 @@ var ShadowTab = function(tab, frameId, socket) {
 	proto.mainFrameChanged = function() {
 		var tab = this._getTab(),
 			mainFrame = tab.getMainFrame();
-
 		this.setFrame(mainFrame.getFrameId());
 	};
+	proto._getSocket = function() {
+		return this.socket;
+	};
 	proto.setFrame = function(frameId) {
+		var socket = this._getSocket();
+
 		if(this.shadowFrame) {
 			this.shadowFrame.destroy();
 		}
-
 		var frame = this._getTab().getFrame(frameId);
 		this.shadowFrame = new ShadowFrame(frame, this.socket);
+		log.debug('Frame changed ' + frameId);
+		socket.emit('frameChanged');
 	};
 
 	proto._addFrameListener = function() {

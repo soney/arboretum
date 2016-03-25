@@ -160,15 +160,13 @@ var ShadowDOM = function(options) {
 
 	proto._childrenChanged = function(info) {
 		var children = info.children;
-		this._updateChildren(children).then(_.bind(function() {
-			var socket = this._getSocket();
-			log.debug('Children changed ' + this.getId());
-			socket.emit('childrenChanged', {
-				parentId: this.getId(),
-				children: this.getChildren().map(function(child) { return child.serialize(); })
-			});
-		}, this)).catch(function(e) {
-			log.error(e.stack);
+		this._updateChildren(children);
+
+		var socket = this._getSocket();
+		log.debug('Children changed ' + this.getId());
+		socket.emit('childrenChanged', {
+			parentId: this.getId(),
+			children: this.getChildren().map(function(child) { return child.serialize(); })
 		});
 	};
 

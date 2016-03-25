@@ -359,7 +359,6 @@ var FrameState = function(options) {
 		var page = this.getPage();
 		page.requestChildNodes(rootNode.nodeId, -1);
 
-
 		this.emit('rootInvalidated', this);
 
 		this._markRefreshingRoot(false);

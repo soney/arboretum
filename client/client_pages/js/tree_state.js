@@ -9,6 +9,7 @@ $.widget('arboretum.tree_state', {
 
 	_create: function() {
 		this.nodeMap = {};
+		this._queuedInitializations = {};
 		var socket = this.socket = io.connect();
 		socket.emit('clientReady', {
 			frameId: this.option('frameId'),
@@ -25,38 +26,57 @@ $.widget('arboretum.tree_state', {
 		}, this));
 	},
 	_destroy: function() {
-		this.element.tree_node('destroy');
+		this._removeNodeAndMenu();
 		this._removeListeners();
 		this.socket.disconnect();
 	},
-	_frameChanged: function() {
+	_removeNodeAndMenu: function() {
 		if(this.element.data('arboretum-tree_node')) {
 			this.element.tree_node('destroy');
+		}
+		if(this.element.data('arboretum-tree_node_placeholder')) {
+			this.element.tree_node_placeholder('destroy');
 		}
 		if(this.element.data('arboretum-menu')) {
 			this.element.menu('destroy');
 		}
 	},
+	_frameChanged: function() {
+		this._removeNodeAndMenu();
+	},
 	_serverReady: function(data) {
+		this._removeNodeAndMenu();
 		//var styleElement = $('style');
 
-		if(this.element.data('arboretum-tree_node')) {
-			this.element.tree_node('destroy');
-		}
-		if(this.element.data('arboretum-menu')) {
-			this.element.menu('destroy');
-		}
-
-		if(data.type === 9 && data.children.length === 1 && data.children[0].name === 'HTML') { //document
+		if(data.type === DOCUMENT_NODE && data.children.length === 1 && data.children[0].name === 'HTML') { //document
 			this.element.children().remove();
-			this.element.tree_node(_.extend({
-				state: this
-			}, data.children[0]));
+			var child = data.children[0];
+			if(child.initialized) {
+				this.element.tree_node(_.extend({
+					state: this,
+					socket: this.socket
+				}, child));
+			} else {
+				this.element.tree_node_placeholder(_.extend({
+					parent: this,
+					state: this,
+					socket: this.socket
+				}, child));
+			}
 		} else {
-			var body = $('<body/>').appendTo(this.element);
-			var div = $('<div />').appendTo(body).tree_node_placeholder(_.extend({
-				state: this
-			}, data));
+			var body = $('<body />').appendTo(this.element);
+			if(child.initialized) {
+				var div = $('<div />').appendTo(body).tree_node(_.extend({
+					state: this,
+					socket: this.socket
+				}, data));
+			} else {
+				var div = $('<div />').appendTo(body).tree_node_placeholder(_.extend({
+					state: this,
+					socket: this.socket,
+					parent: this
+				}, data));
+			}
 		}
 
 		if(!this.option('frameId')) { // top-level
@@ -114,16 +134,28 @@ $.widget('arboretum.tree_state', {
 		socket.off('attributesChanged', this.$_attributesChanged);
 	},
 	_nodeInitialized: function(info) {
-		console.log(info);
 		var element = this.nodeMap[info.id];
 		if(element) {
 			var parent = element.option('parent');
-			if(parent) {
+			console.log(info.id + ' initialized');
+			if(parent === this) {
+				this._removeNodeAndMenu();
+				this.element.tree_node_placeholder('destroy');
+				this.element.tree_node(_.extend({
+					state: this,
+					socket: this.socket
+				}, info));
+			} else if(parent) {
 				parent.childInitialized(info);
+			} else {
+				throw new Error('No parent for node initialized');
 			}
 		} else {
-			throw new Erorr('Got node initialized before server ready');
+			throw new Error('Got node initialized before server ready');
 		}
+	},
+	getQueuedInitialization: function(id) {
+		return this._queuedInitializations[id];
 	},
 	_childAdded: function(info) {
 		var parentId = info.parentId,

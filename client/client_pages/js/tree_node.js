@@ -15,8 +15,11 @@ $.widget('arboretum.tree_node', {
 		inlineStyle: '',
 		children: [],
 		state: false,
+		initialized: false,
+		socket: false
 	},
 	_create: function() {
+		if(!this.option('initialized')) { debugger; }
 		this.initialChildren = this.element.children();
 		this._initialize(this.option('node'));
 	},
@@ -68,7 +71,13 @@ $.widget('arboretum.tree_node', {
 			childType = child.type;
 
 		if(childType === ELEMENT_NODE || childType === DOCUMENT_NODE) {
-			if(child.initialized) {
+			var initialized = child.initialized;
+			//if(state.getQueuedInitialization(child.id)) {
+				//initialized = true;
+				//child = state.getQueuedInitialization(child.id);
+			//}
+
+			if(initialized) {
 				childElem.tree_node(_.extend({
 					state: state
 				}, child));
@@ -76,14 +85,35 @@ $.widget('arboretum.tree_node', {
 				childElem.tree_node_placeholder(_.extend({
 					state: state,
 					parent: this
-				}, child));
+				}, child)).on('initialized', function(event) {
+					console.log(event);
+				});
 			}
 		} else if(childType === TEXT_NODE) {
 			state.registerNode(child.id, childElem);
 		}
 	},
 	childInitialized: function(child) {
-		console.log(child, 'initialized');
+		var children = this.option('children'),
+			childIndex = -1;
+		for(var i = 0; i<children.length; i++) {
+			if(children[i].id === child.id) {
+				childIndex = i;
+				break;
+			}
+		}
+
+		if(childIndex >= 0) {
+			console.log(this.element.children());
+			var childElements = this.element.children(),
+				childPlaceholder = $(childElements[childIndex]),
+				childElem = this._getChildElement(child);
+
+			childElem.after(childPlaceholder);
+			childPlaceholder.remove();
+		} else {
+			throw new Error('Could not find child ' + child.id);
+		}
 	},
 	_initializeChildren: function(children) {
 		_.each(children, function(child) {
