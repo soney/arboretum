@@ -119,6 +119,7 @@ $.widget('arboretum.tree_state', {
 	},
 	_nodeInitialized: function(info) {
 		var element = this.nodeMap[info.id];
+		console.log(info.id + ' initialized');
 		if(element) {
 			var parent = element.option('parent');
 			if(parent === this) {

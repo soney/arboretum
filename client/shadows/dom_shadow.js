@@ -168,6 +168,7 @@ var ShadowDOM = function(options) {
 	};
 
 	proto._childrenChanged = function(info) {
+		log.debug('Children changed ' + this.getId());
 		var children = info.children;
 		this._updateChildren(children);
 
@@ -267,6 +268,10 @@ var ShadowDOM = function(options) {
 		this.$_inlineStyleChanged = _.bind(this._inlineStyleChanged, this);
 
 		this._updateChildren(tree.getChildren());
+
+		tree.on('childAdded', this.$_childAdded);
+		tree.on('childRemoved', this.$_childRemoved);
+		tree.on('childrenChanged', this.$_childrenChanged);
 		var treeInitializedPromise = tree.isInitialized().then(_.bind(function() {
 			this._value = tree.getNodeValue();
 
@@ -277,9 +282,6 @@ var ShadowDOM = function(options) {
 			this._is_initialized = true;
 			//this._updateAttributes(tree.getAttributesMap());
 
-			tree.on('childAdded', this.$_childAdded);
-			tree.on('childRemoved', this.$_childRemoved);
-			tree.on('childrenChanged', this.$_childrenChanged);
 
 			tree.on('attributesChanged', this.$_updateAttributes);
 			tree.on('nodeValueChanged', this.$_nodeValueChanged);
