@@ -189,11 +189,12 @@ var FrameState = function(options) {
 			});
 			return promise;
 		} else {
-			var parentNode = this._getWrappedDOMNodeWithID(event.parentNodeId),
-				previousNode = event.previousNodeId > 0 ? this._getWrappedDOMNodeWithID(event.previousNodeId) : false,
-				wrappedNode = this._getWrappedDOMNode(event.node);
+			var parentNode = this._getWrappedDOMNodeWithID(event.parentNodeId);
 
 			if(parentNode) {
+				var previousNode = event.previousNodeId > 0 ? this._getWrappedDOMNodeWithID(event.previousNodeId) : false,
+					wrappedNode = this._getWrappedDOMNode(event.node);
+					
 				log.debug('Child Node Inserted ' + event.node.nodeId + ' (parent: ' + event.parentNodeId + ' / previous: ' + event.previousNodeId + ')');
 				if(!parentNode) {
 					this.summarize();

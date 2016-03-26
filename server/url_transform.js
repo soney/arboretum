@@ -73,6 +73,12 @@ var containsURLs = {
 			transform: function(url, baseURL, node) {
 				return transformSRCSet(url, baseURL, node);
 			}
+		},
+		'data-srcset': {
+			strategy: TRANSFORM,
+			transform: function(url, baseURL, node) {
+				return transformSRCSet(url, baseURL, node);
+			}
 		}
 	},
 

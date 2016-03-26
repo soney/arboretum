@@ -6,7 +6,7 @@ var repl = require('repl'),
 	log = require('./utils/logging'),
 	replServer;
 
-log.setLevel('trace');
+//log.setLevel('trace');
 
 startAll().then(function(info) {
 	var browser = info.browser;

@@ -10,6 +10,8 @@ var _ = require('underscore'),
 	Deferred = require('../../utils/deferred');
 var log = require('../../utils/logging').getColoredLogger('magenta');
 
+//var regdids = {};
+
 var DOMState = function(options) {
 	this.node = options.node;
 	this.chrome = options.chrome;
@@ -30,6 +32,8 @@ var DOMState = function(options) {
 			console.error(err);
 		}
 	});
+	//if(regdids[this.getId()]) debugger;
+	//regdids[this.getId()] = true;
 
 	//this._self_initialized._node = this.node;
 	//this._updateChildrenInitializedPromise();
