@@ -95,6 +95,7 @@ $.widget('arboretum.tree_state', {
 		this.$_valueChanged = _.bind(this._valueChanged, this);
 		this.$_attributesChanged = _.bind(this._attributesChanged, this);
 		this.$_nodeInitialized = _.bind(this._nodeInitialized, this);
+		this.$_valueUpdated = _.bind(this._valueUpdated, this);
 
 		socket.on('nodeInitialized', this.$_nodeInitialized);
 		socket.on('childAdded', this.$_childAdded);
@@ -102,6 +103,7 @@ $.widget('arboretum.tree_state', {
 		socket.on('childrenChanged', this.$_childrenChanged);
 		socket.on('valueChanged', this.$_valueChanged);
 		socket.on('attributesChanged', this.$_attributesChanged);
+		socket.on('valueUpdated', this.$_valueUpdated);
 
 		$(window).on('unload', _.bind(function() {
 			this.element.tree_state('destroy');
@@ -116,6 +118,16 @@ $.widget('arboretum.tree_state', {
 		socket.off('childrenChanged', this.$_childrenChanged);
 		socket.off('valueChanged', this.$_valueChanged);
 		socket.off('attributesChanged', this.$_attributesChanged);
+	},
+	_valueUpdated: function(info) {
+		var element = this.nodeMap[info.id],
+			type = info.type,
+			value = info.value;
+		if(type === 'canvas') {
+			element.setImageData(new ImageData(new Uint8ClampedArray(value.data), value.width, value.height));
+		} else if(type === 'input') {
+			element.setInputValue(value);
+		}
 	},
 	_nodeInitialized: function(info) {
 		var element = this.nodeMap[info.id];

@@ -51,22 +51,6 @@ function callFNOnElement(chrome, fn_promise, nodeId, additional_args) {
 		return rv;
 	});
 }
-function getNamespace(chrome, nodeId) {
-	return callFNOnElement(chrome, GET_NAMESPCE, nodeId);
-}
-
-function click(chrome, nodeId) {
-	return callFNOnElement(chrome, SIMULATE_CLICK, nodeId);
-}
-
-function getElementValue(chrome, nodeId) {
-	return callFNOnElement(chrome, GET_ELEMENT_VALUE, nodeId);
-}
-
-function setElementValue(chrome, nodeId, value) {
-	return callFNOnElement(chrome, SET_ELEMENT_VALUE, nodeId, [{value: value}]);
-}
-
 
 function releaseObject(chrome, objectId) {
 	return new Promise(function(resolve, reject) {
@@ -91,6 +75,13 @@ function getProperties(chrome, objectId, ownProperties) {
 				resolve(result);
 			}
 		});
+	});
+}
+
+function getObjectProperty(chrome, objectId, property_name) {
+	return callFunctionOn(chrome, objectId, {
+		functionDeclaration: '(function() { return this.' + property_name + ';})',
+		arguments: []
 	});
 }
 
@@ -161,8 +152,56 @@ function readFile(filename) {
 	});
 }
 
+function typedArrayToArray(chrome, objectId) {
+	return callFunctionOn(chrome, objectId, {
+		functionDeclaration: '(function() { return Array.prototype.slice.call(this);})',
+		arguments: [],
+		returnByValue: true
+	});
+}
+
 module.exports = {
-	click: click,
-	getNamespace: getNamespace,
-	setElementValue: setElementValue
+	click: function (chrome, nodeId) {
+		return callFNOnElement(chrome, SIMULATE_CLICK, nodeId);
+	},
+	getElementValue: function (chrome, nodeId) {
+		return callFNOnElement(chrome, GET_ELEMENT_VALUE, nodeId).then(function(rv) {
+			return rv.result.value;
+		});
+	},
+	setElementValue: function(chrome, nodeId, value) {
+		return callFNOnElement(chrome, SET_ELEMENT_VALUE, nodeId, [{value: value}]);
+	},
+	getNamespace: function(chrome, nodeId) {
+		return callFNOnElement(chrome, GET_NAMESPCE, nodeId);
+	},
+	getCanvasImage: function (chrome, nodeId) {
+		return callFNOnElement(chrome, GET_CANVAS_IMAGE, nodeId).then(function(rv) {
+			var result = rv.result,
+				objectId = result.objectId;
+
+			return Promise.all([
+				getObjectProperty(chrome, objectId, 'data'),
+				getObjectProperty(chrome, objectId, 'width'),
+				getObjectProperty(chrome, objectId, 'height'),
+				objectId
+			]);
+		}).then(function(property_values) {
+			var dataObjectId = property_values[0].result.objectId;
+			return Promise.all([typedArrayToArray(chrome, dataObjectId)].concat(_.rest(property_values, 1)).concat([dataObjectId]));
+		}).then(function(property_values) {
+			return Promise.all([{
+					data: property_values[0].result.value,
+					width: property_values[1].result.value,
+					height: property_values[2].result.value
+				},
+				releaseObject(chrome, property_values[3]),
+				releaseObject(chrome, property_values[4])
+			]);
+		}).then(function(values) {
+			return values[0];
+		}).catch(function(err) {
+			console.error(err);
+		});
+	}
 };

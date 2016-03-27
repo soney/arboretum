@@ -266,6 +266,7 @@ var ShadowDOM = function(options) {
 		this.$_updateAttributes = _.bind(this._updateAttributes, this);
 		this.$_nodeValueChanged = _.bind(this._nodeValueChanged, this);
 		this.$_inlineStyleChanged = _.bind(this._inlineStyleChanged, this);
+		this.$_valueUpdated = _.bind(this._valueUpdated, this);
 
 		this._updateChildren(tree.getChildren());
 
@@ -286,6 +287,7 @@ var ShadowDOM = function(options) {
 			tree.on('attributesChanged', this.$_updateAttributes);
 			tree.on('nodeValueChanged', this.$_nodeValueChanged);
 			tree.on('inlineStyleChanged', this.$_inlineStyleChanged);
+			tree.on('valueUpdated', this.$_valueUpdated);
 
 			var state = this._getState();
 
@@ -316,6 +318,16 @@ var ShadowDOM = function(options) {
 		tree.removeListener('inlineStyleChanged', this.$_inlineStyleChanged);
 
 		log.debug('::: DESTROYED DOM SHADOW ' + this.getId() + ' :::');
+	};
+
+	proto._valueUpdated = function(type, value) {
+		var socket = this._getSocket();
+
+		socket.emit('valueUpdated', {
+			id: this.getId(),
+			type: type,
+			value: value
+		});
 	};
 
 	proto.getId = function() {

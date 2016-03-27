@@ -92,6 +92,16 @@ $.widget('arboretum.tree_node', {
 			state.registerNode(child.id, childElem);
 		}
 	},
+	setImageData: function(imageData) {
+		var ctx = this.element[0].getContext('2d');
+		ctx.putImageData(imageData, 0, 0);
+	},
+	setInputValue: function(value) {
+		var currentVal = this.element.val();
+		if(currentVal !== value) {
+			this.element.val(value);
+		}
+	},
 	childInitialized: function(child) {
 		var children = this.option('children'),
 			childIndex = -1;

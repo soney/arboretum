@@ -48,6 +48,34 @@ var DOMState = function(options) {
 	proto.isInitialized = function() {
 		return this._self_initialized;
 	};
+	proto._addValueListeners = function() {
+		var tagName = this._getTagName().toLowerCase();
+		if(tagName === 'canvas') {
+			this._updateValueInterval = setInterval(_.bind(function() {
+				this.getCanvasImage().then(_.bind(function(data) {
+					this.emit('valueUpdated', 'canvas', data);
+				}, this));
+			}, this), 5000);
+		} else if(tagName === 'input') {
+			this._updateValueInterval = setInterval(_.bind(function() {
+				this.getInputValue().then(_.bind(function(data) {
+					this.emit('valueUpdated', 'input', data);
+				}, this));
+			}, this), 700);
+		}
+	};
+	proto._removeValueListeners = function() {
+		if(this._updateValueInterval) {
+			clearInterval(this._updateValueInterval);
+			delete this._updateValueInterval;
+		}
+	};
+	proto.getCanvasImage = function() {
+		return driver.getCanvasImage(this._getChrome(), this.getId());
+	};
+	proto.getInputValue = function() {
+		return driver.getElementValue(this._getChrome(), this.getId());
+	};
 	/*
 
 	proto._updateChildrenInitializedPromise = function() {
@@ -205,6 +233,8 @@ var DOMState = function(options) {
 		}
 
 		this._initializeAttributesMap();
+		this._addValueListeners();
+
 		var longStringInitialization = this._initializeLongString(),
 			namespaceFetcher = this.updateNamespace();
 
@@ -214,11 +244,11 @@ var DOMState = function(options) {
 		return this.childFrame;
 	};
 	proto.destroy = function() {
+		this._removeValueListeners();
 		_.each(this.children, function(child) {
 			child.destroy();
 		});
 		this.emit('destroyed');
-		this.removeAllListeners();
 		this._destroyed = true;
 		log.debug('=== DESTROYED DOM STATE', this.getId(), ' ====');
 	};
