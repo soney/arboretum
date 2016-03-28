@@ -94,6 +94,7 @@ $.widget('arboretum.tree_node', {
 	},
 	setImageData: function(imageData) {
 		var ctx = this.element[0].getContext('2d');
+		console.log(imageData);
 		ctx.putImageData(imageData, 0, 0);
 	},
 	setInputValue: function(value) {

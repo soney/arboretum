@@ -51,7 +51,7 @@ var DOMState = function(options) {
 	proto._addValueListeners = function() {
 		var tagName = this._getTagName().toLowerCase();
 		if(tagName === 'canvas') {
-			this._updateValueInterval = setInterval(_.bind(function() {
+			this._updateValueInterval = setTimeout(_.bind(function() {
 				this.getCanvasImage().then(_.bind(function(data) {
 					this.emit('valueUpdated', 'canvas', data);
 				}, this));
@@ -149,9 +149,12 @@ var DOMState = function(options) {
 	};
 
 	proto._transformAttribute = function(val, name) {
-		if(name.toLowerCase() === 'onload' || name.toLowerCase() === 'onclick' ||
-			name.toLowerCase() === 'onmouseover' || name.toLowerCase() === 'onmouseout' ||
-			name.toLowerCase() === 'onmouseenter' || name.toLowerCase() === 'onmouseleave') {
+		var lcName = name.toLowerCase();
+
+		if(lcName === 'onload' || lcName === 'onclick' ||
+			lcName === 'onmouseover' || lcName === 'onmouseout' ||
+			lcName === 'onmouseenter' || lcName === 'onmouseleave' ||
+			lcName === 'action' || lcName === 'oncontextmenu') {
 			val = '';
 		} else {
 			var tagName = this._getTagName(),
