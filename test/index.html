@@ -47,7 +47,8 @@
 		<DIV id = "the-id" class = "some_class">
 			the div
 		</div>
-		<canvas id="canvas"></canvas>
+		<canvas id="canvas2d"></canvas>
+		<canvas id="canvas3d"></canvas>
 		<input type='text' value='val' />
 	</body>
 	<script>
@@ -79,13 +80,22 @@
 		$(function() {
 			$('#eyeframe')[0].contentDocument.write("<h1>Injected from parent frame</h1>")
 
-			var canvas = document.getElementById("canvas");
+			var canvas = document.getElementById("canvas2d");
 			var ctx = canvas.getContext("2d");
 			ctx.canvas // HTMLCanvasElement
 			ctx.fillStyle = "rgb(200,0,0)";
 			ctx.fillRect(10, 10, 55, 50);
 			ctx.font = "48px serif";
 			ctx.strokeText("canvas test", 50, 100);
-		})
+
+			var canvas3d = document.getElementById('canvas3d');
+		    var gl = canvas3d.getContext("webgl") || canvas3d.getContext("experimental-webgl");
+
+		    gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+		    gl.enable(gl.SCISSOR_TEST);
+		    gl.scissor(30, 10, 60, 60);
+		    gl.clearColor(1.0, 0.0, 1.0, 1.0);
+		    gl.clear(gl.COLOR_BUFFER_BIT);
+		});
 	</script>
 </html>
