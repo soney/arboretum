@@ -60,6 +60,15 @@ module.exports = {
 									res.send(contents);
 								});
 							})
+							.use('/f', express.static(path.join(__dirname, 'client_pages')))
+							.all('/o', function(req, res, next) {
+								procesFile(path.join(__dirname, 'client_pages', 'index.html'), function(contents) {
+									return contents.replace('isOutput: false', 'isOutput: true');
+								}).then(function(contents) {
+									res.send(contents);
+								});
+							})
+							.use('/o', express.static(path.join(__dirname, 'client_pages')))
 							//.all('favicon.ico', function(req, res, next) {
 								//pageState.requestResource('favicon.ico');
 							//})
@@ -68,11 +77,26 @@ module.exports = {
 							});
 
 			var io = socket(server);
+			var shadowBrowsers = {}
 			io.on('connection', function (socket) {
+				var id = socket.id;
 				var shadowBrowser = new ShadowBrowser(browserState, socket);
+				shadowBrowsers[id] = shadowBrowser;
 
 				socket.on('disconnect', function() {
 					shadowBrowser.destroy();
+					delete shadowBrowser[id];
+				});
+				shadowBrowser.on('nodeReply', function(info) {
+					var outputBrowsers = _	.chain(shadowBrowsers)
+											.values()
+											.filter(function(browser) {
+												return browser.isOutput()
+											})
+											.value();
+					_.each(outputBrowsers, function(browser) {
+						browser.setVisibleElements(info.nodeIds);
+					});
 				});
 			});
 		});

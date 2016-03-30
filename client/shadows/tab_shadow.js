@@ -6,10 +6,9 @@ var _ = require('underscore'),
 
 var log = require('../../utils/logging').getColoredLogger('yellow', 'bgBlack');
 
-var ShadowTab = function(tab, frameId, socket) {
-	this.socket = socket;
-	this.tab = tab;
-	this.frameId = frameId;
+var ShadowTab = function(options) {
+	this.options = options;
+	this.frameId = options.frameId;
 	this._frames = {};
 	this.isMainFrame = !this.frameId;
 
@@ -33,7 +32,7 @@ var ShadowTab = function(tab, frameId, socket) {
 	};
 
 	proto._getTab = function() {
-		return this.tab;
+		return this.options.tab;
 	};
 	proto.mainFrameChanged = function() {
 		var tab = this._getTab(),
@@ -41,7 +40,7 @@ var ShadowTab = function(tab, frameId, socket) {
 		this.setFrame(mainFrame.getFrameId());
 	};
 	proto._getSocket = function() {
-		return this.socket;
+		return this.options.socket;
 	};
 	proto.setFrame = function(frameId) {
 		var socket = this._getSocket();
@@ -50,7 +49,10 @@ var ShadowTab = function(tab, frameId, socket) {
 			this.shadowFrame.destroy();
 		}
 		var frame = this._getTab().getFrame(frameId);
-		this.shadowFrame = new ShadowFrame(frame, this.socket);
+		this.shadowFrame = new ShadowFrame(_.extend({}, this.options, {
+			frame: frame,
+			socket: socket
+		}));
 		log.debug('Frame changed ' + frameId);
 		socket.emit('frameChanged');
 	};

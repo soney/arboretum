@@ -1,16 +1,37 @@
 var _ = require('underscore'),
 	util = require('util'),
 	EventEmitter = require('events'),
-	ShadowTab = require('./tab_shadow').ShadowTab;
+	ShadowTab = require('./tab_shadow').ShadowTab,
+	ShadowDOM = require('./dom_shadow').ShadowDOM;
 
 var log = require('../../utils/logging').getColoredLogger('red', 'bgBlack');
 
 var ShadowBrowser = function(browserState, socket) {
+	this.options = {
+		childFilterFunction: _.bind(function(child) {
+			var node = child._getNode(),
+				nodeName = node.nodeName,
+				nodeType = node.nodeType;
+			if(/*nodeName === 'STYLE' || */nodeName === 'SCRIPT' ||
+				nodeName === '#comment'/* || nodeName === 'LINK'*/ ||
+				nodeName === 'BASE' || nodeType === NODE_CODE.DOCUMENT_TYPE_NODE) {
+				return false;
+			} else if(this.isOutput()) {
+				var visibleElements = this._visibleElements;
+
+				return visibleElements.length > 0;
+			} else {
+				return true;
+			}
+		}, this)
+	};
+
 	this.browserState = browserState;
 	this.socket = socket;
 	this.tabShadow = false;
 	log.debug('::: CREATED BROWSER SHADOW :::');
 	this._initialize();
+	this._visibleElements = true;
 };
 (function(My) {
 	util.inherits(My, EventEmitter);
@@ -32,10 +53,11 @@ var ShadowBrowser = function(browserState, socket) {
 	};
 	proto._onNodeReply = function(info) {
 		var nodeIds = info.nodeIds,
+			activeTabShadow = this.tabShadow,
 			nodes = _.map(nodeIds, function(id) {
 
 			}, this);
-		console.log(info);
+		this.emit('nodeReply', info);
 	};
 	proto._onAddTab = function(info) {
 		this.browserState.addTab();
@@ -67,13 +89,33 @@ var ShadowBrowser = function(browserState, socket) {
 	};
 	proto._onClientReady = function(info) {
 		var tabId = info.tabId,
-			frameId = info.frameId;
+			frameId = info.frameId,
+			isOutput = info.isOutput;
+		this._isOutput = isOutput;
 
 		if(!info.tabId) {
 			tabId = this.browserState.getActiveTabId();
 		}
 
 		this.setTab(tabId, frameId);
+	};
+	proto.setVisibleElements = function(nodeIds) {
+		this._visibleElements = nodeIds;
+		var tabShadow = this.tabShadow;
+		if(tabShadow) {
+			var frameShadow = tabShadow.shadowFrame;
+			if(frameShadow) {
+				var domShadow = frameShadow.getShadowTree();
+
+				if(domShadow) {
+					domShadow._childrenChanged({});
+				}
+			}
+		}
+	};
+
+	proto.isOutput = function() {
+		return this._isOutput;
 	};
 
 	proto._addSocketListeners = function() {
@@ -122,7 +164,11 @@ var ShadowBrowser = function(browserState, socket) {
 		this.activeTabId = tabId;
 
 		return this.browserState.getTabState(tabId).then(_.bind(function(tabState) {
-			this.tabShadow = new ShadowTab(tabState, frameId, this.socket);
+			this.tabShadow = new ShadowTab(_.extend({}, this.options, {
+				tab: tabState,
+				frameId: frameId,
+				socket: this.socket
+			}));
 		}, this)).catch(function(err) {
 			console.error(err.stack);
 		});

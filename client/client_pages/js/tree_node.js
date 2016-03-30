@@ -58,8 +58,10 @@ $.widget('arboretum.tree_node', {
 			} else {
 				childElem = $('<'+name+'/>');
 			}
+			$(childElem).data('arboretum-id', child.id);
 		} else if(childType === TEXT_NODE) {
 			childElem = document.createTextNode(child.value);
+			$(childElem).data('arboretum-id', child.id);
 		} else {
 			childElem = false;
 		}

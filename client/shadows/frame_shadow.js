@@ -5,9 +5,11 @@ var _ = require('underscore'),
 
 var log = require('../../utils/logging').getColoredLogger('green', 'bgBlack');
 
-var ShadowFrame = function(domTree, socket) {
-	this.domTree = domTree;
-	this.socket = socket;
+var ShadowFrame = function(options) {
+	//domTree, socket) {
+	this.options = options;
+	this.domTree = options.frame;
+
 	this._sentServerReady = false;
 	log.debug('::: CREATED FRAME SHADOW ' + this._getDomTree().getFrameId() + ' :::');
 
@@ -44,6 +46,9 @@ var ShadowFrame = function(domTree, socket) {
 			//socket.emit('treeUpdated', this._shadowTree.serialize());
 		//});
 	};
+	proto.getShadowTree = function() {
+		return this._shadowTree;
+	};
 	proto._addListeners = function() {
 		var domTree = this._getDomTree();
 		domTree.on('rootInvalidated', this.$_updateShadowTree);
@@ -55,7 +60,7 @@ var ShadowFrame = function(domTree, socket) {
 		return this.domTree;
 	};
 	proto._getSocket = function() {
-		return this.socket;
+		return this.options.socket;
 	}
 	proto._updateShadowTree = function() {
 		this._sentServerReady = false;
@@ -68,11 +73,11 @@ var ShadowFrame = function(domTree, socket) {
 		}
 		var node = domTree.getRoot();
 		if(node) {
-			var shadow = this._shadowTree = new ShadowDOM({
-				tree: node,
-				state: this,
-				socket: this._getSocket()
-			});
+			var shadow = this._shadowTree = new ShadowDOM(_.extend({},
+				this.options, {
+					tree: node,
+					state: this,
+				}));
 
 			shadow.isInitialized().then(_.bind(function() {
 				this._sentServerReady = true;

@@ -23,11 +23,9 @@ var ShadowDOM = function(options) {
 		state: false,
 		socket: false,
 		childMapFunction: function(child) {
-			var shadow = new ShadowDOM({
-				tree: child,
-				state: this._getState(),
-				socket: this._getSocket()
-			});
+			var shadow = new ShadowDOM(_.extend({}, this.options, {
+				tree: child
+			}));
 			return shadow;
 		},
 		childFilterFunction: function(child) {
@@ -69,6 +67,19 @@ var ShadowDOM = function(options) {
 (function(My) {
 	util.inherits(My, EventEmitter);
 	var proto = My.prototype;
+
+	proto.setChildFilter = function(filter_fn) {
+		this.options.childFilterFunction = filter_fn;
+		this._updateChildren();
+	};
+	proto.setChildFilterRecursively = function(filter_fn) {
+		_.each(this.children, function(child) {
+			if(child instanceof My) {
+				child.setChildFilterRecursively(filter_fn);
+			}
+		}, this);
+		this.setChildFilter(filter_fn);
+	};
 
 	proto.isInitialized = function() {
 		return this._initialized;
@@ -193,6 +204,10 @@ var ShadowDOM = function(options) {
 	};
 
 	proto._updateChildren = function(treeChildren) {
+		if(!treeChildren) {
+			var tree = this.getTree();
+			treeChildren = tree.getChildren();
+		}
 		this.children = _	.chain(treeChildren)
 							.map(function(child) {
 								var toAdd;
@@ -268,7 +283,7 @@ var ShadowDOM = function(options) {
 		this.$_inlineStyleChanged = _.bind(this._inlineStyleChanged, this);
 		this.$_valueUpdated = _.bind(this._valueUpdated, this);
 
-		this._updateChildren(tree.getChildren());
+		this._updateChildren();
 
 		tree.on('childAdded', this.$_childAdded);
 		tree.on('childRemoved', this.$_childRemoved);

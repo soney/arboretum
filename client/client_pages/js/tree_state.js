@@ -1,7 +1,8 @@
 $.widget('arboretum.tree_state', {
 	options: {
 		tabId: false,
-		frameId: false
+		frameId: false,
+		isOutput: false
 	},
 
 	_create: function() {
@@ -15,7 +16,8 @@ $.widget('arboretum.tree_state', {
 
 		socket.emit('clientReady', {
 			frameId: this.option('frameId'),
-			tabId: this.option('tabId')
+			tabId: this.option('tabId'),
+			isOutput: this.option('isOutput')
 		});
 
 		this._addListeners();

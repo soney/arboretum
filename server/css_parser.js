@@ -5,18 +5,23 @@ var css = require('css'),
 var urlRegex = /((?:@import\s+)?url\s*\(['"]?)(\S*?)(['"]?\s*\))|(@import\s+['"]?)([^;'"]+)/ig;
 
 function processCSSURLs(str, url, frameId, tabId) {
-	return str.replace(urlRegex, function(m, arg1, arg2, arg3) {
-					var absoluteURL = URL.resolve(url, arg2),
-						relativeURL = URL.format({
-							pathname: 'r',
-							query: {
-								l: absoluteURL,
-								f: frameId,
-								t: tabId
-							}
-						});
-					return m.replace(arg2, relativeURL);
-				});
+	if(url) {
+		return str.replace(urlRegex, function(m, arg1, arg2, arg3, arg4, arg5) {
+						var specifiedURL = arg2 || arg5;
+						var absoluteURL = URL.resolve(url, specifiedURL),
+							relativeURL = URL.format({
+								pathname: 'r',
+								query: {
+									l: absoluteURL,
+									f: frameId,
+									t: tabId
+								}
+							});
+						return m.replace(specifiedURL, relativeURL);
+					});
+	} else {
+		return str;
+	}
 }
 
 function parseCSS(cssStr, url, frameId, tabId) {
