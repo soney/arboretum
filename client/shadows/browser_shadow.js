@@ -23,11 +23,19 @@ var ShadowBrowser = function(browserState, socket) {
 		this.$_onOpenURL = _.bind(this._onOpenURL, this);
 		this.$_onDeviceEvent = _.bind(this._onDeviceEvent, this);
 		this.$_onClientReady = _.bind(this._onClientReady, this);
+		this.$_onNodeReply = _.bind(this._onNodeReply, this);
 
 		this.$sendTabs = _.bind(this.sendTabs, this);
 
 		this._addBrowserStateListeners();
 		this._addSocketListeners();
+	};
+	proto._onNodeReply = function(info) {
+		var nodeIds = info.nodeIds,
+			nodes = _.map(nodeIds, function(id) {
+
+			}, this);
+		console.log(info);
 	};
 	proto._onAddTab = function(info) {
 		this.browserState.addTab();
@@ -75,7 +83,8 @@ var ShadowBrowser = function(browserState, socket) {
 					.on('openURL', this.$_onOpenURL)
 					.on('deviceEvent', this.$_onDeviceEvent)
 					.on('clientReady', this.$_onClientReady)
-					.on('getCurrentTabs', this.$sendTabs);
+					.on('getCurrentTabs', this.$sendTabs)
+					.on('nodeReply', this.$_onNodeReply);
 	};
 	proto._removeSocketListeners = function() {
 		this.socket	.removeListener('addTab', this.$_onAddTab)
@@ -83,7 +92,8 @@ var ShadowBrowser = function(browserState, socket) {
 					.removeListener('focusTab', this.$_onFocusTab)
 					.removeListener('openURL', this.$_onOpenURL)
 					.removeListener('deviceEvent', this.$_onDeviceEvent)
-					.removeListener('clientReady', this.$_onClientReady);
+					.removeListener('clientReady', this.$_onClientReady)
+					.removeListener('nodeReply', this.$_onNodeReply);
 	};
 	proto.sendTabs = function() {
 		var tabs = {};

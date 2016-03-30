@@ -1,5 +1,6 @@
 $.widget('arboretum.node_selection', {
 	options: {
+		socket: false,
 		background: 'rgba(0, 55, 118, 0.4)',
 		border: '1px solid rgba(0, 55, 118, 1)'
 	},
@@ -49,20 +50,6 @@ $.widget('arboretum.node_selection', {
 			};
 			rect.bottom = rect.top + rect.height;
 			rect.right = rect.left + rect.width;
-			var highlightedElements = getHighlightedElements(rect);
-			if(highlightedElements.length > 0) {
-				$(highlightedElements)	.not(this._selectionRectangle)
-										.not('.arboretum_highlighted')
-										.addClass('arboretum_highlighted')
-										.effect({
-											effect: 'highlight',
-											duration: 5000,
-											times: 300
-										});
-										//.effect("highlight", {}, 3000);
-										//.css('border', '5px solid red');
-				console.log(highlightedElements);
-			}
 
 			this._selectionRectangle.css({
 				width: rect.width + 'px',
@@ -74,10 +61,48 @@ $.widget('arboretum.node_selection', {
 	},
 	_onMouseUp: function(event) {
 		if(event.button === 2) {
+			var coordinates = this._getCoordinates(event),
+				width = Math.abs(this._anchor.x - coordinates.x),
+				height = Math.abs(this._anchor.y - coordinates.y);
+
+			var rect = {
+				width: width,
+				height: height,
+				left: Math.min(coordinates.x, this._anchor.x),
+				top: Math.min(coordinates.y, this._anchor.y),
+			};
+			rect.bottom = rect.top + rect.height;
+			rect.right = rect.left + rect.width;
+
 			this._anchor = false;
 			this._selectionRectangle.hide();
 			$('.arboretum_highlighted')	.removeClass('arboretum_highlighted')
 										.css('border', '');
+
+			var highlightedElements = getHighlightedElements(rect);
+			if(highlightedElements.length > 0) {
+				$(highlightedElements)	.not(this._selectionRectangle)
+										.not('.arboretum_highlighted')
+										.addClass('arboretum_highlighted')
+										.effect({
+											effect: 'highlight',
+											duration: 5000,
+											times: 300
+										});
+				var nodeElements = $(highlightedElements).filter(function() {
+					return $(this).data('arboretum-tree_node');
+				}).map(function() {
+					return $(this).tree_node('option', 'id');
+				});
+				if(nodeElements.length > 0) {
+					var idArray = _.toArray(nodeElements);
+					var socket = this.option('socket');
+					socket.emit('nodeReply', {
+						nodeIds: idArray
+					});
+				}
+				console.log(nodeElements);
+			}
 		}
 	},
 	_getCoordinates: function(event) {
