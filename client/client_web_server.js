@@ -66,8 +66,8 @@ module.exports = {
 							.listen(PORT, function() {
 								resolve(PORT);
 							});
-			var io = socket(server);
 
+			var io = socket(server);
 			io.on('connection', function (socket) {
 				var shadowBrowser = new ShadowBrowser(browserState, socket);
 

@@ -94,7 +94,6 @@ $.widget('arboretum.tree_node', {
 	},
 	setImageData: function(imageData) {
 		var ctx = this.element[0].getContext('2d');
-		console.log(imageData);
 		ctx.putImageData(imageData, 0, 0);
 	},
 	setInputValue: function(value) {
@@ -278,6 +277,7 @@ $.widget('arboretum.tree_node', {
 	_addDeviceListeners: function() {
 		this.$_onClick = $.proxy(this._onClick, this);
 		this.$_onInput = $.proxy(this._onInput, this);
+
 		this.element.on('click', this.$_onClick);
 		this.element.on('input', this.$_onInput);
 	},

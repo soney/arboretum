@@ -29,6 +29,9 @@ $.widget('arboretum.tree_state', {
 		if(this.element.data('arboretum-tree_node')) {
 			this.element.tree_node('destroy');
 		}
+		if(this.element.data('arboretum-node_selection')) {
+			this.element.node_selection('destroy');
+		}
 		//if(this.element.data('arboretum-tree_node_placeholder')) {
 			//this.element.tree_node_placeholder('destroy');
 		//}
@@ -58,6 +61,10 @@ $.widget('arboretum.tree_state', {
 				socket: this.socket
 			}, data));
 		}
+		this.element.node_selection({
+			state: this,
+			socket: this.socket
+		});
 
 		if(!this.option('frameId')) { // top-level
 			this.element.menu({
