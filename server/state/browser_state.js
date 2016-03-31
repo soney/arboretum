@@ -175,6 +175,18 @@ var BrowserState = function(options) {
 			});
 		});
 	};
+	proto.findNode = function(nodeId) {
+		var statePromises = _.pluck(this._tabs, 'statePromise');
+		return Promise.all(statePromises).then(function(tabs) {
+			_.each(tabs, function(tab) {
+				var node = tab.findNode(nodeId);
+				if(node) {
+					result = node;
+				}
+			}, this);
+			return result;
+		});
+	};
 	proto.print = function() {
 		return Promise.all(_.map(this._tabs, function(tab) {
 			return tab.statePromise.then(function(tabState) {

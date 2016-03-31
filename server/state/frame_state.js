@@ -193,8 +193,8 @@ var FrameState = function(options) {
 
 			if(parentNode) {
 				var previousNode = event.previousNodeId > 0 ? this._getWrappedDOMNodeWithID(event.previousNodeId) : false,
-					wrappedNode = this._getWrappedDOMNode(event.node);
-					
+					wrappedNode = this._getWrappedDOMNode(event.node, parentNode);
+
 				log.debug('Child Node Inserted ' + event.node.nodeId + ' (parent: ' + event.parentNodeId + ' / previous: ' + event.previousNodeId + ')');
 				if(!parentNode) {
 					this.summarize();
@@ -308,12 +308,19 @@ var FrameState = function(options) {
 		return this._root;
 	};
 
-	proto._getWrappedDOMNode = function(node) {
+	proto.findNode = function(nodeId) {
+		if(this._hasWrappedDOMNodeWithID(nodeId)) {
+			return this._getWrappedDOMNodeWithID(nodeId);
+		}
+	};
+
+	proto._getWrappedDOMNode = function(node, parent) {
 		var id = node.nodeId;
 		if(this._hasWrappedDOMNodeWithID(id)) {
 			return this._getWrappedDOMNodeWithID(id);
 		} else {
 			var node = new DOMState({
+				parent: parent,
 				node: node,
 				chrome: this._getChrome(),
 				frame: this
@@ -344,7 +351,7 @@ var FrameState = function(options) {
 
 	proto._setChildrenRecursive = function(parentNode, children) {
 		return parentNode._setChildren(_.map(children, function(child) {
-			return this._setChildrenRecursive(this._getWrappedDOMNode(child), child.children);
+			return this._setChildrenRecursive(this._getWrappedDOMNode(child, parentNode), child.children);
 		}, this));
 	};
 
@@ -353,7 +360,7 @@ var FrameState = function(options) {
 		if(oldRoot) {
 			oldRoot.destroy();
 		}
-		var root = this._getWrappedDOMNode(rootNode);
+		var root = this._getWrappedDOMNode(rootNode, false);
 		var chrome = this._getChrome();
 		this._root = this._setChildrenRecursive(root, rootNode.children);
 

@@ -365,6 +365,18 @@ var DOMState = function(options) {
 	proto.getChildren = function() {
 		return this.children;
 	};
+	proto.getDeepChildren = function(rv) {
+		if(!rv) {
+			rv = [];
+		}
+
+		rv.push.apply(rv, this.getChildren());
+		_.each(this.getChildren(), function(child) {
+			child.getDeepChildren(rv);
+		});
+
+		return rv;
+	};
 
 	proto.isCSSStyle = function() {
 		return this._getTagName().toLowerCase() === 'style';

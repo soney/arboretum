@@ -17,6 +17,7 @@ $.widget('arboretum.node_selection', {
 	},
 	_destroy: function() {
 		this._removeDeviceListeners();
+		this._selectionRectangle.remove();
 	},
 	_onContextMenu: function(event) {
 		event.preventDefault();

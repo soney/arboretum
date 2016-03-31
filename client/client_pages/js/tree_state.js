@@ -91,9 +91,11 @@ $.widget('arboretum.tree_state', {
 	},
 	*/
 	registerNode: function(id, node) {
+		console.log('register', id);
 		this.nodeMap[id] = node;
 	},
 	unregisterNode: function(id) {
+		console.log('UN', id);
 		delete this.nodeMap[id];
 	},
 	_addListeners: function() {
@@ -139,11 +141,19 @@ $.widget('arboretum.tree_state', {
 		}
 	},
 	_nodeInitialized: function(info) {
+		var parent = this.nodeMap[info.parentId];
+		if(parent) {
+			parent.childInitialized(info);
+		} else {
+			this._currentData.children[0] = info;
+			this._serverReady(this._currentData);
+		}
+		/*
 		var element = this.nodeMap[info.id];
 		console.log(info.id + ' initialized');
 		if(element) {
 			var parent = element.option('parent');
-			if(parent === this) {
+			if(parent === this || !parent) {
 				this._currentData.children[0] = info;
 				this._serverReady(this._currentData);
 			} else if(parent) {
@@ -154,6 +164,7 @@ $.widget('arboretum.tree_state', {
 		} else {
 			throw new Error('Got node initialized before server ready');
 		}
+		*/
 	},
 	getQueuedInitialization: function(id) {
 		return this._queuedInitializations[id];

@@ -17,9 +17,12 @@ var ShadowBrowser = function(browserState, socket) {
 				nodeName === 'BASE' || nodeType === NODE_CODE.DOCUMENT_TYPE_NODE) {
 				return false;
 			} else if(this.isOutput()) {
-				var visibleElements = this._visibleElements;
-
-				return visibleElements.length > 0;
+				if(nodeName === 'STYLE' || nodeName === 'LINK' || nodeName === 'HEAD') {
+					return true;
+				} else {
+					var visibleElements = this._visibleElements;
+					return _.indexOf(visibleElements, node.nodeId) >= 0;
+				}
 			} else {
 				return true;
 			}
@@ -100,13 +103,40 @@ var ShadowBrowser = function(browserState, socket) {
 		this.setTab(tabId, frameId);
 	};
 	proto.setVisibleElements = function(nodeIds) {
-		this._visibleElements = nodeIds;
+		this._visibleElements = [];
+		var wrappedNodePromises = _.map(nodeIds, function(nodeId) {
+			return this.browserState.findNode(nodeId);
+		}, this);
+		Promise.all(wrappedNodePromises).then(function(wrappedNodes) {
+			var newIds = [];
+			_.each(wrappedNodes, function(wrappedNode) {
+				if(wrappedNode) {
+					var parent = wrappedNode;
+					do {
+						newIds.push(parent.getId())
+					} while(parent = parent.getParent());
+
+					var deepChildren = wrappedNode.getDeepChildren();
+					newIds.push.apply(newIds, _.map(deepChildren, function(child) {
+						return child.getId();
+					}));
+
+				}
+			}, this);
+			return _.unique(newIds);
+		}).then(_.bind(function(newIds) {
+			this._visibleElements = newIds;
+			this.refreshChildren();
+		}, this)).catch(function(err) {
+			console.error(err.stack);
+		});
+	};
+	proto.refreshChildren = function() {
 		var tabShadow = this.tabShadow;
 		if(tabShadow) {
 			var frameShadow = tabShadow.shadowFrame;
 			if(frameShadow) {
 				var domShadow = frameShadow.getShadowTree();
-
 				if(domShadow) {
 					domShadow._childrenChanged({});
 				}

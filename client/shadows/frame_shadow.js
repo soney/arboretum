@@ -77,12 +77,16 @@ var ShadowFrame = function(options) {
 				this.options, {
 					tree: node,
 					state: this,
+					parent: false
 				}));
 
 			shadow.isInitialized().then(_.bind(function() {
 				this._sentServerReady = true;
-				log.debug('Server ready ' + node.getId());
-				socket.emit('serverReady', shadow.serialize());
+				//log.debug('Server ready ' + node.getId());
+				//socket.emit('serverReady', shadow.serialize());
+				//console.log('server ready');
+
+				//socket.emit('nodeInitialized', shadow.serialize());
 			}, this));
 		}
 	};

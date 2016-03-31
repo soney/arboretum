@@ -373,6 +373,16 @@ var TabState = function(tabId, chrome) {
 		var frame = this.getMainFrame();
 		frame.documentUpdated();
 	};
+	proto.findNode = function(nodeId) {
+		var result;
+		_.each(this._frames, function(frame) {
+			var node = frame.findNode(nodeId);
+			if(node) {
+				result = node;
+			}
+		}, this);
+		return result;
+	};
 
 	proto._onSetChildNodes = function(event) {
 		var promises = _.map(this._frames, function(frame) {

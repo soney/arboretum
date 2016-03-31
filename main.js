@@ -6,7 +6,7 @@ var repl = require('repl'),
 	log = require('./utils/logging'),
 	replServer;
 
-//log.setLevel('trace');
+log.setLevel('trace');
 
 startAll().then(function(info) {
 	var browser = info.browser;
@@ -45,10 +45,13 @@ function startAll() {
 		return wait(0, info);
 	}).then(function(info) {
 		serverInfo = info;
-		return startChrome({
+		return Promise.all([startChrome({
 			appName: 'Google Chrome Canary',
 			url: 'http://localhost:' + info.clientPort
-		});
+		}), startChrome({
+			appName: 'Google Chrome',
+			url: 'http://localhost:' + info.clientPort + '/o'
+		})]);
 	}).then(function() {
 		return serverInfo;
 	});
@@ -56,8 +59,9 @@ function startAll() {
 
 function killAllChromes() {
 	var chromiumQuitter = killChrome({appName: 'Chromium' }),
-		canaryQuitter = killChrome({appName: 'Google Chrome Canary'});
-	return Promise.all([chromiumQuitter, canaryQuitter]);
+		canaryQuitter = killChrome({appName: 'Google Chrome Canary'}),
+		chromeQuitter = killChrome({appName: 'Google Chrome'});
+	return Promise.all([chromiumQuitter, canaryQuitter, chromeQuitter]);
 }
 
 function startServer(chromePort) {

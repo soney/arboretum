@@ -22,9 +22,11 @@ var ShadowDOM = function(options) {
 		tree: false,
 		state: false,
 		socket: false,
+		parent: false,
 		childMapFunction: function(child) {
 			var shadow = new ShadowDOM(_.extend({}, this.options, {
-				tree: child
+				tree: child,
+				parent: this
 			}));
 			return shadow;
 		},
@@ -51,6 +53,7 @@ var ShadowDOM = function(options) {
 	this._inlineCSS = '';
 
 	this._initialized = this._initialize();
+	/*
 	if(this.getTree().getNodeType() === NODE_CODE.DOCUMENT_NODE) {
 		this._initialized = this._initialized.then(_.bind(function() {
 			var children = this.getChildren();
@@ -60,6 +63,7 @@ var ShadowDOM = function(options) {
 			return Promise.all(childInitializedPromises);
 		}, this));
 	}
+	*/
 
 	log.debug('::: CREATED DOM SHADOW ' + this.getId() + ' :::');
 };
@@ -248,10 +252,13 @@ var ShadowDOM = function(options) {
 
 	proto.serialize = function() {
 		var tree = this.getTree(),
-			node = tree._getNode();
+			node = tree._getNode(),
+			parent = this.getParent(),
+			parentId = parent ? parent.getId() : false;
 
 		return {
-			id: this._id,
+			parentId: parentId,
+			id: this.getId(),
 			type: this._type,
 			name: this._name,
 			value: this._value,
@@ -298,19 +305,30 @@ var ShadowDOM = function(options) {
 			this._is_initialized = true;
 			//this._updateAttributes(tree.getAttributesMap());
 
-
 			tree.on('attributesChanged', this.$_updateAttributes);
 			tree.on('nodeValueChanged', this.$_nodeValueChanged);
 			tree.on('inlineStyleChanged', this.$_inlineStyleChanged);
 			tree.on('valueUpdated', this.$_valueUpdated);
-
-			var state = this._getState();
-
-			if(state.sentServerReady()) {
-				var socket = this._getSocket();
-				log.debug('Initialized ' + this.getId());
-				socket.emit('nodeInitialized', this.serialize());
+		}, this)).then(_.bind(function() {
+			var parent = this.getParent();
+			if(parent) {
+				return parent.isInitialized();
+			} else {
+				return false;
 			}
+		}, this)).then(_.bind(function(parent) {
+			var socket = this._getSocket();
+			if(parent) {
+				var state = this._getState();
+				if(state.sentServerReady()) {
+					log.debug('Initialized ' + this.getId());
+					socket.emit('nodeInitialized', this.serialize());
+				}
+			} else {
+				log.debug('Server ready ' + this.getId());
+				socket.emit('serverReady', this.serialize());
+			}
+			return this;
 		}, this)).catch(function(err) {
 			console.log(err);
 		});
@@ -370,6 +388,9 @@ var ShadowDOM = function(options) {
 
 	proto._getSocket = function() {
 		return this.options.socket;
+	};
+	proto.getParent = function() {
+		return this.options.parent;
 	};
 
 }(ShadowDOM));
