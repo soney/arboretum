@@ -2,18 +2,32 @@ var _ = require('underscore'),
 	util = require('util'),
 	EventEmitter = require('events'),
 	ShadowTab = require('./tab_shadow').ShadowTab,
+	ShadowFrame = require('./frame_shadow').ShadowFrame,
 	ShadowDOM = require('./dom_shadow').ShadowDOM;
 
 var log = require('../../utils/logging').getColoredLogger('red', 'bgBlack');
 
-var ShadowBrowser = function(browserState, socket) {
+var ShadowBrowser = function(options) {
+	this.options = options;
+
+	this.$_onAddTab = _.bind(this._onAddTab, this);
+	this.$_onCloseTab = _.bind(this._onCloseTab, this);
+	this.$_onFocusTab = _.bind(this._onFocusTab, this);
+	this.$_onOpenURL = _.bind(this._onOpenURL, this);
+	this.$_onNodeReply = _.bind(this._onNodeReply, this);
+	this.$sendTabs = _.bind(this.sendTabs, this);
+
+	this._clients = {};
+	this.setMainClient(false);
+	/*
+
 	this.options = {
 		childFilterFunction: _.bind(function(child) {
 			var node = child._getNode(),
 				nodeName = node.nodeName,
 				nodeType = node.nodeType;
-			if(/*nodeName === 'STYLE' || */nodeName === 'SCRIPT' ||
-				nodeName === '#comment'/* || nodeName === 'LINK'*/ ||
+			if(nodeName === 'SCRIPT' ||
+				nodeName === '#comment' ||
 				nodeName === 'BASE' || nodeType === NODE_CODE.DOCUMENT_TYPE_NODE) {
 				return false;
 			} else if(this.isOutput()) {
@@ -29,31 +43,15 @@ var ShadowBrowser = function(browserState, socket) {
 		}, this)
 	};
 
-	this.browserState = browserState;
-	this.socket = socket;
-	this.tabShadow = false;
-	log.debug('::: CREATED BROWSER SHADOW :::');
 	this._initialize();
 	this._visibleElements = true;
+	*/
+	log.debug('::: CREATED BROWSER SHADOW :::');
 };
 (function(My) {
 	util.inherits(My, EventEmitter);
 	var proto = My.prototype;
 
-	proto._initialize = function() {
-		this.$_onAddTab = _.bind(this._onAddTab, this);
-		this.$_onCloseTab = _.bind(this._onCloseTab, this);
-		this.$_onFocusTab = _.bind(this._onFocusTab, this);
-		this.$_onOpenURL = _.bind(this._onOpenURL, this);
-		this.$_onDeviceEvent = _.bind(this._onDeviceEvent, this);
-		this.$_onClientReady = _.bind(this._onClientReady, this);
-		this.$_onNodeReply = _.bind(this._onNodeReply, this);
-
-		this.$sendTabs = _.bind(this.sendTabs, this);
-
-		this._addBrowserStateListeners();
-		this._addSocketListeners();
-	};
 	proto._onNodeReply = function(info) {
 		var nodeIds = info.nodeIds,
 			activeTabShadow = this.tabShadow,
@@ -63,10 +61,10 @@ var ShadowBrowser = function(browserState, socket) {
 		this.emit('nodeReply', info);
 	};
 	proto._onAddTab = function(info) {
-		this.browserState.addTab();
+		this.getBrowserState().addTab();
 	};
 	proto._onCloseTab = function(info) {
-		this.browserState.closeTab(info.tabId);
+		this.getBrowserState().closeTab(info.tabId);
 	};
 	proto._onFocusTab = function(info) {
 		this.setTab(info.tabId);
@@ -74,38 +72,59 @@ var ShadowBrowser = function(browserState, socket) {
 	proto._onOpenURL = function(info) {
 		this.tabShadow.openURL(info.url);
 	};
-	proto._onDeviceEvent = function(event) {
-		this.browserState.onDeviceEvent(event, this.getActiveTabId());
-	};
 	proto.getFrameId = function() {
 		return this.tabShadow.getFrameId();
 	};
 	proto._addBrowserStateListeners = function() {
-		this.browserState.on('tabCreated', this.$sendTabs);
-		this.browserState.on('tabDestroyed', this.$sendTabs);
-		this.browserState.on('tabUpdated', this.$sendTabs);
+		var browserState = this.getBrowserState();
+
+		browserState.on('tabCreated', this.$sendTabs);
+		browserState.on('tabDestroyed', this.$sendTabs);
+		browserState.on('tabUpdated', this.$sendTabs);
 	};
 	proto._removeBrowserStateListeners = function() {
-		this.browserState.removeListener('tabCreated', this.$sendTabs);
-		this.browserState.removeListener('tabDestroyed', this.$sendTabs);
-		this.browserState.removeListener('tabUpdated', this.$sendTabs);
+		var browserState = this.getBrowserState();
+
+		browserState.removeListener('tabCreated', this.$sendTabs);
+		browserState.removeListener('tabDestroyed', this.$sendTabs);
+		browserState.removeListener('tabUpdated', this.$sendTabs);
 	};
-	proto._onClientReady = function(info) {
-		var tabId = info.tabId,
-			frameId = info.frameId,
-			isOutput = info.isOutput;
-		this._isOutput = isOutput;
+	proto.addClient = function(clientOptions) {
+		var browserState = this.getBrowserState();
 
-		if(!info.tabId) {
-			tabId = this.browserState.getActiveTabId();
+		if(clientOptions.frameId) {
+			return browserState.findFrame(clientOptions.frameId).then(_.bind(function(frame) {
+				var frameShadow = new ShadowFrame(_.extend({}, clientOptions, {
+					frame: frame,
+					browserShadow: this
+				}));
+
+				this.setClient(clientOptions.frameId, frameShadow);
+
+				return frameShadow;
+			}, this));
+		} else {
+			this._addBrowserStateListeners();
+			this._addSocketListeners(clientOptions.socket);
+
+			return browserState.getTabState(browserState.getActiveTabId()).then(_.bind(function(tabState) {
+				var tabShadow = new ShadowTab(_.extend({}, clientOptions, {
+					tab: tabState,
+					socket: clientOptions.socket,
+					browserShadow: this
+				}));
+
+				this.setMainClient(tabShadow);
+				return tabShadow;
+			}, this));
 		}
-
-		this.setTab(tabId, frameId);
 	};
 	proto.setVisibleElements = function(nodeIds) {
+		var browserState = this.getBrowserState();
+
 		this._visibleElements = [];
 		var wrappedNodePromises = _.map(nodeIds, function(nodeId) {
-			return this.browserState.findNode(nodeId);
+			return browserState.findNode(nodeId);
 		}, this);
 		Promise.all(wrappedNodePromises).then(function(wrappedNodes) {
 			var newIds = [];
@@ -148,33 +167,33 @@ var ShadowBrowser = function(browserState, socket) {
 		return this._isOutput;
 	};
 
-	proto._addSocketListeners = function() {
-		this.socket	.on('addTab', this.$_onAddTab)
-					.on('closeTab', this.$_onCloseTab)
-					.on('focusTab', this.$_onFocusTab)
-					.on('openURL', this.$_onOpenURL)
-					.on('deviceEvent', this.$_onDeviceEvent)
-					.on('clientReady', this.$_onClientReady)
-					.on('getCurrentTabs', this.$sendTabs)
-					.on('nodeReply', this.$_onNodeReply);
+	proto._addSocketListeners = function(socket) {
+		socket	.on('addTab', this.$_onAddTab)
+				.on('closeTab', this.$_onCloseTab)
+				.on('focusTab', this.$_onFocusTab)
+				.on('openURL', this.$_onOpenURL)
+				.on('getCurrentTabs', this.$sendTabs)
+				.on('nodeReply', this.$_onNodeReply);
 	};
-	proto._removeSocketListeners = function() {
-		this.socket	.removeListener('addTab', this.$_onAddTab)
-					.removeListener('closeTab', this.$_onCloseTab)
-					.removeListener('focusTab', this.$_onFocusTab)
-					.removeListener('openURL', this.$_onOpenURL)
-					.removeListener('deviceEvent', this.$_onDeviceEvent)
-					.removeListener('clientReady', this.$_onClientReady)
-					.removeListener('nodeReply', this.$_onNodeReply);
+	proto._removeSocketListeners = function(socket) {
+		socket	.removeListener('addTab', this.$_onAddTab)
+				.removeListener('closeTab', this.$_onCloseTab)
+				.removeListener('focusTab', this.$_onFocusTab)
+				.removeListener('openURL', this.$_onOpenURL)
+				.removeListener('nodeReply', this.$_onNodeReply);
 	};
 	proto.sendTabs = function() {
-		var tabs = {};
-		_.each(this.browserState.getTabIds(), function(tabId) {
-			tabs[tabId] = _.extend({
-				active: tabId === this.getActiveTabId()
-			}, this.browserState.summarizeTab(tabId));
-		}, this);
-		this.socket.emit('currentTabs', tabs);
+		var mainClient = this.getMainClient();
+		if(mainClient) {
+			var browserState = this.getBrowserState();
+			var tabs = {};
+			_.each(browserState.getTabIds(), function(tabId) {
+				tabs[tabId] = _.extend({
+					active: tabId === this.getActiveTabId()
+				}, browserState.summarizeTab(tabId));
+			}, this);
+			mainClient._getSocket().emit('currentTabs', tabs);
+		}
 	};
 
 	proto.getActiveTabId = function() {
@@ -190,18 +209,21 @@ var ShadowBrowser = function(browserState, socket) {
 	};
 
 	proto.setTab = function(tabId, frameId) {
-		this._destroyCurrentTabShadow();
-		this.activeTabId = tabId;
+		var mainClient = this.getMainClient();
+		if(mainClient) {
+			this._destroyCurrentTabShadow();
+			this.activeTabId = tabId;
 
-		return this.browserState.getTabState(tabId).then(_.bind(function(tabState) {
-			this.tabShadow = new ShadowTab(_.extend({}, this.options, {
-				tab: tabState,
-				frameId: frameId,
-				socket: this.socket
-			}));
-		}, this)).catch(function(err) {
-			console.error(err.stack);
-		});
+			return this.getBrowserState().getTabState(tabId).then(_.bind(function(tabState) {
+				this.tabShadow = new ShadowTab(_.extend({}, this.options, {
+					tab: tabState,
+					frameId: frameId,
+					socket: mainClient._getSocket()
+				}));
+			}, this)).catch(function(err) {
+				console.error(err.stack);
+			});
+		}
 	};
 	proto.destroy = function() {
 		this._destroyCurrentTabShadow();
@@ -209,6 +231,21 @@ var ShadowBrowser = function(browserState, socket) {
 		this._removeBrowserStateListeners();
 		this._removeSocketListeners();
 		log.debug('::: DESTROYED BROWSER SHADOW :::');
+	};
+	proto.getBrowserState = function() {
+		return this.options.browserState;
+	};
+	proto.getMainClient = function() {
+		return this._mainClient;
+	};
+	proto.setMainClient = function(client) {
+		this._mainClient = client;
+	};
+	proto.setClient = function(frameId, client) {
+		this._clients[frameId] = client;
+	};
+	proto.getClient = function(frameId) {
+		return this._clients[frameId];
 	};
 }(ShadowBrowser));
 

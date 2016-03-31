@@ -1,6 +1,7 @@
 var _ = require('underscore'),
 	util = require('util'),
 	EventEmitter = require('events'),
+	EventManager = require('../event_manager').EventManager,
 	ResourceTracker = require('../resource_tracker').ResourceTracker,
 	DOMState = require('./dom_state').DOMState;
 var log = require('../../utils/logging').getColoredLogger('green');
@@ -17,6 +18,7 @@ var FrameState = function(options) {
 	this._queuedEvents = [];
 	this._executionContext = false;
 	this._root = false;
+	this.eventManager = new EventManager(chrome);
 
 	this._resourceTracker = new ResourceTracker(chrome, this, options.resources);
 	log.debug('=== CREATED FRAME STATE', this.getFrameId(), ' ====');
@@ -28,6 +30,10 @@ var FrameState = function(options) {
 
 	proto.executionContextCreated = function(context) {
 		this._executionContext = context;
+	};
+
+	proto.onDeviceEvent = function() {
+		return this.eventManager.onDeviceEvent.apply(this.eventManager, arguments);
 	};
 
 	proto.getExecutionContext = function() {

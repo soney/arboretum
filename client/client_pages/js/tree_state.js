@@ -1,8 +1,9 @@
 $.widget('arboretum.tree_state', {
 	options: {
-		tabId: false,
+		taskId: false,
+		userId: false,
 		frameId: false,
-		isOutput: false
+		viewType: false
 	},
 
 	_create: function() {
@@ -14,11 +15,7 @@ $.widget('arboretum.tree_state', {
 		socket.on('serverReady', _.bind(this._serverReady, this));
 		socket.on('frameChanged', _.bind(this._frameChanged, this));
 
-		socket.emit('clientReady', {
-			frameId: this.option('frameId'),
-			tabId: this.option('tabId'),
-			isOutput: this.option('isOutput')
-		});
+		socket.emit('clientReady', this.option());
 
 		this._addListeners();
 	},
@@ -28,15 +25,18 @@ $.widget('arboretum.tree_state', {
 		this.socket.disconnect();
 	},
 	_removeNodeAndMenu: function() {
-		if(this.element.data('arboretum-tree_node')) {
-			this.element.tree_node('destroy');
+		if(this.node_container) {
+			if(this.node_container.data('arboretum-tree_node')) {
+				this.node_container.tree_node('destroy');
+			}
+
+			if(this.node_container.data('arboretum-tree_node_placeholder')) {
+				this.node_container.tree_node_placeholder('destroy');
+			}
 		}
 		if(this.element.data('arboretum-node_selection')) {
 			this.element.node_selection('destroy');
 		}
-		//if(this.element.data('arboretum-tree_node_placeholder')) {
-			//this.element.tree_node_placeholder('destroy');
-		//}
 		if(this.element.data('arboretum-menu')) {
 			this.element.menu('destroy');
 		}
@@ -45,24 +45,32 @@ $.widget('arboretum.tree_state', {
 		this._removeNodeAndMenu();
 	},
 	_serverReady: function(data) {
-		this._currentData = data;
 		this._removeNodeAndMenu();
 		//var styleElement = $('style');
 
 		if(data.type === DOCUMENT_NODE && data.children.length === 1 && data.children[0].name === 'HTML') { //document
 			this.element.children().remove();
 			var child = data.children[0];
-			this.element.tree_node(_.extend({
-				state: this,
-				socket: this.socket
-			}, child));
+
+			this.node_container = this.element;
+
+			if(child.initialized) {
+				this.element.tree_node(_.extend({
+					state: this,
+					socket: this.socket
+				}, child));
+			} else {
+				this.element.tree_node_placeholder(_.extend({
+					state: this
+				}, child));
+			}
 		} else {
-			var body = $('<body />').appendTo(this.element);
-			var div = $('<div />').appendTo(body).tree_node(_.extend({
+			this.node_container = $('<body />').appendTo(this.element).tree_node(_.extend({
 				state: this,
 				socket: this.socket
 			}, data));
 		}
+
 		this.element.node_selection({
 			state: this,
 			socket: this.socket
@@ -74,28 +82,11 @@ $.widget('arboretum.tree_state', {
 				socket: this.socket
 			});
 		}
-		/*
-		var selectedChild = data;
-		console.log(selectedChild);
-		/*
-
-		this.element.tree_node(_.extend({
-			state: this
-		}, selectedChild));
-		*/
 	},
-	/*
-	_stylesheetsUpdated: function(event) {
-		var styleElement = $('style');
-		styleElement.text(event.sheets.join('\n'));
-	},
-	*/
 	registerNode: function(id, node) {
-		console.log('register', id);
 		this.nodeMap[id] = node;
 	},
 	unregisterNode: function(id) {
-		console.log('UN', id);
 		delete this.nodeMap[id];
 	},
 	_addListeners: function() {
@@ -141,13 +132,40 @@ $.widget('arboretum.tree_state', {
 		}
 	},
 	_nodeInitialized: function(info) {
+		var node = this.nodeMap[info.id],
+			element = node.element;
+		if(this.element.is(element)) { //root
+			this.element.tree_node_placeholder('destroy');
+			this.element.tree_node(_.extend({
+				state: this,
+				socket: this.socket
+			}, info));
+		} else {
+			if(!element) { // text node
+				element = $(node);
+			}
+			var parent = element.parent();
+			parent.tree_node('childInitialized', info, element);
+			/*
+
+			console.log(parent);
+
+			if(node) {
+				console.log(node.element.is(this.element));
+				console.log(node.element);
+				console.log(info);
+			}
+			*/
+		}
+
+		/*
 		var parent = this.nodeMap[info.parentId];
 		if(parent) {
 			parent.childInitialized(info);
 		} else {
-			this._currentData.children[0] = info;
-			this._serverReady(this._currentData);
+			this._serverReady(info);
 		}
+		*/
 		/*
 		var element = this.nodeMap[info.id];
 		console.log(info.id + ' initialized');

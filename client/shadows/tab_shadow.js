@@ -51,7 +51,8 @@ var ShadowTab = function(options) {
 		var frame = this._getTab().getFrame(frameId);
 		this.shadowFrame = new ShadowFrame(_.extend({}, this.options, {
 			frame: frame,
-			socket: socket
+			socket: socket,
+			browserShadow: this.getBrowserShadow()
 		}));
 		log.debug('Frame changed ' + frameId);
 		socket.emit('frameChanged');
@@ -75,6 +76,9 @@ var ShadowTab = function(options) {
 		if(!parsedURL.protocol) { parsedURL.protocol = 'http'; }
 		var url = URL.format(parsedURL);
 		this._getTab().navigate(url);
+	};
+	proto.getBrowserShadow = function() {
+		return this.options.browserShadow;
 	};
 
 	proto.destroy = function() {

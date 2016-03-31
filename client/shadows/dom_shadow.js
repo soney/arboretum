@@ -300,9 +300,8 @@ var ShadowDOM = function(options) {
 
 			this._namespace = tree.getNamespace();
 			//console.log(tree.getNamespace(), tree.getNodeName());
-			this._attributes = tree.getAttributesMap();
+			this._attributes = tree.getAttributesMap(this);
 			this._inlineCSS = tree.getInlineStyle();
-			this._is_initialized = true;
 			//this._updateAttributes(tree.getAttributesMap());
 
 			tree.on('attributesChanged', this.$_updateAttributes);
@@ -317,6 +316,7 @@ var ShadowDOM = function(options) {
 				return false;
 			}
 		}, this)).then(_.bind(function(parent) {
+			this._is_initialized = true;
 			var socket = this._getSocket();
 			if(parent) {
 				var state = this._getState();
@@ -377,7 +377,8 @@ var ShadowDOM = function(options) {
 	};
 
 	proto._updateAttributes = function(attributesMap) {
-		this._attributes = attributesMap;
+		var tree = this.getTree();
+		this._attributes = tree.getAttributesMap(this);
 		this._postNewAttributes();
 	};
 
@@ -391,6 +392,10 @@ var ShadowDOM = function(options) {
 	};
 	proto.getParent = function() {
 		return this.options.parent;
+	};
+	proto.getUserId = function() {
+		var state = this._getState();
+		return state.getUserId();
 	};
 
 }(ShadowDOM));

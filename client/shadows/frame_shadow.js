@@ -31,14 +31,13 @@ var ShadowFrame = function(options) {
 		this.$_updateShadowTree = _.bind(this._updateShadowTree, this);
 		this.$_highlightNode = _.bind(this._highlightNode, this);
 		this.$_removeHighlight = _.bind(this._removeHighlight, this);
-
-		this.$_mouseEvent = _.bind(this._mouseEvent, this);
+		this.$_onDeviceEvent = _.bind(this._onDeviceEvent, this);
 
 		this._addListeners();
 
-		socket.on('highlightNode', this.$_highlightNode);
-		socket.on('removeHighlight', this.$_removeHighlight);
-		socket.on('mouseEvent', this.$_mouseEvent);
+		socket	.on('highlightNode', this.$_highlightNode)
+				.on('removeHighlight', this.$_removeHighlight)
+				.on('deviceEvent', this.$_onDeviceEvent);
 
 		this._updateShadowTree();
 
@@ -53,8 +52,9 @@ var ShadowFrame = function(options) {
 		var domTree = this._getDomTree();
 		domTree.on('rootInvalidated', this.$_updateShadowTree);
 	};
-	proto._mouseEvent = function(event) {
-		this.emit('mouseEvent', event);
+	proto._onDeviceEvent = function(event) {
+		var frameState = this._getDomTree();
+		frameState.onDeviceEvent(event);
 	};
 	proto._getDomTree = function() {
 		return this.domTree;
@@ -108,6 +108,7 @@ var ShadowFrame = function(options) {
 
 		socket.removeListener('highlightNode', this.$_highlightNode);
 		socket.removeListener('removeHighlight', this.$_removeHighlight);
+		socket.removeListener('deviceEvent', this.$_onDeviceEvent);
 
 		log.debug('::: DESTROYED FRAME SHADOW ' + this._getDomTree().getFrameId() + ' :::');
 	};
@@ -118,6 +119,12 @@ var ShadowFrame = function(options) {
 	proto._removeHighlight = function(info) {
 		var nodeId = info.nodeId;
 		domTree.removeHighlight(nodeId);
+	};
+	proto.getUserId = function() {
+		return this.options.userId;
+	};
+	proto.getBrowserShadow = function() {
+		return this.options.browserShadow();
 	};
 }(ShadowFrame));
 

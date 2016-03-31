@@ -14,7 +14,38 @@ module.exports = {
 			PORT = 3000;
 
 		return new Promise(function(resolve, reject) {
-			var server = app.use(express.static(path.join(__dirname, 'client_pages')))
+			var server = app.all('/', function(req, res, next) {
+								setClientOptions({
+									userId: getUserID()
+								}).then(function(contents) {
+									res.send(contents);
+								});
+							})
+							.use('/', express.static(path.join(__dirname, 'client_pages')))
+							.all('/f', function(req, res, next) {
+								var frameId = req.query.i,
+									tabId = req.query.t,
+									userId = req.query.u,
+									taskId = req.query.k;
+
+								setClientOptions({
+									userId: userId,
+									frameId: frameId,
+									viewType: 'mirror'
+								}).then(function(contents) {
+									res.send(contents);
+								});
+							})
+							.use('/f', express.static(path.join(__dirname, 'client_pages')))
+							.all('/o', function(req, res, next) {
+								setClientOptions({
+									frameId: frameId,
+									viewType: 'output'
+								}).then(function(contents) {
+									res.send(contents);
+								});
+							})
+							.use('/o', express.static(path.join(__dirname, 'client_pages')))
 							.all('/r', function(req, res, next) {
 								var url = req.query.l,
 									tabId = req.query.t,
@@ -23,7 +54,6 @@ module.exports = {
 								browserState.requestResource(url, frameId, tabId).then(function(resourceInfo) {
 									var content = resourceInfo.content;
 									res.set('Content-Type', resourceInfo.mimeType);
-
 
 									if(resourceInfo.base64Encoded) {
 										var bodyBuffer = new Buffer(content, 'base64');
@@ -50,25 +80,6 @@ module.exports = {
 									*/
 								});
 							})
-							.all('/f', function(req, res, next) {
-								var frameId = req.query.i,
-									tabId = req.query.t;
-								procesFile(path.join(__dirname, 'client_pages', 'index.html'), function(contents) {
-									return contents.replace('frameId: false', 'frameId: "'+frameId+'"')
-													.replace('tabId: false', 'tabId: "'+tabId+'"');
-								}).then(function(contents) {
-									res.send(contents);
-								});
-							})
-							.use('/f', express.static(path.join(__dirname, 'client_pages')))
-							.all('/o', function(req, res, next) {
-								procesFile(path.join(__dirname, 'client_pages', 'index.html'), function(contents) {
-									return contents.replace('isOutput: false', 'isOutput: true');
-								}).then(function(contents) {
-									res.send(contents);
-								});
-							})
-							.use('/o', express.static(path.join(__dirname, 'client_pages')))
 							//.all('favicon.ico', function(req, res, next) {
 								//pageState.requestResource('favicon.ico');
 							//})
@@ -79,6 +90,31 @@ module.exports = {
 			var io = socket(server);
 			var shadowBrowsers = {}
 			io.on('connection', function (socket) {
+				socket.once('clientReady', function(clientOptions) {
+					var shadowBrowser;
+					if(clientOptions.frameId) {
+						shadowBrowser = shadowBrowsers[clientOptions.userId];
+					} else { // is the root
+						shadowBrowser = new ShadowBrowser({
+											browserState: browserState,
+											socket: socket,
+											clientOptions: clientOptions
+										});
+						shadowBrowsers[clientOptions.userId] = shadowBrowser;
+					}
+
+					if(shadowBrowser) {
+						shadowBrowser.addClient(_.extend({
+							socket: socket
+						}, clientOptions)).catch(function(err) {
+							console.error(err);
+							console.error(err.stack);
+						});
+					} else {
+						console.error('Seeking browser for non-user');
+					}
+				});
+				/*
 				var id = socket.id;
 				var shadowBrowser = new ShadowBrowser(browserState, socket);
 				shadowBrowsers[id] = shadowBrowser;
@@ -98,9 +134,14 @@ module.exports = {
 						browser.setVisibleElements(info.nodeIds);
 					});
 				});
+				*/
 			});
 		});
 	}
+};
+
+var getUserID = function() {
+	return Math.round(100*Math.random());
 };
 
 function procesFile(filename, onContents) {
@@ -113,5 +154,14 @@ function procesFile(filename, onContents) {
 		})
 	}).then(function(contents) {
 		return onContents(contents);
+	});
+}
+
+function setClientOptions(options) {
+	return procesFile(path.join(__dirname, 'client_pages', 'index.html'), function(contents) {
+		_.each(options, function(val, key) {
+			contents = contents.replace(key+': false', key+': "' + val + '"');
+		});
+		return contents;
 	});
 }

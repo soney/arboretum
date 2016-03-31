@@ -10,7 +10,6 @@ var OPTION_DEFAULTS = {
 	port: 9222
 };
 
-
 var BrowserState = function(options) {
 	this._options = _.extend(OPTION_DEFAULTS, options);
 	this._tabs = {};
@@ -173,6 +172,20 @@ var BrowserState = function(options) {
 					}));
 				}
 			});
+		});
+	};
+	proto.findFrame = function(frameId) {
+		var statePromises = _.pluck(this._tabs, 'statePromise');
+		return Promise.all(statePromises).then(function(tabs) {
+			var result = false;
+
+			_.each(tabs, function(tab) {
+				var frame = tab.getFrame(frameId);
+				if(frame) {
+					result = frame;
+				}
+			}, this);
+			return result;
 		});
 	};
 	proto.findNode = function(nodeId) {

@@ -5,6 +5,7 @@ var COMMENT_NODE = Node.COMMENT_NODE;
 var DOCUMENT_NODE = Node.DOCUMENT_NODE;
 var DOCUMENT_TYPE_NODE = Node.DOCUMENT_TYPE_NODE;
 var DOCUMENT_FRAGMENT_NODE = Node.DOCUMENT_FRAGMENT_NODE;
+var x = 0;
 
 $.widget('arboretum.tree_node', {
 	options: {
@@ -61,8 +62,10 @@ $.widget('arboretum.tree_node', {
 			$(childElem).data('arboretum-id', child.id);
 		} else if(childType === TEXT_NODE) {
 			childElem = document.createTextNode(child.value);
+
 			$(childElem).data('arboretum-id', child.id);
 		} else {
+			console.log(child);
 			childElem = false;
 		}
 		return childElem;
@@ -80,15 +83,14 @@ $.widget('arboretum.tree_node', {
 
 			if(initialized) {
 				childElem.tree_node(_.extend({
-					state: state
+					state: state,
+					parent: this
 				}, child));
 			} else {
 				childElem.tree_node_placeholder(_.extend({
 					state: state,
 					parent: this
-				}, child)).on('initialized', function(event) {
-					console.log(event);
-				});
+				}, child));
 			}
 		} else if(childType === TEXT_NODE) {
 			state.registerNode(child.id, childElem);
@@ -104,7 +106,17 @@ $.widget('arboretum.tree_node', {
 			this.element.val(value);
 		}
 	},
-	childInitialized: function(child) {
+	childInitialized: function(childInfo, placeholderElement) {
+		var childElem = this._getChildElement(childInfo);
+		placeholderElement.after(childElem);
+
+		if(placeholderElement.data('arboretum-tree_node_placeholder')) {
+			placeholderElement.tree_node_placeholder('destroy');
+		}
+		placeholderElement.remove();
+
+		this._postChildElementAdded(childInfo, childElem);
+		/*
 		var children = this.option('children'),
 			childIndex = -1;
 
@@ -127,6 +139,7 @@ $.widget('arboretum.tree_node', {
 		} else {
 			throw new Error('Could not find child ' + child.id);
 		}
+		*/
 	},
 	_initializeChildren: function(children) {
 		_.each(children, function(child) {

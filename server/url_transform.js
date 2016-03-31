@@ -19,9 +19,7 @@ var containsURLs = {
 	'body': {
 		'background': {
 			strategy: TRANSFORM,
-			transform: function(url, baseURL, node) {
-				return transformURL(url, baseURL, node);
-			}
+			transform: transformURL
 		}
 	},
 	/*
@@ -49,72 +47,62 @@ var containsURLs = {
 	'img': {
 		'src': {
 			strategy: TRANSFORM,
-			transform: function(url, baseURL, node) {
-				return transformURL(url, baseURL, node);
-			}
+			transform: transformURL
 		},
 		'srcset': {
 			strategy: TRANSFORM,
-			transform: function(url, baseURL, node) {
-				return transformSRCSet(url, baseURL, node);
-			}
+			transform: transformSRCSet
 		}
 	},
 
 	'source': {
 		'src': {
 			strategy: TRANSFORM,
-			transform: function(url, baseURL, node) {
-				return transformURL(url, baseURL, node);
-			}
+			transform: transformURL
 		},
 		'srcset': {
 			strategy: TRANSFORM,
-			transform: function(url, baseURL, node) {
-				return transformSRCSet(url, baseURL, node);
-			}
+			transform: transformSRCSet
 		},
 		'data-srcset': {
 			strategy: TRANSFORM,
-			transform: function(url, baseURL, node) {
-				return transformSRCSet(url, baseURL, node);
-			}
+			transform: transformSRCSet
 		}
 	},
 
 	'link': {
 		'href': {
 			strategy: TRANSFORM,
-			transform: function(url, baseURL, node) {
-				return transformURL(url, baseURL, node);
-			}
+			transform: transformURL
 		}
 	},
 
 	'object': {
 		'src': {
 			strategy: TRANSFORM,
-			transform: function(url, baseURL, node) {
-				return transformURL(url, baseURL, node);
-			}
+			transform: transformURL
 		},
 		'data': {
 			strategy: TRANSFORM,
-			transform: function(url, baseURL, node) {
-				return transformURL(url, baseURL, node);
-			}
+			transform: transformURL
 		}
 	},
 
 	'form': {
 		'action': {
 			strategy: REFORMAT,
-			transform: function(url, baseURL, node) {
-				return '';
-			}
+			transform: makeBlank
+		},
+		'method': {
+			strategy: REFORMAT,
+			transform: makeBlank
 		}
 	}
 };
+
+function makeBlank() {
+	return '';
+}
 
 function transformSRCSet(attrVal, baseURL, node) {
 	var parsed = srcset.parse(attrVal);
@@ -124,11 +112,12 @@ function transformSRCSet(attrVal, baseURL, node) {
 	return srcset.stringify(parsed);
 }
 
-function transformURL(url, baseURL, node) {
+function transformURL(url, baseURL, node, shadow) {
 	var absoluteURL = URL.resolve(baseURL, url),
 		relativeURL = URL.format({
 			pathname: 'r',
 			query: {
+				u: shadow.getUserId(),
 				t: node.getTabId(),
 				f: node.getFrameId(),
 				l: absoluteURL

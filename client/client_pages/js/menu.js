@@ -85,21 +85,27 @@ $.widget('arboretum.menu', {
 	},
 	_addTabListeners: function() {
 		var socket = this.option('socket');
-		this.element.on('addTab', function(event) {
+		this.element.on('addTab.arb', function(event) {
 			socket.emit('addTab');
-		}).on('closeTab', function(event) {
+		}).on('closeTab.arb', function(event) {
 			socket.emit('closeTab', {
 				tabId: event.tabId
 			});
-		}).on('focusTab', function(event) {
+		}).on('focusTab.arb', function(event) {
 			socket.emit('focusTab', {
 				tabId: event.tabId
 			});
-		}).on('openURL', function(event) {
+		}).on('openURL.arb', function(event) {
 			socket.emit('openURL', {
 				url: event.url
 			});
 		})
+	},
+	_removeTabListeners: function() {
+		this.element.off('addTab.arb')
+					.off('closeTab.arb')
+					.off('focusTab.arb')
+					.off('openURL.arb');
 	},
 	_updateOpacity: function() {
 		this.menu_element.css({
@@ -187,6 +193,7 @@ $.widget('arboretum.menu', {
 		this._isExpanded(false);
 	},
 	_destroy: function() {
+		this._removeTabListeners();
 	}
 });
 

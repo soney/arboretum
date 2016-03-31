@@ -2,14 +2,12 @@ var _ = require('underscore'),
 	util = require('util'),
 	URL = require('url'),
 	EventEmitter = require('events'),
-	EventManager = require('../event_manager').EventManager,
 	FrameState = require('./frame_state').FrameState;
 var log = require('../../utils/logging').getColoredLogger('yellow');
 
 var TabState = function(tabId, chrome) {
 	this.chrome = chrome;
 	this._tabId = tabId;
-	this.eventManager = new EventManager(chrome);
 	this._rootFrame = false;
 	this._frames = {};
 
@@ -53,10 +51,6 @@ var TabState = function(tabId, chrome) {
 			expression: expression
 		});
 		return frame.evaluate(expression);
-	};
-
-	proto.onDeviceEvent = function() {
-		return this.eventManager.onDeviceEvent.apply(this.eventManager, arguments);
 	};
 
 	proto.getURL = function() {

@@ -21,8 +21,6 @@ var DOMState = function(options) {
 
 	this._destroyed = false;
 	this._namespace = null;
-	this._superAttributes = {};
-	this._attributes = {};
 	this._inlineStyle = '';
 	this.children = [];
 	this._self_initialized = this.initialize().then(_.bind(function() {
@@ -128,54 +126,6 @@ var DOMState = function(options) {
 		}, this));
 	}
 
-	proto._initializeAttributesMap = function() {
-		var node = this._getNode(),
-			attributes = node.attributes,
-			attrPromise,
-			attrPromises = [];
-		if(attributes) {
-			var len = attributes.length,
-				i = 0;
-			while(i < len) {
-				var name = attributes[i],
-					value = attributes[i+1];
-
-				this._attributes[name] = this._transformAttribute(value, name);
-				i+=2;
-			}
-		}
-
-		return Promise.all(attrPromises);
-	};
-
-	proto._transformAttribute = function(val, name) {
-		var lcName = name.toLowerCase();
-
-		if(lcName === 'onload' || lcName === 'onclick' ||
-			lcName === 'onmouseover' || lcName === 'onmouseout' ||
-			lcName === 'onmouseenter' || lcName === 'onmouseleave' ||
-			lcName === 'action' || lcName === 'oncontextmenu') {
-			val = '';
-		} else {
-			var tagName = this._getTagName(),
-				tagTransform = urlTransform[tagName.toLowerCase()];
-
-			if(tagTransform) {
-				var attributeTransform = tagTransform[name.toLowerCase()];
-				if(attributeTransform) {
-					var url = this._getBaseURL();
-					if(url) {
-						return attributeTransform.transform(val, url, this);
-					} else {
-						log.debug('no base url');
-						return val;
-					}
-				}
-			}
-		}
-		return val;
-	};
-
 	proto._getBaseURL = function() {
 		var frame = this._getFrame();
 		return frame.getURL();
@@ -186,8 +136,55 @@ var DOMState = function(options) {
 		return node.nodeName;
 	};
 
-	proto.getAttributesMap = function() {
-		return _.extend({}, this._attributes, this._superAttributes);
+	proto.getAttributesMap = function(shadow) {
+		var node = this._getNode(),
+			tagName = this._getTagName(),
+			tagTransform = urlTransform[tagName.toLowerCase()]
+			attributes = node.attributes,
+			rv = {};
+
+		if(attributes) {
+			var len = attributes.length,
+				i = 0;
+			while(i < len) {
+				var name = attributes[i],
+					value = attributes[i+1],
+					newValue = value;
+
+				if(shadow) {
+					var lcName = name.toLowerCase();
+					if(lcName === 'onload' || lcName === 'onclick' ||
+						lcName === 'onmouseover' || lcName === 'onmouseout' ||
+						lcName === 'onmouseenter' || lcName === 'onmouseleave' ||
+						lcName === 'action' || lcName === 'oncontextmenu') {
+						newValue = '';
+					} else {
+						if(tagTransform) {
+							var attributeTransform = tagTransform[lcName];
+							if(attributeTransform) {
+								var url = this._getBaseURL();
+								if(url) {
+									newValue = attributeTransform.transform(value, url, this, shadow);
+								} else {
+									log.debug('no base url');
+								}
+							}
+						}
+					}
+				}
+
+				rv[name] = newValue;
+				i+=2;
+			}
+
+			if(shadow) {
+				var childFrame = this.getChildFrame();
+				if(childFrame) {
+					rv.src = transformIFrameURL(childFrame, shadow);
+				}
+			}
+		}
+		return rv;
 	};
 
 	proto.getNamespace = function() {
@@ -230,12 +227,10 @@ var DOMState = function(options) {
 			frame.setRoot(frameRoot);
 
 			this.childFrame = frame;
-			this._superAttributes.src = transformIFrameURL(frame);
 		} else {
 			this.childFrame = false;
 		}
 
-		this._initializeAttributesMap();
 		this._addValueListeners();
 
 		var longStringInitialization = this._initializeLongString(),
@@ -330,10 +325,9 @@ var DOMState = function(options) {
 			}
 		}
 		if(!found) {
-			node.attributes.push(name, value);
+			attributes.push(name, value);
 		}
 
-		this._attributes[name] = this._transformAttribute(value, name);
 		this._notifyAttributeChange();
 	};
 
@@ -344,13 +338,12 @@ var DOMState = function(options) {
 		var attributeIndex = _.indexOf(node.attributes, name);
 		if(attributeIndex >= 0) {
 			node.attributes.splice(attributeIndex, 2);
-			delete this._attributes[name];
 			this._notifyAttributeChange();
 		}
 	};
 
 	proto._notifyAttributeChange = function() {
-		this.emit('attributesChanged', this.getAttributesMap());
+		this.emit('attributesChanged');
 	};
 
 	proto.getAttributes = function() {
@@ -596,11 +589,12 @@ var DOMState = function(options) {
 	};
 }(DOMState));
 
-function transformIFrameURL(childFrame) {
+function transformIFrameURL(childFrame, shadow) {
 	if(childFrame) {
 		return URL.format({
 			pathname: 'f',
 			query: {
+				u: shadow.getUserId(),
 				i: childFrame.getFrameId(),
 				t: childFrame.getTabId()
 			}
