@@ -28,6 +28,7 @@ $.widget('arboretum.node_selection', {
 		$(nodes).not(this._selectionRectangle)
 				.not('.arboretum_highlighted')
 				.addClass('arboretum_highlighted')
+				.css('background-color', '')
 				.effect({
 					effect: 'highlight',
 					duration: 700,
@@ -53,7 +54,7 @@ $.widget('arboretum.node_selection', {
 			this._updateSelectionRectangle(this._anchor, this._getCoordinates(event));
 		}
 		$('.arboretum_highlighted')	.removeClass('arboretum_highlighted')
-									.css('border', '');
+									.css('background-color', '');
 	},
 	_updateSelectionRectangle: function(anchor, coordinates) {
 		var width = Math.abs(anchor.x - coordinates.x) + 4,
@@ -75,6 +76,13 @@ $.widget('arboretum.node_selection', {
 			left: rect.left+'px',
 			top: rect.top+'px'
 		});
+		$('.arboretum_highlighted')	.removeClass('arboretum_highlighted')
+									.css('background-color', '');
+		var nodes = getHighlightedElements(rect);
+		$(nodes).not(this._selectionRectangle)
+				.not('.arboretum_highlighted')
+				.addClass('arboretum_highlighted')
+				.css('background-color', 'red');
 		return rect;
 	},
 	_onMouseMove: function(event) {
