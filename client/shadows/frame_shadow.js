@@ -17,10 +17,15 @@ var ShadowFrame = function(options) {
 };
 
 
+var AGGR_METHOD = 'vote';  // Alt: 'leader'
+var EV_AGREE_THRESH = 1;
+var INPUT_TIMEOUT_THRESH = 10000;
+
 var crowdInputStack = {};
 var workerHistoryStack = {};
 var globalHistoryStack = {};
-var EV_AGREE_THRESH = 0;
+var workerWeights = {};
+var currentLeader = null;
 
 (function(My) {
 	util.inherits(My, EventEmitter);
@@ -73,15 +78,51 @@ var EV_AGREE_THRESH = 0;
 		if (crowdInputStack[evKey] == undefined) {
 			crowdInputStack[evKey] = [];
 		}
-		if (crowdInputStack[evKey].indexOf(worker) < 0) {
+		if (workerHistoryStack[worker] == undefined) {
+			workerHistoryStack[worker] = [];
+		}
+
+		var entryIdx = crowdInputStack[evKey].indexOf(worker);
+		if (entryIdx < 0) {
 			crowdInputStack[evKey].push(worker);
+			workerHistoryStack[worker].push([evKey, (new Date).getTime()]);
 		} else {
-			// null
+			// Update the entry time for the data if there is already a record
+			workerHistoryStack[worker][entryIdx][1] = (new Date).getTime();
+		}
+
+		console.log(">>>>", workerHistoryStack, ' -- ', worker, ' __ ', workerHistoryStack[worker].length);
+		// Update input tracking before eval -- check for input timeouts
+		for (var i = 0; i < workerHistoryStack[worker].length; i++) {
+			console.log("~~~~~~~~>", workerHistoryStack[worker][i], " @ time delta = ", (new Date).getTime() - workerHistoryStack[worker][i][1]);
+			if ((new Date).getTime() - workerHistoryStack[worker][i][1] > INPUT_TIMEOUT_THRESH) {
+				var delIdx;
+
+				// Remove the input from the event tracker
+				delIdx = crowdInputStack[workerHistoryStack[worker][i][0]].indexOf(worker);
+				crowdInputStack[workerHistoryStack[worker][i][0]].splice(delIdx, 1);
+
+				// Remove the stale worker input
+				delIdx = workerHistoryStack[worker].indexOf(i);
+				workerHistoryStack[worker].splice(delIdx, 1);
+			}
 		}
 
 		// WSL-TODO: Condtition this on events fired per unique element (needs work atm), and within a sliding time window
 		console.log("INPUT STACK: ", crowdInputStack, crowdInputStack[evKey], " ==> ", crowdInputStack[evKey].length);
-		if (crowdInputStack[evKey].length >= EV_AGREE_THRESH) {
+		var performAction = false;
+		if (AGGR_METHOD == 'leader') {
+			if (currentLeader == worker) {
+				performAction = true;
+			}
+		} else if (AGGR_METHOD == 'vote') {
+			if (crowdInputStack[evKey].length >= EV_AGREE_THRESH) {
+				performAction = true;
+			}
+		}
+
+		// Perform the action in the event if correct
+		if (performAction) {
 			var frameState = this._getDomTree();
 			frameState.onDeviceEvent(event);
 		}
