@@ -20,10 +20,11 @@ var ShadowFrame = function(options) {
 var AGGR_METHOD = 'vote';  // Alt: 'leader'
 var EV_AGREE_THRESH = 0;
 var INPUT_TIMEOUT_THRESH = 10000;
+var REEVAL_WINDOW_SIZE = 10;
 
 var crowdInputStack = {};
 var workerHistoryStack = {};
-var globalHistoryStack = {};
+var globalHistoryStack = [];
 var workerWeights = {};
 var currentLeader = null;
 
@@ -86,15 +87,14 @@ var currentLeader = null;
 		if (entryIdx < 0) {
 			crowdInputStack[evKey].push(worker);
 			workerHistoryStack[worker].push([evKey, (new Date).getTime()]);
+			globalHistoryStack.push([worker, evKey]);
 		} else {
 			// Update the entry time for the data if there is already a record
 			workerHistoryStack[worker][entryIdx][1] = (new Date).getTime();
 		}
 
-		console.log(">>>>", workerHistoryStack, ' -- ', worker, ' __ ', workerHistoryStack[worker].length);
 		// Update input tracking before eval -- check for input timeouts
 		for (var i = 0; i < workerHistoryStack[worker].length; i++) {
-			console.log("~~~~~~~~>", workerHistoryStack[worker][i], " @ time delta = ", (new Date).getTime() - workerHistoryStack[worker][i][1]);
 			if ((new Date).getTime() - workerHistoryStack[worker][i][1] > INPUT_TIMEOUT_THRESH) {
 				var delIdx;
 
@@ -108,9 +108,11 @@ var currentLeader = null;
 			}
 		}
 
-		// WSL-TODO: Condtition this on events fired per unique element (needs work atm), and within a sliding time window
-		console.log("INPUT STACK: ", crowdInputStack, crowdInputStack[evKey], " ==> ", crowdInputStack[evKey].length);
+		if (globalHistoryStack.length % REEVAL_WINDOW_SIZE == 0) {
+			// WSL-TODO: recalculate leader scores here
+		}
 
+		//console.log("INPUT STACK: ", crowdInputStack, crowdInputStack[evKey], " ==> ", crowdInputStack[evKey].length);
 		var performAction = false;
 		if (AGGR_METHOD == 'leader') {
 			if (currentLeader == worker) {
