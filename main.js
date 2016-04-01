@@ -58,10 +58,11 @@ function startAll() {
 }
 
 function killAllChromes() {
-	var chromiumQuitter = killChrome({appName: 'Chromium' }),
-		canaryQuitter = killChrome({appName: 'Google Chrome Canary'}),
-		chromeQuitter = killChrome({appName: 'Google Chrome'});
-	return Promise.all([chromiumQuitter, canaryQuitter, chromeQuitter]);
+	var chromiumQuitter = killChrome({appName: 'Chromium' });
+	var canaryQuitter = killChrome({appName: 'Google Chrome Canary'});
+	//var chromeQuitter = killChrome({appName: 'Google Chrome'});
+	//return Promise.all([chromiumQuitter, canaryQuitter, chromeQuitter]);
+	return Promise.all([chromiumQuitter, canaryQuitter]);
 }
 
 function startServer(chromePort) {
