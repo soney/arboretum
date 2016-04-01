@@ -18,7 +18,7 @@ var ShadowFrame = function(options) {
 
 
 var crowdInputStack = {};
-var EV_AGREE_THRESH = 2;
+var EV_AGREE_THRESH = 0;
 
 (function(My) {
 	util.inherits(My, EventEmitter);
@@ -79,7 +79,7 @@ var EV_AGREE_THRESH = 2;
 
 		// WSL-TODO: Condtition this on events fired per unique element (needs work atm), and within a sliding time window
 		console.log("INPUT STACK: ", crowdInputStack, crowdInputStack[evKey], " ==> ", crowdInputStack[evKey].length);
-		if (crowdInputStack[evKey].length >= EV_AGREE_THRESH) {
+		if (crowdInputStack[evKey].length > EV_AGREE_THRESH) {
 			var frameState = this._getDomTree();
 			frameState.onDeviceEvent(event);
 		}
