@@ -18,7 +18,9 @@ var ShadowFrame = function(options) {
 
 
 var crowdInputStack = {};
-var EV_AGREE_THRESH = 2;
+var workerHistoryStack = {};
+var globalHistoryStack = {};
+var EV_AGREE_THRESH = 0;
 
 (function(My) {
 	util.inherits(My, EventEmitter);
