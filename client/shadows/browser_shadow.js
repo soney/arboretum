@@ -111,50 +111,6 @@ var ShadowBrowser = function(options) {
 			return this.setTab(browserState.getActiveTabId(), clientOptions);
 		}
 	};
-	proto.setVisibleElements = function(nodeIds) {
-		var browserState = this.getBrowserState();
-
-		this._visibleElements = [];
-		var wrappedNodePromises = _.map(nodeIds, function(nodeId) {
-			return browserState.findNode(nodeId);
-		}, this);
-		Promise.all(wrappedNodePromises).then(function(wrappedNodes) {
-			var newIds = [];
-			_.each(wrappedNodes, function(wrappedNode) {
-				if(wrappedNode) {
-					var parent = wrappedNode;
-					do {
-						newIds.push(parent.getId())
-					} while(parent = parent.getParent());
-
-					var deepChildren = wrappedNode.getDeepChildren();
-					newIds.push.apply(newIds, _.map(deepChildren, function(child) {
-						return child.getId();
-					}));
-
-				}
-			}, this);
-			return _.unique(newIds);
-		}).then(_.bind(function(newIds) {
-			this._visibleElements = newIds;
-			this.refreshChildren();
-		}, this)).catch(function(err) {
-			console.error(err.stack);
-		});
-	};
-	proto.refreshChildren = function() {
-		var tabShadow = this.tabShadow;
-		if(tabShadow) {
-			var frameShadow = tabShadow.shadowFrame;
-			if(frameShadow) {
-				var domShadow = frameShadow.getShadowTree();
-				if(domShadow) {
-					domShadow._childrenChanged({});
-				}
-			}
-		}
-	};
-
 	proto.isOutput = function() {
 		return this._isOutput;
 	};

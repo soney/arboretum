@@ -30,29 +30,46 @@ var ShadowOutput = function(options) {
 		if(this.shadowFrame) {
 			this.shadowFrame.destroy();
 		}
+		var task = this.getTask();
+		var computedExposedNodes = task.getComputedExposedNodes();
 
-		this.shadowFrame = new ShadowFrame(_.extend({
-			childFilterFunction: _.bind(function(child) {
-				var node = child._getNode(),
-					nodeName = node.nodeName,
-					nodeType = node.nodeType;
-				if(nodeName === 'SCRIPT' ||
-					nodeName === '#comment' ||
-					nodeName === 'BASE' || nodeType === NODE_CODE.DOCUMENT_TYPE_NODE) {
-					return false;
-				} else {
-					if(nodeName === 'STYLE' || nodeName === 'LINK' || nodeName === 'HEAD') {
-						return true;
+		if(computedExposedNodes.length > 0) {
+			var firstComputedExposedNode = computedExposedNodes[0];
+			var frame = firstComputedExposedNode._getFrame();
+			this.shadowFrame = new ShadowFrame(_.extend({
+				frame: frame,
+				childFilterFunction: _.bind(function(child) {
+					var node = child._getNode(),
+						nodeName = node.nodeName,
+						nodeType = node.nodeType;
+					if(nodeName === 'SCRIPT' ||
+						nodeName === '#comment' ||
+						nodeName === 'BASE' || nodeType === NODE_CODE.DOCUMENT_TYPE_NODE) {
+						return false;
 					} else {
-						var visibleElements = this.getTask();
-						return _.indexOf(visibleElements, node.nodeId) >= 0;
+						if(nodeName === 'STYLE' || nodeName === 'LINK' || nodeName === 'HEAD') {
+							return true;
+						} else {
+							return _.indexOf(computedExposedNodes, child) >= 0;
+						}
 					}
-				}
-			}, this)
-		}, this.options));
-
-
+				}, this)
+			}, this.options));
+		}
 	};
+	proto.refreshChildren = function() {
+		var tabShadow = this.tabShadow;
+		if(tabShadow) {
+			var frameShadow = tabShadow.shadowFrame;
+			if(frameShadow) {
+				var domShadow = frameShadow.getShadowTree();
+				if(domShadow) {
+					domShadow._childrenChanged({});
+				}
+			}
+		}
+	};
+
 
 	proto.getBrowserShadow = function() {
 		return this.options.browserShadow;

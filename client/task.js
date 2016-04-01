@@ -6,7 +6,7 @@ var log = require('../utils/logging').getColoredLogger('yellow', 'bgBlack');
 
 var Task = function(options) {
     this.options = options;
-	this._computedExposedIds = [];
+	this._computedExposedINodes = [];
 };
 (function(My) {
 	util.inherits(My, EventEmitter);
@@ -22,32 +22,32 @@ var Task = function(options) {
 			});
 			return Promise.all(wrappedNodePromises);
 		}).then(function(wrappedNodes) {
-			var newIds = [];
+			var newNodes = [];
 			_.each(wrappedNodes, function(wrappedNode) {
 				if(wrappedNode) {
 					var parent = wrappedNode;
 					do {
-						newIds.push(parent.getId())
+						newNodes.push(parent);
 					} while(parent = parent.getParent());
 
 					var deepChildren = wrappedNode.getDeepChildren();
-					newIds.push.apply(newIds, _.map(deepChildren, function(child) {
-						return child.getId();
-					}));
 
+					newNodes.push.apply(newNodes, _.map(deepChildren, function(child) {
+						return child;
+					}));
 				}
 			});
-			return _.unique(newIds);
-		}).then(_.bind(function(newIds) {
-			this._computedExposedIds = newIds;
-			this.emit('exposeNodes', newIds);
+			return _.unique(newNodes);
+		}).then(_.bind(function(newNodes) {
+			this._computedExposedNodes = newNodes;
+			this.emit('exposeNodes');
 		}, this)).catch(function(err) {
 			console.error(err);
 			console.error(err.stack);
 		});
     };
-	proto.getComputedExposedIds = function() {
-		return this._computedExposedIds;
+	proto.getComputedExposedNodes = function() {
+		return this._computedExposedNodes;
 	};
 	proto.getBrowserState = function() {
 		return this.options.browserState;
