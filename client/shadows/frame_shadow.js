@@ -16,6 +16,10 @@ var ShadowFrame = function(options) {
 	this._initialize();
 };
 
+
+var crowdInputStack = {};
+var EV_AGREE_THRESH = 2;
+
 (function(My) {
 	util.inherits(My, EventEmitter);
 	var proto = My.prototype;
@@ -60,8 +64,25 @@ var ShadowFrame = function(options) {
 		domTree.on('rootInvalidated', this.$_updateShadowTree);
 	};
 	proto._onDeviceEvent = function(event) {
-		var frameState = this._getDomTree();
-		frameState.onDeviceEvent(event);
+		var worker = event.userId;
+		var evKey = event.id;
+
+		console.log("EVENT KEY (o  )=^=^=^> ", evKey);
+		if (crowdInputStack[evKey] == undefined) {
+			crowdInputStack[evKey] = [];
+		}
+		if (crowdInputStack[evKey].indexOf(worker) < 0) {
+			crowdInputStack[evKey].push(worker);
+		} else {
+			// null
+		}
+
+		// WSL-TODO: Condtition this on events fired per unique element (needs work atm), and within a sliding time window
+		console.log("INPUT STACK: ", crowdInputStack, crowdInputStack[evKey], " ==> ", crowdInputStack[evKey].length);
+		if (crowdInputStack[evKey].length >= EV_AGREE_THRESH) {
+			var frameState = this._getDomTree();
+			frameState.onDeviceEvent(event);
+		}
 	};
 	proto._getDomTree = function() {
 		return this.domTree;

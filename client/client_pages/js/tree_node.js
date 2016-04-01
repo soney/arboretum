@@ -273,12 +273,15 @@ $.widget('arboretum.tree_node', {
 		if(event.target === this.element[0]) {
 			var state = this.option('state');
 
+			console.log("CLICKING EVENT PRE-EMIT :: ", event, state.option('userId'));  // WSL: TEST
+
 			state.deviceEvent({
 				id: this.option('id'),
 				button: this._getButton(event),
 				modifiers: this._getModifiers(event),
 				device: 'mouse',
 				type: 'click',
+				userId: state.option('userId'),
 				timestamp: (new Date()).getTime(),
 				offsetX: event.offsetX,
 				offsetY: event.offsetY
@@ -293,6 +296,7 @@ $.widget('arboretum.tree_node', {
 				id: this.option('id'),
 				device: 'keyboard',
 				type: 'input',
+				userId: state.option('userId'),
 				timestamp: (new Date()).getTime(),
 				value: this.element.val()
 			});
