@@ -366,17 +366,18 @@ var FrameState = function(options) {
 		if(oldRoot) {
 			oldRoot.destroy();
 		}
-		var root = this._getWrappedDOMNode(rootNode, false);
-		var chrome = this._getChrome();
-		this._root = this._setChildrenRecursive(root, rootNode.children);
+		if(rootNode) {
+			var root = this._getWrappedDOMNode(rootNode, false);
+			var chrome = this._getChrome();
+			this._root = this._setChildrenRecursive(root, rootNode.children);
 
-		var page = this.getPage();
-		page.requestChildNodes(rootNode.nodeId, -1);
+			var page = this.getPage();
+			page.requestChildNodes(rootNode.nodeId, -1);
 
-		this.emit('rootInvalidated', this);
+			this.emit('rootInvalidated', this);
 
-		this._markRefreshingRoot(false);
-
+			this._markRefreshingRoot(false);
+		}
 		return this._root;
 	};
 

@@ -6,7 +6,11 @@ var repl = require('repl'),
 	log = require('./utils/logging'),
 	replServer;
 
-//log.setLevel('trace');
+var WINDOWS_CANARY_PATH = 'C:\\Users\\Croma Lab\\AppData\\Local\\Google\\Chrome SxS\\Application\\chrome.exe',
+	WINDOWS_CHROME_PATH = 'C:\\Users\\Croma Lab\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe',
+	WINDOWS_CHROMIUM_PATH = 'C:\\Users\\Croma Lab\\AppData\\Local\\Chromium\\Application\\chrome.exe';
+
+log.setLevel('trace');
 
 startAll().then(function(info) {
 	var browser = info.browser;
@@ -39,22 +43,46 @@ startAll().then(function(info) {
 
 function startAll() {
 	var serverInfo;
-	return startChrome().then(function(chromePort) {
-		return startServer(chromePort);
-	}).then(function(info) {
-		return wait(0, info);
-	}).then(function(info) {
-		serverInfo = info;
-		return Promise.all([startChrome({
-			appName: 'Google Chrome Canary',
-			url: 'http://localhost:' + info.clientPort
-		}), startChrome({
-			appName: 'Google Chrome',
-			url: 'http://localhost:' + info.clientPort + '/o'
-		})]);
-	}).then(function() {
-		return serverInfo;
-	});
+	if(isWindows()) {
+		return startChrome({
+			appName: WINDOWS_CHROMIUM_PATH
+		}).then(function(chromePort) {
+			return wait(3000, chromePort);
+		}).then(function(chromePort) {
+			return startServer(chromePort);
+		}).then(function(info) {
+			return wait(500, info);
+		}).then(function(info) {
+			serverInfo = info;
+			return startChrome({
+				appName: WINDOWS_CANARY_PATH,
+				url: 'http://localhost:' + info.clientPort
+			});
+		}).then(function(info) {
+			console.log('open localhost:'+serverInfo.clientPort + ' or localhost:'+serverInfo.clientPort+'/o')
+			return serverInfo;
+		});
+	} else {
+		return startChrome({
+			appName: isWindows() ? WINDOWS_CHROMIUM_PATH : 'Chromium'
+		}).then(function(chromePort) {
+			return startServer(chromePort);
+		}).then(function(info) {
+			return wait(0, info);
+		}).then(function(info) {
+			serverInfo = info;
+			return Promise.all([startChrome({
+				appName: isWindows() ? WINDOWS_CANARY_PATH : 'Google Chrome Canary',
+				url: 'http://localhost:' + info.clientPort
+			}), startChrome({
+				appName: isWindows() ? WINDOWS_CHROME_PATH : 'Google Chrome',
+				url: 'http://localhost:' + info.clientPort + '/o'
+			})]);
+		}).then(function() {
+			return serverInfo;
+		});
+	}
+
 }
 
 function killAllChromes() {
@@ -91,14 +119,28 @@ function killChrome(options) {
 	}, options);
 
 	return new Promise(function(resolve, reject) {
-		exec('osascript -e \'quit app "'+options.appName+'"\'', function(err, stdout, stderr) {
-			if(err) {
-				reject(err);
-			} else {
-				resolve();
-			}
-		});
+		if(isWindows()) {
+			exec('taskkill /IM '+options.appName+'', function(err, stdout, stderr) {
+				if(err) {
+					reject(err);
+				} else {
+					resolve();
+				}
+			});
+		} else {
+			exec('osascript -e \'quit app "'+options.appName+'"\'', function(err, stdout, stderr) {
+				if(err) {
+					reject(err);
+				} else {
+					resolve();
+				}
+			});
+		}
 	});
+}
+
+function isWindows() {
+	return /^win/.test(process.platform);
 }
 
 function startChrome(options) {
@@ -108,14 +150,26 @@ function startChrome(options) {
 		url: ''
 	}, options);
 
+
 	return new Promise(function(resolve, reject) {
-		exec('open -a "' + options.appName + '" --args ' + options.url + ' --remote-debugging-port=' + options.port, function(err, stout, stderr) {
-			if(err) {
-				reject(err);
-			} else {
-				resolve(options.port);
-			}
-		});
+		if(isWindows()) {
+			exec('"' + options.appName + '" ' + options.url + ' --remote-debugging-port=' + options.port, function(err, stout, stderr) {
+				if(err) {
+					reject(err);
+				} else {
+					resolve(options.port);
+				}
+			});
+			resolve(options.port);
+		} else {
+			exec('open -a "' + options.appName + '" --args ' + options.url + ' --remote-debugging-port=' + options.port, function(err, stout, stderr) {
+				if(err) {
+					reject(err);
+				} else {
+					resolve(options.port);
+				}
+			});
+		}
 	}).then(function(port) {
 		return wait(500, port);
 	});
