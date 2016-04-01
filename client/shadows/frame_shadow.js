@@ -22,10 +22,14 @@ var EV_AGREE_THRESH = 1;
 var INPUT_TIMEOUT_THRESH = 10000;
 
 var crowdInputStack = {};
+<<<<<<< HEAD
 var workerHistoryStack = {};
 var globalHistoryStack = {};
 var workerWeights = {};
 var currentLeader = null;
+=======
+var EV_AGREE_THRESH = 0;
+>>>>>>> master
 
 (function(My) {
 	util.inherits(My, EventEmitter);
@@ -110,6 +114,7 @@ var currentLeader = null;
 
 		// WSL-TODO: Condtition this on events fired per unique element (needs work atm), and within a sliding time window
 		console.log("INPUT STACK: ", crowdInputStack, crowdInputStack[evKey], " ==> ", crowdInputStack[evKey].length);
+
 		var performAction = false;
 		if (AGGR_METHOD == 'leader') {
 			if (currentLeader == worker) {

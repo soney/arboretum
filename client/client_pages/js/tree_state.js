@@ -76,7 +76,7 @@ $.widget('arboretum.tree_state', {
 			socket: this.socket
 		});
 
-		if(!this.option('frameId')) { // top-level
+		if(!this.option('frameId') && this.option('viewType') !== 'output') { // top-level
 			this.element.menu({
 				state: this,
 				socket: this.socket

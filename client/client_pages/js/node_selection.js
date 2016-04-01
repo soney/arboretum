@@ -25,10 +25,13 @@ $.widget('arboretum.node_selection', {
 		this._replyNodes([event.target]);
 	},
 	_replyNodes: function(nodes) {
-		$(nodes).not(this._selectionRectangle)
-				.not('.arboretum_highlighted')
-				.addClass('arboretum_highlighted')
-				.css('background-color', '')
+		$(nodes).not('.arboretum_highlighted')
+				.find('*')
+				.add(nodes)
+				.not(this._selectionRectangle)
+				.each(function() {
+					$(this).css('background-color', $(this).data('old_bg_color'));
+				})
 				.effect({
 					effect: 'highlight',
 					duration: 700,
@@ -54,7 +57,9 @@ $.widget('arboretum.node_selection', {
 			this._updateSelectionRectangle(this._anchor, this._getCoordinates(event));
 		}
 		$('.arboretum_highlighted')	.removeClass('arboretum_highlighted')
-									.css('background-color', '');
+									.each(function() {
+										$(this).css('background-color', $(this).data('old_bg_color'));
+									});
 	},
 	_updateSelectionRectangle: function(anchor, coordinates) {
 		var width = Math.abs(anchor.x - coordinates.x) + 4,
@@ -67,9 +72,6 @@ $.widget('arboretum.node_selection', {
 			top: Math.min(coordinates.y, anchor.y)-2,
 		};
 
-		rect.bottom = rect.top + rect.height;
-		rect.right = rect.left + rect.width;
-
 		this._selectionRectangle.css({
 			width: rect.width + 'px',
 			height: rect.height + 'px',
@@ -77,13 +79,22 @@ $.widget('arboretum.node_selection', {
 			top: rect.top+'px'
 		});
 		$('.arboretum_highlighted')	.removeClass('arboretum_highlighted')
-									.css('background-color', '');
-		var nodes = getHighlightedElements(rect);
-		$(nodes).not(this._selectionRectangle)
-				.not('.arboretum_highlighted')
+									.each(function() {
+										$(this).css('background-color', $(this).data('old_bg_color'));
+									});
+
+		var newRect = this._selectionRectangle[0].getBoundingClientRect();
+		var nodes = $(getHighlightedElements(newRect)).not(this._selectionRectangle);
+
+		$(nodes).not('.arboretum_highlighted')
+				.find('*')
+				.add(nodes)
+				.each(function() {
+					$(this).data('old_bg_color', $(this).css('background-color'));
+				})
 				.addClass('arboretum_highlighted')
-				.css('background-color', 'red');
-		return rect;
+				.css('background-color', this.option('background'));
+		return nodes;
 	},
 	_onMouseMove: function(event) {
 		if(this._anchor) {
@@ -92,14 +103,16 @@ $.widget('arboretum.node_selection', {
 	},
 	_onMouseUp: function(event) {
 		if(event.button === 2 && this._anchor) {
-			var rect = this._updateSelectionRectangle(this._anchor, this._getCoordinates(event));
+			var highlightedElements = this._updateSelectionRectangle(this._anchor, this._getCoordinates(event));
 			this._anchor = false;
 			this._selectionRectangle.hide();
 			$('.arboretum_highlighted')	.removeClass('arboretum_highlighted')
-										.css('border', '');
+										.each(function() {
+											$(this).css('background-color', $(this).data('old_bg_color'));
+										});
 
-			var highlightedElements = getHighlightedElements(rect);
-			this._replyNodes(highlightedElements);
+			//var highlightedElements = getHighlightedElements(rect);
+			this._replyNodes(_.toArray(highlightedElements));
 		}
 	},
 	_getCoordinates: function(event) {
