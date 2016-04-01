@@ -18,18 +18,14 @@ var ShadowFrame = function(options) {
 
 
 var AGGR_METHOD = 'vote';  // Alt: 'leader'
-var EV_AGREE_THRESH = 1;
+var EV_AGREE_THRESH = 0;
 var INPUT_TIMEOUT_THRESH = 10000;
 
 var crowdInputStack = {};
-<<<<<<< HEAD
 var workerHistoryStack = {};
 var globalHistoryStack = {};
 var workerWeights = {};
 var currentLeader = null;
-=======
-var EV_AGREE_THRESH = 0;
->>>>>>> master
 
 (function(My) {
 	util.inherits(My, EventEmitter);
@@ -121,7 +117,7 @@ var EV_AGREE_THRESH = 0;
 				performAction = true;
 			}
 		} else if (AGGR_METHOD == 'vote') {
-			if (crowdInputStack[evKey].length >= EV_AGREE_THRESH) {
+			if (crowdInputStack[evKey].length > EV_AGREE_THRESH) {
 				performAction = true;
 			}
 		}
