@@ -44,7 +44,7 @@ var ShadowOutput = function(options) {
 					if(nodeName === 'STYLE' || nodeName === 'LINK' || nodeName === 'HEAD') {
 						return true;
 					} else {
-						var visibleElements = this.getTask().
+						var visibleElements = this.getTask();
 						return _.indexOf(visibleElements, node.nodeId) >= 0;
 					}
 				}

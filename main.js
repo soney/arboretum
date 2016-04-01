@@ -1,7 +1,7 @@
 var repl = require('repl'),
 	child_process = require('child_process'),
 	_ = require('underscore'),
-	reload = require('require-reload')(require),
+	//reload = require('require-reload')(require),
 	exec = child_process.exec,
 	log = require('./utils/logging'),
 	replServer;
@@ -65,8 +65,8 @@ function killAllChromes() {
 }
 
 function startServer(chromePort) {
-	var BrowserState = reload('./server/state/browser_state'),
-		clientDriver = reload('./client/client_driver');
+	var BrowserState = require('./server/state/browser_state'),
+		clientDriver = require('./client/client_driver');
 
 	var chrome, doc, port;
 
