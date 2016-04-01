@@ -195,8 +195,10 @@ $.widget('arboretum.tree_state', {
 			parent = this.nodeMap[parentId];
 
 		if(parent) {
-			parent.childAdded(serializedChild, previousChild);
-		} else {
+			if(parent.childAdded) {
+				parent.childAdded(serializedChild, previousChild);
+			}
+		} else if(info.initialized) {
 			throw new Error('Could not find node');
 		}
 	},

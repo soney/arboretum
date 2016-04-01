@@ -24,6 +24,11 @@ var ShadowFrame = function(options) {
 		return this._sentServerReady;
 	};
 
+	proto._onNodeReply = function(info) {
+		var browserShadow = this.getBrowserShadow();
+		browserShadow.nodeReply(this.getFrameId(), info);
+	};
+
 	proto._initialize = function() {
 		var domTree = this._getDomTree(),
 			socket = this._getSocket();
@@ -32,12 +37,14 @@ var ShadowFrame = function(options) {
 		this.$_highlightNode = _.bind(this._highlightNode, this);
 		this.$_removeHighlight = _.bind(this._removeHighlight, this);
 		this.$_onDeviceEvent = _.bind(this._onDeviceEvent, this);
+		this.$_onNodeReply = _.bind(this._onNodeReply, this);
 
 		this._addListeners();
 
 		socket	.on('highlightNode', this.$_highlightNode)
 				.on('removeHighlight', this.$_removeHighlight)
-				.on('deviceEvent', this.$_onDeviceEvent);
+				.on('deviceEvent', this.$_onDeviceEvent)
+				.on('nodeReply', this.$_onNodeReply);
 
 		this._updateShadowTree();
 
@@ -61,10 +68,13 @@ var ShadowFrame = function(options) {
 	};
 	proto._getSocket = function() {
 		return this.options.socket;
-	}
+	};
+	proto.getFrameId = function() {
+		return this._getDomTree().getFrameId();
+	};
 	proto._updateShadowTree = function() {
 		this._sentServerReady = false;
-		log.debug('Updating shadow tree ' + this._getDomTree().getFrameId());
+		log.debug('Updating shadow tree ' + this.getFrameId());
 
 		var domTree = this._getDomTree(),
 			socket = this._getSocket();
@@ -109,8 +119,9 @@ var ShadowFrame = function(options) {
 		socket.removeListener('highlightNode', this.$_highlightNode);
 		socket.removeListener('removeHighlight', this.$_removeHighlight);
 		socket.removeListener('deviceEvent', this.$_onDeviceEvent);
+		socket.removeListener('nodeReply', this.$_onNodeReply);
 
-		log.debug('::: DESTROYED FRAME SHADOW ' + this._getDomTree().getFrameId() + ' :::');
+		log.debug('::: DESTROYED FRAME SHADOW ' + this.getFrameId() + ' :::');
 	};
 	proto._highlightNode = function(info) {
 		var nodeId = info.nodeId;
@@ -124,7 +135,7 @@ var ShadowFrame = function(options) {
 		return this.options.userId;
 	};
 	proto.getBrowserShadow = function() {
-		return this.options.browserShadow();
+		return this.options.browserShadow;
 	};
 }(ShadowFrame));
 

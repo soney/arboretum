@@ -3,6 +3,7 @@ var express = require('express'),
 	path = require('path'),
 	request = require('request'),
 	ShadowBrowser = require('./shadows/browser_shadow').ShadowBrowser,
+	Task = require('./task').Task,
 	_ = require('underscore'),
 	fs = require('fs');
 
@@ -39,7 +40,6 @@ module.exports = {
 							.use('/f', express.static(path.join(__dirname, 'client_pages')))
 							.all('/o', function(req, res, next) {
 								setClientOptions({
-									frameId: frameId,
 									viewType: 'output'
 								}).then(function(contents) {
 									res.send(contents);
@@ -89,24 +89,54 @@ module.exports = {
 
 			var io = socket(server);
 			var shadowBrowsers = {}
+			var tasks = {};
 			io.on('connection', function (socket) {
 				socket.once('clientReady', function(clientOptions) {
-					var shadowBrowser;
+					var shadowBrowser,
+						task;
+
+					var taskId = clientOptions.taskId+'';
+
+					task = tasks[taskId];
+					if(!task) {
+						tasks[taskId] = task =  new Task({
+							browserState: browserState,
+							taskId: taskId
+						});
+					}
+
 					if(clientOptions.frameId) {
 						shadowBrowser = shadowBrowsers[clientOptions.userId];
 					} else { // is the root
 						shadowBrowser = new ShadowBrowser({
 											browserState: browserState,
 											socket: socket,
-											clientOptions: clientOptions
+											clientOptions: clientOptions,
+											task: task
 										});
 						shadowBrowsers[clientOptions.userId] = shadowBrowser;
+
+						shadowBrowser.on('nodeReply', function(info) {
+							var outputBrowsers = _	.chain(shadowBrowsers)
+													.values()
+													.filter(function(browser) {
+														return browser.isOutput()
+													})
+													.value();
+							_.each(outputBrowsers, function(browser) {
+								browser.setVisibleElements(info.nodeIds);
+							});
+						});
 					}
 
 					if(shadowBrowser) {
 						shadowBrowser.addClient(_.extend({
 							socket: socket
-						}, clientOptions)).catch(function(err) {
+						}, clientOptions)).then(function(shadow) {
+							socket.once('disconnect', function() {
+								shadow.destroy();
+							});
+						}).catch(function(err) {
 							console.error(err);
 							console.error(err.stack);
 						});
@@ -122,17 +152,6 @@ module.exports = {
 				socket.on('disconnect', function() {
 					shadowBrowser.destroy();
 					delete shadowBrowser[id];
-				});
-				shadowBrowser.on('nodeReply', function(info) {
-					var outputBrowsers = _	.chain(shadowBrowsers)
-											.values()
-											.filter(function(browser) {
-												return browser.isOutput()
-											})
-											.value();
-					_.each(outputBrowsers, function(browser) {
-						browser.setVisibleElements(info.nodeIds);
-					});
 				});
 				*/
 			});

@@ -186,22 +186,24 @@ $.widget('arboretum.tree_node', {
 	},
 	childRemoved: function(child) {
 		if(child.nodeType === TEXT_NODE) {
+			var state = this.option('state');
+			state.unregisterNode($(child).data('arboretum-id'));
 			$(child).remove();
-			this.option('children', _.filter(children, function(c) { return c !== child; }));
+			//this.option('children', _.filter(children, function(c) { return c !== child; }));
 		} else {
-			var id = child.option('id'),
-				children = this.option('children');
+			var id = child.option('id');
+				//children = this.option('children');
 
 			child.element.remove();
 
-			this.option('children', _.filter(children, function(child) { return child.id !== id; }));
+			//this.option('children', _.filter(children, function(child) { return child.id !== id; }));
 		}
 	},
 	setChildren: function(children) {
-		var previousChildren = this.option('children');
-		this.option('children', children);
+		//var previousChildren = this.option('children');
+		//this.option('children', children);
 
-		this.element.children().not(this.initialChildren).remove();
+		this._clearChildren();
 		this._initializeChildren(children);
 	},
 	setAttributes: function(attributes, inlineStyle) {
@@ -233,11 +235,18 @@ $.widget('arboretum.tree_node', {
 			this.element.removeAttr('style');
 		}
 	},
+	_clearChildren: function() {
+		var state = this.option('state');
+		this.element.children().each(function() {
+			state.unregisterNode($(this).data('arboretum-id'));
+		}).remove();
+	},
 	_destroy: function() {
 		var state = this.option('state');
 		this._removeDeviceListeners();
-		state.unregisterNode(this.option('id'), this);
-		this.element.children().remove();
+		state.unregisterNode(this.option('id'));
+
+		this._clearChildren();
 	},
 	_getModifiers: function(event) {
 		var modifiers = 0;

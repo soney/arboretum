@@ -91,11 +91,11 @@ $.widget('arboretum.menu', {
 			socket.emit('closeTab', {
 				tabId: event.tabId
 			});
-		}).on('focusTab.arb', function(event) {
+		}).on('focusTab.arb', _.bind(function(event) {
 			socket.emit('focusTab', {
 				tabId: event.tabId
-			});
-		}).on('openURL.arb', function(event) {
+			}, this.option('state').option());
+		}, this)).on('openURL.arb', function(event) {
 			socket.emit('openURL', {
 				url: event.url
 			});

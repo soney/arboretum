@@ -8,9 +8,7 @@ var log = require('../../utils/logging').getColoredLogger('yellow', 'bgBlack');
 
 var ShadowTab = function(options) {
 	this.options = options;
-	this.frameId = options.frameId;
 	this._frames = {};
-	this.isMainFrame = !this.frameId;
 
 	log.debug('::: CREATED TAB SHADOW ' + this._getTab().getTabId() + ' :::');
 
@@ -22,13 +20,9 @@ var ShadowTab = function(options) {
 	var proto = My.prototype;
 
 	proto._initialize = function() {
-		if(this.isMainFrame) {
-			this.$mainFrameChanged = _.bind(this.mainFrameChanged, this);
-			this.mainFrameChanged();
-			this._addFrameListener();
-		} else {
-			this.setFrame(this.frameId);
-		}
+		this.$mainFrameChanged = _.bind(this.mainFrameChanged, this);
+		this.mainFrameChanged();
+		this._addFrameListener();
 	};
 
 	proto._getTab = function() {
@@ -71,6 +65,9 @@ var ShadowTab = function(options) {
 	proto.getFrameId = function() {
 		return this.frameId;
 	};
+	proto.getTabId = function() {
+		return this._getTab().getTabId();
+	};
 	proto.openURL = function(url) {
 		var parsedURL = URL.parse(url);
 		if(!parsedURL.protocol) { parsedURL.protocol = 'http'; }
@@ -82,11 +79,9 @@ var ShadowTab = function(options) {
 	};
 
 	proto.destroy = function() {
-		if(this.isMainFrame) {
-			this._removeFrameListener();
-			if(this.shadowFrame) {
-				this.shadowFrame.destroy();
-			}
+		this._removeFrameListener();
+		if(this.shadowFrame) {
+			this.shadowFrame.destroy();
 		}
 		log.debug('::: DESTROYED TAB SHADOW ' + this._getTab().getTabId() + ' :::');
 	};

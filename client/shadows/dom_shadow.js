@@ -331,6 +331,7 @@ var ShadowDOM = function(options) {
 			return this;
 		}, this)).catch(function(err) {
 			console.log(err);
+			console.log(err.stack);
 		});
 
 		return treeInitializedPromise;
@@ -349,6 +350,7 @@ var ShadowDOM = function(options) {
 		tree.removeListener('attributesChanged', this.$_updateAttributes);
 		tree.removeListener('nodeValueChanged', this.$_nodeValueChanged);
 		tree.removeListener('inlineStyleChanged', this.$_inlineStyleChanged);
+		tree.removeListener('valueUpdated', this.$_valueUpdated);
 
 		log.debug('::: DESTROYED DOM SHADOW ' + this.getId() + ' :::');
 	};

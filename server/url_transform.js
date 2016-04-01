@@ -104,10 +104,10 @@ function makeBlank() {
 	return '';
 }
 
-function transformSRCSet(attrVal, baseURL, node) {
+function transformSRCSet(attrVal, baseURL, node, shadow) {
 	var parsed = srcset.parse(attrVal);
 	_.each(parsed, function(p) {
-		p.url = transformURL(p.url, baseURL, node);
+		p.url = transformURL(p.url, baseURL, node, shadow);
 	});
 	return srcset.stringify(parsed);
 }
