@@ -17,9 +17,11 @@ var ShadowFrame = function(options) {
 };
 
 
+// CROWD INPUT AGGREGATION VARS //
 var AGGR_METHOD = 'vote';  // Alt: 'leader'
 var EV_AGREE_THRESH = 0;
-var INPUT_TIMEOUT_THRESH = 10000;
+var INPUT_TIMEOUT_THRESH = 5000;
+var INPUT_MAX_THRESH = 10;
 var REEVAL_WINDOW_SIZE = 10;
 
 var crowdInputStack = {};
@@ -27,6 +29,8 @@ var workerHistoryStack = {};
 var globalHistoryStack = [];
 var workerWeights = {};
 var currentLeader = null;
+////
+
 
 (function(My) {
 	util.inherits(My, EventEmitter);
@@ -93,26 +97,64 @@ var currentLeader = null;
 			workerHistoryStack[worker][entryIdx][1] = (new Date).getTime();
 		}
 
-		// Update input tracking before eval -- check for input timeouts
-		for (var i = 0; i < workerHistoryStack[worker].length; i++) {
-			if ((new Date).getTime() - workerHistoryStack[worker][i][1] > INPUT_TIMEOUT_THRESH) {
-				var delIdx;
+		console.log("INPUT STACK(S): ", crowdInputStack, crowdInputStack[evKey], " ==> ", crowdInputStack[evKey].length, " // ", workerHistoryStack);
 
-				// Remove the input from the event tracker
-				delIdx = crowdInputStack[workerHistoryStack[worker][i][0]].indexOf(worker);
-				crowdInputStack[workerHistoryStack[worker][i][0]].splice(delIdx, 1);
+		// Helper func for clearing input from all stacks
+		function removeInput(worker, idx) {
+			var delIdx, delEvt;
 
-				// Remove the stale worker input
-				delIdx = workerHistoryStack[worker].indexOf(i);
-				workerHistoryStack[worker].splice(delIdx, 1);
+			// Remove the input from the event tracker
+			console.log('++++ ', workerHistoryStack, " **", worker, idx, "** ", crowdInputStack);
+			console.log('++++A ', workerHistoryStack[worker]);
+			console.log('++++B ', workerHistoryStack[worker][idx]);
+			console.log('++++C ', workerHistoryStack[worker][idx][0]);
+			curInput = crowdInputStack[workerHistoryStack[worker][idx][0]];
+			console.log('++++CUR_INPUT ', curInput, typeof curInput);
+			delIdx = curInput.indexOf(worker);
+			delEvt = workerHistoryStack[worker][idx][0];
+			crowdInputStack[delEvt].splice(delIdx, 1);
+			if (crowdInputStack[delEvt].length == 0) {
+				console.log("EMPTY cIS - deleting:: ", crowdInputStack[delEvt], delEvt, workerHistoryStack[worker][idx], crowdInputStack[workerHistoryStack[worker][idx][0]]);
+				delete crowdInputStack[delEvt];
+				workerHistoryStack[worker].splice(idx,1);
+			}
+
+			// Remove the stale worker input
+			console.log('===== ', workerHistoryStack[worker], crowdInputStack);
+			delIdx = workerHistoryStack[worker].indexOf(idx);
+			workerHistoryStack[worker].splice(delIdx, 1);
+			if (workerHistoryStack[worker].length == 0) {
+				console.log("EMPTY wHS - deleting:: ", workerHistoryStack[worker], worker);
+				delete workerHistoryStack[worker];
 			}
 		}
+		//
+
+
+		console.log("*****************************************\n*****************************************\n\n");
+		// Update input tracking before eval -- check for input timeouts
+		for (var i = 0; workerHistoryStack[worker] && i < workerHistoryStack[worker].length; i++) {
+			console.log("&& CHECKING ==> ", (new Date).getTime(), " - ", workerHistoryStack[worker][i][1], " = ", ((new Date).getTime() - workerHistoryStack[worker][i][1]), " > ", INPUT_TIMEOUT_THRESH)
+			if ((new Date).getTime() - workerHistoryStack[worker][i][1] > INPUT_TIMEOUT_THRESH) {
+				console.log("SENDING:: ", worker, i);
+				removeInput(worker, i);
+				//i--;  // WSL-TODO: slicing breaks iteration?
+			}
+		}
+
+		//// WSL: DO WE NEED THIS?
+		//// Now that all the stale content has been removed, drop any input over the tracking-queue threshold
+		//for (var i = 0; i < workerHistoryStack[worker].length; i++) {
+		//	if (i > INPUT_MAX_THRESH) {
+		//		console.log("SENDING2:: ", worker, i);
+		//		removeInput(worker, i)
+		//	}
+		//}
 
 		if (globalHistoryStack.length % REEVAL_WINDOW_SIZE == 0) {
 			// WSL-TODO: recalculate leader scores here
 		}
 
-		//console.log("INPUT STACK: ", crowdInputStack, crowdInputStack[evKey], " ==> ", crowdInputStack[evKey].length);
 		var performAction = false;
 		if (AGGR_METHOD == 'leader') {
 			if (currentLeader == worker) {
