@@ -6,9 +6,7 @@ var log = require('../utils/logging').getColoredLogger('white');
 
 var EventManager = function(chrome, frameState) {
 	this.chrome = chrome;
-	this.scriptRecorder = new ScriptRecorder({
-		chrome: this.chrome
-	});
+	this.frameState = frameState
 };
 
 (function(My) {

@@ -597,7 +597,7 @@ var DOMState = function(options) {
 		var frame = this._getFrame();
 		var rv = [];
 		while(frame) {
-			rv.push(frame);
+			rv.unshift(frame);
 			frame = frame.getParentFrame();
 		}
 		return rv;

@@ -11,6 +11,7 @@
     "start": "electron main.js"
   },
   "dependencies": {
+    "bluebird": "^3.3.4",
     "chrome-remote-interface": "~0.11",
     "chromedriver": "^2.21.2",
     "colors": "^1.1.2",
