@@ -10,7 +10,7 @@ var WINDOWS_CANARY_PATH = 'C:\\Users\\Croma Lab\\AppData\\Local\\Google\\Chrome 
 	WINDOWS_CHROME_PATH = 'C:\\Users\\Croma Lab\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe',
 	WINDOWS_CHROMIUM_PATH = 'C:\\Users\\Croma Lab\\AppData\\Local\\Chromium\\Application\\chrome.exe';
 
-log.setLevel('trace');
+//log.setLevel('trace');
 
 startAll().then(function(info) {
 	var browser = info.browser;

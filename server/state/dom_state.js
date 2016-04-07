@@ -71,6 +71,11 @@ var DOMState = function(options) {
 	proto.getCanvasImage = function() {
 		return driver.getCanvasImage(this._getChrome(), this.getId());
 	};
+	proto.getUniqueSelector = function() {
+		return driver.getUniqueSelector(this._getChrome(), this.getId()).then(function(rv) {
+			return rv.result.value;
+		});
+	};
 	proto.getInputValue = function() {
 		return driver.getElementValue(this._getChrome(), this.getId());
 	};
@@ -110,8 +115,8 @@ var DOMState = function(options) {
 		return new Promise(_.bind(function(resolve, reject) {
 			if(nodeType === NODE_CODE.TEXT_NODE && nodeValue && nodeValue.endsWith('…')) {
 				var chrome = this._getChrome();
-				this.chrome.DOM.getOuterHTML({
-					nodeId: this.node.nodeId
+				chrome.DOM.getOuterHTML({
+					nodeId: this.getId()
 				}, _.bind(function(err, value) {
 					if(err) {
 						reject(value);
@@ -225,6 +230,7 @@ var DOMState = function(options) {
 			var frame = page.getFrame(node.frameId);
 
 			frame.setRoot(frameRoot);
+			frame.setDOMParent(this);
 
 			this.childFrame = frame;
 		} else {
@@ -586,6 +592,30 @@ var DOMState = function(options) {
 	};
 	proto.getTabId = function() {
 		return this._getFrame().getTabId();
+	};
+	proto.getFrameStack = function() {
+		var frame = this._getFrame();
+		var rv = [];
+		while(frame) {
+			rv.push(frame);
+			frame = frame.getParentFrame();
+		}
+		return rv;
+	};
+	proto.querySelectorAll = function(selector) {
+		return new Promise(_.bind(function(resolve, reject) {
+				var chrome = this._getChrome();
+				chrome.DOM.querySelectorAll({
+					nodeId: this.getId(),
+					selector: selector
+				}, _.bind(function(err, value) {
+					if(err) {
+						reject(value);
+					} else {
+						resolve(value);
+					}
+				}, this));
+		}, this));
 	};
 }(DOMState));
 

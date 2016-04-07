@@ -4,8 +4,11 @@ var _ = require('underscore'),
 	driver = require('./hack_driver/hack_driver');
 var log = require('../utils/logging').getColoredLogger('white');
 
-var EventManager = function(chrome) {
+var EventManager = function(chrome, frameState) {
 	this.chrome = chrome;
+	this.scriptRecorder = new ScriptRecorder({
+		chrome: this.chrome
+	});
 };
 
 (function(My) {

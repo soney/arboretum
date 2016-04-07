@@ -79,7 +79,7 @@ var currentLeader = null;
 		var worker = event.userId;
 		var evKey = event.id;
 
-		console.log("EVENT KEY (o  )=^=^=^> ", evKey);
+		//console.log("EVENT KEY (o  )=^=^=^> ", evKey);
 		if (crowdInputStack[evKey] == undefined) {
 			crowdInputStack[evKey] = [];
 		}
@@ -87,7 +87,7 @@ var currentLeader = null;
 			workerHistoryStack[worker] = [];
 		}
 
-		console.log("PRECHECK INPUT: ", crowdInputStack, workerHistoryStack);
+		//console.log("PRECHECK INPUT: ", crowdInputStack, workerHistoryStack);
 		var entryIdx = crowdInputStack[evKey].indexOf(worker);
 		if (entryIdx < 0) {
 			crowdInputStack[evKey].push(worker);
@@ -98,24 +98,24 @@ var currentLeader = null;
 			workerHistoryStack[worker][entryIdx][1] = (new Date).getTime();
 		}
 
-		console.log("INPUT STACK(S): ", crowdInputStack, crowdInputStack[evKey], " ==> ", crowdInputStack[evKey].length, " // ", workerHistoryStack);
+		//console.log("INPUT STACK(S): ", crowdInputStack, crowdInputStack[evKey], " ==> ", crowdInputStack[evKey].length, " // ", workerHistoryStack);
 
 		// Helper func for clearing input from all stacks
 		function removeInput(worker, idx) {
 			var delIdx, delEvt;
 
 			// Remove the input from the event tracker
-			console.log('++++ ', workerHistoryStack, " **", worker, idx, "** ", crowdInputStack);
-			console.log('++++A ', workerHistoryStack[worker]);
-			console.log('++++B ', workerHistoryStack[worker][idx]);
-			console.log('++++C ', workerHistoryStack[worker][idx][0]);
+			//console.log('++++ ', workerHistoryStack, " **", worker, idx, "** ", crowdInputStack);
+			//console.log('++++A ', workerHistoryStack[worker]);
+			//console.log('++++B ', workerHistoryStack[worker][idx]);
+			//console.log('++++C ', workerHistoryStack[worker][idx][0]);
 			curInput = crowdInputStack[workerHistoryStack[worker][idx][0]];
-			console.log('++++CUR_INPUT ', curInput, typeof curInput);
+			//console.log('++++CUR_INPUT ', curInput, typeof curInput);
 			delIdx = curInput.indexOf(worker);
 			delEvt = workerHistoryStack[worker][idx][0];
 			crowdInputStack[delEvt].splice(delIdx, 1);  // WSL-TODO: Check if this is deleting content properly
 			if (crowdInputStack[delEvt].length == 0) {
-				console.log("EMPTY cIS - deleting:: ", crowdInputStack[delEvt], delEvt, workerHistoryStack[worker][idx], crowdInputStack[workerHistoryStack[worker][idx][0]]);
+				//console.log("EMPTY cIS - deleting:: ", crowdInputStack[delEvt], delEvt, workerHistoryStack[worker][idx], crowdInputStack[workerHistoryStack[worker][idx][0]]);
 				delete crowdInputStack[delEvt];
 				workerHistoryStack[worker].splice(idx,1);
 			}
@@ -124,11 +124,11 @@ var currentLeader = null;
 			}
 
 			// Remove the stale worker input
-			console.log('===== ', workerHistoryStack[worker], crowdInputStack);
+			//console.log('===== ', workerHistoryStack[worker], crowdInputStack);
 			delIdx = workerHistoryStack[worker].indexOf(idx);
 			workerHistoryStack[worker].splice(delIdx, 1);
 			if (workerHistoryStack[worker].length == 0) {
-				console.log("EMPTY wHS - deleting:: ", workerHistoryStack[worker], worker);
+				//console.log("EMPTY wHS - deleting:: ", workerHistoryStack[worker], worker);
 				delete workerHistoryStack[worker];
 			}
 			if (workerHistoryStack.length == 0) {
@@ -139,12 +139,12 @@ var currentLeader = null;
 		//
 
 
-		console.log("*****************************************\n*****************************************\n\n");
+		//console.log("*****************************************\n*****************************************\n\n");
 		// Update input tracking before eval -- check for input timeouts
 		for (var i = 0; workerHistoryStack[worker] && i < workerHistoryStack[worker].length; i++) {
-			console.log("&& CHECKING ==> ", (new Date).getTime(), " - ", workerHistoryStack[worker][i][1], " = ", ((new Date).getTime() - workerHistoryStack[worker][i][1]), " > ", INPUT_TIMEOUT_THRESH);
+			//console.log("&& CHECKING ==> ", (new Date).getTime(), " - ", workerHistoryStack[worker][i][1], " = ", ((new Date).getTime() - workerHistoryStack[worker][i][1]), " > ", INPUT_TIMEOUT_THRESH);
 			if ((new Date).getTime() - workerHistoryStack[worker][i][1] > INPUT_TIMEOUT_THRESH) {
-				console.log("SENDING:: ", worker, i);
+				//console.log("SENDING:: ", worker, i);
 				removeInput(worker, i);
 				//i--;  // WSL-TODO: slicing breaks iteration?
 			}
@@ -155,7 +155,7 @@ var currentLeader = null;
 			// Now that all the stale content has been removed, drop any input over the tracking-queue threshold
 			for (var i = 0; i < workerHistoryStack[worker].length; i++) {
 				if (i > INPUT_MAX_THRESH) {
-					console.log("SENDING2:: ", worker, i);
+					//console.log("SENDING2:: ", worker, i);
 					removeInput(worker, i)
 				}
 			}
@@ -195,7 +195,7 @@ var currentLeader = null;
 				performAction = true;
 			}
 		} else if (AGGR_METHOD == 'vote' || (AGGR_METHOD == 'leader' && !currentLeader)) {  // Use voting if selected, or no leader has been established
-			console.log("USING evKey:: ", crowdInputStack);
+			//console.log("USING evKey:: ", crowdInputStack);
 			if (crowdInputStack[evKey].length > EV_AGREE_THRESH) {
 				performAction = true;
 			}
