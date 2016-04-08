@@ -3,6 +3,7 @@ var express = require('express'),
 	path = require('path'),
 	request = require('request'),
 	ShadowBrowser = require('./shadows/browser_shadow').ShadowBrowser,
+	ScriptServer = require('./scripts/script_server').ScriptServer,
 	Task = require('./task').Task,
 	_ = require('underscore'),
 	fs = require('fs');
@@ -92,73 +93,15 @@ module.exports = {
 			var tasks = {};
 			io.on('connection', function (socket) {
 				socket.once('scriptReady', function() {
-					socket.on('deviceEvent', function(event) {
-						var framePromise;
-						if(event.frameId) {
-							framePromise = browserState.findFrame(event.frameId);
-						} else {
-							var tabId = browserState.getActiveTabId();
-							framePromise = browserState.getTabState(tabId).then(function(tabState) {
-								var mainFrame = tabState.getMainFrame();
-								return mainFrame;
-							});
-						}
-						framePromise.then(function(frame) {
-							frame.onDeviceEvent(event);
-							socket.emit('eventHappened');
-						});
+					var scriptServer = new ScriptServer({
+						socket: socket,
+						browserState: browserState
 					});
-					socket.on('navigate', function(url) {
-						browserState.openURL(url).then(function() {
-							socket.emit('navigated', url);
-						});
-					});
-
-					socket.on('getElements', function(info) {
-						var selector = info.selector;
-						var tabId = browserState.getActiveTabId();
-						browserState.getTabState(tabId).then(function(tabState) {
-							var mainFrame = tabState.getMainFrame();
-							var framePromise = new Promise(function(resolve, reject) {
-								resolve(mainFrame);
-							});
-							if(info.frameStack) {
-								_.each(info.frameStack, function(frameSelector) {
-									if(frameSelector) {
-										framePromise = framePromise.then(function(frame) {
-											var root = frame.getRoot();
-											return Promise.all([root.querySelectorAll(frameSelector), frame]);
-										}).then(function(vals) {
-											var nodeIds = vals[0].nodeIds,
-												frame = vals[1];
-
-											var node = frame._getWrappedDOMNodeWithID(nodeIds[0]);
-											return node.getChildFrame();
-										});
-									}
-								});
-							}
-							framePromise.then(function(frame) {
-								var root = frame.getRoot();
-								return Promise.all([root.querySelectorAll(selector), frame]);
-							}).then(function(vals) {
-								var elements = vals[0],
-									frame = vals[1];
-
-								var serializedNodes = _.map(elements.nodeIds, function(nodeId) {
-									var node = frame._getWrappedDOMNodeWithID(nodeId);
-									return node._getNode();
-								});
-								socket.emit('elements', {
-									nodes: serializedNodes,
-									frameId: frame.getFrameId()
-								});
-							}).catch(function(err) {
-								console.error(err);
-							});
-						});
+					socket.once('disconnect', function() {
+						scriptServer.destroy();
 					});
 				});
+
 				socket.once('clientReady', function(clientOptions) {
 					var shadowBrowser,
 						task;

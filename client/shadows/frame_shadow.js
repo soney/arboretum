@@ -205,6 +205,10 @@ var currentLeader = null;
 		if (performAction) {
 			var frameState = this._getDomTree();
 			frameState.onDeviceEvent(event);
+
+			var browserShadow = this.getBrowserShadow();
+			var scriptRecorder = browserShadow.getScriptRecorder();
+			scriptRecorder.onDeviceEvent(frameState, event);
 		}
 	};
 	proto._getDomTree = function() {

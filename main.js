@@ -70,7 +70,6 @@ function startAll() {
 		}).then(function(info) {
 			serverInfo = info;
 			return wait(0, info);
-			/*
 		}).then(function(info) {
 			serverInfo = info;
 			return Promise.all([startChrome({
@@ -80,7 +79,6 @@ function startAll() {
 				appName: isWindows() ? WINDOWS_CHROME_PATH : 'Google Chrome',
 				url: 'http://localhost:' + info.clientPort + '/o'
 			})]);
-			*/
 		}).then(function() {
 			return serverInfo;
 		});

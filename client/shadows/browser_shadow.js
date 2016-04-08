@@ -16,10 +16,20 @@ var ShadowBrowser = function(options) {
 	this.$_onFocusTab = _.bind(this._onFocusTab, this);
 	this.$_onOpenURL = _.bind(this._onOpenURL, this);
 	this.$sendTabs = _.bind(this.sendTabs, this);
+	this.$setTaskDescription = _.bind(this.setTaskDescription, this);
+	this.$markTaskAsDone = _.bind(this.markTaskAsDone, this);
 
 	this._clients = {};
 	this.setMainClient(false);
 	/*
+
+				socket.on('setIntent', function(intent) {
+					task.setDescription(intent);
+				});
+				socket.on('taskDone', function() {
+					task.markAsDone();
+				});
+
 
 	this.options = {
 		childFilterFunction: _.bind(function(child) {
@@ -52,6 +62,18 @@ var ShadowBrowser = function(options) {
 	util.inherits(My, EventEmitter);
 	var proto = My.prototype;
 
+	proto.setTaskDescription = function(description) {
+		var task = this.getTask();
+		task.setDescription(intent);
+	};
+	proto.markTaskAsDone = function() {
+		var task = this.getTask();
+		var recordedScript = task.markAsDone();
+		var mainClient = this.getMainClient();
+		var socket = mainClient._getSocket();
+
+		socket.emit('taskScript', recordedScript);
+	};
 	proto._onAddTab = function(info) {
 		this.getBrowserState().addTab();
 	};
@@ -61,9 +83,15 @@ var ShadowBrowser = function(options) {
 	proto._onFocusTab = function(info, clientOptions) {
 		this.setTab(info.tabId, clientOptions);
 	};
+	proto.getScriptRecorder = function() {
+		var task = this.getTask();
+		return task.getScriptRecorder();
+	};
 	proto._onOpenURL = function(info) {
 		var mainClient = this.getMainClient();
+		var scriptRecorder = this.getScriptRecorder();
 		mainClient.openURL(info.url);
+		this.scriptRecorder.onNavigate(info.url);
 	};
 	proto.getFrameId = function() {
 		return this.tabShadow.getFrameId();
@@ -121,6 +149,8 @@ var ShadowBrowser = function(options) {
 				.on('focusTab', this.$_onFocusTab)
 				.on('openURL', this.$_onOpenURL)
 				.on('getCurrentTabs', this.$sendTabs)
+				.on('setTaskDescription', this.$setTaskDescription)
+				.on('markAsDone', this.$markTaskAsDone);
 	};
 	proto._removeSocketListeners = function(socket) {
 		socket	.removeListener('addTab', this.$_onAddTab)
@@ -197,7 +227,9 @@ var ShadowBrowser = function(options) {
 
 	proto.nodeReply = function(frameId, info) {
 		var task = this.getTask();
+		var scriptRecorder = this.getScriptRecorder();
 		task.exposeNodes(frameId, info.nodeIds);
+		this.scriptRecorder.onExposeNodes(frameId, info.nodeIds);
 	};
 
 	proto.destroy = function() {

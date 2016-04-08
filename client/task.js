@@ -1,19 +1,39 @@
 var _ = require('underscore'),
 	util = require('util'),
-	EventEmitter = require('events');
+	EventEmitter = require('events'),
+	ScriptRecorder = require('./scripts/script_recorder').ScriptRecorder;
 
 var log = require('../utils/logging').getColoredLogger('yellow', 'bgBlack');
 
 var Task = function(options) {
     this.options = options;
+	this.scriptRecorder = new ScriptRecorder({
+		browserState: this.getBrowserState(),
+		task: this
+	});
 	this._computedExposedINodes = [];
 };
 (function(My) {
 	util.inherits(My, EventEmitter);
 	var proto = My.prototype;
+	proto.getScriptRecorder = function() {
+		return this.scriptRecorder;
+	};
+	proto.setDescription = function(description) {
+		this._description = description;
+	};
+	proto.getDescription = function() {
+		return this._description;
+	};
     proto.getTaskId = function() {
         return this.options.taskId;
     };
+	proto.markAsDone = function() {
+		return this.getRecordedScript();
+	};
+	proto.getRecordedScript = function() {
+		return this.scriptRecorder.getRecordedScript();
+	};
     proto.exposeNodes = function(frameId, nodeIds) {
 		var browserState = this.getBrowserState();
 		browserState.findFrame(frameId).then(function(frame) {
