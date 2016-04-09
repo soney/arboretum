@@ -27,7 +27,7 @@ var DOMState = function(options) {
 		log.debug('DOM state ' + this.getId() + ' initialized');
 	}, this)).catch(function(err) {
 		if(!err.expected) {
-			console.error(err);
+			log.error(err.message);
 		}
 	});
 	//if(regdids[this.getId()]) debugger;

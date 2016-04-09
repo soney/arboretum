@@ -1,7 +1,6 @@
 var _ = require('underscore'),
 	util = require('util'),
 	EventEmitter = require('events'),
-	URL = require('url'),
 	ShadowFrame = require('./frame_shadow').ShadowFrame;
 
 var log = require('../../utils/logging').getColoredLogger('yellow', 'bgBlack');
@@ -69,9 +68,6 @@ var ShadowTab = function(options) {
 		return this._getTab().getTabId();
 	};
 	proto.openURL = function(url) {
-		var parsedURL = URL.parse(url);
-		if(!parsedURL.protocol) { parsedURL.protocol = 'http'; }
-		var url = URL.format(parsedURL);
 		this._getTab().navigate(url);
 	};
 	proto.getBrowserShadow = function() {

@@ -23,6 +23,10 @@ var TabState = function(tabId, chrome) {
 
 
 	proto.navigate = function(url) {
+		var parsedURL = URL.parse(url);
+		if(!parsedURL.protocol) { parsedURL.protocol = 'http'; }
+		url = URL.format(parsedURL);
+
 		var chrome = this._getChrome();
 		return new Promise(function(resolve, reject) {
 			chrome.Page.navigate({

@@ -115,7 +115,9 @@ function ScriptRecorder(options) {
 			'const HOST = "http://localhost:3000";',
 			'',
 			'var ArborScript = require("./arborscript");',
-			'var script = new ArborScript(HOST, { handoffTimeout: 5000 });',
+			'',
+			'module.exports = function(options) {',
+			'\tvar script = new ArborScript(HOST, { handoffTimeout: 5000 });',
 			''
 		];
 
@@ -180,28 +182,29 @@ function ScriptRecorder(options) {
 				promiseLines.push(line);
 			}
 		});
-		promiseLines.push('script.disconnect()')
+		promiseLines.push('script.disconnect()');
 
 		var promisedLinesStr;
 
 		var firstLine = _.first(promiseLines);
 		if(promiseLines.length > 1) {
-			promisedLinesStr = firstLine + '.then(function() {\n';
-			for(var i = 1; i<promiseLines.length; i++) {
+			promisedLinesStr = '\treturn ' + firstLine + '.then(function() {\n';
+			var len = promiseLines.length;
+			for(var i = 1; i<len; i++) {
 				var line = promiseLines[i];
-				promisedLinesStr += '\treturn ' + line + ';'
-				promisedLinesStr += '\n';
-				if(i === promiseLines.length-1) {
-					promisedLinesStr += '});';
+				promisedLinesStr += '\t\treturn ' + line + ';\n';
+				if(i === len-1) {
+					promisedLinesStr += '\t});';
 				} else {
-					promisedLinesStr += '}).then(function() {\n';
+					promisedLinesStr += '\t}).then(function() {\n';
 				}
 			}
 		} else {
-			promisedLinesStr = firstLine+';';
+			promisedLinesStr = '\treturn '+firstLine+';';
 		}
 
 		lines.push(promisedLinesStr);
+		lines.push('};');
 
 		return lines.join('\n');
 	};

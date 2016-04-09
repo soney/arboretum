@@ -23,12 +23,15 @@ function ArborScript(host, options) {
     };
 
     proto.getElements = function(selector, frameStack) {
-        return this.socketPromise.then(function(socket) {
+		var args = arguments;
+        return this.socketPromise.then(_.bind(function(socket) {
             return new P(function(resolve, reject) {
 				var elementsListener = function(info) {
 					if(info.selector === selector && _.isEqual(info.frameStack, frameStack)) {
-						resolve(info.value);
-						socket.off('elements', elementsListener);
+						if(info.value) {
+							resolve(info.value);
+							socket.off('elements', elementsListener);
+						}
 					}
 				};
                 socket.on('elements', elementsListener);
@@ -37,9 +40,9 @@ function ArborScript(host, options) {
                     frameStack: frameStack
                 })
             }).timeout(1000).catch(P.TimeoutError, _.bind(function(e) {
-				return this.getElements.apply(this, arguments);
+				return this.getElements.apply(this, args);
 			}, this));
-        });
+        }, this));
     };
 
     proto.deviceEvent = function(elements, frameStack, options) {
@@ -124,7 +127,10 @@ function ArborScript(host, options) {
 					elements: elements
 				});
             });
-        });
+        }).catch(function(err) {
+			console.error(err);
+			console.error(err.stack);
+		});
     };
 }(ArborScript));
 
@@ -157,10 +163,9 @@ function wait(ms, val) {
 		}, ms);
 	});
 }
-/*
 
-var BrowserState = require('../server/state/browser_state'),
-	clientDriver = require('../client/client_driver');
+var BrowserState = require('../../server/state/browser_state'),
+	clientDriver = require('../../client/client_driver');
 
 var chrome, doc, port;
 startChrome().then(function(port) {
@@ -178,12 +183,33 @@ startChrome().then(function(port) {
 }).then(function() {
     return wait(500);
 }).then(function() {
-*/
+	const HOST = "http://localhost:3000";
+
+	var fn = function(options) {
+		var script = new ArborScript(HOST, { handoffTimeout: 5000 });
+
+		return script.navigate("umich.edu").then(function() {
+			return script.click(".fa-arrow-right");
+		}).then(function() {
+			return script.click(".hamburger-header");
+		}).then(function() {
+			return script.click("#secondnav li:nth-child(3) a");
+		}).then(function() {
+		    return wait(5000);
+		}).then(function() {
+			return script.handoff([".nav"]);
+		}).then(function() {
+			return script.click(".nav:nth-child(1) .drop-down .break:nth-child(1) h5");
+		}).then(function() {
+			return script.disconnect();
+		});
+	};
+	fn();
+	/*
     var script = new ArborScript('http://localhost:3000');
 	script.handoff(["#message", "#willChange", ".glyphicon.glyphicon-star", "a"], [false, "#iframeResult"]).then(function() {
 		return script.disconnect();
 	});
-	/*
     script.connect('http://localhost:3000').then(function(socket) {
         return script.click('a', [false, 'iframe']);
         //return script.navigate('http://umich.edu/');
@@ -191,11 +217,9 @@ startChrome().then(function(port) {
         script.disconnect();
     });
 	*/
-	/*
 }).catch(function(err) {
     console.error(err.stack);
 })
-*/
 
 
 

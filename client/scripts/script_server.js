@@ -19,14 +19,14 @@ var ScriptServer = function(options) {
     proto._addSocketListeners = function() {
         var socket = this._getSocket();
         socket.on('deviceEvent', this.$_onDeviceEvent);
-        socket.on('navigate', this.$_onDeviceEvent);
+        socket.on('navigate', this.$_onNavigate);
         socket.on('getElements', this.$_getElements);
         socket.on('handoff', this.$_handoff);
     };
     proto._removeSocketListeners = function() {
         var socket = this._getSocket();
         socket.removeListener('deviceEvent', this.$_onDeviceEvent);
-        socket.removeListener('navigate', this.$_onDeviceEvent);
+        socket.removeListener('navigate', this.$_onNavigate);
         socket.removeListener('getElements', this.$_getElements);
         socket.removeListener('handoff', this.$_handoff);
     };
@@ -53,6 +53,8 @@ var ScriptServer = function(options) {
         var browserState = this._getBrowserState();
 		browserState.openURL(url).then(function() {
 			socket.emit('navigated', url);
+		}).catch(function(err) {
+			console.error(err);
 		});
     };
     proto.getElements = function(info) {
@@ -102,6 +104,11 @@ var ScriptServer = function(options) {
 					}
 				});
 			}).catch(function(err) {
+				socket.emit('elements', {
+					selector: info.selector,
+					frameStack: info.frameStack,
+					value: false
+				});
 				console.error(err);
 			});
 		});
@@ -110,6 +117,7 @@ var ScriptServer = function(options) {
 		var elements = info.elements;
 		var browserState = this._getBrowserState();
 		var task = this.getTask();
+        var socket = this._getSocket();
 		var nodesPromises = _.map(info.elements, function(nodeInfos) {
 			if(nodeInfos.nodes) {
 				var nodeInfo = nodeInfos.nodes[0];
@@ -121,10 +129,13 @@ var ScriptServer = function(options) {
 				}
 			}
 		});
+
 		return Promise.all(nodesPromises).then(function(wrappedNodes) {
 			return _.compact(wrappedNodes);
 		}).then(function(wrappedNodes) {
 			task.exposeNodes(wrappedNodes);
+		}).then(function() {
+			socket.emit('handed');
 		}).catch(function(err) {
 			console.error(err);
 			console.error(err.stack);
