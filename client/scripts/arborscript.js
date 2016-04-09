@@ -81,7 +81,7 @@ function ArborScript(host, options) {
         });
     };
 
-    proto.navigate = function(url) {
+    proto.open = function(url) {
         return this.socketPromise.then(function(socket) {
             return new P(function(resolve, reject) {
                 socket.once('navigated', function() {
@@ -106,7 +106,7 @@ function ArborScript(host, options) {
         return this.socketPromise;
     };
 
-    proto.disconnect = function() {
+    proto.exit = function() {
         return this.socketPromise.then(function(socket) {
             socket.disconnect();
         });
@@ -133,6 +133,8 @@ function ArborScript(host, options) {
 		});
     };
 }(ArborScript));
+module.exports = ArborScript;
+/*
 
 var child_process = require('child_process'),
 	exec = child_process.exec;
@@ -205,22 +207,7 @@ startChrome().then(function(port) {
 		});
 	};
 	fn();
-	/*
-    var script = new ArborScript('http://localhost:3000');
-	script.handoff(["#message", "#willChange", ".glyphicon.glyphicon-star", "a"], [false, "#iframeResult"]).then(function() {
-		return script.disconnect();
-	});
-    script.connect('http://localhost:3000').then(function(socket) {
-        return script.click('a', [false, 'iframe']);
-        //return script.navigate('http://umich.edu/');
-    }).then(function() {
-        script.disconnect();
-    });
-	*/
 }).catch(function(err) {
     console.error(err.stack);
 })
-
-
-
-module.exports = ArborScript;
+*/

@@ -126,7 +126,7 @@ function ScriptRecorder(options) {
 			var type = action.type;
 			var line;
 			if(type === 'navigate') {
-				line = 'script.navigate("' + action.target + '")';
+				line = 'script.open("' + action.target + '")';
 			} else if(type === 'deviceEvent') {
 				var event = action.event;
 				var eventType = event.type;
@@ -182,7 +182,7 @@ function ScriptRecorder(options) {
 				promiseLines.push(line);
 			}
 		});
-		promiseLines.push('script.disconnect()');
+		promiseLines.push('script.exit()');
 
 		var promisedLinesStr;
 
