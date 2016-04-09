@@ -91,11 +91,45 @@ module.exports = {
 			var io = socket(server);
 			var shadowBrowsers = {}
 			var tasks = {};
+			function getTask(taskId) {
+				if(!taskId) {
+					taskId = 'default';
+				}
+
+				var task = tasks[taskId];
+				if(task) {
+					return task;
+				} else {
+					return tasks[taskId] =  new Task({
+						browserState: browserState,
+						taskId: taskId
+					});
+				}
+
+				task.on('setDescription', function(event) {
+					var description = event.value,
+						oldDescripton = event.old,
+						oldTask = tasks[description];
+					if(oldTask) {
+						task.setScriptRecorder(oldTask.getScriptRecorder());
+						if(oldTask.isDone()) {
+							task.markAsDone();
+						}
+					}
+					tasks[description] = tasks[oldDescripton];
+					delete tasks[oldDescripton];
+				});
+				return task;
+			}
 			io.on('connection', function (socket) {
-				socket.once('scriptReady', function() {
+				socket.once('scriptReady', function(clientOptions) {
+					var task = getTask(clientOptions.taskId);
+
 					var scriptServer = new ScriptServer({
 						socket: socket,
-						browserState: browserState
+						browserState: browserState,
+						task: task,
+						tasks: tasks
 					});
 					socket.once('disconnect', function() {
 						scriptServer.destroy();
@@ -103,18 +137,8 @@ module.exports = {
 				});
 
 				socket.once('clientReady', function(clientOptions) {
-					var shadowBrowser,
-						task;
-
-					var taskId = clientOptions.taskId+'';
-
-					task = tasks[taskId];
-					if(!task) {
-						tasks[taskId] = task =  new Task({
-							browserState: browserState,
-							taskId: taskId
-						});
-					}
+					var shadowBrowser;
+					var task = getTask(clientOptions.taskId);
 
 					if(clientOptions.frameId) {
 						shadowBrowser = shadowBrowsers[clientOptions.userId];

@@ -15,8 +15,12 @@ function ScriptRecorder(options) {
 		return this.options.task;
 	};
 
+	proto.addAction = function(action) {
+		this.actions.push(action);
+	};
+
 	proto.onNavigate = function(url) {
-		this.actions.push({
+		this.addAction({
 			type: 'navigate',
 			target: url
 		});
@@ -46,17 +50,160 @@ function ScriptRecorder(options) {
 					event: event
 				};
 			}).then(_.bind(function(action) {
-				this.actions.push(action);
+				this.addAction(action);
 			}, this)).catch(function(err) {
                 console.error(err);
                 console.error(err.stack);
             });
         }
     };
-	proto.consolidate = function() {
+	proto.onNodeReply = function(frame, wrappedNodes) {
+		var nodeSelectors = Promise.all(_.map(wrappedNodes, function(wrappedNode) {
+			return wrappedNode.getUniqueSelector();
+		}));
+		var frameStackSelectorPromise = Promise.all(_.map(frame.getFrameStack(), function(x) {
+            var parent = x.getDOMParent();
+            if(parent) {
+                return parent.getUniqueSelector();
+            } else {
+                return false;
+            }
+		}));
+
+		var selectors;
+		nodeSelectors.then(function(s) {
+			selectors = s;
+			return frameStackSelectorPromise;
+		}).then(function(frameSelectors) {
+			return {
+				type: 'nodeReply',
+				selectors: selectors,
+				frameSelectors: frameSelectors
+			};
+		}).then(_.bind(function(action) {
+			this.addAction(action);
+		}, this)).catch(function(err) {
+			console.error(err);
+			console.error(err.stack);
+		});
 	};
+
+	proto.consolidate = function() {
+		var lastInput = false;
+		var newScript = [];
+
+		_.each(this.actions, function(action) {
+			if(action.type === 'deviceEvent' && action.event.type === 'input') {
+				if(action.selector === lastInput.selector && _.isEqual(action.frameSelectors, lastInput.frameSelectors)) {
+					lastInput.event.value = action.event.value;
+				} else {
+					lastInput = action;
+					newScript.push(action);
+				}
+			} else {
+				lastInput = false;
+				newScript.push(action);
+			}
+		});
+		return newScript;
+	};
+
 	proto.getRecordedScript = function() {
-		return 'this is the recorded script';
+		var consolidatedActions = this.consolidate();
+		var lines = [
+			'// Generated ArborScript',
+			'const HOST = "http://localhost:3000";',
+			'',
+			'var ArborScript = require("./arborscript");',
+			'var script = new ArborScript(HOST, { handoffTimeout: 5000 });',
+			''
+		];
+
+		var promiseLines = [];
+		_.each(consolidatedActions, function(action) {
+			var type = action.type;
+			var line;
+			if(type === 'navigate') {
+				line = 'script.navigate("' + action.target + '")';
+			} else if(type === 'deviceEvent') {
+				var event = action.event;
+				var eventType = event.type;
+				var selector = action.selector;
+				var frameSelectorsString;
+				if(_.isEqual(action.frameSelectors, [false])) {
+					frameSelectorsString = false;
+				} else {
+					frameSelectorsString = _.map(action.frameSelectors, function(fs) {
+						return fs ? '"'+fs+'"' : fs;
+					}).join(', ');
+				}
+
+				if(eventType === 'input') {
+					line = 'script.input("' + selector + '", "' + event.value + '"';
+					if(frameSelectorsString) {
+						line += ', [' + frameSelectorsString  + '])';
+					} else {
+						line += ')';
+					}
+				} else if(eventType === 'click') {
+					line = 'script.click("' + selector + '"';
+
+					if(frameSelectorsString) {
+						line += ', [' + frameSelectorsString  + '])';
+					} else {
+						line += ')';
+					}
+				}
+			} else if(type === 'nodeReply') {
+				var frameSelectorsString;
+				var selectorsString = _.map(action.selectors, function(s) {
+					return '"'+s+'"';
+				}).join(', ');
+				if(_.isEqual(action.frameSelectors, [false])) {
+					frameSelectorsString = false;
+				} else {
+					frameSelectorsString = _.map(action.frameSelectors, function(fs) {
+						return fs ? '"'+fs+'"' : fs;
+					}).join(', ');
+				}
+
+				line = 'script.handoff([' + selectorsString + ']';
+
+				if(frameSelectorsString) {
+					line += ', [' + frameSelectorsString  + '])';
+				} else {
+					line += ')';
+				}
+			}
+
+			if(line) {
+				promiseLines.push(line);
+			}
+		});
+		promiseLines.push('script.disconnect()')
+
+		var promisedLinesStr;
+
+		var firstLine = _.first(promiseLines);
+		if(promiseLines.length > 1) {
+			promisedLinesStr = firstLine + '.then(function() {\n';
+			for(var i = 1; i<promiseLines.length; i++) {
+				var line = promiseLines[i];
+				promisedLinesStr += '\treturn ' + line + ';'
+				promisedLinesStr += '\n';
+				if(i === promiseLines.length-1) {
+					promisedLinesStr += '});';
+				} else {
+					promisedLinesStr += '}).then(function() {\n';
+				}
+			}
+		} else {
+			promisedLinesStr = firstLine+';';
+		}
+
+		lines.push(promisedLinesStr);
+
+		return lines.join('\n');
 	};
 }(ScriptRecorder));
 

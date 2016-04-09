@@ -33,6 +33,16 @@ var FrameState = function(options) {
 		this._executionContext = context;
 	};
 
+	proto.getFrameStack = function() {
+		var frame = this;
+		var rv = [];
+		while(frame) {
+			rv.unshift(frame);
+			frame = frame.getParentFrame();
+		}
+		return rv;
+	};
+
 	proto.setDOMParent = function(parent) {
 		this._domParent = parent;
 	};

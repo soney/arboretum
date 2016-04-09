@@ -9,6 +9,7 @@ var ScriptServer = function(options) {
     this.$_onDeviceEvent = _.bind(this.onDeviceEvent, this);
     this.$_onNavigate = _.bind(this.onNavigate, this);
     this.$_getElements = _.bind(this.getElements, this);
+    this.$_handoff = _.bind(this.handoff, this);
 
     this._addSocketListeners();
 };
@@ -20,12 +21,14 @@ var ScriptServer = function(options) {
         socket.on('deviceEvent', this.$_onDeviceEvent);
         socket.on('navigate', this.$_onDeviceEvent);
         socket.on('getElements', this.$_getElements);
+        socket.on('handoff', this.$_handoff);
     };
     proto._removeSocketListeners = function() {
         var socket = this._getSocket();
         socket.removeListener('deviceEvent', this.$_onDeviceEvent);
         socket.removeListener('navigate', this.$_onDeviceEvent);
         socket.removeListener('getElements', this.$_getElements);
+        socket.removeListener('handoff', this.$_handoff);
     };
     proto.onDeviceEvent = function(event) {
         var browserState = this._getBrowserState();
@@ -91,14 +94,63 @@ var ScriptServer = function(options) {
 					return node._getNode();
 				});
 				socket.emit('elements', {
-					nodes: serializedNodes,
-					frameId: frame.getFrameId()
+					selector: info.selector,
+					frameStack: info.frameStack,
+					value: {
+						nodes: serializedNodes,
+						frameId: frame.getFrameId()
+					}
 				});
 			}).catch(function(err) {
 				console.error(err);
 			});
 		});
     };
+	proto.handoff = function(info) {
+		var elements = info.elements;
+		var browserState = this._getBrowserState();
+		var task = this.getTask();
+		var nodesPromises = _.map(info.elements, function(nodeInfos) {
+			if(nodeInfos.nodes) {
+				var nodeInfo = nodeInfos.nodes[0];
+
+				if(nodeInfo) {
+					return browserState.findFrame(nodeInfos.frameId).then(function(frame) {
+						return frame.findNode(nodeInfo.nodeId);
+					});
+				}
+			}
+		});
+		return Promise.all(nodesPromises).then(function(wrappedNodes) {
+			return _.compact(wrappedNodes);
+		}).then(function(wrappedNodes) {
+			task.exposeNodes(wrappedNodes);
+		}).catch(function(err) {
+			console.error(err);
+			console.error(err.stack);
+		});
+		/*
+		var frame;
+		var task = this.getTask();
+		var scriptRecorder = this.getScriptRecorder();
+
+		var browserState = this.getBrowserState();
+		browserState.findFrame(frameId).then(function(f) {
+			frame = f;
+			var wrappedNodePromises = _.map(info.nodeIds, function(nodeId) {
+				return frame.findNode(nodeId);
+			});
+			return Promise.all(wrappedNodePromises);
+		}).then(function(wrappedNodes) {
+			return _.compact(wrappedNodes);
+		}).then(function(wrappedNodes) {
+			task.exposeNodes(frame, wrappedNodes);
+			scriptRecorder.onNodeReply(frame, wrappedNodes);
+		}).catch(function(err) {
+			console.error(err);
+		});
+		*/
+	};
     proto.destroy = function() {
         this._removeSocketListeners();
     };
@@ -107,6 +159,9 @@ var ScriptServer = function(options) {
     };
     proto._getBrowserState = function() {
         return this.options.browserState;
+    };
+    proto.getTask = function() {
+        return this.options.task;
     };
 }(ScriptServer));
 

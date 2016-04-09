@@ -5,10 +5,7 @@ $.widget('arboretum.intent_specifier', {
         intent: false
 	},
 	_create: function() {
-        this.container = $('<div />').appendTo(this.element).css({
-			'text-align': 'center'
-		});
-
+        this.container = $('<div />').appendTo(this.element);
         this.disp = $('<span />').appendTo(this.container);
 		this.label = $('<span />').text('I want to ').appendTo(this.container).css({
 			'font-family': 'Helvetica Neue',
@@ -41,19 +38,48 @@ $.widget('arboretum.intent_specifier', {
 											}, this));
         this._updateInputVisibility();
 		var socket = this.option('socket');
-		socket.on('taskScript', function(script) {
-			console.log(script);
-		});
+		socket.on('taskScript', _.bind(function(script) {
+			$('.arborscript').remove();
+			var scriptContainer = $('<div />').appendTo(this.container)
+												.addClass('arborscript')
+												.text(script)
+												.css({
+													width: '800px',
+													height: '500px',
+													border: '1px solid #EEE'
+												});
+
+			getScript('bower_components/ace/build/src-min/ace.js').then(function() {
+				return getScript('bower_components/ace/build/src-min/theme-clouds.js');
+			}).then(function() {
+				return getScript('bower_components/ace/build/src-min/mode-javascript.js');
+			}).then(_.bind(function() {
+				var JavaScriptMode = ace.require("ace/mode/javascript").Mode;
+				var editor = ace.edit(scriptContainer[0]);
+
+				editor.setTheme('ace/theme/clouds');
+				editor.session.setMode(new JavaScriptMode());
+			}, this)).catch(function(err) {
+				console.error(err);
+			});
+
+		}, this));
 	},
 	_destroy: function() {
 	},
     _updateInputVisibility: function() {
         if(this.option('intent')) {
+			this.container.css({
+				'text-align': 'left'
+			});
             this.disp.text(this.option('intent')).show();
             this.inp.hide();
 			this.label.hide();
 			this.doneButton.show();
         } else {
+			this.container.css({
+				'text-align': 'center'
+			});
             this.inp.show().focus().select();
             this.disp.hide();
 			this.label.show();
@@ -61,3 +87,11 @@ $.widget('arboretum.intent_specifier', {
         }
     }
 });
+function getScript(src) {
+	return new Promise(function(resolve, reject) {
+		$.getScript(src, function () {
+			resolve();
+		});
+		setTimeout(resolve, 1000);
+	});
+}

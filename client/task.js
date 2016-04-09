@@ -11,6 +11,7 @@ var Task = function(options) {
 		browserState: this.getBrowserState(),
 		task: this
 	});
+	this.done = false;
 	this._computedExposedINodes = [];
 };
 (function(My) {
@@ -19,8 +20,16 @@ var Task = function(options) {
 	proto.getScriptRecorder = function() {
 		return this.scriptRecorder;
 	};
+	proto.setScriptRecorder = function(scriptRecorder) {
+		this.scriptRecorder = scriptRecorder;
+	};
 	proto.setDescription = function(description) {
+		var oldDescription = this.getDescription();
 		this._description = description;
+		this.emit('setDescription', {
+			value: this.getDescription(),
+			old: oldDescription
+		});
 	};
 	proto.getDescription = function() {
 		return this._description;
@@ -28,43 +37,35 @@ var Task = function(options) {
     proto.getTaskId = function() {
         return this.options.taskId;
     };
+	proto.isDone = function() {
+		return this.done;
+	};
 	proto.markAsDone = function() {
+		this.done = true;
 		return this.getRecordedScript();
 	};
 	proto.getRecordedScript = function() {
 		return this.scriptRecorder.getRecordedScript();
 	};
-    proto.exposeNodes = function(frameId, nodeIds) {
-		var browserState = this.getBrowserState();
-		browserState.findFrame(frameId).then(function(frame) {
-			var wrappedNodePromises = _.map(nodeIds, function(nodeId) {
-				return frame.findNode(nodeId);
-			});
-			return Promise.all(wrappedNodePromises);
-		}).then(function(wrappedNodes) {
-			var newNodes = [];
-			_.each(wrappedNodes, function(wrappedNode) {
-				if(wrappedNode) {
-					var parent = wrappedNode;
-					do {
-						newNodes.push(parent);
-					} while(parent = parent.getParent());
+    proto.exposeNodes = function(wrappedNodes) {
+		var newNodes = [];
+		_.each(wrappedNodes, function(wrappedNode) {
+			if(wrappedNode) {
+				var parent = wrappedNode;
+				do {
+					newNodes.push(parent);
+				} while(parent = parent.getParent());
 
-					var deepChildren = wrappedNode.getDeepChildren();
+				var deepChildren = wrappedNode.getDeepChildren();
 
-					newNodes.push.apply(newNodes, _.map(deepChildren, function(child) {
-						return child;
-					}));
-				}
-			});
-			return _.unique(newNodes);
-		}).then(_.bind(function(newNodes) {
-			this._computedExposedNodes = newNodes;
-			this.emit('exposeNodes');
-		}, this)).catch(function(err) {
-			console.error(err);
-			console.error(err.stack);
+				newNodes.push.apply(newNodes, _.map(deepChildren, function(child) {
+					return child;
+				}));
+			}
 		});
+		newNodes = _.unique(newNodes);
+		this._computedExposedNodes = newNodes;
+		this.emit('exposeNodes');
     };
 	proto.getComputedExposedNodes = function() {
 		return this._computedExposedNodes;

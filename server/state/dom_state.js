@@ -595,12 +595,7 @@ var DOMState = function(options) {
 	};
 	proto.getFrameStack = function() {
 		var frame = this._getFrame();
-		var rv = [];
-		while(frame) {
-			rv.unshift(frame);
-			frame = frame.getParentFrame();
-		}
-		return rv;
+		return frame.getFrameStack();
 	};
 	proto.querySelectorAll = function(selector) {
 		return new Promise(_.bind(function(resolve, reject) {

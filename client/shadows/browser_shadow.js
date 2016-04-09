@@ -64,7 +64,7 @@ var ShadowBrowser = function(options) {
 
 	proto.setTaskDescription = function(description) {
 		var task = this.getTask();
-		task.setDescription(intent);
+		task.setDescription(description);
 	};
 	proto.markTaskAsDone = function() {
 		var task = this.getTask();
@@ -91,7 +91,7 @@ var ShadowBrowser = function(options) {
 		var mainClient = this.getMainClient();
 		var scriptRecorder = this.getScriptRecorder();
 		mainClient.openURL(info.url);
-		this.scriptRecorder.onNavigate(info.url);
+		scriptRecorder.onNavigate(info.url);
 	};
 	proto.getFrameId = function() {
 		return this.tabShadow.getFrameId();
@@ -125,9 +125,11 @@ var ShadowBrowser = function(options) {
 				return frameShadow;
 			}, this));
 		} else if(clientOptions.viewType === 'output') {
+			this._addSocketListeners(clientOptions.socket);
 			return new Promise(_.bind(function(resolve, reject) {
 				var outputShadow = new ShadowOutput(_.extend({}, clientOptions, {
-					task: this.getTask()
+					task: this.getTask(),
+					browserShadow: this
 				}));
 				this.setMainClient(outputShadow);
 
@@ -157,6 +159,9 @@ var ShadowBrowser = function(options) {
 				.removeListener('closeTab', this.$_onCloseTab)
 				.removeListener('focusTab', this.$_onFocusTab)
 				.removeListener('openURL', this.$_onOpenURL)
+				.removeListener('getCurrentTabs', this.$sendTabs)
+				.removeListener('setTaskDescription', this.$setTaskDescription)
+				.removeListener('markAsDone', this.$markTaskAsDone);
 	};
 	proto.sendTabs = function() {
 		var mainClient = this.getMainClient();
@@ -226,10 +231,25 @@ var ShadowBrowser = function(options) {
 	};
 
 	proto.nodeReply = function(frameId, info) {
+		var frame;
 		var task = this.getTask();
 		var scriptRecorder = this.getScriptRecorder();
-		task.exposeNodes(frameId, info.nodeIds);
-		this.scriptRecorder.onExposeNodes(frameId, info.nodeIds);
+
+		var browserState = this.getBrowserState();
+		browserState.findFrame(frameId).then(function(f) {
+			frame = f;
+			var wrappedNodePromises = _.map(info.nodeIds, function(nodeId) {
+				return frame.findNode(nodeId);
+			});
+			return Promise.all(wrappedNodePromises);
+		}).then(function(wrappedNodes) {
+			return _.compact(wrappedNodes);
+		}).then(function(wrappedNodes) {
+			task.exposeNodes(wrappedNodes);
+			scriptRecorder.onNodeReply(frame, wrappedNodes);
+		}).catch(function(err) {
+			console.error(err);
+		});
 	};
 
 	proto.destroy = function() {
