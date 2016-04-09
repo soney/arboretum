@@ -4,7 +4,7 @@ var _ = require('underscore'),
 	EventEmitter = require('events'),
     P = require('bluebird');
 
-function ArborScript(host) {
+function ArborScript(host, options) {
 	if(host) {
 		this.connect(host);
 	}
@@ -36,7 +36,9 @@ function ArborScript(host) {
                     selector: selector,
                     frameStack: frameStack
                 })
-            });
+            }).timeout(1000).catch(P.TimeoutError, _.bind(function(e) {
+				return this.getElements.apply(this, arguments);
+			}, this));
         });
     };
 
