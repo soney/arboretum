@@ -78,7 +78,7 @@ $.widget('arboretum.intent_specifier', {
 			this.doneButton.show();
         } else {
 			this.container.css({
-				'text-align': 'center'
+				'text-align': 'left'
 			});
             this.inp.show().focus().select();
             this.disp.hide();

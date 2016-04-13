@@ -145,7 +145,8 @@ var currentLeader = null;
 			//console.log("&& CHECKING ==> ", (new Date).getTime(), " - ", workerHistoryStack[worker][i][1], " = ", ((new Date).getTime() - workerHistoryStack[worker][i][1]), " > ", INPUT_TIMEOUT_THRESH);
 			if ((new Date).getTime() - workerHistoryStack[worker][i][1] > INPUT_TIMEOUT_THRESH) {
 				//console.log("SENDING:: ", worker, i);
-				removeInput(worker, i);
+				//TODO re-add
+				//removeInput(worker, i);
 				//i--;  // WSL-TODO: slicing breaks iteration?
 			}
 		}
@@ -156,7 +157,8 @@ var currentLeader = null;
 			for (var i = 0; i < workerHistoryStack[worker].length; i++) {
 				if (i > INPUT_MAX_THRESH) {
 					//console.log("SENDING2:: ", worker, i);
-					removeInput(worker, i)
+					//TODO re-add
+					//removeInput(worker, i)
 				}
 			}
 		}
