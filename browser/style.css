@@ -11,10 +11,31 @@ body {
     -webkit-app-region: drag;
     -webkit-user-select: none;
     padding: 2px;
-    min-height: 30px;
     border-bottom: 1px solid rgb(200,200,200);
-    height: 20px;
+    height: 28px;
     box-sizing: border-box;
+}
+#tabsBar {
+    height: 20px;
+    background-color: rgb(180, 180, 180);
+    -webkit-user-select: none;
+}
+#tabs {
+    display: inline-block;
+    height: 20px;
+    width: calc(100% - 20px);
+}
+#addTab {
+    float: right;
+    display: inline-block;
+    width: 20px;
+    box-sizing: border-box;
+    cursor: default;
+    border-left: 1px solid #666;
+    text-align: center;
+    color: #666;
+    background-color: rgb(160, 160, 160);
+    height: 100%;
 }
 webview{
     display: block;
@@ -22,5 +43,5 @@ webview{
     height: 100%;
 }
 #content {
-  height: calc(100% - 30px);
+  height: calc(100% - 28px - 20px);
 }
