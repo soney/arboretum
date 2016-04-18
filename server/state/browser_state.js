@@ -168,7 +168,7 @@ var BrowserState = function(options) {
 					reject(tabs);
 				} else {
 					resolve(_.filter(tabs, function(tab) {
-						return tab.type === 'page';
+						return tab.type === 'page' && tab.title!=='arboretumInternal';
 					}));
 				}
 			});

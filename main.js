@@ -6,6 +6,121 @@ var repl = require('repl'),
 	log = require('./utils/logging'),
 	replServer;
 
+return startChromium().then(function(options) {
+    var rdp = options['remote-debugging-port'];
+    return startServer(rdp);
+});
+function startServer(chromePort) {
+	var BrowserState = require('./server/state/browser_state'),
+		clientDriver = require('./client/client_driver');
+
+	var chrome, doc, port;
+
+	var browserState = new BrowserState({
+		port: chromePort
+	});
+
+	return clientDriver.createClient(browserState).then(function(port) {
+		return {
+			clientPort: port,
+			browser: browserState
+		};
+	}).catch(function(err) {
+		console.error(err.stack);
+	});
+}
+/*
+		return startChrome({
+			appName: isWindows() ? WINDOWS_CHROMIUM_PATH : 'Chromium'
+		}).then(function(chromePort) {
+			return startServer(chromePort);
+		}).then(function(info) {
+			serverInfo = info;
+			return wait(0, info);
+		}).then(function(info) {
+			serverInfo = info;
+			return Promise.all([startChrome({
+				appName: isWindows() ? WINDOWS_CANARY_PATH : 'Google Chrome Canary',
+				url: 'http://localhost:' + info.clientPort
+			}), startChrome({
+				appName: isWindows() ? WINDOWS_CHROME_PATH : 'Google Chrome',
+				url: 'http://localhost:' + info.clientPort + '/o'
+			})]);
+		}).then(function() {
+			return serverInfo;
+		});
+        */
+
+function startChromium(options) {
+    options = _.extend({
+        'remote-debugging-port': 9222,
+        width: 800,
+        height: 600
+    }, options);
+
+    const electron = require('electron');
+    const app = require('app');
+    const BrowserWindow = require('browser-window')
+    //const app = electron.app;  // Module to control application life.
+    //const BrowserWindow = electron.BrowserWindow;  // Module to create native browser window.
+
+    app.commandLine.appendSwitch('remote-debugging-port', options['remote-debugging-port']+'');
+
+    // Keep a global reference of the window object, if you don't, the window will
+    // be closed automatically when the JavaScript object is garbage collected.
+    var mainWindow = null;
+
+    // Quit when all windows are closed.
+    app.on('window-all-closed', function() {
+        // On OS X it is common for applications and their menu bar
+        // to stay active until the user quits explicitly with Cmd + Q
+        if (process.platform != 'darwin') {
+            app.quit();
+        }
+    });
+
+    return new Promise(function(resolve, reject) {
+
+        // This method will be called when Electron has finished
+        // initialization and is ready to create browser windows.
+        app.on('ready', function() {
+            // Create the browser window.
+            mainWindow = new BrowserWindow({
+                width: options.width,
+                height: options.height,
+                icon: __dirname + '/resources/logo/icon.png',
+				frame: false,
+				title: 'Arboretum',
+				minWidth: 350,
+				minHeight: 250
+            });
+
+            // and load the index.html of the app.
+            mainWindow.loadURL('file://'+__dirname+'/browser/index.html');
+
+            // Open the DevTools.
+            //mainWindow.webContents.openDevTools();
+
+            // Emitted when the window is closed.
+            mainWindow.on('closed', function() {
+                // Dereference the window object, usually you would store windows
+                // in an array if your app supports multi windows, this is the time
+                // when you should delete the corresponding element.
+                mainWindow = null;
+            });
+            resolve(options);
+        });
+    });
+}
+/*
+var repl = require('repl'),
+	child_process = require('child_process'),
+	_ = require('underscore'),
+	//reload = require('require-reload')(require),
+	exec = child_process.exec,
+	log = require('./utils/logging'),
+	replServer;
+
 var WINDOWS_CANARY_PATH = 'C:\\Users\\Croma Lab\\AppData\\Local\\Google\\Chrome SxS\\Application\\chrome.exe',
 	WINDOWS_CHROME_PATH = 'C:\\Users\\Croma Lab\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe',
 	WINDOWS_CHROMIUM_PATH = 'C:\\Users\\Croma Lab\\AppData\\Local\\Chromium\\Application\\chrome.exe';
@@ -183,3 +298,5 @@ function wait(ms, val) {
 		}, ms);
 	});
 }
+
+*/
