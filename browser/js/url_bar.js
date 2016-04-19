@@ -1,14 +1,17 @@
 "use strict"
 
+var $ = require('jquery');
 var remote = require('remote');
 var URL = require('url');
 
-class TaskBar {
+class URLBar {
     constructor() {
-        this.backButton = $('#back');
-        this.forwardButton = $('#forward');
-        this.reloadButton = $('#reload');
-        this.urlInput = $('#url');
+        this.navBar = $('#navBar');
+        this.backButton = $('#back', this.navBar);
+        this.forwardButton = $('#forward', this.navBar);
+        this.refreshStop = $('#reload', this.navBar);
+        this.urlInput = $('#url', this.navBar);
+
 
         var webView = $('#wv');
 
@@ -18,23 +21,34 @@ class TaskBar {
         		var parsedURL = URL.parse(url);
         		if(!parsedURL.protocol) { parsedURL.protocol = 'http'; }
         		url = URL.format(parsedURL);
-                webView[0].loadURL(url);
+
+                arboretum.tabs.active.webView.loadURL(url);
             }
         });
 
         this.backButton.on('click', function(event) {
-            webView[0].goBack();
+            arboretum.tabs.active.webView.goBack();
         });
 
         this.forwardButton.on('click', function(event) {
-            webView[0].goForward();
+            arboretum.tabs.active.webView.goForward();
         });
 
-        this.reloadButton.on('click', function(event) {
-            webView[0].reload();
+        this.refreshStop.on('click', function(event) {
+            arboretum.tabs.active.webView.reload();
+            /*
+            if(this.icon === 'refresh'){
+                arboretum.tabs.active.webView.reload();
+            } else {
+                arboretum.tabs.active.webView.stop();
+            }
+            */
         });
     }
 }
+
+$(function() {
+});
 /*
 
 function onLoad() {

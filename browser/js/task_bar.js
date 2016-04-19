@@ -1,10 +1,9 @@
-"use strict"
+    "use strict"
 
-var $ = require('jquery');
 var remote = require('remote');
 var URL = require('url');
 
-class URLBar {
+class TaskBar {
     constructor() {
         var browserWindow = remote.getCurrentWindow();
         var webView = $('#wv');
@@ -21,11 +20,10 @@ class URLBar {
                 browserWindow.maximize();
             }
         });
+        this.tabs = $('#tabs');
+
     }
 }
-
-$(function() {
-});
 /*
 
 function onLoad() {
