@@ -11,6 +11,7 @@ body {
     -webkit-app-region: drag;
     -webkit-user-select: none;
     padding: 2px;
+    padding-left: 70px;
     border-bottom: 1px solid rgb(200,200,200);
     height: 28px;
     box-sizing: border-box;

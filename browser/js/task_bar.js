@@ -7,21 +7,6 @@ class TaskBar {
     constructor() {
         var browserWindow = remote.getCurrentWindow();
         var webView = $('#wv');
-        $('.titlebar-close').on('click', function() {
-            browserWindow.close();
-        });
-        $('.titlebar-minimize').on('click', function() {
-            browserWindow.minimize();
-        });
-        $('.titlebar-fullscreen').on('click', function() {
-            if(browserWindow.isMaximized()){
-                browserWindow.unmaximize();
-            } else {
-                browserWindow.maximize();
-            }
-        });
-        this.tabs = $('#tabs');
-
     }
 }
 /*

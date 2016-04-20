@@ -3,6 +3,8 @@
 var $ = require('jquery'),
     _ = require('underscore');
 
+require('jquery-ui');
+
 class Arboretum {
     constructor() {
         window.arboretum = this;

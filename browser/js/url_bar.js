@@ -12,7 +12,6 @@ class URLBar {
         this.refreshStop = $('#reload', this.navBar);
         this.urlInput = $('#url', this.navBar);
 
-
         var webView = $('#wv');
 
         this.urlInput.on('keydown', function(event) {
@@ -22,20 +21,22 @@ class URLBar {
         		if(!parsedURL.protocol) { parsedURL.protocol = 'http'; }
         		url = URL.format(parsedURL);
 
-                arboretum.tabs.active.webView.loadURL(url);
+                arboretum.tabs.active.webView[0].loadURL(url);
             }
+        }).on('focus', function() {
+            $(this).select();
         });
 
         this.backButton.on('click', function(event) {
-            arboretum.tabs.active.webView.goBack();
+            arboretum.tabs.active.webView[0].goBack();
         });
 
         this.forwardButton.on('click', function(event) {
-            arboretum.tabs.active.webView.goForward();
+            arboretum.tabs.active.webView[0].goForward();
         });
 
         this.refreshStop.on('click', function(event) {
-            arboretum.tabs.active.webView.reload();
+            arboretum.tabs.active.webView[0].reload();
             /*
             if(this.icon === 'refresh'){
                 arboretum.tabs.active.webView.reload();

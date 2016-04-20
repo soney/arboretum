@@ -37,7 +37,8 @@ module.exports = function(options) {
                 width: options.width,
                 height: options.height,
                 icon: __dirname + '/resources/logo/icon.png',
-				frame: false,
+                'title-bar-style': 'hidden',
+				//frame: false,
 				title: 'Arboretum',
 				minWidth: 350,
 				minHeight: 250
