@@ -10,7 +10,8 @@ $.widget('arboretum.intent_specifier', {
 		this.label = $('<span />').text('I want to ').appendTo(this.container).css({
 			'font-family': 'Helvetica Neue',
 			'font-weight': '100',
-			'font-size': '2em'
+			'font-size': '2em',
+			'margin': '15px'
 		});
         this.inp = $('<input />').attr({
             placeholder: 'task description'
@@ -28,7 +29,8 @@ $.widget('arboretum.intent_specifier', {
         }, this)).css({
 			'font-family': 'Helvetica Neue',
 			'font-size': '2em',
-			'font-weight': '200'
+			'font-weight': '200',
+			'margin': '15px'
 		});
 		this.doneButton = $('<button />')	.text('Done')
 											.appendTo(this.container)

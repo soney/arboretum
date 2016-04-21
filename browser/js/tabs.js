@@ -5,13 +5,7 @@ class Tabs {
         this.root = $("#content");
         this.addTab = $('#addTab');
 
-        this.tabsRow = $('#tabs').tabs();
-        /*
-var tabTitle = $( "#tab_title" ),
-tabContent = $( "#tab_content" ),
-tabTemplate = "<li><a href='#{href}'>#{label}</a> <span class='ui-icon ui-icon-close' role='presentation'>Remove Tab</span></li>",
-tabCounter = 2;
-*/
+        this.tabsRow = $('#tabs');
 
         this.addTab.on('click', _.bind(function() {
             this.createNew();
@@ -23,7 +17,6 @@ tabCounter = 2;
         if(isSelected) {
             this.select(theTab);
         }
-        this.tabsRow.tabs('refresh');
         return theTab;
     }
 

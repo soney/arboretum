@@ -15,15 +15,16 @@
         <link rel="stylesheet" type="text/css" href="bower_components/font-awesome/css/font-awesome.min.css" />
     </head>
     <body>
+        <div id="tabsBar">
+            <ul id='tabs'></ul>
+            <span id='addTab'>+</span>
+        </div>
         <div id="navBar">
             <button id='back'><i class='fa fa-chevron-left' aria-hidden='true'></i></button>
             <button id='forward'><i class='fa fa-chevron-right' aria-hidden='true'></i></button>
             <input id='url' type="text" placeholder="Enter URL or Term to Search" flex />
             <button id='reload'><i class='fa fa-refresh' aria-hidden='true'></i></button>
-        </div>
-        <div id="tabsBar">
-            <span id='tabs'></span>
-            <span id='addTab'>+</span>
+            <button id='request'><i class='fa fa-users' aria-hidden='true'></i></button>
         </div>
         <div id="content">
             <!--<webview id='wv' autosize="on" src="http://umich.edu" style="display:inline-flex;"></webview>-->

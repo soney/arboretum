@@ -287,10 +287,12 @@ $.widget('arboretum.tree_node', {
 				offsetY: event.offsetY
 			});
 
+/*
 			this.element.effect({
 				effect: 'highlight',
 				duration: 5000
 			});
+			*/
 		}
 	},
 	_onInput: function(event) {

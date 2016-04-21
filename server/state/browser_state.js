@@ -113,10 +113,8 @@ var BrowserState = function(options) {
 					this._initializeTab(tabInfo);
 				}
 			}, this);
-			_.each(wasClosed, function(tabInfo) {
-				if(tabInfo) {
-					this._destroyTab(tabInfo);
-				}
+			_.each(wasClosed, function(tabId) {
+				this._destroyTab({id: tabId});
 			}, this);
 		}, this));
 	};
@@ -168,7 +166,7 @@ var BrowserState = function(options) {
 					reject(tabs);
 				} else {
 					resolve(_.filter(tabs, function(tab) {
-						return tab.type === 'page' && tab.title!=='arboretumInternal';
+						return tab.type === 'page' && tab.title!=='arboretumInternal' && tab.url !=='http://localhost:3000/o' && tab.url !=='http://localhost:3000';
 					}));
 				}
 			});

@@ -10,30 +10,29 @@ var NavStatus = {
     FAIL: 'FAIL'
 };
 
+var tabNum = 0;
+
 class Tab extends EventEmitter {
     constructor(URL) {
+        tabNum++;
         super();
         let emit = _.bind(this.emit, this);
         let title = $('<span />', {text: 'New Tab', class: 'tab-title'});
         let icon = $('<span />', {class: 'tab-icon'});
-        let webView = $('<webview />');
+        let webView = $('<webview />', {src: 'http://osu.edu/'});
 
         let expecting = false;
         let lastStatus = null;
         let lastFavicon = null;
         let lastURL = null;
 
-        this.tab = $('<span />', {class: 'tab'});
+        this.tab = $('<li />', {class: 'tab'});
+        this.tabLink = $('<a />', {href: '#tab'+tabNum}).appendTo(this.tab);
+        this.content = $('<div />', {id: 'tab'+tabNum, class:'tab_content'}).appendTo(arboretum.tabs.root).append(webView);
         this.webView = webView;
 
-        this.tab.append(icon, title);
-
+        this.tabLink.append(icon, title);
         arboretum.tabs.tabsRow.append(this.tab);
-        arboretum.tabs.root.append(this.webView);
-
-        this.tab.on('click', function() {
-            console.log('abc');
-        });
 
         // Subscribing on own events
         this.on('Navigation:Status', function(status) {
