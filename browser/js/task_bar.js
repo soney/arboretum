@@ -1,6 +1,6 @@
     "use strict"
 
-var remote = require('remote');
+var remote = require('electron').remote;
 var URL = require('url');
 
 class TaskBar {

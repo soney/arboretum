@@ -8,10 +8,10 @@ module.exports = function(options) {
     }, options);
 
     const electron = require('electron');
-    const app = require('app');
-    const BrowserWindow = require('browser-window')
-    //const app = electron.app;  // Module to control application life.
-    //const BrowserWindow = electron.BrowserWindow;  // Module to create native browser window.
+    //const {app} = electron;
+    //const {BrowserWindow} = electron;
+    const app = electron.app;  // Module to control application life.
+    const BrowserWindow = electron.BrowserWindow;  // Module to create native browser window.
 
     app.commandLine.appendSwitch('remote-debugging-port', options['remote-debugging-port']+'');
 

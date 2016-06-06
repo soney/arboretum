@@ -9,7 +9,7 @@ class Arboretum {
     constructor() {
         window.arboretum = this;
 
-        this.Remote = require('remote');
+        this.Remote = require('electron').remote;
         this.browserWindow = this.Remote.getCurrentWindow();
 
         this.taskBar = new TaskBar();
