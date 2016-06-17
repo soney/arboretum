@@ -19,20 +19,30 @@ class Tab extends EventEmitter {
         let emit = _.bind(this.emit, this);
         let title = $('<span />', {text: 'New Tab', class: 'tab-title'});
         let icon = $('<span />', {class: 'tab-icon'});
-        let webView = $('<webview />', {src: 'http://osu.edu/'});
+        let closeButton = $('<span />', {
+			text: 'x'
+		}).css({
+			color: 'red',
+			cursor: 'pointer',
+			position: 'static',
+			right: '5px'});
+        let webView = $('<webview />', {src: 'http://osu.edu/',id:'wv'+tabNum});
 
         let expecting = false;
         let lastStatus = null;
         let lastFavicon = null;
         let lastURL = null;
-
-        this.tab = $('<li />', {class: 'tab'});
+        this.tab = $('<li />', {class: 'tab',id: 'li'+tabNum});
         this.tabLink = $('<a />', {href: '#tab'+tabNum}).appendTo(this.tab);
         this.content = $('<div />', {id: 'tab'+tabNum, class:'tab_content'}).appendTo(arboretum.tabs.root).append(webView);
         this.webView = webView;
 
-        this.tabLink.append(icon, title);
+        this.tabLink.append(icon, title, closeButton);
         arboretum.tabs.tabsRow.append(this.tab);
+        closeButton.on('click',function(){
+            $('#tab'+tabNum).remove();
+            $('#li'+tabNum).remove();
+        });
 
         // Subscribing on own events
         this.on('Navigation:Status', function(status) {
