@@ -72,6 +72,8 @@ class Tab extends EventEmitter {
         });
         this.on('Title:Update', function(titleVal) {
             title.text(titleVal);
+            if(arboretum.tabs.active == this)
+               document.title = titleVal;
         });
 
         // WebView Events
@@ -113,7 +115,6 @@ class Tab extends EventEmitter {
                 emit('Navigation:Status', NavStatus.RECEIVING);
             }
         });
-
         // Listen on extra high-level events
         this.listen();
     }
