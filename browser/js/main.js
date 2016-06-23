@@ -22,8 +22,15 @@ class Arboretum {
 
     listen() {
         $(window).on('keydown', function(e) {
-            if(e.which === 82 && e.ctrlKey && e.altKey) { // CTRL + ALT + R
-                location.reload();
+            if(e.which === 82 && e.ctrlKey) { // CTRL + ALT + R
+                if(e.altKey){
+                  console.log('altkey');
+                  location.reload();
+                }
+                else{
+                  e.preventDefault();
+                  window.arboretum.urlBar.refreshStop.click();
+                }
             } else if((e.which === 73 && e.ctrlKey && e.shiftKey) || e.which === 123) { // F12 OR CTRL + SHIFT + I
                 var activeTab = this.tabs.active;
                 if(activeTab) {
