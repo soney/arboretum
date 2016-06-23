@@ -25,12 +25,15 @@ class Tabs {
         console.log(tab);
         if(this.active) {
             this.active.webView.removeClass('show');
+            this.active.tab.removeClass('selected');
         }
         //arboretum.taskBar.tabs.selected = this.tabs.indexOf(tab);
         this.active = tab;
         this.active.webView.addClass('show');
+        this.active.tab.addClass('selected');
         console.log($(this.active.tabLink[0]).children('.tab-title').text());
         document.title = $(this.active.tabLink[0]).children('.tab-title').text();
+       
         
     }
 }
