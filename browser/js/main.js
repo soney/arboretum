@@ -40,6 +40,8 @@ class Arboretum {
                         activeTab.WebView.openDevTools();
                     }
                 }
+            }else if(e.which===76 && e.ctrlKey){
+                window.arboretum.urlBar.urlInput.focus();
             }
         });
     }
