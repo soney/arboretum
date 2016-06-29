@@ -19,13 +19,7 @@ class Tab extends EventEmitter {
         let emit = _.bind(this.emit, this);
         let title = $('<span />', {text: 'New Tab', class: 'tab-title'});
         let icon = $('<span />', {class: 'tab-icon'});
-        let closeButton = $('<span />', {
-			text: 'x'
-		}).css({
-			color: 'red',
-			cursor: 'pointer',
-			position: 'static',
-			right: '5px'});
+        let closeButton = $('<span />', {text: 'x',class:'tab-close'});
         let webView = $('<webview />', {src: 'http://osu.edu/',id:'wv'+tabNum});
 
         let expecting = false;

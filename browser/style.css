@@ -43,6 +43,28 @@ body {
     text-decoration: none;
     color: #444;
 }
+.tab-img{
+    height:20px;
+    width:20px;
+}
+.tab-icon {
+    display:inline-block;
+    float:left;
+}
+.tab-title {
+    max-width:300px;
+    height:20px;
+    float:left;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+.tab-close {
+    color: red;
+    cursor: pointer;
+    right: 5px;
+    margin-left:2px;
+    margin-right:2px;
+}
 #addTab {
     float: right;
     display: inline-block;
