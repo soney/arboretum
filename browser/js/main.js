@@ -2,13 +2,13 @@
 
 var $ = require('jquery'),
     _ = require('underscore');
+  //  electron = require('electron');
 
 require('jquery-ui');
 
 class Arboretum {
     constructor() {
         window.arboretum = this;
-
         this.Remote = require('electron').remote;
         this.browserWindow = this.Remote.getCurrentWindow();
 
@@ -22,7 +22,7 @@ class Arboretum {
 
     listen() {
         $(window).on('keydown', function(e) {
-            if(e.which === 82 && e.ctrlKey) { // CTRL + ALT + R
+            if(e.which === 82 && (e.ctrlKey || e.metaKey)) { // CTRL + ALT + R
                 if(e.altKey){
                   console.log('altkey');
                   location.reload();
@@ -40,9 +40,34 @@ class Arboretum {
                         activeTab.WebView.openDevTools();
                     }
                 }
-            }else if(e.which===76 && e.ctrlKey){
+            } else if(e.which === 76 && (e.ctrlKey || e.metaKey)) {
                 window.arboretum.urlBar.urlInput.focus();
+               // window.open('https://www.umich.edu/');
+               // new Arboretum();
+            } else if((e.which === 9 && (e.ctrlKey || e.metaKey)) ||( e.which === 9)) {
+                e.preventDefault();
+                let tabs = window.arboretum.tabs.tabs;
+                let selectedKey = window.arboretum.tabs.active.TabId;
+                let Keys = Object.keys(tabs);
+                let i = Keys.indexOf(selectedKey.toString());
+                i++;
+                if(i+1 > Keys.length)
+                   i = 0;
+                window.arboretum.tabs.select(tabs[Keys[i]]);
             }
+            /*  var mainWindow = new BrowserWindow({
+                      width: 800,
+                      height: 600,
+                      icon: __dirname + '/resources/logo/icon.png',
+                      'title-bar-style': 'hidden',
+		              //frame: false,
+		              title: 'Arboretum',
+		              minWidth: 350,
+		              minHeight: 250
+                 });
+                 new Arboretum();*/
+                 
+           
         });
     }
 }
