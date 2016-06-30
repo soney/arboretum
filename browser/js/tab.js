@@ -1,6 +1,7 @@
 "use strict";
 
 var EventEmitter = require('events').EventEmitter;
+var cri = require('chrome-remote-interface');
 
 var NavStatus = {
     START: 'START',
@@ -21,21 +22,38 @@ class Tab extends EventEmitter {
         let icon = $('<span />', {class: 'tab-icon'});
         let closeButton = $('<span />', {text: 'x',class:'tab-close'});
         let webView = $('<webview />', {src: 'http://osu.edu/',id:'wv'+tabNum});
-
+        let thisTab = this;
         let expecting = false;
         let lastStatus = null;
         let lastFavicon = null;
         let lastURL = null;
+        this.TabId = tabNum;
         this.tab = $('<li />', {class: 'tab',id: 'li'+tabNum});
         this.tabLink = $('<a />', {href: '#tab'+tabNum}).appendTo(this.tab);
-        this.content = $('<div />', {id: 'tab'+tabNum, class:'tab_content'}).appendTo(arboretum.tabs.root).append(webView);
+        this.content = $('<div />', {id: 'tab'+tabNum, class:'tab_content unselected'}).appendTo(arboretum.tabs.root).append(webView);
         this.webView = webView;
 
         this.tabLink.append(icon, title, closeButton);
         arboretum.tabs.tabsRow.append(this.tab);
+
         closeButton.on('click',function(){
-            $('#tab'+tabNum).remove();
-            $('#li'+tabNum).remove();
+            $('#tab'+thisTab.TabId).remove();
+            $('#li'+thisTab.TabId).remove();
+            delete arboretum.tabs.tabs[thisTab.TabId];
+            if(arboretum.tabs.active === thisTab){
+               var tmp = thisTab.TabId-1;
+               var T = arboretum.tabs.tabs;
+               while(!T[tmp]){
+                    tmp--;
+               }
+               var NewSelectedTab = T[tmp];
+               arboretum.tabs.select(NewSelectedTab);
+            }
+            arboretum.tabs.resize();
+        });
+        title.on('click',function(){
+            arboretum.tabs.select(thisTab);
+            console.log('select tab');
         });
 
         // Subscribing on own events

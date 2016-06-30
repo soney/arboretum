@@ -25,13 +25,16 @@ body {
     width: calc(100% - 20px);
     margin: 0px;
     padding: 0px;
+    background-color: white;
 }
 .tab {
     display: inline-block;
     text-indent: 0px;
     list-style: none;
     padding: 2px;
-    border-right: 1px solid #888;
+    border-right: 2px solid #888;
+    border-top-right-radius: 1em;
+    background-color: #888;
 }
 .selected {
     background-color:white;
@@ -85,8 +88,11 @@ webview{
 .tab_content {
     height: 100%;
 }
+.unselected {
+    display:none;
+}
 #content {
-  height: calc(100% - 25px - 25px);
+    height: calc(100% - 25px - 25px);
 }
 input#url {
     width: 20em;
