@@ -2,8 +2,6 @@
 
 var $ = require('jquery'),
     _ = require('underscore');
-  //  electron = require('electron');
-
 require('jquery-ui');
 
 class Arboretum {
@@ -54,19 +52,12 @@ class Arboretum {
                 if(i+1 > Keys.length)
                    i = 0;
                 window.arboretum.tabs.select(tabs[Keys[i]]);
+            } else if(e.which === 78 && (e.ctrlKey || e.metaKey)) {
+               e.preventDefault();
+               const {ipcRenderer} = require('electron');
+               console.log(ipcRenderer);
+               ipcRenderer.send('New-Window','test');
             }
-            /*  var mainWindow = new BrowserWindow({
-                      width: 800,
-                      height: 600,
-                      icon: __dirname + '/resources/logo/icon.png',
-                      'title-bar-style': 'hidden',
-		              //frame: false,
-		              title: 'Arboretum',
-		              minWidth: 350,
-		              minHeight: 250
-                 });
-                 new Arboretum();*/
-                 
            
         });
     }
