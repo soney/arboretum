@@ -4,6 +4,8 @@ var cri = require('chrome-remote-interface'),
 	EventEmitter = require('events'),
 	TabState = require('./tab_state').TabState;
 var log = require('../../utils/logging').getColoredLogger('red');
+var fileUrl = require('file-url'),
+	path = require('path');
 
 var OPTION_DEFAULTS = {
 	host: 'localhost',
@@ -165,9 +167,12 @@ var BrowserState = function(options) {
 				if(err) {
 					reject(tabs);
 				} else {
-					resolve(_.filter(tabs, function(tab) {
-						return tab.type === 'page' && tab.title!=='arboretumInternal' && tab.url !=='http://localhost:3000/o' && tab.url !=='http://localhost:3000';
-					}));
+					var projectFileURLPath = fileUrl(path.resolve(__dirname, '..', '..'));
+					inspectableTabs = _.filter(tabs, function(tab) {
+						return tab.type === 'page' && tab.title!=='arboretumInternal' && tab.url !=='http://localhost:3000/o' && tab.url !=='http://localhost:3000' &&
+								tab.url.indexOf('chrome-devtools://') !== 0 && tab.url.indexOf(projectFileURLPath) !== 0;
+					});
+					resolve(inspectableTabs);
 				}
 			});
 		});

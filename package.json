@@ -24,6 +24,7 @@
     "electron": "^0.4.1",
     "electron-prebuilt": "^0.36.7",
     "express": "~4.13",
+    "file-url": "^1.1.0",
     "jquery": "^2.2.3",
     "jquery-ui": "^1.10.5",
     "loglevel": "^1.4.0",
