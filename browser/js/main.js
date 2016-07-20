@@ -19,6 +19,8 @@ class Arboretum {
     }
 
     listen() {
+        const {ipcRenderer} = require('electron');
+        ipcRenderer.send('asynchronous-message','test');
         $(window).on('keydown', function(e) {
             if(e.which === 82 && (e.ctrlKey || e.metaKey)) { // CTRL + ALT + R
                 if(e.altKey){
@@ -40,8 +42,6 @@ class Arboretum {
                 }
             } else if(e.which === 76 && (e.ctrlKey || e.metaKey)) {
                 window.arboretum.urlBar.urlInput.focus();
-               // window.open('https://www.umich.edu/');
-               // new Arboretum();
             } else if((e.which === 9 && (e.ctrlKey || e.metaKey)) ||( e.which === 9)) {
                 e.preventDefault();
                 let tabs = window.arboretum.tabs.tabs;
@@ -60,6 +60,9 @@ class Arboretum {
             }
            
         });
+        ipcRenderer.on('asynchronous-reply',function(arg) {
+           window.arboretum.tabs.createNew('',true);
+        }); 
     }
 }
 

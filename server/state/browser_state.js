@@ -5,8 +5,9 @@ var cri = require('chrome-remote-interface'),
 	TabState = require('./tab_state').TabState;
 var log = require('../../utils/logging').getColoredLogger('red');
 var fileUrl = require('file-url'),
-	path = require('path');
-
+	path = require('path'),
+        electron = require('electron'),
+        ipcMain = electron.ipcMain;
 var OPTION_DEFAULTS = {
 	host: 'localhost',
 	port: 9222
@@ -18,6 +19,9 @@ var BrowserState = function(options) {
 	this._initialized = this._initialize().then(function() {
 		log.debug('=== CREATED BROWSER ===');
 	});
+        ipcMain.on('asynchronous-message',_.bind(function(event,arg) {
+           this.sender = event.sender;
+        },this));  
 };
 
 (function(My) {
@@ -53,7 +57,8 @@ var BrowserState = function(options) {
 		return this._tabs[tabId].statePromise;
 	};
 	proto.addTab = function() {
-		var options = this._options;
+                this.sender.send('asynchronous-reply','remoteTab');
+		/*var options = this._options;
 		return new Promise(function(resolve, reject) {
 			cri.New(options, function(err, tab) {
 				if(err) {
@@ -64,7 +69,7 @@ var BrowserState = function(options) {
 			});
 		}).then(_.bind(function(tabInfo) {
 			this._initializeTab(tabInfo);
-		}, this));
+		}, this));*/
 	};
 	proto.closeTab = function(tabId) {
 		return new Promise(function(resolve, reject) {
