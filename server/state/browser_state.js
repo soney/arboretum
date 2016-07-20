@@ -72,7 +72,8 @@ var BrowserState = function(options) {
 		}, this));*/
 	};
 	proto.closeTab = function(tabId) {
-		return new Promise(function(resolve, reject) {
+                this.sender.send('closeTab',tabId);
+		/*return new Promise(function(resolve, reject) {
 			cri.Close({
 				id: tabId
 			}, function(err) {
@@ -87,7 +88,7 @@ var BrowserState = function(options) {
 			this._destroyTab(tabInfo);
 		}, this)).catch(function(err) {
 			console.log(err.stack);
-		});
+		});*/
 	};
 	proto.openURL = function(url, tabId) {
 		if(!tabId) {
@@ -141,6 +142,7 @@ var BrowserState = function(options) {
 	proto._initializeTab = function(tabInfo) {
 		var id = tabInfo.id,
 			options = this._options;
+                this.sender.send('TabRefId',id);
 
 		var statePromise = new Promise(function(resolve, reject) {
 			var chromeInstance = cri(_.extend({

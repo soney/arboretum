@@ -62,7 +62,18 @@ class Arboretum {
         });
         ipcRenderer.on('asynchronous-reply',function(arg) {
            window.arboretum.tabs.createNew('',true);
-        }); 
+        });
+        ipcRenderer.on('TabRefId',function(event,arg) {
+           var keys = Object.keys(window.arboretum.tabs.tabs).map(Number);
+           var maxKey = Math.max.apply(Math,keys);
+           window.arboretum.tabs.tabs[maxKey].RefId = arg;
+        });
+        ipcRenderer.on('closeTab',function(event,arg) {
+          var theKey = _.find(Object.keys(window.arboretum.tabs.tabs),function(key) {
+             return window.arboretum.tabs.tabs[key].RefId == arg;
+          });
+          window.arboretum.tabs.tabs[theKey].closeButton.click();
+        });
     }
 }
 
