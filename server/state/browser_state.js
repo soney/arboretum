@@ -21,7 +21,7 @@ var BrowserState = function(options) {
 	});
         ipcMain.on('asynchronous-message',_.bind(function(event,arg) {
            this.sender = event.sender;
-        },this));  
+        },this));
 };
 
 (function(My) {
@@ -174,7 +174,7 @@ var BrowserState = function(options) {
 				if(err) {
 					reject(tabs);
 				} else {
-					var projectFileURLPath = fileUrl(path.resolve(__dirname, '..', '..'));
+					var projectFileURLPath = fileUrl(path.join(path.resolve(__dirname, '..', '..'), 'browser'));
 					inspectableTabs = _.filter(tabs, function(tab) {
 						return tab.type === 'page' && tab.title!=='arboretumInternal' && tab.url !=='http://localhost:3000/o' && tab.url !=='http://localhost:3000' &&
 								tab.url.indexOf('chrome-devtools://') !== 0 && tab.url.indexOf(projectFileURLPath) !== 0;

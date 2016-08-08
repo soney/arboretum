@@ -49,11 +49,11 @@ var DOMState = function(options) {
 	proto._addValueListeners = function() {
 		var tagName = this._getTagName().toLowerCase();
 		if(tagName === 'canvas') {
-			this._updateValueInterval = setTimeout(_.bind(function() {
-				this.getCanvasImage().then(_.bind(function(data) {
-					this.emit('valueUpdated', 'canvas', data);
-				}, this));
-			}, this), 5000);
+			// this._updateValueInterval = setTimeout(_.bind(function() {
+			// 	this.getCanvasImage().then(_.bind(function(data) {
+			// 		this.emit('valueUpdated', 'canvas', data);
+			// 	}, this));
+			// }, this), 5000);
 		} else if(tagName === 'input') {
 			this._updateValueInterval = setInterval(_.bind(function() {
 				this.getInputValue().then(_.bind(function(data) {
