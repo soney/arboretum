@@ -80,8 +80,16 @@ var TabState = function(tabId, chrome) {
 	};
 
 	proto._setMainFrame = function(frame) {
-		this._rootFrame = frame;
-		log.debug('Set main frame ' + frame.getFrameId());
+                if(this._rootFrame) { 
+                  _.each(_.keys(this._frames),_.bind(function(id) {
+                      if (id != frame.getFrameId()) {
+                         this._destroyFrame(id); 
+                      }
+                  },this));
+                }
+                this._rootFrame = frame;
+		console.log('Set main frame ' + frame.getFrameId());
+                frame.setSetMainFrameExecuted(true); 
 
 		return this._getDocument().then(_.bind(function(doc) {
 			var root = doc.root;
@@ -278,9 +286,10 @@ var TabState = function(tabId, chrome) {
 			chrome: this._getChrome(),
 			resources: resources,
 			page: this,
-			parentFrame: parent
+			parentFrame: parent,
+                        frameId: frameId
 		}, frame));
-
+                console.log('_frames',_.keys(this._frames));
 		if(!frame.parentId) {
 			this._setMainFrame(frameState);
 		}
@@ -338,6 +347,7 @@ var TabState = function(tabId, chrome) {
 			var frame = this.getFrame(frameId);
 			frame.destroy();
 			delete this._frames[frameId];
+                        console.log('_frames',_.keys(this._frames));
 		} else {
 			throw new Error('Could not find frame with id ' + frameId);
 		}
@@ -384,6 +394,8 @@ var TabState = function(tabId, chrome) {
 	};
 
 	proto._onSetChildNodes = function(event) {
+              //  log.debug('event',event);
+                console.log("setChildnodes emmited", event.parentId);
 		var promises = _.map(this._frames, function(frame) {
 			return frame.setChildNodes(event);
 		});
