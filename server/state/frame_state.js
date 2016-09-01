@@ -13,12 +13,13 @@ var FrameState = function(options) {
 	this.chrome = chrome;
 	this.options = options;
 
+	this._domParent = false;
 	this._nodeMap = {};
 	this._oldNodeMap = {};
 	this._queuedEvents = [];
 	this._executionContext = false;
 	this._root = false;
-	this.eventManager = new EventManager(chrome);
+	this.eventManager = new EventManager(chrome, this);
 
 	this._resourceTracker = new ResourceTracker(chrome, this, options.resources);
 	log.debug('=== CREATED FRAME STATE', this.getFrameId(), ' ====');
@@ -32,7 +33,25 @@ var FrameState = function(options) {
 		this._executionContext = context;
 	};
 
-	proto.onDeviceEvent = function() {
+	proto.getFrameStack = function() {
+		var frame = this;
+		var rv = [];
+		while(frame) {
+			rv.unshift(frame);
+			frame = frame.getParentFrame();
+		}
+		return rv;
+	};
+
+	proto.setDOMParent = function(parent) {
+		this._domParent = parent;
+	};
+
+	proto.getDOMParent = function() {
+		return this._domParent;
+	};
+
+	proto.onDeviceEvent = function(event) {
 		return this.eventManager.onDeviceEvent.apply(this.eventManager, arguments);
 	};
 
@@ -360,6 +379,9 @@ var FrameState = function(options) {
 			return this._setChildrenRecursive(this._getWrappedDOMNode(child, parentNode), child.children);
 		}, this));
 	};
+	proto.getParentFrame = function() {
+		return this.options.parentFrame;
+	};
 
 	proto.setRoot = function(rootNode) {
 		var oldRoot = this.getRoot();
@@ -432,6 +454,17 @@ var FrameState = function(options) {
 	};
 	proto.getPage = function() {
 		return this.options.page;
+	};
+	proto.querySelectorAll = function() {
+		var root = this.getRoot();
+		if(root) {
+			return root.querySelectorAll.apply(root, arguments);
+		} else {
+			return new Promise(function(resolve, reject) {
+				reject(new Error('Could not find root'));
+			});
+		}
+
 	};
 }(FrameState));
 

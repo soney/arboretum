@@ -22,8 +22,19 @@ var ShadowOutput = function(options) {
 		var task = this.getTask();
 
 		this.$updateShadowFrame = _.bind(this.updateShadowFrame, this);
+		this.$taskDescriptionSet = _.bind(this.taskDescriptionSet, this);
+
 
 		task.on('exposeNodes', this.$updateShadowFrame);
+		task.on('setDescription', this.$taskDescriptionSet);
+	};
+
+	proto.taskDescriptionSet = function(description) {
+		var task = this.getTask();
+		if(task.isDone()) {
+			var browserShadow = this.getBrowserShadow();
+			browserShadow.markTaskAsDone();
+		}
 	};
 
 	proto.updateShadowFrame = function() {
@@ -78,6 +89,7 @@ var ShadowOutput = function(options) {
 	proto.destroy = function() {
 		var task = this.getTask();
 		task.off('exposeNodes', this.$updateShadowFrame);
+		task.off('setDescription', this.$taskDescriptionSet);
 
 		if(this.shadowFrame) {
 			this.shadowFrame.destroy();
@@ -93,6 +105,7 @@ var ShadowOutput = function(options) {
 	proto._getSocket = function() {
 		return this.options.socket;
 	};
+
 }(ShadowOutput));
 
 module.exports = {

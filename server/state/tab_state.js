@@ -23,6 +23,10 @@ var TabState = function(tabId, chrome) {
 
 
 	proto.navigate = function(url) {
+		var parsedURL = URL.parse(url);
+		if(!parsedURL.protocol) { parsedURL.protocol = 'http'; }
+		url = URL.format(parsedURL);
+
 		var chrome = this._getChrome();
 		return new Promise(function(resolve, reject) {
 			chrome.Page.navigate({
@@ -228,7 +232,7 @@ var TabState = function(tabId, chrome) {
 
 		log.debug('Frame attached  ' + frameId + ' (parent: ' + parentFrameId + ')');
 
-		this._createEmptyFrame(frameInfo);
+		this._createEmptyFrame(frameInfo, parentFrameId ? this.getFrame(parentFrameId) : false);
 	};
 	proto._onFrameNavigated = function(frameInfo) {
 		var frame = frameInfo.frame,
@@ -262,7 +266,7 @@ var TabState = function(tabId, chrome) {
 		return this._frames[frameId];
 	};
 
-	proto._createFrame = function(frameInfo) {
+	proto._createFrame = function(frameInfo, parent) {
 		var resources = frameInfo.resources,
 			childFrames = frameInfo.childFrames,
 			frame = frameInfo.frame,
@@ -273,7 +277,8 @@ var TabState = function(tabId, chrome) {
 		var frameState = this._frames[frameId] = new FrameState(_.extend({
 			chrome: this._getChrome(),
 			resources: resources,
-			page: this
+			page: this,
+			parentFrame: parent
 		}, frame));
 
 		if(!frame.parentId) {
@@ -281,7 +286,7 @@ var TabState = function(tabId, chrome) {
 		}
 
 		_.each(childFrames, function(childFrame) {
-			this._createFrame(childFrame);
+			this._createFrame(childFrame, frameState);
 		}, this);
 
 		this._updateFrameOnEvents(frameState);

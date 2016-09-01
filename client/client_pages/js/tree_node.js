@@ -286,6 +286,13 @@ $.widget('arboretum.tree_node', {
 				offsetX: event.offsetX,
 				offsetY: event.offsetY
 			});
+
+/*
+			this.element.effect({
+				effect: 'highlight',
+				duration: 5000
+			});
+			*/
 		}
 	},
 	_onInput: function(event) {

@@ -18,6 +18,13 @@ $.widget('arboretum.tree_state', {
 		socket.emit('clientReady', this.option());
 
 		this._addListeners();
+		if(this.option('viewType') === 'output') {
+			this.element.intent_specifier({
+				state: this,
+				socket: this.socket,
+				intent: this.intent
+			});
+		}
 	},
 	_destroy: function() {
 		this._removeNodeAndMenu();
@@ -39,6 +46,10 @@ $.widget('arboretum.tree_state', {
 		}
 		if(this.element.data('arboretum-menu')) {
 			this.element.menu('destroy');
+		}
+		if(this.element.data('arboretum-intent_specifier')) {
+			this.intent = this.element.intent_specifier('option', 'intent');
+			this.element.intent_specifier('destroy');
 		}
 	},
 	_frameChanged: function() {
@@ -75,8 +86,13 @@ $.widget('arboretum.tree_state', {
 			state: this,
 			socket: this.socket
 		});
-
-		if(!this.option('frameId') && this.option('viewType') !== 'output') { // top-level
+		if(this.option('viewType') === 'output') {
+			this.element.intent_specifier({
+				state: this,
+				socket: this.socket,
+				intent: this.intent
+			})
+		} else if(!this.option('frameId')) { // top-level
 			this.element.menu({
 				state: this,
 				socket: this.socket

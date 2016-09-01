@@ -4,7 +4,10 @@ var cri = require('chrome-remote-interface'),
 	EventEmitter = require('events'),
 	TabState = require('./tab_state').TabState;
 var log = require('../../utils/logging').getColoredLogger('red');
-
+var fileUrl = require('file-url'),
+	path = require('path'),
+        electron = require('electron'),
+        ipcMain = electron.ipcMain;
 var OPTION_DEFAULTS = {
 	host: 'localhost',
 	port: 9222
@@ -16,6 +19,9 @@ var BrowserState = function(options) {
 	this._initialized = this._initialize().then(function() {
 		log.debug('=== CREATED BROWSER ===');
 	});
+        ipcMain.on('asynchronous-message',_.bind(function(event,arg) {
+           this.sender = event.sender;
+        },this));
 };
 
 (function(My) {
@@ -51,7 +57,8 @@ var BrowserState = function(options) {
 		return this._tabs[tabId].statePromise;
 	};
 	proto.addTab = function() {
-		var options = this._options;
+                this.sender.send('asynchronous-reply','remoteTab');
+		/*var options = this._options;
 		return new Promise(function(resolve, reject) {
 			cri.New(options, function(err, tab) {
 				if(err) {
@@ -62,10 +69,11 @@ var BrowserState = function(options) {
 			});
 		}).then(_.bind(function(tabInfo) {
 			this._initializeTab(tabInfo);
-		}, this));
+		}, this));*/
 	};
 	proto.closeTab = function(tabId) {
-		return new Promise(function(resolve, reject) {
+                this.sender.send('closeTab',tabId);
+		/*return new Promise(function(resolve, reject) {
 			cri.Close({
 				id: tabId
 			}, function(err) {
@@ -80,7 +88,7 @@ var BrowserState = function(options) {
 			this._destroyTab(tabInfo);
 		}, this)).catch(function(err) {
 			console.log(err.stack);
-		});
+		});*/
 	};
 	proto.openURL = function(url, tabId) {
 		if(!tabId) {
@@ -113,10 +121,8 @@ var BrowserState = function(options) {
 					this._initializeTab(tabInfo);
 				}
 			}, this);
-			_.each(wasClosed, function(tabInfo) {
-				if(tabInfo) {
-					this._destroyTab(tabInfo);
-				}
+			_.each(wasClosed, function(tabId) {
+				this._destroyTab({id: tabId});
 			}, this);
 		}, this));
 	};
@@ -136,6 +142,7 @@ var BrowserState = function(options) {
 	proto._initializeTab = function(tabInfo) {
 		var id = tabInfo.id,
 			options = this._options;
+                this.sender.send('TabRefId',id);
 
 		var statePromise = new Promise(function(resolve, reject) {
 			var chromeInstance = cri(_.extend({
@@ -167,9 +174,12 @@ var BrowserState = function(options) {
 				if(err) {
 					reject(tabs);
 				} else {
-					resolve(_.filter(tabs, function(tab) {
-						return tab.type === 'page';
-					}));
+					var projectFileURLPath = fileUrl(path.join(path.resolve(__dirname, '..', '..'), 'browser'));
+					inspectableTabs = _.filter(tabs, function(tab) {
+						return tab.type === 'page' && tab.title!=='arboretumInternal' && tab.url !=='http://localhost:3000/o' && tab.url !=='http://localhost:3000' &&
+								tab.url.indexOf('chrome-devtools://') !== 0 && tab.url.indexOf(projectFileURLPath) !== 0;
+					});
+					resolve(inspectableTabs);
 				}
 			});
 		});

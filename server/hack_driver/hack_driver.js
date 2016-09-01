@@ -11,6 +11,7 @@ var GET_ELEMENT_VALUE = readFile(path.join(__dirname, 'injectable_js', 'get_elem
 var SET_ELEMENT_VALUE = readFile(path.join(__dirname, 'injectable_js', 'set_element_value.js'));
 var GET_NAMESPCE = readFile(path.join(__dirname, 'injectable_js', 'get_namespace.js'));
 var GET_CANVAS_IMAGE = readFile(path.join(__dirname, 'injectable_js', 'get_canvas_image_data.js'));
+var GET_UNIQUE_SELECTOR = readFile(path.join(__dirname, 'injectable_js', 'get_unique_selector.js'));
 
 function readShallowObject(chrome, objectId) {
 	return getProperties(chrome, objectId, true).then(function(properties) {
@@ -174,6 +175,9 @@ module.exports = {
 	},
 	getNamespace: function(chrome, nodeId) {
 		return callFNOnElement(chrome, GET_NAMESPCE, nodeId);
+	},
+	getUniqueSelector: function(chrome, nodeId) {
+		return callFNOnElement(chrome, GET_UNIQUE_SELECTOR, nodeId);
 	},
 	getCanvasImage: function (chrome, nodeId) {
 		return callFNOnElement(chrome, GET_CANVAS_IMAGE, nodeId).then(function(rv) {

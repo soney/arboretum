@@ -4,13 +4,69 @@ var repl = require('repl'),
 	//reload = require('require-reload')(require),
 	exec = child_process.exec,
 	log = require('./utils/logging'),
+	startChromium = require('./browser/index'),
+	replServer;
+
+log.setLevel('trace');
+
+return startChromium().then(function(options) {
+    var rdp = options['remote-debugging-port'];
+    return startServer(rdp);
+});
+function startServer(chromePort) {
+	var BrowserState = require('./server/state/browser_state'),
+		webServer = require('./client/client_web_server');
+
+	var chrome, doc, port;
+
+	var browserState = new BrowserState({
+		port: chromePort
+	});
+	return webServer.createWebServer(browserState).then(function(port) {
+		return {
+			clientPort: port,
+			browser: browserState
+		};
+	}).catch(function(err) {
+		console.error(err.stack);
+	});
+}
+/*
+		return startChrome({
+			appName: isWindows() ? WINDOWS_CHROMIUM_PATH : 'Chromium'
+		}).then(function(chromePort) {
+			return startServer(chromePort);
+		}).then(function(info) {
+			serverInfo = info;
+			return wait(0, info);
+		}).then(function(info) {
+			serverInfo = info;
+			return Promise.all([startChrome({
+				appName: isWindows() ? WINDOWS_CANARY_PATH : 'Google Chrome Canary',
+				url: 'http://localhost:' + info.clientPort
+			}), startChrome({
+				appName: isWindows() ? WINDOWS_CHROME_PATH : 'Google Chrome',
+				url: 'http://localhost:' + info.clientPort + '/o'
+			})]);
+		}).then(function() {
+			return serverInfo;
+		});
+        */
+
+/*
+var repl = require('repl'),
+	child_process = require('child_process'),
+	_ = require('underscore'),
+	//reload = require('require-reload')(require),
+	exec = child_process.exec,
+	log = require('./utils/logging'),
 	replServer;
 
 var WINDOWS_CANARY_PATH = 'C:\\Users\\Croma Lab\\AppData\\Local\\Google\\Chrome SxS\\Application\\chrome.exe',
 	WINDOWS_CHROME_PATH = 'C:\\Users\\Croma Lab\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe',
 	WINDOWS_CHROMIUM_PATH = 'C:\\Users\\Croma Lab\\AppData\\Local\\Chromium\\Application\\chrome.exe';
 
-log.setLevel('trace');
+//log.setLevel('trace');
 
 startAll().then(function(info) {
 	var browser = info.browser;
@@ -68,6 +124,7 @@ function startAll() {
 		}).then(function(chromePort) {
 			return startServer(chromePort);
 		}).then(function(info) {
+			serverInfo = info;
 			return wait(0, info);
 		}).then(function(info) {
 			serverInfo = info;
@@ -182,3 +239,5 @@ function wait(ms, val) {
 		}, ms);
 	});
 }
+
+*/

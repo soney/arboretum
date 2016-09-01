@@ -3,6 +3,7 @@ var express = require('express'),
 	path = require('path'),
 	request = require('request'),
 	ShadowBrowser = require('./shadows/browser_shadow').ShadowBrowser,
+	ScriptServer = require('./scripts/script_server').ScriptServer,
 	Task = require('./task').Task,
 	_ = require('underscore'),
 	fs = require('fs');
@@ -90,20 +91,54 @@ module.exports = {
 			var io = socket(server);
 			var shadowBrowsers = {}
 			var tasks = {};
-			io.on('connection', function (socket) {
-				socket.once('clientReady', function(clientOptions) {
-					var shadowBrowser,
-						task;
+			function getTask(taskId) {
+				if(!taskId) {
+					taskId = 'default';
+				}
 
-					var taskId = clientOptions.taskId+'';
+				var task = tasks[taskId];
+				if(task) {
+					return task;
+				} else {
+					return tasks[taskId] =  new Task({
+						browserState: browserState,
+						taskId: taskId
+					});
+				}
 
-					task = tasks[taskId];
-					if(!task) {
-						tasks[taskId] = task =  new Task({
-							browserState: browserState,
-							taskId: taskId
-						});
+				task.on('setDescription', function(event) {
+					var description = event.value,
+						oldDescripton = event.old,
+						oldTask = tasks[description];
+					if(oldTask) {
+						task.setScriptRecorder(oldTask.getScriptRecorder());
+						if(oldTask.isDone()) {
+							task.markAsDone();
+						}
 					}
+					tasks[description] = tasks[oldDescripton];
+					delete tasks[oldDescripton];
+				});
+				return task;
+			}
+			io.on('connection', function (socket) {
+				socket.once('scriptReady', function(clientOptions) {
+					var task = getTask(clientOptions.taskId);
+
+					var scriptServer = new ScriptServer({
+						socket: socket,
+						browserState: browserState,
+						task: task,
+						tasks: tasks
+					});
+					socket.once('disconnect', function() {
+						scriptServer.destroy();
+					});
+				});
+
+				socket.once('clientReady', function(clientOptions) {
+					var shadowBrowser;
+					var task = getTask(clientOptions.taskId);
 
 					if(clientOptions.frameId) {
 						shadowBrowser = shadowBrowsers[clientOptions.userId];
@@ -144,16 +179,6 @@ module.exports = {
 						console.error('Seeking browser for non-user');
 					}
 				});
-				/*
-				var id = socket.id;
-				var shadowBrowser = new ShadowBrowser(browserState, socket);
-				shadowBrowsers[id] = shadowBrowser;
-
-				socket.on('disconnect', function() {
-					shadowBrowser.destroy();
-					delete shadowBrowser[id];
-				});
-				*/
 			});
 		});
 	}

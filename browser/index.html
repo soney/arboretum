@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+    <head lang="en">
+        <meta charset="UTF-8">
+        <title>arboretumInternal</title>
+        <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=no">
+
+        <script type='text/javascript' src='js/tab.js'></script>
+        <script type='text/javascript' src='js/tabs.js'></script>
+        <script type='text/javascript' src='js/task_bar.js'></script>
+        <script type='text/javascript' src='js/url_bar.js'></script>
+        <script type='text/javascript' src='js/main.js'></script>
+
+        <link rel="stylesheet" type="text/css" href="style.css" />
+        <link rel="stylesheet" type="text/css" href="bower_components/font-awesome/css/font-awesome.min.css" />
+    </head>
+    <body>
+        <div id="tabsBar">
+            <ul id='tabs'></ul>
+            <span id='addTab'>+</span>
+        </div>
+        <div id="navBar">
+            <button id='back'><i class='fa fa-chevron-left' aria-hidden='true'></i></button>
+            <button id='forward'><i class='fa fa-chevron-right' aria-hidden='true'></i></button>
+            <input id='url' type="text" placeholder="Enter URL or Term to Search" flex />
+            <button id='reload'><i class='fa fa-refresh' aria-hidden='true'></i></button>
+            <button id='request'><i class='fa fa-users' aria-hidden='true'></i></button>
+        </div>
+        <div id="content">
+            <!--<webview id='wv' autosize="on" src="http://umich.edu" style="display:inline-flex;"></webview>-->
+        </div>
+    </body>
+</html>

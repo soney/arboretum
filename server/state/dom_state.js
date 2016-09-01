@@ -27,7 +27,7 @@ var DOMState = function(options) {
 		log.debug('DOM state ' + this.getId() + ' initialized');
 	}, this)).catch(function(err) {
 		if(!err.expected) {
-			console.error(err);
+			log.error(err.message);
 		}
 	});
 	//if(regdids[this.getId()]) debugger;
@@ -49,11 +49,11 @@ var DOMState = function(options) {
 	proto._addValueListeners = function() {
 		var tagName = this._getTagName().toLowerCase();
 		if(tagName === 'canvas') {
-			this._updateValueInterval = setTimeout(_.bind(function() {
-				this.getCanvasImage().then(_.bind(function(data) {
-					this.emit('valueUpdated', 'canvas', data);
-				}, this));
-			}, this), 5000);
+			// this._updateValueInterval = setTimeout(_.bind(function() {
+			// 	this.getCanvasImage().then(_.bind(function(data) {
+			// 		this.emit('valueUpdated', 'canvas', data);
+			// 	}, this));
+			// }, this), 5000);
 		} else if(tagName === 'input') {
 			this._updateValueInterval = setInterval(_.bind(function() {
 				this.getInputValue().then(_.bind(function(data) {
@@ -70,6 +70,11 @@ var DOMState = function(options) {
 	};
 	proto.getCanvasImage = function() {
 		return driver.getCanvasImage(this._getChrome(), this.getId());
+	};
+	proto.getUniqueSelector = function() {
+		return driver.getUniqueSelector(this._getChrome(), this.getId()).then(function(rv) {
+			return rv.result.value;
+		});
 	};
 	proto.getInputValue = function() {
 		return driver.getElementValue(this._getChrome(), this.getId());
@@ -110,8 +115,8 @@ var DOMState = function(options) {
 		return new Promise(_.bind(function(resolve, reject) {
 			if(nodeType === NODE_CODE.TEXT_NODE && nodeValue && nodeValue.endsWith('…')) {
 				var chrome = this._getChrome();
-				this.chrome.DOM.getOuterHTML({
-					nodeId: this.node.nodeId
+				chrome.DOM.getOuterHTML({
+					nodeId: this.getId()
 				}, _.bind(function(err, value) {
 					if(err) {
 						reject(value);
@@ -225,6 +230,7 @@ var DOMState = function(options) {
 			var frame = page.getFrame(node.frameId);
 
 			frame.setRoot(frameRoot);
+			frame.setDOMParent(this);
 
 			this.childFrame = frame;
 		} else {
@@ -586,6 +592,25 @@ var DOMState = function(options) {
 	};
 	proto.getTabId = function() {
 		return this._getFrame().getTabId();
+	};
+	proto.getFrameStack = function() {
+		var frame = this._getFrame();
+		return frame.getFrameStack();
+	};
+	proto.querySelectorAll = function(selector) {
+		return new Promise(_.bind(function(resolve, reject) {
+				var chrome = this._getChrome();
+				chrome.DOM.querySelectorAll({
+					nodeId: this.getId(),
+					selector: selector
+				}, _.bind(function(err, value) {
+					if(err) {
+						reject(value);
+					} else {
+						resolve(value);
+					}
+				}, this));
+		}, this));
 	};
 }(DOMState));
 
