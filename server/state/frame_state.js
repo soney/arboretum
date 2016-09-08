@@ -169,18 +169,7 @@ var FrameState = function(options) {
 			return promise;
 		} else {
 			console.log('Document Updated');
-                        var smfe = this.getSetMainFrameExecuted();
-                        this.setSetMainFrameExecuted(false);
-                        console.log('smfe',smfe);
-                        if (smfe) {
-                          console.log('true !!!');
-			 // this.refreshRoot();
-                          return true;
-                        } else {
-                          console.log('null !!!');
-                          this.refreshRoot();
-                        }
-                        //this.refreshRoot();  
+			this.refreshRoot();  
 			return true;
 		}
 	};
@@ -424,8 +413,19 @@ var FrameState = function(options) {
 			var page = this.getPage();
 			page.requestChildNodes(rootNode.nodeId, -1);
                         //console.log('setroot rootnode',new Error().stack);
+                        var smfe = this.getSetMainFrameExecuted();
+                        this.setSetMainFrameExecuted(false);
+                        console.log('smfe',smfe);
+                        var destroy;
+                        if (smfe) {
+                          console.log('true !!!');
+			  destroy = false;
+                        } else {
+                          console.log('null !!!');
+                          destroy = true;
+                        }
 
-			this.emit('rootInvalidated', this);
+			this.emit('rootInvalidated', destroy);
 			this._markRefreshingRoot(false);
 		}
 		return this._root;

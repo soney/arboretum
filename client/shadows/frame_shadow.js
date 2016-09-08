@@ -62,7 +62,7 @@ var currentLeader = null;
 				.on('deviceEvent', this.$_onDeviceEvent)
 				.on('nodeReply', this.$_onNodeReply);
 
-		this._updateShadowTree();
+		this._updateShadowTree(true);
 
 		//this.on('updated', function() {
 			//socket.emit('treeUpdated', this._shadowTree.serialize());
@@ -222,13 +222,14 @@ var currentLeader = null;
 	proto.getFrameId = function() {
 		return this._getDomTree().getFrameId();
 	};
-	proto._updateShadowTree = function() {
+	proto._updateShadowTree = function(destroy) {
 		this._sentServerReady = false;
 		log.debug('Updating shadow tree ' + this.getFrameId());
 
 		var domTree = this._getDomTree(),
 			socket = this._getSocket();
-		if(this._shadowTree) {
+		if(this._shadowTree && destroy) {
+                        console.log('destroy!!!!!');
 			this._shadowTree.destroy();
 		}
 		var node = domTree.getRoot();
