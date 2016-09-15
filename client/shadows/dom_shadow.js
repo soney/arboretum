@@ -52,6 +52,7 @@ var ShadowDOM = function(options) {
 	this._attributes = {};
 	this._inlineCSS = '';
         this._queuedEvents = [];
+        this.numChildrenInit = 0;
 
 	this._initialized = this._initialize();
 	/*
@@ -294,10 +295,20 @@ var ShadowDOM = function(options) {
 
         proto.ExecuteQueuedEvents = function() {
                 console.log('queuedEvents.lenght=',this._queuedEvents.length);
+                var tmp = [];
                 while(this._queuedEvents.length > 0) {
 		      var queuedEvent = this._queuedEvents.shift();
                                console.log('queuedEvent');
-		      this._handleQueuedEvent(queuedEvent);
+                      if ((queuedEvent.type == '_childAdded' || queuedEvent.type == '_childRemoved') && !this.ChildrenInitialized()) {
+                          console.log('handleevent',queuedEvent.type,queuedEvent.info.child.getId(),"not executed yet");
+                          tmp.push (queuedEvent);
+                      } else {
+		          this._handleQueuedEvent(queuedEvent);
+                      }
+                }
+                while(tmp.length > 0) {
+                    var tmpEvent = tmp.shift();
+                    this._queuedEvents.push(tmpEvent);
                 }
         };
 
@@ -305,7 +316,9 @@ var ShadowDOM = function(options) {
 		var eventType = eventInfo.type,
 			info = eventInfo.info;
 			promise = eventInfo.promise;
-                         console.log('handleevent',eventType);
+                if ((eventType == '_childAdded' || eventType == '_childRemoved')) {
+                          console.log('handleevent',eventType,info.child.getId());
+                }
                 if (info) {
                    var val = this[eventType](info);
                 } else {
@@ -315,6 +328,25 @@ var ShadowDOM = function(options) {
 		promise.doResolve(val);
 		return val;
 	};
+
+        proto.ChildrenInitialized = function () {
+            if (this.numChildrenInit == this.children.length) {
+                return true;
+            } else {
+                return false;
+            }
+        };
+
+        proto.ChildInitialized = function () {
+            if (this.numChildrenInit < this.children.length) {
+                this.numChildrenInit++;
+                console.log(this.getId(),"child Initialized!");
+            }
+            if (this.numChildrenInit == this.children.length) {
+                console.log(this.getId(),"children Initialized!!!");
+                this.ExecuteQueuedEvents();
+            }
+        };
 
 	proto.serialize = function() {
 		var tree = this.getTree(),
@@ -339,7 +371,6 @@ var ShadowDOM = function(options) {
 	};
 
 	proto._initialize = function() {
-                 // console.log(new Error().stack);
 		var tree = this.getTree(),
 			node = this.getNode();
 
@@ -377,7 +408,6 @@ var ShadowDOM = function(options) {
 		}, this)).then(_.bind(function() {
 			var parent = this.getParent();
 			if(parent) {
-                                console.log(this.getId());
 				return parent.isInitialized();
 			} else {
 				return false;
@@ -390,6 +420,7 @@ var ShadowDOM = function(options) {
 				if(state.sentServerReady()) {
 					console.log('socket emit Initialized ' + this.getId(),new Date().getTime());
 					socket.emit('nodeInitialized', this.serialize());
+                                        parent.ChildInitialized();
                                         this.ExecuteQueuedEvents();
 				}
 			} else {
