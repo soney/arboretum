@@ -15,7 +15,11 @@ class Arboretum {
         this.urlBar = new URLBar();
 
         this.listen();
+        // this.tabs.createNew('https://www.nytimes.com/', true);
+        // this.tabs.createNew('https://www.nytimes.com/', true);
+        // this.tabs.createNew('https://www.stanford.edu/', true);
         this.tabs.createNew('https://www.umich.edu/', true);
+        // this.tabs.createNew('https://www.nytimes.com/', true);
     }
 
     listen() {
@@ -58,7 +62,7 @@ class Arboretum {
                console.log(ipcRenderer);
                ipcRenderer.send('New-Window','test');
             }
-           
+
         });
         ipcRenderer.on('asynchronous-reply',function(arg) {
            window.arboretum.tabs.createNew('',true);

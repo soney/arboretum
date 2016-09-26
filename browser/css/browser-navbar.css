@@ -1,0 +1,46 @@
+#navBar {
+    display: flex;
+    /*background: linear-gradient(to bottom, #eee, #ddd);*/
+    border-bottom: 1px solid #aaa;
+    height: 30px;
+    box-sizing: border-box;
+}
+
+#navBar button {
+    background: none;
+    outline: none;
+    border: none;
+    color: #777;
+    padding: 7px;
+    font-size: 12px;
+}
+
+#navBar button:hover {
+    background-color: rgba(50, 50, 50, 0.1);
+    color: #555;
+}
+
+#navBar button:disabled, #navBar  button:disabled:hover {
+    color: #BBB;
+    opacity: 0.7;
+    background: none;
+}
+
+input#url {
+    flex: 1;
+    margin: 4px 2px 3px 2px;
+    font-size: 14px;
+    padding: 2px 5px;
+    box-shadow: inset 0px 1px 2px rgba(0, 0, 0, 0.2);
+    border: 1px solid #bbb;
+    border-top-left-radius: 3px;
+    border-bottom-left-radius: 3px;
+    color: #808080;
+    outline: 0;
+    background: #FFF;
+    font-weight: lighter;
+}
+
+input#url:focus {
+    border-color: #4169E1;
+}

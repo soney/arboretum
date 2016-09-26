@@ -20,6 +20,7 @@ module.exports = function(options) {
     var mainWindow = null;
     var newWindow = null;
 
+
     // Quit when all windows are closed.
     app.on('window-all-closed', function() {
         // On OS X it is common for applications and their menu bar
@@ -33,8 +34,8 @@ module.exports = function(options) {
                 width: options.width,
                 height: options.height,
                 icon: __dirname + '/resources/logo/icon.png',
-                'title-bar-style': 'hidden',
-				//frame: false,
+                titleBarStyle: 'hidden',
+				frame: false,
 				title: 'Arboretum',
 				minWidth: 350,
 				minHeight: 250
@@ -53,13 +54,12 @@ module.exports = function(options) {
         // initialization and is ready to create browser windows.
         app.on('ready', function() {
             // Create the browser window.
-            //console.log("window created",__dirname);
             mainWindow = new BrowserWindow({
                 width: options.width,
                 height: options.height,
                 icon: __dirname + '/resources/logo/icon.png',
-                'title-bar-style': 'hidden',
-				//frame: false,
+                titleBarStyle: 'hidden',
+				frame: false,
 				title: 'Arboretum',
 				minWidth: 350,
 				minHeight: 250
@@ -68,7 +68,7 @@ module.exports = function(options) {
             mainWindow.loadURL('file://'+__dirname+'/index.html');
 
             // Open the DevTools.
-            mainWindow.webContents.openDevTools();
+            // mainWindow.webContents.openDevTools();
 
             // Emitted when the window is closed.
             mainWindow.on('closed', function() {

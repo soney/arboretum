@@ -11,20 +11,26 @@
         <script type='text/javascript' src='js/url_bar.js'></script>
         <script type='text/javascript' src='js/main.js'></script>
 
-        <link rel="stylesheet" type="text/css" href="style.css" />
+        <!-- <link rel="stylesheet" type="text/css" href="style.css" /> -->
+        <link rel="stylesheet" type="text/css" href="css/browser.css" />
+        <link rel="stylesheet" type="text/css" href="css/browser-tabs.css" />
+        <link rel="stylesheet" type="text/css" href="css/browser-navbar.css" />
         <link rel="stylesheet" type="text/css" href="bower_components/font-awesome/css/font-awesome.min.css" />
     </head>
     <body>
-        <div id="tabsBar">
-            <ul id='tabs'></ul>
-            <span id='addTab'>+</span>
-        </div>
-        <div id="navBar">
-            <button id='back'><i class='fa fa-chevron-left' aria-hidden='true'></i></button>
-            <button id='forward'><i class='fa fa-chevron-right' aria-hidden='true'></i></button>
-            <input id='url' type="text" placeholder="Enter URL or Term to Search" flex />
-            <button id='reload'><i class='fa fa-refresh' aria-hidden='true'></i></button>
-            <button id='request'><i class='fa fa-users' aria-hidden='true'></i></button>
+        <div id="header">
+            <div id="tabsBar">
+                <div id='buttonSpacer'></div>
+                <ul id='tabs'></ul>
+                <span id='addTab'><i class="fa fa-plus"></i></span>
+            </div>
+            <div id="navBar">
+                <button id='back'><i class='fa fa-lg fa-chevron-left' aria-hidden='true'></i></button>
+                <button id='forward'><i class='fa fa-lg fa-chevron-right' aria-hidden='true'></i></button>
+                <button id='reload'><i class='fa fa-lg fa-repeat' aria-hidden='true'></i></button>
+                <button id='request'><i class='fa fa-lg fa-users' aria-hidden='true'></i></button>
+                <input id='url' type="text" placeholder="Enter URL or Term to Search" flex />
+            </div>
         </div>
         <div id="content">
             <!--<webview id='wv' autosize="on" src="http://umich.edu" style="display:inline-flex;"></webview>-->

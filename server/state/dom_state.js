@@ -274,10 +274,10 @@ var DOMState = function(options) {
 		//this._updateChildrenInitializedPromise();
 
 		_.each(this.children, function(child) {
-                          console.log('child to emit',child.getId());
+                        //   console.log('child to emit',child.getId());
 			child.setParent(this);
 		}, this);
-                console.log('childrenChanged',this.getId());
+                // console.log('childrenChanged',this.getId());
                 if (this.getId() === 60) {
                      Error.stackTraceLimit = Infinity;
                      console.log(new Error().stack);
