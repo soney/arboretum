@@ -37,7 +37,7 @@ var FrameState = function(options) {
         proto.getSetMainFrameExecuted = function() {
                 return this.setMainFrameExecuted;
         };
-        
+
         proto.setSetMainFrameExecuted = function(val) {
                console.log(val);
                this.setMainFrameExecuted = val;
@@ -97,7 +97,7 @@ var FrameState = function(options) {
 		   var val = this[eventType](event);
                 } else {
                    var val = this[eventType](event);
-                } 
+                }
 		promise.doResolve(val);
 		return val;
 	};
@@ -169,7 +169,7 @@ var FrameState = function(options) {
 			return promise;
 		} else {
 			console.log('Document Updated');
-			this.refreshRoot();  
+			this.refreshRoot();
 			return true;
 		}
 	};
@@ -402,7 +402,6 @@ var FrameState = function(options) {
 	proto.setRoot = function(rootNode){ //smfe goes for set main frame executed
 		var oldRoot = this.getRoot();
 		if(oldRoot) {
-                        console.log('setroot oldroot');
 			oldRoot.destroy();
 		}
 		if(rootNode) {

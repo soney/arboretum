@@ -20,7 +20,8 @@ class Tab extends EventEmitter {
         let emit = _.bind(this.emit, this);
         let title = $('<span />', {text: 'New Tab', class: 'tab-title'});
         let icon = $('<span />', {class: 'tab-icon'});
-        this.closeButton = $('<span />', {text: 'x',class:'tab-close'});
+        this.closeButton = $('<span />', {class:'closeTab'});
+        this.closeIcon = $('<i />', {class: 'fa fa-close'}).appendTo(this.closeButton);
         let webView = $('<webview />', {src: 'http://osu.edu/',id:'wv'+tabNum});
         let thisTab = this;
         let expecting = false;
@@ -30,11 +31,12 @@ class Tab extends EventEmitter {
         this.RefId = null;
         this.TabId = tabNum;
         this.tab = $('<li />', {class: 'tab',id: 'li'+tabNum});
-        this.tabLink = $('<a />', {href: '#tab'+tabNum}).appendTo(this.tab);
+        // this.tabLink = $('<a />', {class: 'clickableTab', href: '#tab'+tabNum});
         this.content = $('<div />', {id: 'tab'+tabNum, class:'tab_content unselected'}).appendTo(arboretum.tabs.root).append(webView);
         this.webView = webView;
 
-        this.tabLink.append(icon, title, this.closeButton);
+        // this.tabLink.append(icon, title);
+        this.tab.append(icon, title, this.closeButton);
         arboretum.tabs.tabsRow.append(this.tab);
 
         this.closeButton.on('click',function(){
@@ -54,7 +56,6 @@ class Tab extends EventEmitter {
         });
         title.on('click',function(){
             arboretum.tabs.select(thisTab);
-            console.log('select tab');
         });
 
         // Subscribing on own events
