@@ -24,7 +24,7 @@ var DOMState = function(options) {
 	this._inlineStyle = '';
 	this.children = [];
 	this._self_initialized = this.initialize().then(_.bind(function() {
-		log.debug('DOM state ' + this.getId() + ' initialized');
+		//log.debug('DOM state ' + this.getId() + ' initialized');
 	}, this)).catch(function(err) {
 		if(!err.expected) {
 			log.error(err.message);
@@ -36,7 +36,7 @@ var DOMState = function(options) {
 	//this._self_initialized._node = this.node;
 	//this._updateChildrenInitializedPromise();
 	//this._initialized = Promise.all([this._self_initialized, this._children_initialized]);
-	log.debug('=== CREATED DOM STATE', this.getId(), ' ====');
+	//log.debug('=== CREATED DOM STATE', this.getId(), ' ====');
 };
 
 (function(My) {
@@ -254,7 +254,7 @@ var DOMState = function(options) {
 		});
 		this.emit('destroyed');
 		this._destroyed = true;
-		log.debug('=== DESTROYED DOM STATE', this.getId(), ' ====');
+		//log.debug('=== DESTROYED DOM STATE', this.getId(), ' ====');
 	};
 
 	proto.getId = function() {
@@ -263,6 +263,7 @@ var DOMState = function(options) {
 	};
 
 	proto._setChildren = function(children) {
+                log.debug('parent',this.getId());
 		_.each(this.children, function(child) {
 			if(children.indexOf(child) < 0) {
 				child.destroy();
@@ -273,9 +274,14 @@ var DOMState = function(options) {
 		//this._updateChildrenInitializedPromise();
 
 		_.each(this.children, function(child) {
+                          console.log('child to emit',child.getId());
 			child.setParent(this);
 		}, this);
-
+                console.log('childrenChanged',this.getId());
+                if (this.getId() === 60) {
+                     Error.stackTraceLimit = Infinity;
+                     console.log(new Error().stack);
+                }
 		this.emit('childrenChanged', {
 			children: children
 		});
@@ -477,7 +483,7 @@ var DOMState = function(options) {
 						myError.expected = true;
 						reject(myError);
 					} else if(err) {
-						reject(new Error('Could not find node ' + id));
+						//reject(new Error('Could not find node ' + id));
 					} else {
 						resolve(value.inlineStyle);
 					}
@@ -556,6 +562,9 @@ var DOMState = function(options) {
 		for(var i = 0; i<level; i++) {
 			str += '  ';
 		}
+                var node = this._getNode(),
+			type = node.nodeType,
+			id = node.nodeId;
 		str += this._stringifySelf();
 		var childFrame = this.getChildFrame();
 
@@ -563,13 +572,12 @@ var DOMState = function(options) {
 			str += ' ('+childFrame.getFrameId()+')';
 		}
 		console.log(str);
-
-		if(childFrame) {
-			childFrame.print(level+1);
-		}
 		_.each(this.getChildren(), function(child) {
 			child.print(level+1);
 		});
+		/*if(childFrame) {
+			childFrame.print(level+1);
+		}*/
 
 		return this;
 	};

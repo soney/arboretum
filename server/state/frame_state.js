@@ -12,6 +12,7 @@ var FrameState = function(options) {
 
 	this.chrome = chrome;
 	this.options = options;
+        this.setMainFrameExecuted = false;
 
 	this._domParent = false;
 	this._nodeMap = {};
@@ -22,7 +23,7 @@ var FrameState = function(options) {
 	this.eventManager = new EventManager(chrome, this);
 
 	this._resourceTracker = new ResourceTracker(chrome, this, options.resources);
-	log.debug('=== CREATED FRAME STATE', this.getFrameId(), ' ====');
+	console.log('=== CREATED FRAME STATE', this.getFrameId(), ' ====');
 };
 
 (function(My) {
@@ -32,6 +33,15 @@ var FrameState = function(options) {
 	proto.executionContextCreated = function(context) {
 		this._executionContext = context;
 	};
+
+        proto.getSetMainFrameExecuted = function() {
+                return this.setMainFrameExecuted;
+        };
+        
+        proto.setSetMainFrameExecuted = function(val) {
+               console.log(val);
+               this.setMainFrameExecuted = val;
+        };
 
 	proto.getFrameStack = function() {
 		var frame = this;
@@ -68,6 +78,7 @@ var FrameState = function(options) {
 	};
 
 	proto.refreshRoot = function() {
+                 console.log(new Error().stack);
 		var page = this.getPage();
 		this._markRefreshingRoot(true);
 		return page._getDocument().then(_.bind(function(doc) {
@@ -80,8 +91,13 @@ var FrameState = function(options) {
 		var eventType = eventInfo.type,
 			event = eventInfo.event,
 			promise = eventInfo.promise;
-
-		var val = this[eventType](event);
+                        // console.log('handleevent',eventType);
+                if (eventType === 'documentUpdated') {
+                   console.log('documentupdated queued event');
+		   var val = this[eventType](event);
+                } else {
+                   var val = this[eventType](event);
+                } 
 		promise.doResolve(val);
 		return val;
 	};
@@ -152,8 +168,8 @@ var FrameState = function(options) {
 			});
 			return promise;
 		} else {
-			log.debug('Document Updated');
-			this.refreshRoot();
+			console.log('Document Updated');
+			this.refreshRoot();  
 			return true;
 		}
 	};
@@ -323,7 +339,7 @@ var FrameState = function(options) {
 			}, this);
 
 			if(hasAnyNode) {
-				log.debug('Inline Style Invalidated');
+				//log.debug('Inline Style Invalidated');
 			}
 			return hasAnyNode;
 		}
@@ -383,9 +399,10 @@ var FrameState = function(options) {
 		return this.options.parentFrame;
 	};
 
-	proto.setRoot = function(rootNode) {
+	proto.setRoot = function(rootNode){ //smfe goes for set main frame executed
 		var oldRoot = this.getRoot();
 		if(oldRoot) {
+                        console.log('setroot oldroot');
 			oldRoot.destroy();
 		}
 		if(rootNode) {
@@ -395,9 +412,20 @@ var FrameState = function(options) {
 
 			var page = this.getPage();
 			page.requestChildNodes(rootNode.nodeId, -1);
+                        //console.log('setroot rootnode',new Error().stack);
+                        var smfe = this.getSetMainFrameExecuted();
+                        this.setSetMainFrameExecuted(false);
+                        console.log('smfe',smfe);
+                        var destroy;
+                        if (smfe) {
+                          console.log('true !!!');
+			  destroy = false;
+                        } else {
+                          console.log('null !!!');
+                          destroy = true;
+                        }
 
-			this.emit('rootInvalidated', this);
-
+			this.emit('rootInvalidated', destroy);
 			this._markRefreshingRoot(false);
 		}
 		return this._root;
@@ -408,6 +436,7 @@ var FrameState = function(options) {
 	};
 
 	proto._markRefreshingRoot = function(val) {
+                // console.log(val,new Error().stack);
 		if(val) {
 			this._refreshingRoot = true;
 		} else {
@@ -415,6 +444,7 @@ var FrameState = function(options) {
 
 			while(this._queuedEvents.length > 0) {
 				var queuedEvent = this._queuedEvents.shift();
+                               // console.log('queuedEvent');
 				this._handleQueuedEvent(queuedEvent);
 			}
 		}
