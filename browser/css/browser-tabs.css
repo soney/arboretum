@@ -17,7 +17,7 @@
     -webkit-app-region: drag;
 
     color: #777;
-    height: 25px;
+    height: 23px;
     box-sizing: border-box;
 }
 
@@ -83,8 +83,8 @@
 }
 
 .tab-img {
-    height: 20px;
-    width: 20px;
+    height: 18px;
+    max-width: 28px;
     margin: 2px;
     margin-right: 0px;
 }

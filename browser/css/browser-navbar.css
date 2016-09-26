@@ -38,6 +38,7 @@ input#url {
     color: #808080;
     outline: 0;
     background: #FFF;
+    font-weight: lighter;
 }
 
 input#url:focus {
