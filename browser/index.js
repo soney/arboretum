@@ -30,12 +30,12 @@ module.exports = function(options) {
         }
     });
     ipcMain.on('New-Window',function(event,arg){
-         newWindow = new BrowserWindow({
+         newWindow = new BrowserWindow({ // TODO: use shared set of options with on'ready' below
                 width: options.width,
                 height: options.height,
                 icon: __dirname + '/resources/logo/icon.png',
-                titleBarStyle: 'hidden',
-				frame: false,
+                titleBarStyle: 'hidden', // hides title bar
+				frame: false,            // removes default frame
 				title: 'Arboretum',
 				minWidth: 350,
 				minHeight: 250
