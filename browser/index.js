@@ -1,4 +1,5 @@
 var _ = require('underscore');
+var os = require('os');
 module.exports = function(options) {
     options = _.extend({
         'remote-debugging-port': 9222,
@@ -13,13 +14,14 @@ module.exports = function(options) {
     const app = electron.app;  // Module to control application life.
     const BrowserWindow = electron.BrowserWindow;  // Module to create native browser window.
     const ipcMain = electron.ipcMain;
+    var isMac = /^dar/.test(os.platform());
+    var frame = true;
     app.commandLine.appendSwitch('remote-debugging-port', options['remote-debugging-port']+'');
 
     // Keep a global reference of the window object, if you don't, the window will
     // be closed automatically when the JavaScript object is garbage collected.
     var mainWindow = null;
     var newWindow = null;
-
 
     // Quit when all windows are closed.
     app.on('window-all-closed', function() {
@@ -52,6 +54,9 @@ module.exports = function(options) {
     return new Promise(function(resolve, reject) {
         // This method will be called when Electron has finished
         // initialization and is ready to create browser windows.
+        if (isMac) {
+            frame = false;
+        }
         app.on('ready', function() {
             // Create the browser window.
             mainWindow = new BrowserWindow({
@@ -59,7 +64,7 @@ module.exports = function(options) {
                 height: options.height,
                 icon: __dirname + '/resources/logo/icon.png',
                 titleBarStyle: 'hidden',
-				frame: false,
+                                frame: frame,
 				title: 'Arboretum',
 				minWidth: 350,
 				minHeight: 250
