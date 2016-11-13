@@ -163,6 +163,10 @@ $.widget('arboretum.tree_node', {
 					toAddAfter;
 				$.each(childElements, function(i, elem) {
 					var tree_node = $(elem).data('arboretum-tree_node');
+                                        if (tree_node == undefined) {
+                                            tree_node = $(elem).data('arboretum-tree_node_placeholder');
+                                            //console.log("tree_node_placeholder",tree_node);
+                                        }
 					if(tree_node === previousChild) {
 						toAdddIndex = i;
 						toAddAfter = $(elem);
@@ -171,6 +175,7 @@ $.widget('arboretum.tree_node', {
 				if(toAdddIndex >= 0) {
 					toAddAfter.after(childElem);
 				} else {
+                                        console.log('previousChild',previousChild.getId());
 					throw new Error('Could not find node');
 				}
 			} else if(this.initialChildren.length > 0) {
