@@ -229,7 +229,6 @@ var currentLeader = null;
 		var domTree = this._getDomTree(),
 			socket = this._getSocket();
 		if(this._shadowTree && destroy) {
-                        console.log('destroy!!!!!');
 			this._shadowTree.destroy();
 		}
 		var node = domTree.getRoot();

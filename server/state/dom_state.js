@@ -263,7 +263,6 @@ var DOMState = function(options) {
 	};
 
 	proto._setChildren = function(children) {
-                log.debug('parent',this.getId());
 		_.each(this.children, function(child) {
 			if(children.indexOf(child) < 0) {
 				child.destroy();
@@ -274,14 +273,8 @@ var DOMState = function(options) {
 		//this._updateChildrenInitializedPromise();
 
 		_.each(this.children, function(child) {
-                        //   console.log('child to emit',child.getId());
 			child.setParent(this);
 		}, this);
-                // console.log('childrenChanged',this.getId());
-                if (this.getId() === 60) {
-                     Error.stackTraceLimit = Infinity;
-                     console.log(new Error().stack);
-                }
 		this.emit('childrenChanged', {
 			children: children
 		});
@@ -515,20 +508,20 @@ var DOMState = function(options) {
 	proto._stringifySelf = function() {
 		var MAX_TEXT_LENGTH = 50;
 		var node = this._getNode(),
-			type = node.nodeType,
-			id = node.nodeId;
+			type = this.getNodeType(),
+			id = this.getId();
 		if(type === NODE_CODE.DOCUMENT_NODE) {
-			return '(' + id + ') ' + node.nodeName;
+			return '(' + id + ') ' + this.getNodeName();
 		} else if(type === NODE_CODE.TEXT_NODE) {
-			var text = node.nodeValue.replace(/(\n|\t)/gi, '');
+			var text = this.getNodeValue().replace(/(\n|\t)/gi, '');
 			if(text.length > MAX_TEXT_LENGTH) {
 				text = text.substr(0, MAX_TEXT_LENGTH) + '...';
 			}
 			return '(' + id + ') text: ' + text;
 		} else if(type === NODE_CODE.DOCUMENT_TYPE_NODE) {
-			return '(' + id + ') <' + node.nodeName + '>';
+			return '(' + id + ') <' + this.getNodeName() + '>';
 		} else if(type === NODE_CODE.ELEMENT_NODE) {
-			var text = '(' + id + ') <' + node.nodeName;
+			var text = '(' + id + ') <' + this.getNodeName();
 			var attributesMap = this.getAttributesMap();
 			var style = this.getInlineStyle();
 			if(style) {
@@ -544,7 +537,7 @@ var DOMState = function(options) {
 			return text;
 		} else if(type === NODE_CODE.COMMENT_NODE) {
 			var text = '(' + id + ') <!-- ';
-			text += node.nodeValue.replace(/(\n|\t)/gi, '');
+			text += this.getNodeValue().replace(/(\n|\t)/gi, '');
 			if(text.length > MAX_TEXT_LENGTH) {
 				text = text.substr(0, MAX_TEXT_LENGTH) + '...';
 			}
@@ -555,6 +548,20 @@ var DOMState = function(options) {
 		}
 		return 'node';
 	};
+	proto.serialize = function() {
+		var nodeType = this.getNodeType();
+		var rv = {
+			type: nodeType,
+			name: this.getNodeName(),
+			value: this.getNodeValue(),
+			attributes: this.getAttributesMap(),
+			children: _.map(this.getChildren(), function(child) {
+				return child.serialize();
+			}),
+			inlineStyle: this.getInlineStyle()
+		};
+		return rv;
+	};
 
 	proto.print = function(level) {
 		var str = '';
@@ -562,9 +569,9 @@ var DOMState = function(options) {
 		for(var i = 0; i<level; i++) {
 			str += '  ';
 		}
-                var node = this._getNode(),
-			type = node.nodeType,
-			id = node.nodeId;
+        var node = this._getNode(),
+		type = node.nodeType,
+		id = node.nodeId;
 		str += this._stringifySelf();
 		var childFrame = this.getChildFrame();
 

@@ -23,7 +23,7 @@ var FrameState = function(options) {
 	this.eventManager = new EventManager(chrome, this);
 
 	this._resourceTracker = new ResourceTracker(chrome, this, options.resources);
-	console.log('=== CREATED FRAME STATE', this.getFrameId(), ' ====');
+	log.debug('=== CREATED FRAME STATE', this.getFrameId(), ' ====');
 };
 
 (function(My) {
@@ -34,14 +34,13 @@ var FrameState = function(options) {
 		this._executionContext = context;
 	};
 
-        proto.getSetMainFrameExecuted = function() {
-                return this.setMainFrameExecuted;
-        };
+    proto.getSetMainFrameExecuted = function() {
+        return this.setMainFrameExecuted;
+    };
 
-        proto.setSetMainFrameExecuted = function(val) {
-               console.log(val);
-               this.setMainFrameExecuted = val;
-        };
+    proto.setSetMainFrameExecuted = function(val) {
+		this.setMainFrameExecuted = val;
+    };
 
 	proto.getFrameStack = function() {
 		var frame = this;
@@ -77,8 +76,11 @@ var FrameState = function(options) {
 		this.getRoot().print(level);
 	};
 
+	proto.serialize = function() {
+		return this.getRoot().serialize()
+	};
+
 	proto.refreshRoot = function() {
-                 console.log(new Error().stack);
 		var page = this.getPage();
 		this._markRefreshingRoot(true);
 		return page._getDocument().then(_.bind(function(doc) {
@@ -91,13 +93,12 @@ var FrameState = function(options) {
 		var eventType = eventInfo.type,
 			event = eventInfo.event,
 			promise = eventInfo.promise;
-                        // console.log('handleevent',eventType);
-                if (eventType === 'documentUpdated') {
-                   console.log('documentupdated queued event');
+
+        if (eventType === 'documentUpdated') {
 		   var val = this[eventType](event);
-                } else {
-                   var val = this[eventType](event);
-                }
+        } else {
+           var val = this[eventType](event);
+        }
 		promise.doResolve(val);
 		return val;
 	};
@@ -411,18 +412,15 @@ var FrameState = function(options) {
 
 			var page = this.getPage();
 			page.requestChildNodes(rootNode.nodeId, -1);
-                        //console.log('setroot rootnode',new Error().stack);
-                        var smfe = this.getSetMainFrameExecuted();
-                        this.setSetMainFrameExecuted(false);
-                        console.log('smfe',smfe);
-                        var destroy;
-                        if (smfe) {
-                          console.log('true !!!');
+            //console.log('setroot rootnode',new Error().stack);
+            var smfe = this.getSetMainFrameExecuted();
+            this.setSetMainFrameExecuted(false);
+            var destroy;
+            if (smfe) {
 			  destroy = false;
-                        } else {
-                          console.log('null !!!');
-                          destroy = true;
-                        }
+            } else {
+              destroy = true;
+            }
 
 			this.emit('rootInvalidated', destroy);
 			this._markRefreshingRoot(false);

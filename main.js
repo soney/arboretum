@@ -7,7 +7,7 @@ var repl = require('repl'),
 	startChromium = require('./browser/index'),
 	replServer;
 
-log.setLevel('error');
+log.setLevel('debug');
 
 return startChromium().then(function(options) {
     var rdp = options['remote-debugging-port'];

@@ -100,7 +100,7 @@ var ShadowDOM = function(options) {
                          type: '_childAdded',
                          promise: promise
                     });
-                } else { 
+                } else {
 		    var child = info.child,
 			previousNode = info.previousNode,
 			toAdd,
@@ -213,7 +213,7 @@ var ShadowDOM = function(options) {
                          type: '_childrenChanged',
                          promise: promise
                     });
-                } else { 
+                } else {
 		    log.debug('Children changed ' + this.getId());
 		    var children = info.children;
 		    this._updateChildren(children);
@@ -316,15 +316,12 @@ var ShadowDOM = function(options) {
 		var eventType = eventInfo.type,
 			info = eventInfo.info;
 			promise = eventInfo.promise;
-                if ((eventType == '_childAdded' || eventType == '_childRemoved')) {
-                          console.log('handleevent',eventType,info.child.getId());
-                }
-                if (info) {
-                   var val = this[eventType](info);
-                } else {
-                   var val = this[eventType]();
-                }
-  
+        if (info) {
+           var val = this[eventType](info);
+        } else {
+           var val = this[eventType]();
+        }
+
 		promise.doResolve(val);
 		return val;
 	};
@@ -340,10 +337,8 @@ var ShadowDOM = function(options) {
         proto.ChildInitialized = function () {
             if (this.numChildrenInit < this.children.length) {
                 this.numChildrenInit++;
-                console.log(this.getId(),"child Initialized!");
             }
             if (this.numChildrenInit == this.children.length) {
-                console.log(this.getId(),"children Initialized!!!");
                 this.ExecuteQueuedEvents();
             }
         };
@@ -463,7 +458,7 @@ var ShadowDOM = function(options) {
                     var promise = getResolvablePromise();
                     var info = {};
                     info['type'] = type;
-                    info['value'] = value; 
+                    info['value'] = value;
                     this._queuedEvents.push({
                          info: info,
                          type: '_valueUpdated',

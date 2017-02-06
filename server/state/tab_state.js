@@ -5,6 +5,7 @@ var _ = require('underscore'),
 	FrameState = require('./frame_state').FrameState;
 var log = require('../../utils/logging').getColoredLogger('yellow');
 
+
 var TabState = function(tabId, chrome) {
 	this.chrome = chrome;
 	this._tabId = tabId;
@@ -20,6 +21,7 @@ var TabState = function(tabId, chrome) {
 (function(My) {
 	util.inherits(My, EventEmitter);
 	var proto = My.prototype;
+
 
 
 	proto.navigate = function(url) {
@@ -352,6 +354,12 @@ var TabState = function(tabId, chrome) {
 
 	proto.print = function() {
 		return this._rootFrame.print();
+	};
+	proto.serialize = function() {
+		return this._rootFrame.serialize()
+	};
+	proto.stringify = function() {
+		return JSON.stringify(this.serialize());
 	};
 	proto.summarize = function() {
 		return this._rootFrame.summarize();

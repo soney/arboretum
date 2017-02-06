@@ -1,5 +1,5 @@
-var _ = require('underscore');
-var os = require('os');
+const _ = require('underscore');
+const os = require('os');
 module.exports = function(options) {
     options = _.extend({
         'remote-debugging-port': 9222,
@@ -8,6 +8,7 @@ module.exports = function(options) {
     }, options);
 
     const electron = require('electron');
+
     //const ipc = require('ipc');
     //const {app} = electron;
     //const {BrowserWindow} = electron;
