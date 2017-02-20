@@ -20,8 +20,8 @@ class Tab extends EventEmitter {
         let emit = _.bind(this.emit, this);
         let title = $('<span />', {text: 'New Tab', class: 'tab-title'});
         let icon = $('<span />', {class: 'tab-icon'});
-        this.closeButton = $('<span />', {class:'closeTab'});
-        this.closeIcon = $('<i />', {class: 'fa fa-close'}).appendTo(this.closeButton);
+        this.closeButton = $('<span />', {class:'icon icon-cancel icon-close-tab'});
+        // this.closeIcon = $('<i />', {class: 'fa fa-close'}).appendTo(this.closeButton);
         let webView = $('<webview />', {src: 'http://osu.edu/',id:'wv'+tabNum});
         let thisTab = this;
         let expecting = false;
@@ -30,14 +30,14 @@ class Tab extends EventEmitter {
         let lastURL = null;
         this.RefId = null;
         this.TabId = tabNum;
-        this.tab = $('<li />', {class: 'tab',id: 'li'+tabNum});
+        this.tab = $('<div />', {class: 'tab-item', id: 'li'+tabNum});
         // this.tabLink = $('<a />', {class: 'clickableTab', href: '#tab'+tabNum});
         this.content = $('<div />', {id: 'tab'+tabNum, class:'tab_content unselected'}).appendTo(arboretum.tabs.root).append(webView);
         this.webView = webView;
 
         // this.tabLink.append(icon, title);
         this.tab.append(icon, title, this.closeButton);
-        arboretum.tabs.tabsRow.append(this.tab);
+        arboretum.tabs.addTab.before(this.tab);
 
         this.closeButton.on('click',function(){
             $('#tab'+thisTab.TabId).remove();
@@ -52,9 +52,8 @@ class Tab extends EventEmitter {
                var NewSelectedTab = T[tmp];
                arboretum.tabs.select(NewSelectedTab);
             }
-            arboretum.tabs.resize();
         });
-        title.on('click',function(){
+        this.tab.on('click',function(){
             arboretum.tabs.select(thisTab);
         });
 

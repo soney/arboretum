@@ -1,7 +1,7 @@
 #buttonSpacer {
     width: 70px;
-    border-bottom: 1px solid #AAA;
-    background: linear-gradient(to bottom, #BBB 80%, #AAA);
+    /*border-bottom: 1px solid #AAA;*/
+    /*background: linear-gradient(to bottom, #BBB 80%, #AAA);*/
 }
 
 #tabsBar {
@@ -17,26 +17,24 @@
     -webkit-app-region: drag;
 
     color: #777;
-    height: 23px;
+    /*height: 23px;*/
     box-sizing: border-box;
 }
 
 #tabsBar #addTab {
     display: inline-block;
     margin: 0;
-    padding: 5px 10px;
-    border-bottom: 1px solid #AAA;
     background: linear-gradient(to bottom, #BBB 80%, #AAA);
 }
 
-#tabsBar #addTab:hover {
+/*#tabsBar #addTab:hover {
     color: #fff;
     background: rgb(99, 190, 229);
 }
 
 #addTab i {
     font-size: 12.5px
-}
+}*/
 
 #tabs {
     display: flex;
@@ -86,12 +84,13 @@
     height: 18px;
     max-width: 28px;
     margin: 2px;
-    margin-right: 0px;
+    margin-right: 2px;
+    display: none;
 }
 
 .tab-title {
-    flex: 1;
-    padding: 5px 0px 4px 3px;
+    /*flex: 1;*/
+    /*padding: 5px 0px 4px 3px;*/
 }
 
 .closeTab {

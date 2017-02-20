@@ -11,7 +11,7 @@ class URLBar {
         this.forwardButton = $('#forward', this.navBar);
         this.refreshStop = $('#reload', this.navBar);
         this.urlInput = $('#url', this.navBar);
-        this.requestButton = $('#request', this.navBar);
+        this.requestButton = $('#task', this.navBar);
 
         var webView = $('#wv');
 
