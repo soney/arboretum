@@ -48,32 +48,37 @@ class URLBar {
         });
 
         this.requestButton.on('click', _.bind(function(event) {
-            var oldRequestWindows = $('.requestWindow');
-            if(oldRequestWindows.length > 0) {
-                oldRequestWindows.remove();
+            var scriptBar = $('#script_bar');
+
+            if(scriptBar.hasClass('visible')) {
+                scriptBar.removeClass('visible');
             } else {
-                var webView = $('<webview/>', {src: 'http://localhost:3000/o', class:'requestWindow'});
-                this.navBar.css({
-                    position: 'relative'
-                });
-                webView.appendTo(this.navBar)
-                        .css({
-                            position: 'absolute',
-                            left: '15px',
-                            top: '20px',
-                            width: '400px',
-                            height: '200px',
-                            border: '1px solid #555',
-                            'box-shadow': '0px 0px 15px #222',
-                            opacity: 0.98
-                        });
+                scriptBar.addClass('visible');
             }
+            //
+            // var oldRequestWindows = $('.requestWindow');
+            // if(oldRequestWindows.length > 0) {
+            //     oldRequestWindows.remove();
+            // } else {
+            //     var webView = $('<webview/>', {src: 'http://localhost:3000/o', class:'requestWindow'});
+            //     this.navBar.css({
+            //         position: 'relative'
+            //     });
+            //     webView.appendTo(this.navBar)
+            //             .css({
+            //                 position: 'absolute',
+            //                 left: '15px',
+            //                 top: '20px',
+            //                 width: '400px',
+            //                 height: '200px',
+            //                 border: '1px solid #555',
+            //                 'box-shadow': '0px 0px 15px #222',
+            //                 opacity: 0.98
+            //             });
+            // }
         }, this));
     }
 }
-
-$(function() {
-});
 /*
 
 function onLoad() {
