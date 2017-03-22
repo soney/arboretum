@@ -9,6 +9,7 @@
         <script type='text/javascript' src='js/tabs.js'></script>
         <script type='text/javascript' src='js/task_bar.js'></script>
         <script type='text/javascript' src='js/url_bar.js'></script>
+        <script type='text/javascript' src='js/sidebar.js'></script>
         <script type='text/javascript' src='js/main.js'></script>
 
         <!-- <link rel="stylesheet" type="text/css" href="style.css" /> -->
@@ -44,7 +45,10 @@
             </header>
             <div class="window-content">
                 <div class="pane-group">
-                    <div class="pane-sm sidebar" id='script_bar'>...</div>
+                    <div class="pane-sm sidebar" id='script_bar'>
+                        <button id="start_script">Start Script</button>
+                        <input type="text" id="script_url"></input>
+                    </div>
                     <div class="pane">
                         <div id="content">
                             <!--<webview id='wv' autosize="on" src="http://umich.edu" style="display:inline-flex;"></webview>-->
