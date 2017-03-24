@@ -29,13 +29,13 @@ function getIPAddress() {
   });
 }
 
-function getMyShortcut() {
+function getMyShortcut(path) {
   return getIPAddress().then(function(ip) {
     var myLink = url.format({
       protocol: 'http',
       hostname: ip,
       port: 3000,
-      pathname: '/'
+      pathname: path || '/'
     });
     return getShortcut(myLink)
   }).then(function(result) {
@@ -49,9 +49,55 @@ function getMyShortcut() {
 }
 
 $(function(){
-  $('#start_script').on('click', function() {
-    getMyShortcut().then(function(url) {
-      $('#script_url').val(url);
-    });
+  $('.sidebar .toggle').toggles({
+    clicker:$('.switch_label'),
+    width: 50
+  }).on('toggle', function(event, isActive) {
+    if(isActive) { startServer(); }
+    else { stopServer(); }
   });
+
+  new Clipboard('#admin_copy');
+  new Clipboard('#share_copy');
+  $('.copy_area input').on('click', function(event) {
+    const target = $(event.target);
+    target.select();
+    // if(!target.is(":focus")) {
+    // }
+  });
+  $('#chat-box').on('keydown', function(event) {
+    if(event.keyCode == 13) {
+      $('#chat-form').submit();
+      event.preventDefault();
+    }
+  });
+  $('#chat-form').on('submit', function(event) {
+    sendCurrentTextMessage();
+    event.preventDefault();
+  });
+  // $('#start_script').on('click', function() {
+  // });
 });
+
+function sendCurrentTextMessage() {
+  var message = $('#chat-box').val();
+  $('#chat-box').val('');
+  if(message) {
+    console.log('send', message);
+  }
+}
+
+function startServer() {
+    getMyShortcut().then(function(url) {
+      $('#share_url').val(url.replace('http://', '')).prop('disabled', false);
+    });
+    getMyShortcut('/o').then(function(url) {
+      $('#admin_url').val(url.replace('http://', '')).prop('disabled', false);
+    });
+}
+
+function stopServer() {
+  $('#share_url').val('').prop('disabled', true);
+  $('#admin_url').val('').prop('disabled', true);
+}
+

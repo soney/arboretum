@@ -1,0 +1,67 @@
+table#server-controls .nav-group-title {
+    padding: 0px;
+}
+table#server-controls td {
+    padding-left: 5px;
+    padding-right: 0px;
+    text-align: center;
+    margin: auto;
+}
+table#server-controls tr:active {
+    color: inherit;
+    background-color: inherit;
+    /* color: #fff; */
+    /* background-color: #116cd6; */
+}
+#chat-box {
+    resize: vertical;
+}
+
+#chat-form {
+    border-top: 1px solid #EEE;
+    padding: 10px;
+}
+#chat-form .form-actions {
+    text-align: right;
+}
+
+.copy_area input{
+    background-color: #FAFAFA;
+    border: 1px solid #CCC;
+    padding:2px;
+    font-size: 0.9em;
+    text-align: center;
+    width: 100px;
+}
+.copy_area .icon {
+    cursor: pointer;
+    color: #AAA;
+}
+.copy_area .icon:hover {
+    cursor: pointer;
+    color: #999;
+}
+
+.chat_messages {
+    padding: 10px;
+    flex-grow: 2;
+    overflow-y: auto;
+    overflow-x: hidden;
+    word-wrap: break-word;
+    /*order: 1;*/
+}
+
+.sidebar {
+    width: 350px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat_user {
+    font-weight: bold;
+    color: navy;
+}
+.chat_user::after {
+    content: ": ";
+}

@@ -5,7 +5,9 @@
         <title>arboretumInternal</title>
         <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=no">
 
+        <script type='text/javascript' src='bower_components/clipboard/dist/clipboard.min.js'></script>
         <script type='text/javascript' src='js/tab.js'></script>
+        <script type='text/javascript' src='jquery-toggles-master/toggles.js'></script>
         <script type='text/javascript' src='js/tabs.js'></script>
         <script type='text/javascript' src='js/task_bar.js'></script>
         <script type='text/javascript' src='js/url_bar.js'></script>
@@ -15,8 +17,11 @@
         <!-- <link rel="stylesheet" type="text/css" href="style.css" /> -->
         <link rel="stylesheet" type="text/css" href="css/browser.css" />
         <link rel="stylesheet" type="text/css" href="css/browser-tabs.css" />
+        <link rel="stylesheet" type="text/css" href="css/browser-sidebar.css" />
         <link rel="stylesheet" type="text/css" href="css/browser-navbar.css" />
         <!-- <link rel="stylesheet" type="text/css" href="bower_components/font-awesome/css/font-awesome.min.css" /> -->
+        <link rel="stylesheet" type="text/css" href="jquery-toggles-master/css/toggles-full.css" />
+        <link rel="stylesheet" type="text/css" href="jquery-toggles-master/css/themes/toggles-modern.css" />
         <link rel="stylesheet" type="text/css" href="photon-0.1.2-dist/css/photon.min.css" />
     </head>
     <body>
@@ -45,9 +50,75 @@
             </header>
             <div class="window-content">
                 <div class="pane-group">
-                    <div class="pane-sm sidebar" id='script_bar'>
-                        <button id="start_script">Start Script</button>
-                        <input type="text" id="script_url"></input>
+                    <div class="sidebar" id='script_bar'>
+                        <table id="server-controls">
+                            <tr>
+                                <td>
+                                    <h5 class="nav-group-title">Server</h5>
+                                </td>
+                                <td>
+                                    <h5 class="nav-group-title">Share URL</h5>
+                                </td>
+                                <td>
+                                    <h5 class="nav-group-title">Admin URL</h5>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div type="checkbox" class="toggle toggle-modern"></div>
+                                </td>
+                                <td class="copy_area">
+                                    <input id="share_url" value="" disabled="true"/>
+                                    <span data-clipboard-target="#share_url" id="share_copy" class="icon icon-clipboard"></span>
+                                </td>
+                                <td class="copy_area">
+                                    <input id="admin_url" value="" disabled="true"/>
+                                    <span data-clipboard-target="#admin_url" id="admin_copy" class="icon icon-clipboard"></span>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <div class="chat_messages">
+                            <div class="chat_message">
+                                <span class="chat_user">Person 1</span>
+                                <span class="chat_message">Hello world</span>
+                            </div>
+                            <div class="chat_message">
+                                <span class="chat_user">Person 1</span>
+                                <span class="chat_message">Hello world</span>
+                            </div>
+                            <div class="chat_message">
+                                <span class="chat_user">Person 1</span>
+                                <span class="chat_message">Hello world</span>
+                            </div>
+                            <div class="chat_message">
+                                <span class="chat_user">Person 1</span>
+                                <span class="chat_message">Hello world</span>
+                            </div>
+                            <div class="chat_message">
+                                <span class="chat_user">Person 1</span>
+                                <span class="chat_message">Hello world</span>
+                            </div>
+                            <div class="chat_message">
+                                <span class="chat_user">Person 1</span>
+                                <span class="chat_message">Hello world</span>
+                            </div>
+                            <div class="chat_message">
+                                <span class="chat_user">Person 1</span>
+                                <span class="chat_message">Hello world</span>
+                            </div>
+                            <div class="chat_message">
+                                <span class="chat_user">Person 1</span>
+                                <span class="chat_message">Hello world</span>
+                            </div>
+                        </div>
+
+                        <form id="chat-form">
+                            <textarea id="chat-box" class="form-control" rows="2" placeholder="Send a message"></textarea>
+                            <div class="form-actions">
+                                <button class="btn btn-primary" type="submit" id="send_message">Send</button>
+                            </div>
+                        </form>
                     </div>
                     <div class="pane">
                         <div id="content">
