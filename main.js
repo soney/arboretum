@@ -9,9 +9,9 @@ var repl = require('repl'),
 
 log.setLevel('debug');
 
-return startChromium().then(function(options) {
-    var rdp = options['remote-debugging-port'];
-    return startServer(rdp);
+startChromium().then(function(options) {
+    // var rdp = options['remote-debugging-port'];
+    // return startServer(rdp);
 });
 function startServer(chromePort) {
 	var BrowserState = require('./server/state/browser_state'),

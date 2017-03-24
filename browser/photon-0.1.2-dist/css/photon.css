@@ -122,9 +122,9 @@ th {
 }
 
 * {
-  cursor: default;
-  -webkit-user-drag: text;
-  -webkit-user-select: none;
+  /*cursor: default;*/
+  /*-webkit-user-drag: text;*/
+  /*-webkit-user-select: none;*/
   -webkit-box-sizing: border-box;
   box-sizing: border-box;
 }
@@ -200,7 +200,7 @@ h6 {
 
 .window-content {
   position: relative;
-  overflow-y: auto;
+  overflow-y: none;
   display: flex;
   flex: 1;
 }

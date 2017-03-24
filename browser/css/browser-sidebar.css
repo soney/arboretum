@@ -1,3 +1,6 @@
+table#server-controls {
+    flex-shrink: 0;
+}
 table#server-controls .nav-group-title {
     padding: 0px;
 }
@@ -13,13 +16,18 @@ table#server-controls tr:active {
     /* color: #fff; */
     /* background-color: #116cd6; */
 }
+table#server-controls #control_content td {
+    padding-bottom: 10px;
+}
+
 #chat-box {
     resize: vertical;
+    flex-grow: 1;
 }
 
 #chat-form {
-    border-top: 1px solid #EEE;
     padding: 10px;
+    flex-shrink: 0;
 }
 #chat-form .form-actions {
     text-align: right;
@@ -31,7 +39,7 @@ table#server-controls tr:active {
     padding:2px;
     font-size: 0.9em;
     text-align: center;
-    width: 100px;
+    width: 90px;
 }
 .copy_area .icon {
     cursor: pointer;
@@ -42,13 +50,30 @@ table#server-controls tr:active {
     color: #999;
 }
 
-.chat_messages {
+#chat-lines {
     padding: 10px;
     flex-grow: 2;
     overflow-y: auto;
     overflow-x: hidden;
     word-wrap: break-word;
+    margin: 0px;
+    border-top: 1px solid #EEE;
+    border-bottom: 1px solid #EEE;
+    white-space: pre-line;
     /*order: 1;*/
+}
+
+.chat-line {
+    list-style-type: none;
+    margin-top: 2px;
+    padding-top: 2px;
+    margin-bottom: 2px;
+    padding-bottom: 2px;
+    border-bottom: 1px solid #EEE;
+    color: #555;
+}
+.chat-line.command {
+    color: #AAA;
 }
 
 .sidebar {
@@ -58,10 +83,25 @@ table#server-controls tr:active {
     flex-direction: column;
 }
 
-.chat_user {
+#chat-lines .from {
     font-weight: bold;
     color: navy;
 }
-.chat_user::after {
+#chat-lines .from::after {
     content: ": ";
+}
+
+#task_title {
+    color: #999;
+    padding: 10px;
+    margin: 0px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    flex-shrink: 0;
+}
+#task-name {
+    padding-left: 5px;
+}
+#browser-pane {
+    border-left: none;
 }

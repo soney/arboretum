@@ -22,7 +22,7 @@
         <!-- <link rel="stylesheet" type="text/css" href="bower_components/font-awesome/css/font-awesome.min.css" /> -->
         <link rel="stylesheet" type="text/css" href="jquery-toggles-master/css/toggles-full.css" />
         <link rel="stylesheet" type="text/css" href="jquery-toggles-master/css/themes/toggles-modern.css" />
-        <link rel="stylesheet" type="text/css" href="photon-0.1.2-dist/css/photon.min.css" />
+        <link rel="stylesheet" type="text/css" href="photon-0.1.2-dist/css/photon.css" />
     </head>
     <body>
         <div class="window">
@@ -42,15 +42,17 @@
                             <button class = 'btn btn-default btn-mini' id='back'><span class='icon icon-left-open-big'></span></button>
                             <button class = 'btn btn-default btn-mini' id='forward'><span class='icon icon-right-open-big'></span></button>
                         </div>
-                        <button class = 'btn btn-default btn-mini' id='reload'><span class='icon icon-ccw'></span></button>
-                        <button class = 'btn btn-default btn-mini' id='task'><span class='icon icon-publish'></span></button>
+                        <div class="btn-group">
+                            <button class = 'btn btn-default btn-mini' id='reload'><span class='icon icon-ccw'></span></button>
+                            <button class = 'btn btn-default btn-mini' id='task'><span class='icon icon-publish'></span></button>
+                        </div>
                     </div>
                     <input class="" id='url' type="text" placeholder="Enter URL or Term to Search" flex />
                 </div>
             </header>
             <div class="window-content">
                 <div class="pane-group">
-                    <div class="sidebar" id='script_bar'>
+                    <div class="sidebar" style='display: none' id='script_bar'>
                         <table id="server-controls">
                             <tr>
                                 <td>
@@ -62,8 +64,11 @@
                                 <td>
                                     <h5 class="nav-group-title">Admin URL</h5>
                                 </td>
+                                <td>
+                                    <h5 class="nav-group-title">MTurk</h5>
+                                </td>
                             </tr>
-                            <tr>
+                            <tr id="control_content">
                                 <td>
                                     <div type="checkbox" class="toggle toggle-modern"></div>
                                 </td>
@@ -75,52 +80,21 @@
                                     <input id="admin_url" value="" disabled="true"/>
                                     <span data-clipboard-target="#admin_url" id="admin_copy" class="icon icon-clipboard"></span>
                                 </td>
+                                <td>
+                                    <button id="mturk_post" class='btn btn-default'><span class="icon icon-upload-cloud"></span>&nbsp;Post</button>
+                                </td>
                             </tr>
                         </table>
-
-                        <div class="chat_messages">
-                            <div class="chat_message">
-                                <span class="chat_user">Person 1</span>
-                                <span class="chat_message">Hello world</span>
-                            </div>
-                            <div class="chat_message">
-                                <span class="chat_user">Person 1</span>
-                                <span class="chat_message">Hello world</span>
-                            </div>
-                            <div class="chat_message">
-                                <span class="chat_user">Person 1</span>
-                                <span class="chat_message">Hello world</span>
-                            </div>
-                            <div class="chat_message">
-                                <span class="chat_user">Person 1</span>
-                                <span class="chat_message">Hello world</span>
-                            </div>
-                            <div class="chat_message">
-                                <span class="chat_user">Person 1</span>
-                                <span class="chat_message">Hello world</span>
-                            </div>
-                            <div class="chat_message">
-                                <span class="chat_user">Person 1</span>
-                                <span class="chat_message">Hello world</span>
-                            </div>
-                            <div class="chat_message">
-                                <span class="chat_user">Person 1</span>
-                                <span class="chat_message">Hello world</span>
-                            </div>
-                            <div class="chat_message">
-                                <span class="chat_user">Person 1</span>
-                                <span class="chat_message">Hello world</span>
-                            </div>
-                        </div>
-
+                        <h6 id="task_title"><span class="icon icon-chat"></span><span id='task-name'>Chat</span></h6>
+                        <ul id="chat-lines"></ul>
                         <form id="chat-form">
                             <textarea id="chat-box" class="form-control" rows="2" placeholder="Send a message"></textarea>
-                            <div class="form-actions">
+                            <!-- <div class="form-actions">
                                 <button class="btn btn-primary" type="submit" id="send_message">Send</button>
-                            </div>
+                            </div> -->
                         </form>
                     </div>
-                    <div class="pane">
+                    <div id="browser-pane" class="pane">
                         <div id="content">
                             <!--<webview id='wv' autosize="on" src="http://umich.edu" style="display:inline-flex;"></webview>-->
                         </div>
