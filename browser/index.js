@@ -83,7 +83,10 @@ module.exports = function(options) {
                 // when you should delete the corresponding element.
                 mainWindow = null;
             });
-            resolve(options);
+            resolve({
+                mainWindow: mainWindow,
+                options: options
+            });
         });
     });
 };

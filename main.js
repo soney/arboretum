@@ -9,10 +9,30 @@ var repl = require('repl'),
 
 log.setLevel('debug');
 
-startChromium().then(function(options) {
-    // var rdp = options['remote-debugging-port'];
-    // return startServer(rdp);
+startChromium().then(function(info) {
+	const {options, mainWindow} = info;
+	var server, io;
+	mainWindow.on('startServer', function(event) {
+	    var rdp = options['remote-debugging-port'];
+	    startServer(rdp).then(function(info) {
+			server = info.server;
+			io = info.io;
+			log.debug('Started server on port ' + rdp);
+		});
+	}).on('stopServer', function(event) {
+		if(server) {
+			stopServer(server, io).then(function() {
+				log.debug('Stopped server');
+			});
+		}
+	});
+}).catch(function(err) {
+	console.error(err);
 });
+// .then(function(options) {
+//     var rdp = options['remote-debugging-port'];
+//     return startServer(rdp);
+// });
 function startServer(chromePort) {
 	var BrowserState = require('./server/state/browser_state'),
 		webServer = require('./client/client_web_server');
@@ -22,14 +42,24 @@ function startServer(chromePort) {
 	var browserState = new BrowserState({
 		port: chromePort
 	});
-	return webServer.createWebServer(browserState).then(function(port) {
-		return {
-			clientPort: port,
-			browser: browserState
-		};
-	}).catch(function(err) {
+	return webServer.createWebServer(browserState).catch(function(err) {
 		console.error(err.stack);
 	});
+}
+
+function stopServer(server, io) {
+	var ioClosePromise = new Promise(function(resolve, reject) {
+		io.close(function(err, result) {
+			if(err) { reject(err); }
+			else { resolve(result); }
+		});
+	}), serverClosePromise = new Promise(function(resolve, reject) {
+		server.close(function(err, result) {
+			if(err) { reject(err); }
+			else { resolve(result); }
+		});
+	});
+	return Promise.all([ioClosePromise, serverClosePromise]);
 }
 /*
 		return startChrome({

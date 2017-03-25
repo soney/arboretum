@@ -85,101 +85,106 @@ module.exports = {
 								//pageState.requestResource('favicon.ico');
 							//})
 							.listen(PORT, function() {
-								resolve(PORT);
+								resolve(server);
 							});
-
-			var io = socket(server);
-			var shadowBrowsers = {}
-			var tasks = {};
-			function getTask(taskId) {
-				if(!taskId) {
-					taskId = 'default';
-				}
-
-				var task = tasks[taskId];
-				if(task) {
-					return task;
-				} else {
-					return tasks[taskId] =  new Task({
-						browserState: browserState,
-						taskId: taskId
-					});
-				}
-
-				task.on('setDescription', function(event) {
-					var description = event.value,
-						oldDescripton = event.old,
-						oldTask = tasks[description];
-					if(oldTask) {
-						task.setScriptRecorder(oldTask.getScriptRecorder());
-						if(oldTask.isDone()) {
-							task.markAsDone();
-						}
-					}
-					tasks[description] = tasks[oldDescripton];
-					delete tasks[oldDescripton];
-				});
-				return task;
-			}
-			io.on('connection', function (socket) {
-				socket.once('scriptReady', function(clientOptions) {
-					var task = getTask(clientOptions.taskId);
-
-					var scriptServer = new ScriptServer({
-						socket: socket,
-						browserState: browserState,
-						task: task,
-						tasks: tasks
-					});
-					socket.once('disconnect', function() {
-						scriptServer.destroy();
-					});
-				});
-
-				socket.once('clientReady', function(clientOptions) {
-					var shadowBrowser;
-					var task = getTask(clientOptions.taskId);
-
-					if(clientOptions.frameId) {
-						shadowBrowser = shadowBrowsers[clientOptions.userId];
-					} else { // is the root
-						shadowBrowser = new ShadowBrowser({
-											browserState: browserState,
-											socket: socket,
-											clientOptions: clientOptions,
-											task: task
-										});
-						shadowBrowsers[clientOptions.userId] = shadowBrowser;
-
-						shadowBrowser.on('nodeReply', function(info) {
-							var outputBrowsers = _	.chain(shadowBrowsers)
-													.values()
-													.filter(function(browser) {
-														return browser.isOutput()
-													})
-													.value();
-							_.each(outputBrowsers, function(browser) {
-								browser.setVisibleElements(info.nodeIds);
-							});
-						});
+			}).then(function(server) {
+				var io = socket(server);
+				var shadowBrowsers = {}
+				var tasks = {};
+				function getTask(taskId) {
+					if(!taskId) {
+						taskId = 'default';
 					}
 
-					if(shadowBrowser) {
-						shadowBrowser.addClient(_.extend({
-							socket: socket
-						}, clientOptions)).then(function(shadow) {
-							socket.once('disconnect', function() {
-								shadow.destroy();
-							});
-						}).catch(function(err) {
-							console.error(err);
-							console.error(err.stack);
-						});
+					var task = tasks[taskId];
+					if(task) {
+						return task;
 					} else {
-						console.error('Seeking browser for non-user');
+						return tasks[taskId] =  new Task({
+							browserState: browserState,
+							taskId: taskId
+						});
 					}
+
+					task.on('setDescription', function(event) {
+						var description = event.value,
+							oldDescripton = event.old,
+							oldTask = tasks[description];
+						if(oldTask) {
+							task.setScriptRecorder(oldTask.getScriptRecorder());
+							if(oldTask.isDone()) {
+								task.markAsDone();
+							}
+						}
+						tasks[description] = tasks[oldDescripton];
+						delete tasks[oldDescripton];
+					});
+					return task;
+				}
+				io.on('connection', function (socket) {
+					socket.once('scriptReady', function(clientOptions) {
+						var task = getTask(clientOptions.taskId);
+
+						var scriptServer = new ScriptServer({
+							socket: socket,
+							browserState: browserState,
+							task: task,
+							tasks: tasks
+						});
+						socket.once('disconnect', function() {
+							scriptServer.destroy();
+						});
+					});
+
+					socket.once('clientReady', function(clientOptions) {
+						var shadowBrowser;
+						var task = getTask(clientOptions.taskId);
+
+						if(clientOptions.frameId) {
+							shadowBrowser = shadowBrowsers[clientOptions.userId];
+						} else { // is the root
+							shadowBrowser = new ShadowBrowser({
+												browserState: browserState,
+												socket: socket,
+												clientOptions: clientOptions,
+												task: task
+											});
+							shadowBrowsers[clientOptions.userId] = shadowBrowser;
+
+							shadowBrowser.on('nodeReply', function(info) {
+								var outputBrowsers = _	.chain(shadowBrowsers)
+														.values()
+														.filter(function(browser) {
+															return browser.isOutput()
+														})
+														.value();
+								_.each(outputBrowsers, function(browser) {
+									browser.setVisibleElements(info.nodeIds);
+								});
+							});
+						}
+
+						if(shadowBrowser) {
+							shadowBrowser.addClient(_.extend({
+								socket: socket
+							}, clientOptions)).then(function(shadow) {
+								socket.once('disconnect', function() {
+									shadow.destroy();
+								});
+							}).catch(function(err) {
+								console.error(err);
+								console.error(err.stack);
+							});
+						} else {
+							console.error('Seeking browser for non-user');
+						}
+					});
 				});
-			});
+				return {
+					server: server,
+					io: io,
+					port: PORT
+				};
 		});
 	}
 };
