@@ -13,6 +13,7 @@ class Arboretum {
         this.taskBar = new TaskBar();
         this.tabs = new Tabs();
         this.urlBar = new URLBar();
+        this.sidebar = new Sidebar();
 
         this.listen();
         // this.tabs.createNew('https://www.nytimes.com/', true);

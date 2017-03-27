@@ -39,9 +39,10 @@ startChromium().then(function(info) {
 //     var rdp = options['remote-debugging-port'];
 //     return startServer(rdp);
 // });
-var browserState;
+var browserState, chatServer;
 function startServer(chromePort) {
 	var BrowserState = require('./server/state/browser_state'),
+		ChatServer = require('./server/chat'),
 		webServer = require('./client/client_web_server');
 
 	var chrome, doc, port;
@@ -49,6 +50,7 @@ function startServer(chromePort) {
 	browserState = new BrowserState({
 		port: chromePort
 	});
+	chatServer = new ChatServer();
 	return webServer.createWebServer(browserState).catch(function(err) {
 		console.error(err.stack);
 	});
@@ -57,6 +59,7 @@ function startServer(chromePort) {
 function stopServer(server, io) {
 	server.close();
 	io.close();
+	chatServer.destroy();
 	return browserState.destroy();
 }
 /*

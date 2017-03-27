@@ -11,7 +11,7 @@ var express = require('express'),
 require('ssl-root-cas').inject();
 
 module.exports = {
-	createWebServer: function(browserState) {
+	createWebServer: function(browserState, chatServer) {
 		var app = express(),
 			PORT = 3000;
 
