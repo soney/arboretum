@@ -3,26 +3,32 @@ var repl = require('repl'),
 	_ = require('underscore'),
 	//reload = require('require-reload')(require),
 	exec = child_process.exec,
-	log = require('./utils/logging'),
+	log = require('./utils/logging').getColoredLogger('white'),
 	startChromium = require('./browser/index'),
 	replServer;
 
-log.setLevel('debug');
+// log.setLevel('debug');
 
 startChromium().then(function(info) {
 	const {options, mainWindow} = info;
 	var server, io;
-	mainWindow.on('startServer', function(event) {
+	mainWindow.on('startServer', function(reply) {
 	    var rdp = options['remote-debugging-port'];
 	    startServer(rdp).then(function(info) {
 			server = info.server;
 			io = info.io;
 			log.debug('Started server on port ' + rdp);
+			reply('started');
+		}).catch(function(err) {
+			console.error(err);
 		});
-	}).on('stopServer', function(event) {
+	}).on('stopServer', function(reply) {
 		if(server) {
 			stopServer(server, io).then(function() {
 				log.debug('Stopped server');
+				reply('stopped');
+			}).catch(function(err) {
+				console.error(err);
 			});
 		}
 	});
@@ -33,13 +39,14 @@ startChromium().then(function(info) {
 //     var rdp = options['remote-debugging-port'];
 //     return startServer(rdp);
 // });
+var browserState;
 function startServer(chromePort) {
 	var BrowserState = require('./server/state/browser_state'),
 		webServer = require('./client/client_web_server');
 
 	var chrome, doc, port;
 
-	var browserState = new BrowserState({
+	browserState = new BrowserState({
 		port: chromePort
 	});
 	return webServer.createWebServer(browserState).catch(function(err) {
@@ -48,18 +55,9 @@ function startServer(chromePort) {
 }
 
 function stopServer(server, io) {
-	var ioClosePromise = new Promise(function(resolve, reject) {
-		io.close(function(err, result) {
-			if(err) { reject(err); }
-			else { resolve(result); }
-		});
-	}), serverClosePromise = new Promise(function(resolve, reject) {
-		server.close(function(err, result) {
-			if(err) { reject(err); }
-			else { resolve(result); }
-		});
-	});
-	return Promise.all([ioClosePromise, serverClosePromise]);
+	server.close();
+	io.close();
+	return browserState.destroy();
 }
 /*
 		return startChrome({

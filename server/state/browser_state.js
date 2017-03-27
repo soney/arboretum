@@ -28,8 +28,18 @@ var BrowserState = function(options) {
 	util.inherits(My, EventEmitter);
 	var proto = My.prototype;
 	proto._initialize = function() {
-		setInterval(_.bind(this._refreshTabs, this), 2000);
+		this._intervalID = setInterval(_.bind(this._refreshTabs, this), 2000);
 		return this._refreshTabs();
+	};
+	proto.destroy = function() {
+		clearInterval(this._intervalID);
+		var destroyPromises = _.map(this.getTabIds(), function(tabID) {
+			var tabState = this.getTabState(tabID);
+			return tabState.then(function(tabState) {
+				tabState.destroy();
+			});
+		}, this);
+		return Promise.all(destroyPromises);
 	};
 	proto.onDeviceEvent = function(event, tabId, frameId) {
 		this.getTabState(tabId).then(function(tabState) {

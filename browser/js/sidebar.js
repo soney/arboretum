@@ -242,7 +242,8 @@ function startServer() {
     //     $('#admin_url').val(url.replace('http://', '')).prop('disabled', false);
     // });
     remote.getCurrentWindow().emit('startServer', () => {
-        console.log('emitted');
+        const {ipcRenderer} = require('electron');
+        ipcRenderer.send('asynchronous-message','test');
     });
 }
 
