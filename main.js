@@ -13,6 +13,11 @@ const ChatServer = require('./server/chat');
 const BrowserState = require('./server/state/browser_state');
 const webServer = require('./client/client_web_server');
 
+// MTurk set-up
+
+const apiKey = 'AKIAI65DVDSHXSVPQK3Q';
+const secret = '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';
+
 // log.setLevel('debug');
 
 startChromium().then(function(info) {
@@ -39,27 +44,36 @@ startChromium().then(function(info) {
 		}
 	}).on('postHIT', function(info, reply) {
 		const {share_url} = info;
-		console.log(share_url);
         const sandbox = "1";
         
         request.post({
-            url: 'https://aws.mi2lab.com/mturk/externalQuestion',
+            url: 'http://localhost:8080/mturk/externalQuestion',
             form: {
                 apiKey: apiKey,
                 secret: secret,
                 sandbox: sandbox,
-                maxAssignments: 1,
                 url: share_url
             }
         }, function(err, httpResponse, body) {
-            var parsedData = JSON.parse(body);
-            console.log(parsedData);
-            console.log("https://" +
-                (sandbox === "1" ? "workersandbox" : "www") +
-                ".mturk.com/mturk/preview?groupId=" + parsedData.HIT[0].HITTypeId);
+            if (err) {
+                console.log(err);
+                return;
+            }
             
-            hitIds.push(parsedData.HIT[0].HITId);
-            console.log(hitIds);
+            const parsedData = JSON.parse(body);
+            
+            if (parsedData.HIT) {
+                console.log("https://" +
+                    (sandbox === "1" ? "workersandbox" : "www") +
+                    ".mturk.com/mturk/preview?groupId=" + parsedData.HIT[0].HITTypeId);
+
+                hitIds.push(parsedData.HIT[0].HITId);
+                console.log(hitIds);
+            }
+            
+            if (parsedData.err) {
+                console.log(parsedData.err);
+            }
         });
 	});
 }).catch(function(err) {
