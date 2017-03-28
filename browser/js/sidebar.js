@@ -14,6 +14,10 @@ class Sidebar {
             }
         }, this));
 
+        $('#mturk_post').on('click', _.bind(function() {
+            this.postToMTurk();
+        }, this));
+
         new Clipboard('#admin_copy');
         new Clipboard('#share_copy');
         $('.copy_area input').on('click', function(event) {
@@ -54,6 +58,12 @@ class Sidebar {
         $('#admin_url').val('').prop('disabled', true);
         clearChat();
         disableChat();
+    }
+
+    postToMTurk() {
+        remote.getCurrentWindow().emit('postHIT', _.bind(() => {
+            console.log('posted!')
+        }, this));
     }
 
     getMyShortcut(path) {

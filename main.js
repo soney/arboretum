@@ -34,6 +34,8 @@ startChromium().then(function(info) {
 				console.error(err);
 			});
 		}
+	}).on('postHIT', function(reply) {
+		console.log('do something to post!')
 	});
 }).catch(function(err) {
 	console.error(err);
