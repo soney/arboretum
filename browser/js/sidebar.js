@@ -25,8 +25,7 @@ class Sidebar {
         this.chat.disable();
     }
 
-    startServer() {
-        this.chat.enable();
+    populateShareURLs() {
         $('#share_url').val('loading...');
         $('#admin_url').val('loading...');
         this.getMyShortcut().then(function(url) {
@@ -35,10 +34,16 @@ class Sidebar {
         this.getMyShortcut('/o').then(function(url) {
             $('#admin_url').val(url.replace('http://', '')).prop('disabled', false);
         });
-        remote.getCurrentWindow().emit('startServer', () => {
+    }
+
+    startServer() {
+        this.chat.enable();
+        // this.populateShareURLs();
+        remote.getCurrentWindow().emit('startServer', _.bind(() => {
             const {ipcRenderer} = require('electron');
             ipcRenderer.send('asynchronous-message','test');
-        });
+            this.chat.connect();
+        }, this));
     }
 
     stopServer() {

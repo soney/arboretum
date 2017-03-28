@@ -6,6 +6,9 @@ var repl = require('repl'),
 	log = require('./utils/logging').getColoredLogger('white'),
 	startChromium = require('./browser/index'),
 	replServer;
+const ChatServer = require('./server/chat');
+const BrowserState = require('./server/state/browser_state');
+const webServer = require('./client/client_web_server');
 
 // log.setLevel('debug');
 
@@ -14,7 +17,7 @@ startChromium().then(function(info) {
 	var server, io;
 	mainWindow.on('startServer', function(reply) {
 	    var rdp = options['remote-debugging-port'];
-	    startServer(rdp).then(function(info) {
+	    startServer(rdp, mainWindow).then(function(info) {
 			server = info.server;
 			io = info.io;
 			log.debug('Started server on port ' + rdp);
@@ -40,18 +43,14 @@ startChromium().then(function(info) {
 //     return startServer(rdp);
 // });
 var browserState, chatServer;
-function startServer(chromePort) {
-	var BrowserState = require('./server/state/browser_state'),
-		ChatServer = require('./server/chat'),
-		webServer = require('./client/client_web_server');
-
+function startServer(chromePort, mainWindow) {
 	var chrome, doc, port;
 
 	browserState = new BrowserState({
 		port: chromePort
 	});
-	chatServer = new ChatServer();
-	return webServer.createWebServer(browserState).catch(function(err) {
+	chatServer = new ChatServer(mainWindow);
+	return webServer.createWebServer(browserState, chatServer).catch(function(err) {
 		console.error(err.stack);
 	});
 }

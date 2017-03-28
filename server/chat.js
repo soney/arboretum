@@ -1,8 +1,18 @@
 const EventEmitter = require('events').EventEmitter;
+const electron = require('electron');
+const ipcMain = electron.ipcMain;
+const _ = require('underscore');
 
 class ChatServer extends EventEmitter {
-    constructor() {
+    constructor(mainWindow) {
         super();
+        this.renderClients = []
+        this.$onIPCChatConnect = _.bind(this.onIPCChatConnect, this)
+        this.$onIPCChatLine = _.bind(this.onIPCChatLine, this)
+
+        ipcMain.on('chat-connect', this.$onIPCChatConnect)
+        ipcMain.on('chat-line', this.$onIPCChatLine);
+
         this.title = false;
         this.messages = [];
         this.participants = [];
@@ -15,8 +25,28 @@ class ChatServer extends EventEmitter {
         };
     }
 
-    destroy() {
+    onIPCChatConnect(info) {
+        this.renderClients.push(info.sender);
+    }
+    onIPCChatLine(info, event) {
+        var message = new ChatMessage(false, event.message)
+        this.messages.push(message);
+        this.notifyMessage(message);
+    }
 
+    notifyMessage(message) {
+        this.renderClients.forEach(function(client) {
+            client.send('new-message', {
+                type: 'new_message',
+                message: message.serialize()
+            });
+        });
+    }
+
+    destroy() {
+        this.renderClients = [];
+        ipcMain.off('chat-connect', this.$onIPCChatConnect)
+        ipcMain.off('chat-line', this.$onIPCChatLine);
     }
 }
 
@@ -38,7 +68,7 @@ class ChatMessage {
     }
     serialize() {
         return {
-            sender: this.sender.serialize(),
+            sender: this.sender ? this.sender.serialize() : false,
             message: this.message
         };
     }

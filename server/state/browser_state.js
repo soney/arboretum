@@ -6,8 +6,8 @@ var cri = require('chrome-remote-interface'),
 var log = require('../../utils/logging').getColoredLogger('red');
 var fileUrl = require('file-url'),
 	path = require('path'),
-        electron = require('electron'),
-        ipcMain = electron.ipcMain;
+    electron = require('electron'),
+    ipcMain = electron.ipcMain;
 var OPTION_DEFAULTS = {
 	host: 'localhost',
 	port: 9222

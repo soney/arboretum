@@ -89,6 +89,15 @@ class Chat {
         });
     }
 
+    connect() {
+        const {ipcRenderer} = require('electron');
+        ipcRenderer.send('chat-connect');
+        ipcRenderer.on('new-message', _.bind(function(event, data) {
+            const {message,sender} = data.message;
+            this.addChatMessage('Me', message);
+        }, this));
+    }
+
     addChatMessage(sender, message, options) {
         const container = $('#chat-lines');
         var at_bottom = Math.abs(container.scrollTop() + container.height() - container.prop('scrollHeight')) < 100;
@@ -156,7 +165,11 @@ class Chat {
                 var args = message.slice(spaceIndex + 1);
                 this.doCommand(command, args);
             } else {
-                this.addChatMessage('Me', message);
+                // this.addChatMessage('Me', message);
+                const {ipcRenderer} = require('electron');
+                ipcRenderer.send('chat-line', {
+                    message: message
+                });
             }
         }
     }
