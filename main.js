@@ -41,40 +41,46 @@ startChromium().then(function(info) {
 			}).catch(function(err) {
 				console.error(err);
 			});
+		} else {
+			reply('no server');
 		}
 	}).on('postHIT', function(info, reply) {
-		const {share_url} = info;
-        const sandbox = "1";
-        
-        request.post({
-            url: 'http://localhost:8080/mturk/externalQuestion',
-            form: {
-                apiKey: apiKey,
-                secret: secret,
-                sandbox: sandbox,
-                url: share_url
-            }
-        }, function(err, httpResponse, body) {
-            if (err) {
-                console.log(err);
-                return;
-            }
-            
-            const parsedData = JSON.parse(body);
-            
-            if (parsedData.HIT) {
-                console.log("https://" +
-                    (sandbox === "1" ? "workersandbox" : "www") +
-                    ".mturk.com/mturk/preview?groupId=" + parsedData.HIT[0].HITTypeId);
+		if(server) {
+			const {share_url} = info;
+			const sandbox = "1";
+			
+			request.post({
+				url: 'http://localhost:8080/mturk/externalQuestion',
+				form: {
+					apiKey: apiKey,
+					secret: secret,
+					sandbox: sandbox,
+					url: share_url
+				}
+			}, function(err, httpResponse, body) {
+				if (err) {
+					console.log(err);
+					return;
+				}
+				
+				const parsedData = JSON.parse(body);
+				
+				if (parsedData.HIT) {
+					console.log("https://" +
+						(sandbox === "1" ? "workersandbox" : "www") +
+						".mturk.com/mturk/preview?groupId=" + parsedData.HIT[0].HITTypeId);
 
-                hitIds.push(parsedData.HIT[0].HITId);
-                console.log(hitIds);
-            }
-            
-            if (parsedData.err) {
-                console.log(parsedData.err);
-            }
-        });
+					hitIds.push(parsedData.HIT[0].HITId);
+					console.log(hitIds);
+				}
+				
+				if (parsedData.err) {
+					console.log(parsedData.err);
+				}
+			});
+		} else {
+			reply('no server');
+		}
 	});
 }).catch(function(err) {
 	console.error(err);

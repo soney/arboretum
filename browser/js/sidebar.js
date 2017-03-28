@@ -32,6 +32,7 @@ class Sidebar {
     populateShareURLs() {
         $('#share_url').val('loading...');
         $('#admin_url').val('loading...');
+
         this.getMyShortcut().then(function(url) {
             $('#share_url').val(url.replace('http://', '')).prop('disabled', false);
         });
