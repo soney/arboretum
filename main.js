@@ -5,7 +5,8 @@ var repl = require('repl'),
 	exec = child_process.exec,
 	log = require('./utils/logging').getColoredLogger('white'),
 	startChromium = require('./browser/index'),
-	replServer;
+	replServer,
+    hidIds;
 const ChatServer = require('./server/chat');
 const BrowserState = require('./server/state/browser_state');
 const webServer = require('./client/client_web_server');
@@ -35,7 +36,24 @@ startChromium().then(function(info) {
 			});
 		}
 	}).on('postHIT', function(reply) {
-		console.log('do something to post!')
+        var sandbox = "1";
+        
+		$.post('https://aws.mi2lab.com/mturk/externalQuestion', {
+            apiKey: apiKey,
+            secret: secret,
+            sandbox: sandbox,
+            maxAssignments: 1,
+            url: ''
+        }, function(data) {
+            var parsedData = JSON.parse(data);
+            console.log(parsedData);
+            console.log("https://" +
+                (sandbox === "1" ? "workersandbox" : "www") +
+                ".mturk.com/mturk/preview?groupId=" + parsedData.HIT[0].HITTypeId);
+            
+            hitIds.push(parsedData.HIT[0].HITId);
+            console.log(hitIds);
+        });
 	});
 }).catch(function(err) {
 	console.error(err);
