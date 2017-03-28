@@ -1,12 +1,14 @@
 var repl = require('repl'),
 	child_process = require('child_process'),
 	_ = require('underscore'),
+    request = require('request'),
 	//reload = require('require-reload')(require),
 	exec = child_process.exec,
 	log = require('./utils/logging').getColoredLogger('white'),
 	startChromium = require('./browser/index'),
 	replServer,
     hidIds;
+	
 const ChatServer = require('./server/chat');
 const BrowserState = require('./server/state/browser_state');
 const webServer = require('./client/client_web_server');
@@ -35,17 +37,22 @@ startChromium().then(function(info) {
 				console.error(err);
 			});
 		}
-	}).on('postHIT', function(reply) {
-        var sandbox = "1";
+	}).on('postHIT', function(info, reply) {
+		const {share_url} = info;
+		console.log(share_url);
+        const sandbox = "1";
         
-		$.post('https://aws.mi2lab.com/mturk/externalQuestion', {
-            apiKey: apiKey,
-            secret: secret,
-            sandbox: sandbox,
-            maxAssignments: 1,
-            url: ''
-        }, function(data) {
-            var parsedData = JSON.parse(data);
+        request.post({
+            url: 'https://aws.mi2lab.com/mturk/externalQuestion',
+            form: {
+                apiKey: apiKey,
+                secret: secret,
+                sandbox: sandbox,
+                maxAssignments: 1,
+                url: share_url
+            }
+        }, function(err, httpResponse, body) {
+            var parsedData = JSON.parse(body);
             console.log(parsedData);
             console.log("https://" +
                 (sandbox === "1" ? "workersandbox" : "www") +
