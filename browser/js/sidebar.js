@@ -42,7 +42,7 @@ class Sidebar {
 
     startServer() {
         this.chat.enable();
-        // this.populateShareURLs();
+        this.populateShareURLs();
         remote.getCurrentWindow().emit('startServer', _.bind(() => {
             const {ipcRenderer} = require('electron');
             ipcRenderer.send('asynchronous-message','test');
