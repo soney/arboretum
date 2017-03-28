@@ -6,6 +6,7 @@ var repl = require('repl'),
 	log = require('./utils/logging').getColoredLogger('white'),
 	startChromium = require('./browser/index'),
 	replServer;
+	
 const ChatServer = require('./server/chat');
 const BrowserState = require('./server/state/browser_state');
 const webServer = require('./client/client_web_server');
@@ -34,7 +35,9 @@ startChromium().then(function(info) {
 				console.error(err);
 			});
 		}
-	}).on('postHIT', function(reply) {
+	}).on('postHIT', function(info, reply) {
+		const {share_url} = info;
+		console.log(share_url);
 		console.log('do something to post!')
 	});
 }).catch(function(err) {

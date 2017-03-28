@@ -61,7 +61,9 @@ class Sidebar {
     }
 
     postToMTurk() {
-        remote.getCurrentWindow().emit('postHIT', _.bind(() => {
+        remote.getCurrentWindow().emit('postHIT', {
+            share_url: $('#share_url').val()
+        }, _.bind(() => {
             console.log('posted!')
         }, this));
     }
