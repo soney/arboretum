@@ -9,17 +9,23 @@ class ChatServer extends EventEmitter {
         this.renderClients = []
         this.$onIPCChatConnect = _.bind(this.onIPCChatConnect, this)
         this.$onIPCChatLine = _.bind(this.onIPCChatLine, this)
+        this.$onIPCChatSetTitle = _.bind(this.onIPCChatSetTitle, this)
+        this.$onIPCChatSetVar = _.bind(this.onIPCChatSetVar, this)
 
         ipcMain.on('chat-connect', this.$onIPCChatConnect)
         ipcMain.on('chat-line', this.$onIPCChatLine);
+        ipcMain.on('chat-set-title', this.$onIPCChatSetTitle);
+        ipcMain.on('chat-set-var', this.$onIPCChatSetVar);
 
         this.title = false;
         this.messages = [];
         this.participants = [];
+		this.variables = {};
     }
     serialize() {
         return {
             title: this.title,
+			variables: this.variables,
             messages: this.messages.map(function(m) { return m.serialize(); }),
             participants: this.participants.map(function(p) { return p.serialize(); })
         };
@@ -27,26 +33,62 @@ class ChatServer extends EventEmitter {
 
     onIPCChatConnect(info) {
         this.renderClients.push(info.sender);
+		info.sender.send('connected', {
+			state: this.serialize()
+		});
     }
     onIPCChatLine(info, event) {
-        var message = new ChatMessage(false, event.message)
-        this.messages.push(message);
-        this.notifyMessage(message);
+		this.onChatLine(false, event.message);
     }
 
-    notifyMessage(message) {
+	onIPCChatSetTitle(info, event) {
+		const {value} = event;
+
+		this.title = value;
+
+		this.doNotify('chat-title-changed', {
+			value: this.title
+		});
+	}
+
+	onIPCChatSetVar(info, event) {
+		const {name, value} = event;
+
+		this.variables[name] = value;
+
+		this.doNotify('chat-var-changed', {
+			name: name,
+			value: this.variables[name]
+		});
+	}
+
+	onChatLine(sender, messageText) {
+        var message = new TextualChatMessage(sender, messageText);
+        this.messages.push(message);
+        this.notifyMessage(message);
+	}
+
+
+	doNotify(eventType, eventBody) {
         this.renderClients.forEach(function(client) {
-            client.send('new-message', {
-                type: 'new_message',
-                message: message.serialize()
-            });
+            client.send(eventType, eventBody);
         });
+		this.emit(eventType, eventBody);
+	}
+
+    notifyMessage(message) {
+		this.doNotify('chat-new-message', {
+			type: 'new_message',
+			message: message.serialize()
+		});
     }
 
     destroy() {
         this.renderClients = [];
-        ipcMain.off('chat-connect', this.$onIPCChatConnect)
-        ipcMain.off('chat-line', this.$onIPCChatLine);
+        ipcMain.removeListener('chat-connect', this.$onIPCChatConnect)
+        ipcMain.removeListener('chat-line', this.$onIPCChatLine);
+        ipcMain.removeListener('chat-set-title', this.$onIPCChatSetTitle);
+        ipcMain.removeListener('chat-set-var', this.$onIPCChatSetVar);
     }
 }
 
@@ -62,16 +104,37 @@ class ChatParticipant {
 }
 
 class ChatMessage {
-    constructor(sender, message) {
+    constructor(sender) {
         this.sender = sender;
-        this.message = message;
     }
+}
+
+class TextualChatMessage extends ChatMessage{
+	constructor(sender, message) {
+		super(sender);
+		this.message = message;
+	}
     serialize() {
         return {
+			type: 'textual',
             sender: this.sender ? this.sender.serialize() : false,
             message: this.message
         };
     }
 }
+
+class PageChatMessage extends ChatMessage{
+	constructor(sender) {
+		super(sender);
+	}
+
+    serialize() {
+        return {
+			type: 'page',
+            sender: this.sender ? this.sender.serialize() : false
+        };
+    }
+}
+
 
 module.exports = ChatServer;

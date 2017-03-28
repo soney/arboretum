@@ -43,7 +43,7 @@ class Sidebar {
 
     startServer() {
         this.chat.enable();
-        this.populateShareURLs();
+        //this.populateShareURLs();
         remote.getCurrentWindow().emit('startServer', _.bind(() => {
             const {ipcRenderer} = require('electron');
             ipcRenderer.send('asynchronous-message','test');
@@ -57,8 +57,8 @@ class Sidebar {
         });
         $('#share_url').val('').prop('disabled', true);
         $('#admin_url').val('').prop('disabled', true);
-        clearChat();
-        disableChat();
+        this.chat.clear();
+        this.chat.disable();
     }
 
     postToMTurk() {

@@ -3,12 +3,12 @@ class Chat {
         return [{
             name: 'clear',
             description: 'Clear the chat window',
-            action: _.bind(this.clearChat, this)
+            action: _.bind(this.clear, this)
         }, {
             name: 'title',
             description: 'Set the title of the task (use ampersands before variable names, like *&var*)',
             args: ['description'],
-            action: _.bind(this.setTitle, this)
+            action: _.bind(this.notifySetTitle, this)
         }, {
             name: 'help',
             description: 'Print out this message',
@@ -17,7 +17,7 @@ class Chat {
             name: 'set',
             description: 'Set a variable value',
             args: ['var', 'val'],
-            action: _.bind(this.setVar, this)
+            action: _.bind(this.notifySetVar, this)
         }];
     }
 
@@ -27,18 +27,32 @@ class Chat {
     }
     onIPCMessage(message_type, responder, context) {
         const {ipcRenderer} = require('electron');
-        return ipcRenderer.on.call(context || this, responder);
+        return ipcRenderer.on.call(ipcRenderer, message_type, _.bind(responder, context || this));
     }
 
-    notifySetVar(name, value) {
-        this.sendIPCMessage('var-set', {
+    notifySetVar(fullMessage) {
+		const trimmedMessage = fullMessage.trim();
+		var spaceIndex = trimmedMessage.search(/\s/);
+		if (spaceIndex < 0) {
+			spaceIndex = message.length;
+		}
+		const name = trimmedMessage.slice(1, spaceIndex);
+		const value = trimmedMessage.slice(spaceIndex + 1);
+		
+        this.sendIPCMessage('chat-set-var', {
             name: name,
             value: value
         });
     }
 
     setVar(name, value) {
+		console.log('set var', name, value);
+    }
 
+    notifySetTitle(title) {
+		this.sendIPCMessage('chat-set-title', {
+			value: title
+		});
     }
 
     setTitle(title) {
@@ -107,17 +121,20 @@ class Chat {
 
     connect() {
         this.sendIPCMessage('chat-connect');
-        this.onIPCMessage('new-message', function(event, data) {
-            const {message,sender} = data.message;
-            this.addChatMessage('Me', message);
+        this.onIPCMessage('chat-new-message', function(event, data) {
+			const {type} = data.message;
+			if(type == 'textual') {
+				const {message,sender} = data.message;
+				this.addChatMessage('Me', message);
+			}
         });
-        this.onIPCMessage('var-changed', function(event, data) {
+        this.onIPCMessage('chat-var-changed', function(event, data) {
             const {name, value} = data;
             this.setVar(name, value);
         });
-        this.onIPCMessage('title-changed', function(event, data) {
-            const {title} = data;
-            this.setVar(name, value);
+        this.onIPCMessage('chat-title-changed', function(event, data) {
+            const {value} = data;
+            this.setTitle(value);
         });
     }
 
@@ -130,7 +147,7 @@ class Chat {
         }
     }
 
-    clearChat() {
+    clear() {
         $('#chat-lines').children().remove();
     }
 
@@ -141,15 +158,6 @@ class Chat {
     enable() {
         $('#chat-box').prop('disabled', false).show();
         this.printCommandHelp('Commands:')
-    }
-
-    addChatMessage(sender, message, options) {
-        const container = $('#chat-lines');
-        var at_bottom = Math.abs(container.scrollTop() + container.height() - container.prop('scrollHeight')) < 100;
-        container.append(this.getChatMessageElement(sender, message, options))
-        if (at_bottom) {
-            container.scrollTop(container.prop('scrollHeight'));
-        }
     }
 
     getChatMessageElement(sender, message, options) {
@@ -165,7 +173,7 @@ class Chat {
                 class: 'from',
                 text: sender,
                 style: 'color:' + options.color + ';'
-            }))
+            }));
         }
         rv.append($('<span />', {
             class: 'message',
