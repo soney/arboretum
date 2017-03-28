@@ -21,8 +21,24 @@ class Chat {
         }];
     }
 
-    setVar(value) {
-        console.log(value);
+    sendIPCMessage() {
+        const {ipcRenderer} = require('electron');
+        return ipcRenderer.send.apply(ipcRenderer, arguments);
+    }
+    onIPCMessage(message_type, responder, context) {
+        const {ipcRenderer} = require('electron');
+        return ipcRenderer.on.call(context || this, responder);
+    }
+
+    notifySetVar(name, value) {
+        this.sendIPCMessage('var-set', {
+            name: name,
+            value: value
+        });
+    }
+
+    setVar(name, value) {
+
     }
 
     setTitle(title) {
@@ -90,12 +106,19 @@ class Chat {
     }
 
     connect() {
-        const {ipcRenderer} = require('electron');
-        ipcRenderer.send('chat-connect');
-        ipcRenderer.on('new-message', _.bind(function(event, data) {
+        this.sendIPCMessage('chat-connect');
+        this.onIPCMessage('new-message', function(event, data) {
             const {message,sender} = data.message;
             this.addChatMessage('Me', message);
-        }, this));
+        });
+        this.onIPCMessage('var-changed', function(event, data) {
+            const {name, value} = data;
+            this.setVar(name, value);
+        });
+        this.onIPCMessage('title-changed', function(event, data) {
+            const {title} = data;
+            this.setVar(name, value);
+        });
     }
 
     addChatMessage(sender, message, options) {
