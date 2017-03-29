@@ -44,7 +44,6 @@ $.widget('arboretum.chatLine', {
 		message: ''
 	},
 	_create: function() {
-		console.log('hello');
 		this._addListeners();
 	},
 	_addListeners: function() {
