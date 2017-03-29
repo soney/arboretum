@@ -7,7 +7,7 @@ var repl = require('repl'),
 	log = require('./utils/logging').getColoredLogger('white'),
 	startChromium = require('./browser/index'),
 	replServer,
-    hidIds;
+    hitIds = [];
 	
 const ChatServer = require('./server/chat');
 const BrowserState = require('./server/state/browser_state');
@@ -47,12 +47,12 @@ startChromium().then(function(info) {
         const sandbox = "1";
         
         request.post({
-            url: 'http://localhost:8080/mturk/externalQuestion',
+            url: 'https://aws.mi2lab.com/mturk/externalQuestion',
             form: {
                 apiKey: apiKey,
                 secret: secret,
                 sandbox: sandbox,
-                url: share_url
+                url: 'https://aws.mi2lab.com/mturk/arboretum/?url=' + share_url
             }
         }, function(err, httpResponse, body) {
             if (err) {
