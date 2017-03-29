@@ -69,6 +69,10 @@ $.widget('arboretum.menu', {
 		}).appendTo(this._menu)
 		.on('click', $.proxy(this._addTab, this));
 
+		this._chatRow = $('<div />', { }).appendTo(this._menu).chat({
+			socket: this.option('socket')
+		});
+
 		this._isExpanded(false);
 		this._addTabListeners();
 		this._addSocketListeners();
@@ -194,6 +198,9 @@ $.widget('arboretum.menu', {
 	},
 	_destroy: function() {
 		this._removeTabListeners();
+		if(this._chatRow.data('chat')) {
+			this._chatRow.chat('destroy');
+		}
 	}
 });
 

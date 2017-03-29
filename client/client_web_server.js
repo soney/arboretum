@@ -91,6 +91,14 @@ module.exports = {
 				var io = socket(server);
 				var shadowBrowsers = {}
 				var tasks = {};
+
+				const EVENT_TYPES = ['chat-new-message', 'chat-title-changed', 'chat-var-changed'];
+				EVENT_TYPES.forEach(function(eventType) {
+					chatServer.on(eventType, function(data) {
+						io.emit.call(io, eventType, data);
+					})
+				}, this);
+
 				function getTask(taskId) {
 					if(!taskId) {
 						taskId = 'default';

@@ -36,9 +36,9 @@ class Chat {
 		if (spaceIndex < 0) {
 			spaceIndex = message.length;
 		}
-		const name = trimmedMessage.slice(1, spaceIndex);
+		const name = trimmedMessage.slice(0, spaceIndex);
 		const value = trimmedMessage.slice(spaceIndex + 1);
-		
+
         this.sendIPCMessage('chat-set-var', {
             name: name,
             value: value

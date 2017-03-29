@@ -77,10 +77,7 @@ class ChatServer extends EventEmitter {
 	}
 
     notifyMessage(message) {
-		this.doNotify('chat-new-message', {
-			type: 'new_message',
-			message: message.serialize()
-		});
+		this.doNotify('chat-new-message', message.serialize());
     }
 
     destroy() {
