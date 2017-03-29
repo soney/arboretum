@@ -187,6 +187,10 @@ module.exports = {
 							console.error('Seeking browser for non-user');
 						}
 					});
+
+					socket.on('chat-line', function(event) {
+						chatServer.onChatLine(false, event.message);
+					});
 				});
 				return {
 					server: server,

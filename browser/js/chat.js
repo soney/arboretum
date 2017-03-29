@@ -122,9 +122,9 @@ class Chat {
     connect() {
         this.sendIPCMessage('chat-connect');
         this.onIPCMessage('chat-new-message', function(event, data) {
-			const {type} = data.message;
+			const {type} = data;
 			if(type == 'textual') {
-				const {message,sender} = data.message;
+				const {message,sender} = data;
 				this.addChatMessage('Me', message);
 			}
         });

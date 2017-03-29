@@ -7,8 +7,8 @@ var repl = require('repl'),
 	log = require('./utils/logging').getColoredLogger('white'),
 	startChromium = require('./browser/index'),
 	replServer,
-    hidIds;
-	
+    hitIds = [];
+
 const ChatServer = require('./server/chat');
 const BrowserState = require('./server/state/browser_state');
 const webServer = require('./client/client_web_server');
@@ -45,42 +45,42 @@ startChromium().then(function(info) {
 			reply('no server');
 		}
 	}).on('postHIT', function(info, reply) {
-		if(server) {
-			const {share_url} = info;
-			const sandbox = "1";
-			
-			request.post({
-				url: 'http://localhost:8080/mturk/externalQuestion',
-				form: {
-					apiKey: apiKey,
-					secret: secret,
-					sandbox: sandbox,
-					url: share_url
-				}
-			}, function(err, httpResponse, body) {
-				if (err) {
-					console.log(err);
-					return;
-				}
-				
-				const parsedData = JSON.parse(body);
-				
-				if (parsedData.HIT) {
-					console.log("https://" +
-						(sandbox === "1" ? "workersandbox" : "www") +
-						".mturk.com/mturk/preview?groupId=" + parsedData.HIT[0].HITTypeId);
+		const {share_url, sandbox} = info;
+        // const sandbox = true;
+
+        request.post({
+            url: 'https://aws.mi2lab.com/mturk/externalQuestion',
+            form: {
+                apiKey: apiKey,
+                secret: secret,
+                sandbox: sandbox ? '1' : '0',
+                url: 'https://aws.mi2lab.com/mturk/arboretum/?url=' + share_url
+            }
+        }, function(err, httpResponse, body) {
+			if(server) {
+	            if (err) {
+	                console.log(err);
+	                return;
+	            }
+
+	            const parsedData = JSON.parse(body);
+
+	            if (parsedData.HIT) {
+	                console.log("https://" +
+	                    (sandbox ? "workersandbox" : "www") +
+	                    ".mturk.com/mturk/preview?groupId=" + parsedData.HIT[0].HITTypeId);
 
 					hitIds.push(parsedData.HIT[0].HITId);
 					console.log(hitIds);
 				}
-				
+
 				if (parsedData.err) {
 					console.log(parsedData.err);
 				}
-			});
-		} else {
-			reply('no server');
-		}
+			} else {
+				reply('no server');
+			}
+		});
 	});
 }).catch(function(err) {
 	console.error(err);

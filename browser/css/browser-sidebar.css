@@ -9,6 +9,7 @@ table#server-controls td {
     padding-right: 0px;
     text-align: center;
     margin: auto;
+    vertical-align: top;
 }
 table#server-controls tr:active {
     color: inherit;
@@ -19,6 +20,12 @@ table#server-controls tr:active {
 table#server-controls #control_content td {
     padding-bottom: 10px;
 }
+
+table#server-controls label {
+    margin-bottom: 0px;
+    padding-bottom: 0px;
+}
+
 
 #chat-box {
     resize: vertical;
