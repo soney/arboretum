@@ -170,6 +170,7 @@ module.exports = {
 									browser.setVisibleElements(info.nodeIds);
 								});
 							});
+							chatServer.onSocketChatConnect(socket);
 						}
 
 						if(shadowBrowser) {
@@ -187,7 +188,6 @@ module.exports = {
 							console.error('Seeking browser for non-user');
 						}
 					});
-					chatServer.onSocketChatConnect(socket);
 				});
 				return {
 					server: server,

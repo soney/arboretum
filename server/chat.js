@@ -15,7 +15,7 @@ class ChatServer extends EventEmitter {
         this.participants = [];
 		this.variables = {};
 
-        this.addAutomatedParticipant('Arbi', '&#129302;');
+        this.arbi = this.addAutomatedParticipant('Arbi', '&#129302;');
     }
     serialize() {
         return {
@@ -26,9 +26,25 @@ class ChatServer extends EventEmitter {
         };
     }
 
+    addParticipant(participant) {
+        this.participants.push(participant);
+		this.doNotify('chat-participants-changed', {
+            participants: this.participants.map(function(p) { return p.serialize(); })
+        });
+    }
+    removeParticipant(participant) {
+        const participantIndex = this.participants.indexOf(participant);
+        if(participantIndex >= 0) {
+            this.participants.splice(participantIndex, 1);
+        }
+		this.doNotify('chat-participants-changed', {
+            participants: this.participants.map(function(p) { return p.serialize(); })
+        });
+    }
+
     addAutomatedParticipant(name, avatar) {
         const participant = new AutomatedChatParticipant(this, name, avatar);
-        this.participants.push(participant);
+        this.addParticipant(participant);
         participant.on('chat-line', _.bind(this.onChatLine, this));
         participant.on('chat-page', _.bind(this.onChatPage, this));
         return participant;
@@ -36,7 +52,7 @@ class ChatServer extends EventEmitter {
 
     addIPCParticipant(client) {
         const participant = new IPCChatParticipant(this, this.getLocalName(), this.getLocalAvatar(), client);
-        this.participants.push(participant);
+        this.addParticipant(participant);
         participant.on('chat-line', _.bind(this.onChatLine, this));
         participant.on('chat-set-title', _.bind(this.onSetTitle, this));
         participant.on('chat-set-var', _.bind(this.onSetVar, this));
@@ -48,7 +64,7 @@ class ChatServer extends EventEmitter {
 
     addSocketParticipant(socket) {
         const participant = new SocketChatParticipant(this, this.getRemoteName(), this.getRemoteAvatar(), socket)
-        this.participants.push(participant);
+        this.addParticipant(participant);
         participant.on('chat-line', _.bind(this.onChatLine, this));
         participant.on('chat-set-name', _.bind(this.onSetName, this));
         participant.on('chat-page', _.bind(this.onChatPage, this));
@@ -65,14 +81,12 @@ class ChatServer extends EventEmitter {
     }
 
     getLocalAvatar() { return '&#129312;'; }
-    getRemoteAvatar() { return '&#128566;'; }
+    getRemoteAvatar() { return '&#128100;'; }
+    // getRemoteAvatar() { return '&#128566;'; }
 
     onChatDisconnect(participant) {
         participant.destroy();
-        const participantIndex = this.participants.indexOf(participant);
-        if(participantIndex >= 0) {
-            this.participants.splice(participantIndex, 1);
-        }
+        this.removeParticipant(participant);
     }
 
     onSocketChatConnect(socket) {
@@ -97,21 +111,23 @@ class ChatServer extends EventEmitter {
 		this.doNotify('chat-new-message', message.serialize());
 	}
 
-    onSetTitle(title) {
+    onSetTitle(participant, title) {
         this.title = title;
 
 		this.doNotify('chat-title-changed', {
 			value: this.title
 		});
+        this.arbi.say(participant.handle + ' changed the title to "' + this.title + '"');
     }
 
-    onSetVar(name, value) {
+    onSetVar(participant, name, value) {
 		this.variables[name] = value;
 
 		this.doNotify('chat-var-changed', {
 			name: name,
 			value: this.variables[name]
 		});
+        this.arbi.say(participant.handle + ' set ' + name + ' to ' + this.variables[name]);
     }
 
     onSetName(client, newName) {
@@ -122,6 +138,11 @@ class ChatServer extends EventEmitter {
             oldName: oldName,
             name: newName
         });
+		this.doNotify('chat-participants-changed', {
+            participants: this.participants.map(function(p) { return p.serialize(); })
+        });
+
+        this.arbi.say(oldName + ' is now ' + newName);
     }
 
 
@@ -167,9 +188,6 @@ class ChatParticipant extends EventEmitter {
 class AutomatedChatParticipant extends ChatParticipant {
     constructor(chatServer, handle, avatar) {
         super(chatServer, handle, avatar);
-        setInterval(_.bind(function() {
-            this.sendPagePortion();
-        }, this), 4000);
     }
     notifyClient(eventType, contents) { }
 
@@ -223,13 +241,13 @@ class IPCChatParticipant extends ChatParticipant {
 
 	onChatSetTitle(info, event) {
         if(info.sender === this.client) {
-            this.emit('chat-set-title', event.value);
+            this.emit('chat-set-title', this, event.value);
         }
     }
 
 	onChatSetVar(info, event) {
         if(info.sender === this.client) {
-            this.emit('chat-set-var', event.name, event.value);
+            this.emit('chat-set-var', this, event.name, event.value);
         }
 	}
 
@@ -258,11 +276,11 @@ class SocketChatParticipant extends ChatParticipant {
     }
 
     addListeners() {
-		this.socket.once('chat-client-ready', _.bind(function() {
+		this.socket.on('chat-client-ready', _.bind(function() {
 			this.socket.emit('chat-connected', this.server.serialize());
 		}, this));
 
-        this.socket.once('disconnect', _.bind(function() {
+        this.socket.on('disconnect', _.bind(function() {
             this.emit('chat-disconnect', this);
         }, this));
 

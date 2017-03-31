@@ -56,10 +56,7 @@ class Chat {
     }
 
     setVar(name, value) {
-		this.sendIPCMessage('chat-set-var', {
-            name: name,
-            value: value
-		});
+        console.log(name, value);
     }
     setName(name) {
 		this.sendIPCMessage('chat-set-name', {
@@ -91,10 +88,7 @@ class Chat {
             return name;
         });
         var commandDescriptionString = starterLine + '\n' + commandDescriptions.join('\n');
-        // this.addChatMessage('🤖 Arbi', commandDescriptionString, {
-        //     color: '#307f8c'
-        // });
-        this.addChatMessage(false, commandDescriptionString, {
+        this.addTextualChatMessage(false, commandDescriptionString, {
             class: 'command'
         });
     }
@@ -103,7 +97,7 @@ class Chat {
         var matchingCommands = _.filter(this.COMMANDS, function(c) {
             return c.name.toUpperCase() === command.toUpperCase();
         });
-        this.addChatMessage(false, '/' + command + ' ' + args, {
+        this.addTextualChatMessage(false, '/' + command + ' ' + args, {
             class: 'command'
         });
         if (matchingCommands.length === 0) {
@@ -146,28 +140,60 @@ class Chat {
 			const {type, sender} = data;
 			if(type == 'textual') {
 				const {message} = data;
-				this.addChatMessage(sender, message);
+				this.addTextualChatMessage(sender, message);
+			} else if(type == 'page') {
+                const {snippetID} = data;
+                this.addPageChatMessage(sender, snippetID);
 			} else {
                 console.log(data);
             }
         });
         this.removeVarChangedListener = this.onIPCMessage('chat-var-changed', function(event, data) {
             const {name, value} = data;
-            this.setVar(name, value);
         });
         this.removeChatTitleChangedListener = this.onIPCMessage('chat-title-changed', function(event, data) {
             const {value} = data;
             this.setTitle(value);
         });
+
+        this.removeChatParticipantsChangedListener = this.onIPCMessage('chat-participants-changed', function(event, data) {
+            const {participants} = data;
+            this.setParticipants(participants);
+        });
     }
 
-    addChatMessage(sender, message, options) {
+    setParticipants(participants) {
+		var participantElements = _.map(participants, function(p) {
+			return $('<span />').html(p.avatar+'&nbsp;')
+            .append(p.handle)
+            .addClass('chat-avatar')
+            .attr({
+                title: p.handle
+            });
+		})
+        const chatParticipants = $('#chat-participants');
+		chatParticipants.children().remove();
+		chatParticipants.append.apply(chatParticipants, participantElements);
+    }
+
+    addChatMessage(element) {
         const container = $('#chat-lines');
         var at_bottom = Math.abs(container.scrollTop() + container.height() - container.prop('scrollHeight')) < 100;
-        container.append(this.getChatMessageElement(sender, message, options))
+        container.append(element);
         if (at_bottom) {
             container.scrollTop(container.prop('scrollHeight'));
         }
+    }
+
+    addTextualChatMessage(sender, message, options) {
+        const element = this.getTextualChatMessageElement(sender, message, options);
+        this.addChatMessage(element);
+    }
+
+    addPageChatMessage(sender, snippetID, options) {
+        const href = snippetID;
+        const element = this.getPageChatMessageElement(sender, href, options);
+        this.addChatMessage(element);
     }
 
     clear() {
@@ -176,6 +202,7 @@ class Chat {
 
     disable() {
         $('#chat-box').val('').prop('disabled', true).hide();
+        this.setParticipants([]);
         if(this.removeChatMessageListener) {
             this.removeChatMessageListener();
         }
@@ -185,6 +212,9 @@ class Chat {
         if(this.removeChatTitleChangedListener) {
             this.removeChatTitleChangedListener();
         }
+        if(this.removeChatParticipantsChangedListener) {
+             this.removeChatParticipantsChangedListener()
+        }
         this.sendIPCMessage('chat-disconnect');
     }
 
@@ -193,29 +223,62 @@ class Chat {
         this.printCommandHelp('Commands:')
     }
 
-    getChatMessageElement(sender, message, options) {
+    getSenderElements(sender, options) {
+        var rv = [];
         options = _.extend({
-            class: '',
             color: ''
         }, options);
-        var rv = $('<li />', {
-            class: 'chat-line ' + options.class
-        });
-        if (sender) {
+        if(sender) {
             if(sender.avatar) {
-                rv.append($('<span />', {
+                rv.push($('<span />', {
                     html: sender.avatar + "&nbsp;"
                 }));
             }
-            rv.append($('<span />', {
+            rv.push($('<span />', {
                 class: 'from',
                 text: sender.handle,
                 style: 'color:' + options.color + ';'
             }));
         }
+        return rv;
+    }
+
+    getTextualChatMessageElement(sender, message, options) {
+        options = _.extend({
+            class: ''
+        }, options);
+
+        var rv = $('<li />', {
+            class: 'chat-line ' + options.class
+        });
+
+        var senderElements = this.getSenderElements(sender, options);
+        rv.append.apply(rv, senderElements);
+
         rv.append($('<span />', {
             class: 'message',
             html: Chat.mdify(message)
+        }));
+        return rv;
+    }
+
+    getPageChatMessageElement(sender, href, options) {
+        options = _.extend({
+            class: ''
+        }, options);
+
+        var rv = $('<li />', {
+            class: 'chat-line ' + options.class
+        });
+
+        var senderElements = this.getSenderElements(sender, options);
+        rv.append.apply(rv, senderElements);
+
+        rv.append($('<iframe />', {
+            attr: {
+                src: href,
+                class: 'snippet'
+            },
         }));
         return rv;
     }

@@ -57,6 +57,12 @@ table#server-controls label {
     color: #999;
 }
 
+.chat-avatar {
+    /*font-size: 2em;*/
+    cursor: default;
+    padding: 3px;
+}
+
 #chat-lines {
     padding: 10px;
     flex-grow: 2;
@@ -81,6 +87,11 @@ table#server-controls label {
 }
 .chat-line.command {
     color: #AAA;
+}
+
+.chat-line .snippet {
+    border: 1px solid #AAA;
+    width: 100%;
 }
 
 .sidebar {

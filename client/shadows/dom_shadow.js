@@ -411,13 +411,11 @@ var ShadowDOM = function(options) {
 			if(parent) {
 				var state = this._getState();
 				if(state.sentServerReady()) {
-					console.log('socket emit Initialized ' + this.getId(),new Date().getTime());
 					socket.emit('nodeInitialized', this.serialize());
                                         parent.ChildInitialized();
                                         this.ExecuteQueuedEvents();
 				}
 			} else {
-				console.log('Server ready ' + this.getId());
 				socket.emit('serverReady', this.serialize());
                                 this.ExecuteQueuedEvents();
 			}

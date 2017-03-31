@@ -1,12 +1,17 @@
 $.widget('arboretum.menu', {
 	options: {
 		state: false,
-		background: 'rgb(0, 55, 118)',
-		radius: '3px',
+		background: '#00274c',
+		radius: '2px',
 		socket: false
 	},
 	_create: function() {
-		this.container = $('<div />').css({
+		this.container = $('<div />', {
+			attr: {
+				id: 'arboretum_menu_icon',
+				class: 'arboretum_menu_hidden'
+			}
+		}).css({
 			right: '5px',
 			top: '5px',
 			position: 'fixed',
@@ -17,9 +22,8 @@ $.widget('arboretum.menu', {
 			src: 'images/icon.png'
 		}).css({
 			float: 'right',
-			height: '25px',
+			height: '20px',
 			cursor: 'pointer',
-			padding: '3px',
 			opacity: 0.3
 		}).appendTo(this.container)
 		.on('mouseover', $.proxy(this._onMenuMouseover, this))
@@ -30,7 +34,10 @@ $.widget('arboretum.menu', {
 		}).css({
 			'background-color': this.option('background'),
 			'border-radius': this.option('radius'),
-			'font-size': '8pt'
+			padding: '3px',
+			'font-size': '8pt',
+			border: '1px solid #111',
+			'box-shadow': '0px 0px 15px #111'
 		}).appendTo(this.container);
 
 		this._addressRow = $('<div />', {
@@ -71,11 +78,16 @@ $.widget('arboretum.menu', {
 
 		this._chatRow = $('<div />', { }).appendTo(this._menu).chat({
 			socket: this.option('socket')
+		}).css({
+			'border-top': '1px solid rgb(58, 142, 237)'
 		});
 
 		this._isExpanded(false);
 		this._addTabListeners();
 		this._addSocketListeners();
+		if(window.arborMenuVisible) {
+			this._expand();
+		}
 	},
 	_addSocketListeners: function() {
 		var socket = this.option('socket');
@@ -171,8 +183,12 @@ $.widget('arboretum.menu', {
 		if(this._isExpanded()) {
 			this._menu.show();
 			this._addressBar.select().focus();
+			this.container.removeClass('arboretum_menu_hidden');
+			this.container.addClass('arboretum_menu_visible');
 		} else {
 			this._menu.hide();
+			this.container.removeClass('arboretum_menu_visible');
+			this.container.addClass('arboretum_menu_hidden');
 		}
 	},
 	_isExpanded: function(val) {
@@ -192,9 +208,11 @@ $.widget('arboretum.menu', {
 			}
 		}, this);
 		this._isExpanded(true);
+		window.arborMenuVisible = true;
 	},
 	_collapse: function() {
 		this._isExpanded(false);
+		window.arborMenuVisible = false;
 	},
 	_destroy: function() {
 		this._removeTabListeners();
