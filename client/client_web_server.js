@@ -11,9 +11,9 @@ var express = require('express'),
 require('ssl-root-cas').inject();
 
 module.exports = {
-	createWebServer: function(browserState, chatServer) {
-		var app = express(),
-			PORT = 3000;
+	createWebServer: function(browserState, chatServer, PORT) {
+		var app = express();
+		PORT = PORT || 3000;
 
 		return new Promise(function(resolve, reject) {
 			var server = app.all('/', function(req, res, next) {
@@ -187,10 +187,7 @@ module.exports = {
 							console.error('Seeking browser for non-user');
 						}
 					});
-
-					socket.on('chat-line', function(event) {
-						chatServer.onChatLine(false, event.message);
-					});
+					chatServer.onSocketChatConnect(socket);
 				});
 				return {
 					server: server,

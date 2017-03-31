@@ -294,22 +294,20 @@ var ShadowDOM = function(options) {
 	};
 
         proto.ExecuteQueuedEvents = function() {
-                console.log('queuedEvents.lenght=',this._queuedEvents.length);
-                var tmp = [];
-                while(this._queuedEvents.length > 0) {
-		      var queuedEvent = this._queuedEvents.shift();
-                               console.log('queuedEvent');
-                      if ((queuedEvent.type == '_childAdded' || queuedEvent.type == '_childRemoved') && !this.ChildrenInitialized()) {
-                          console.log('handleevent',queuedEvent.type,queuedEvent.info.child.getId(),"not executed yet");
-                          tmp.push (queuedEvent);
-                      } else {
-		          this._handleQueuedEvent(queuedEvent);
-                      }
-                }
-                while(tmp.length > 0) {
-                    var tmpEvent = tmp.shift();
-                    this._queuedEvents.push(tmpEvent);
-                }
+	        var tmp = [];
+	        while(this._queuedEvents.length > 0) {
+			    var queuedEvent = this._queuedEvents.shift();
+				if ((queuedEvent.type == '_childAdded' || queuedEvent.type == '_childRemoved') && !this.ChildrenInitialized()) {
+					// console.log('handleevent',queuedEvent.type,queuedEvent.info.child.getId(),"not executed yet");
+					tmp.push (queuedEvent);
+				} else {
+					this._handleQueuedEvent(queuedEvent);
+				}
+			}
+			while(tmp.length > 0) {
+				var tmpEvent = tmp.shift();
+				this._queuedEvents.push(tmpEvent);
+			}
         };
 
 	proto._handleQueuedEvent = function(eventInfo) {

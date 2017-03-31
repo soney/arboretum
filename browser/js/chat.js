@@ -18,6 +18,11 @@ class Chat {
             description: 'Set a variable value',
             args: ['var', 'val'],
             action: _.bind(this.notifySetVar, this)
+        }, {
+            name: 'name',
+            args: ['name'],
+            description: 'Set your chat handle',
+            action: _.bind(this.setName, this)
         }];
     }
 
@@ -27,7 +32,12 @@ class Chat {
     }
     onIPCMessage(message_type, responder, context) {
         const {ipcRenderer} = require('electron');
-        return ipcRenderer.on.call(ipcRenderer, message_type, _.bind(responder, context || this));
+        const func = _.bind(responder, context || this);
+        ipcRenderer.on.call(ipcRenderer, message_type, func);
+
+        return function() {
+            ipcRenderer.removeListener(message_type, func);
+        };
     }
 
     notifySetVar(fullMessage) {
@@ -46,7 +56,15 @@ class Chat {
     }
 
     setVar(name, value) {
-		console.log('set var', name, value);
+		this.sendIPCMessage('chat-set-var', {
+            name: name,
+            value: value
+		});
+    }
+    setName(name) {
+		this.sendIPCMessage('chat-set-name', {
+            name: name
+		});
     }
 
     notifySetTitle(title) {
@@ -73,8 +91,11 @@ class Chat {
             return name;
         });
         var commandDescriptionString = starterLine + '\n' + commandDescriptions.join('\n');
-        this.addChatMessage('🤖 Arbi', commandDescriptionString, {
-            color: '#307f8c'
+        // this.addChatMessage('🤖 Arbi', commandDescriptionString, {
+        //     color: '#307f8c'
+        // });
+        this.addChatMessage(false, commandDescriptionString, {
+            class: 'command'
         });
     }
 
@@ -96,8 +117,8 @@ class Chat {
     constructor () {
         $('#chat-box').on('keydown', function(event) {
             if (event.keyCode == 13 && !(event.ctrlKey || event.altKey || event.metaKey || event.shiftKey)) {
-                $('#chat-form').submit();
                 event.preventDefault();
+                $('#chat-form').submit();
             }
         });
         $('#chat-form').on('submit', _.bind(function(event) {
@@ -121,18 +142,20 @@ class Chat {
 
     connect() {
         this.sendIPCMessage('chat-connect');
-        this.onIPCMessage('chat-new-message', function(event, data) {
-			const {type} = data;
+        this.removeChatMessageListener = this.onIPCMessage('chat-new-message', function(event, data) {
+			const {type, sender} = data;
 			if(type == 'textual') {
-				const {message,sender} = data;
-				this.addChatMessage('Me', message);
-			}
+				const {message} = data;
+				this.addChatMessage(sender, message);
+			} else {
+                console.log(data);
+            }
         });
-        this.onIPCMessage('chat-var-changed', function(event, data) {
+        this.removeVarChangedListener = this.onIPCMessage('chat-var-changed', function(event, data) {
             const {name, value} = data;
             this.setVar(name, value);
         });
-        this.onIPCMessage('chat-title-changed', function(event, data) {
+        this.removeChatTitleChangedListener = this.onIPCMessage('chat-title-changed', function(event, data) {
             const {value} = data;
             this.setTitle(value);
         });
@@ -153,6 +176,16 @@ class Chat {
 
     disable() {
         $('#chat-box').val('').prop('disabled', true).hide();
+        if(this.removeChatMessageListener) {
+            this.removeChatMessageListener();
+        }
+        if(this.removeVarChangedListener) {
+            this.removeVarChangedListener();
+        }
+        if(this.removeChatTitleChangedListener) {
+            this.removeChatTitleChangedListener();
+        }
+        this.sendIPCMessage('chat-disconnect');
     }
 
     enable() {
@@ -169,9 +202,14 @@ class Chat {
             class: 'chat-line ' + options.class
         });
         if (sender) {
+            if(sender.avatar) {
+                rv.append($('<span />', {
+                    html: sender.avatar + "&nbsp;"
+                }));
+            }
             rv.append($('<span />', {
                 class: 'from',
-                text: sender,
+                text: sender.handle,
                 style: 'color:' + options.color + ';'
             }));
         }
