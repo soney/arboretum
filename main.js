@@ -23,6 +23,7 @@ const secret = 'Hfh5uHgFpgBXxO2qtz9Oe1eQKYydfEQqJEy+OfWX';
 startChromium().then(function(info) {
 	const {options, mainWindow} = info;
 	var server, io;
+
 	mainWindow.on('startServer', function(reply) {
 	    var rdp = options['remote-debugging-port'];
 	    startServer(rdp, mainWindow).then(function(info) {

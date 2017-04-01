@@ -247,7 +247,10 @@ var ShadowBrowser = function(options) {
 		}).then(function(wrappedNodes) {
 			task.exposeNodes(wrappedNodes);
 			scriptRecorder.onNodeReply(frame, wrappedNodes);
-		}).catch(function(err) {
+			return wrappedNodes;
+		}).then(_.bind(function(wrappedNodes) {
+			this.emit('nodeReply', wrappedNodes);
+		}, this)).catch(function(err) {
 			console.error(err);
 		});
 	};

@@ -62,8 +62,8 @@ class ChatServer extends EventEmitter {
         return participant;
     }
 
-    addSocketParticipant(socket) {
-        const participant = new SocketChatParticipant(this, this.getRemoteName(), this.getRemoteAvatar(), socket)
+    addSocketParticipant(socket, browserShadow) {
+        const participant = new SocketChatParticipant(this, this.getRemoteName(), this.getRemoteAvatar(), socket, browserShadow)
         this.addParticipant(participant);
         participant.on('chat-line', _.bind(this.onChatLine, this));
         participant.on('chat-set-name', _.bind(this.onSetName, this));
@@ -89,8 +89,8 @@ class ChatServer extends EventEmitter {
         this.removeParticipant(participant);
     }
 
-    onSocketChatConnect(socket) {
-        this.addSocketParticipant(socket);
+    onSocketChatConnect(socket, browserShadow) {
+        this.addSocketParticipant(socket, browserShadow);
     }
 
     onIPCChatConnect(info) {
@@ -265,9 +265,10 @@ class IPCChatParticipant extends ChatParticipant {
 }
 
 class SocketChatParticipant extends ChatParticipant {
-    constructor(chatServer, handle, avatar, socket) {
+    constructor(chatServer, handle, avatar, socket, browserShadow) {
         super(chatServer, handle, avatar);
         this.socket = socket;
+        this.browserShadow = browserShadow;
         this.addListeners();
     }
 

@@ -91,6 +91,7 @@ module.exports = {
 				var io = socket(server);
 				var shadowBrowsers = {}
 				var tasks = {};
+				var currTaskID = 0;
 
 				const EVENT_TYPES = ['chat-new-message', 'chat-title-changed', 'chat-var-changed'];
 				EVENT_TYPES.forEach(function(eventType) {
@@ -135,8 +136,7 @@ module.exports = {
 
 						var scriptServer = new ScriptServer({
 							socket: socket,
-							browserState: browserState,
-							task: task,
+							browserState: browserState, task: task,
 							tasks: tasks
 						});
 						socket.once('disconnect', function() {
@@ -158,19 +158,19 @@ module.exports = {
 												task: task
 											});
 							shadowBrowsers[clientOptions.userId] = shadowBrowser;
+							chatServer.onSocketChatConnect(socket, shadowBrowser);
 
-							shadowBrowser.on('nodeReply', function(info) {
-								var outputBrowsers = _	.chain(shadowBrowsers)
-														.values()
-														.filter(function(browser) {
-															return browser.isOutput()
-														})
-														.value();
-								_.each(outputBrowsers, function(browser) {
-									browser.setVisibleElements(info.nodeIds);
-								});
-							});
-							chatServer.onSocketChatConnect(socket);
+							// shadowBrowser.on('nodeReply', function(info) {
+							// 	var outputBrowsers = _	.chain(shadowBrowsers)
+							// 							.values()
+							// 							.filter(function(browser) {
+							// 								return browser.isOutput()
+							// 							})
+							// 							.value();
+							// 	_.each(outputBrowsers, function(browser) {
+							// 		browser.setVisibleElements(info.nodeIds);
+							// 	});
+							// });
 						}
 
 						if(shadowBrowser) {
