@@ -265,10 +265,10 @@ class IPCChatParticipant extends ChatParticipant {
 }
 
 class SocketChatParticipant extends ChatParticipant {
-    constructor(chatServer, handle, avatar, socket, browserShadow) {
+    constructor(chatServer, handle, avatar, socket, shadowBrowser) {
         super(chatServer, handle, avatar);
         this.socket = socket;
-        this.browserShadow = browserShadow;
+        this.shadowBrowser = shadowBrowser;
         this.addListeners();
     }
 
@@ -290,6 +290,9 @@ class SocketChatParticipant extends ChatParticipant {
 
         this.socket.on('chat-line', this.$onChatLine);
         this.socket.on('chat-set-name', this.$onChatSetName);
+
+		this.shadowBrowser.on('nodeReply', function(info) {
+		});
     }
 
     removeListeners() {
