@@ -94,7 +94,11 @@ $.widget('arboretum.chat', {
 		this._setParticipants(participants);
 		this.messages.children().remove();
 		messages.forEach($.proxy(function(m) {
-			this._appendNewMessage(m.message, m.sender);
+			if(m.type === 'textual') {
+				this._appendNewTextualMessage(m.message, m.sender);
+			} else {
+				this._appendNewPageMessage(m.sender);
+			}
 		}, this));
 	},
 
@@ -107,9 +111,12 @@ $.widget('arboretum.chat', {
 		this.participants.children().remove();
 		this.participants.append.apply(this.participants, participantElements);
 	},
+	_appendNewPageMessage: function(sender) {
+		return this._appendNewTextualMessage('(sent a page snippet)', sender);
+	},
 
-	_appendNewMessage: function(message, sender) {
-        const container = this.messages;
+	_appendNewTextualMessage: function(message, sender) {
+        var container = this.messages;
         var at_bottom = Math.abs(container.scrollTop() + container.height() - container.prop('scrollHeight')) < 100;
 		$('<div />').appendTo(this.messages).chatLine({
 			message: message,
@@ -131,7 +138,11 @@ $.widget('arboretum.chat', {
 			var senderText = event.sender ? event.sender.handle + ': ' : '';
 			// menu_icon.notify(senderText + event.message);
 		}
-		this._appendNewMessage(event.message, event.sender);
+		if(event.type === 'textual') {
+			this._appendNewTextualMessage(event.message, event.sender);
+		} else if(event.type === 'page') {
+			this._appendNewPageMessage(event.sender);
+		}
 	},
 	_setTitle: function(title) {
 		this.title.text(title || 'Chat');

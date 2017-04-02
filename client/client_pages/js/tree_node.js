@@ -278,7 +278,7 @@ $.widget('arboretum.tree_node', {
 		if(event.target === this.element[0]) {
 			var state = this.option('state');
 
-			console.log("CLICKING EVENT PRE-EMIT :: ", event, state.option('userId'));  // WSL: TEST
+			// console.log("CLICKING EVENT PRE-EMIT :: ", event, state.option('userId'));  // WSL: TEST
 
 			state.deviceEvent({
 				id: this.option('id'),

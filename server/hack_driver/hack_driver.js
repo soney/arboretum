@@ -12,6 +12,7 @@ var SET_ELEMENT_VALUE = readFile(path.join(__dirname, 'injectable_js', 'set_elem
 var GET_NAMESPCE = readFile(path.join(__dirname, 'injectable_js', 'get_namespace.js'));
 var GET_CANVAS_IMAGE = readFile(path.join(__dirname, 'injectable_js', 'get_canvas_image_data.js'));
 var GET_UNIQUE_SELECTOR = readFile(path.join(__dirname, 'injectable_js', 'get_unique_selector.js'));
+var FOCUS_ELEMENT = readFile(path.join(__dirname, 'injectable_js', 'focus.js'));
 
 function readShallowObject(chrome, objectId) {
 	return getProperties(chrome, objectId, true).then(function(properties) {
@@ -164,6 +165,9 @@ function typedArrayToArray(chrome, objectId) {
 module.exports = {
 	click: function (chrome, nodeId) {
 		return callFNOnElement(chrome, SIMULATE_CLICK, nodeId);
+	},
+	focus: function (chrome, nodeId) {
+		return callFNOnElement(chrome, FOCUS_ELEMENT, nodeId);
 	},
 	getElementValue: function (chrome, nodeId) {
 		return callFNOnElement(chrome, GET_ELEMENT_VALUE, nodeId).then(function(rv) {

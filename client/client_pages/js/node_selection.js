@@ -9,7 +9,7 @@ $.widget('arboretum.node_selection', {
 			'background-color': this.option('background'),
 			border: this.option('border'),
 			position: 'absolute',
-			'z-index': 9999,
+			'z-index': 9999999999,
 			//'pointer-events': 'none'
 		}).hide().appendTo(this.element);
 
@@ -57,7 +57,7 @@ $.widget('arboretum.node_selection', {
 		}
 	},
 	_onMouseDown: function(event) {
-		if(event.button === 2) {
+		if(event.button === 2 || event.ctrlKey) {
 			this._anchor = this._getCoordinates(event);
 			this._selectionRectangle.show();
 			this._updateSelectionRectangle(this._anchor, this._getCoordinates(event));
@@ -108,7 +108,7 @@ $.widget('arboretum.node_selection', {
 		}
 	},
 	_onMouseUp: function(event) {
-		if(event.button === 2 && this._anchor) {
+		if((event.button === 2||event.ctrlKey) && this._anchor) {
 			var highlightedElements = this._updateSelectionRectangle(this._anchor, this._getCoordinates(event));
 			this._anchor = false;
 			this._selectionRectangle.hide();

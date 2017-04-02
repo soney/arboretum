@@ -55,7 +55,9 @@ startChromium().then(function(info) {
                 apiKey: apiKey,
                 secret: secret,
                 sandbox: sandbox ? '1' : '0',
-                url: 'https://aws.mi2lab.com/mturk/arboretum/?url=' + share_url
+                url: 'https://aws.mi2lab.com/mturk/arboretum/?url=' + share_url,
+				MaxAssignments: 1,
+				title: 'Shared browser study'
             }
         }, function(err, httpResponse, body) {
 			if(server) {

@@ -54,7 +54,7 @@ var DOMState = function(options) {
 			// 		this.emit('valueUpdated', 'canvas', data);
 			// 	}, this));
 			// }, this), 5000);
-		} else if(tagName === 'input') {
+		} else if(tagName === 'input' || tagName=='textarea') {
 			this._updateValueInterval = setInterval(_.bind(function() {
 				this.getInputValue().then(_.bind(function(data) {
 					this.emit('valueUpdated', 'input', data);
@@ -161,7 +161,8 @@ var DOMState = function(options) {
 					if(lcName === 'onload' || lcName === 'onclick' ||
 						lcName === 'onmouseover' || lcName === 'onmouseout' ||
 						lcName === 'onmouseenter' || lcName === 'onmouseleave' ||
-						lcName === 'action' || lcName === 'oncontextmenu') {
+						lcName === 'action' || lcName === 'oncontextmenu' ||
+						lcName === 'onfocus') {
 						newValue = '';
 					} else {
 						if(tagTransform) {

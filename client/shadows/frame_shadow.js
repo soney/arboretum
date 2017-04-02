@@ -76,6 +76,7 @@ var currentLeader = null;
 		domTree.on('rootInvalidated', this.$_updateShadowTree);
 	};
 	proto._onDeviceEvent = function(event) {
+		/*
 		var worker = event.userId;
 		var evKey = event.id;
 
@@ -202,16 +203,17 @@ var currentLeader = null;
 				performAction = true;
 			}
 		}
+		*/
 
 		// Perform the action in the event if correct
-		if (performAction) {
+		// if (performAction) {
 			var frameState = this._getDomTree();
 			frameState.onDeviceEvent(event);
 
 			var browserShadow = this.getBrowserShadow();
 			// var scriptRecorder = browserShadow.getScriptRecorder();
 			// scriptRecorder.onDeviceEvent(frameState, event);
-		}
+		// }
 	};
 	proto._getDomTree = function() {
 		return this.domTree;

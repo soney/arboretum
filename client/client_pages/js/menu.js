@@ -15,7 +15,8 @@ $.widget('arboretum.menu', {
 			right: '5px',
 			top: '5px',
 			position: 'fixed',
-			'z-index': 999999999
+			'z-index': 99999999999,
+			'max-width': '300px'
 		}).appendTo(this.element);
 
 		this.menu_element = $('<img />', {
@@ -80,6 +81,10 @@ $.widget('arboretum.menu', {
 			socket: this.option('socket')
 		}).css({
 			'border-top': '1px solid rgb(58, 142, 237)'
+		});
+		this._instructionsRow = $('<div />', { }).appendTo(this._menu).instructions({
+			socket: this.option('socket')
+		}).css({
 		});
 
 		this._isExpanded(false);
@@ -218,6 +223,9 @@ $.widget('arboretum.menu', {
 		this._removeTabListeners();
 		if(this._chatRow.data('chat')) {
 			this._chatRow.chat('destroy');
+		}
+		if(this._instructionsRow.data('instructions')) {
+			this._instructionsRow.instructions('destroy');
 		}
 	}
 });

@@ -16,11 +16,7 @@ class Arboretum {
         this.sidebar = new Sidebar();
 
         this.listen();
-        // this.tabs.createNew('https://www.nytimes.com/', true);
-        // this.tabs.createNew('https://www.nytimes.com/', true);
-        // this.tabs.createNew('https://www.stanford.edu/', true);
-        this.tabs.createNew('https://www.umich.edu/', true);
-        // this.tabs.createNew('https://www.nytimes.com/', true);
+        this.tabs.createNew('https://calendar.yahoo.com/', true);
     }
 
     listen() {

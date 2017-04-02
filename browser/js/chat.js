@@ -286,6 +286,8 @@ class Chat {
                 src: href,
                 class: 'snippet'
             },
+            css: {
+            }
         }));
         return rv;
     }
