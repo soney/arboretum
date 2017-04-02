@@ -9,7 +9,7 @@ var log = require('../../utils/logging').getColoredLogger('yellow', 'bgBlack');
 var ShadowOutput = function(options) {
 	this.options = options;
 
-	log.debug('::: CREATED OUTPUT SHADOW ' + this.getTask().getTaskId() + ' :::');
+	log.debug('::: CREATED OUTPUT SHADOW :::');
 
 	this._initialize();
 };
@@ -19,30 +19,32 @@ var ShadowOutput = function(options) {
 	var proto = My.prototype;
 
 	proto._initialize = function() {
-		var task = this.getTask();
+		// var task = this.getTask();
 
 		this.$updateShadowFrame = _.bind(this.updateShadowFrame, this);
-		this.$taskDescriptionSet = _.bind(this.taskDescriptionSet, this);
+		// this.$taskDescriptionSet = _.bind(this.taskDescriptionSet, this);
 
 
-		task.on('exposeNodes', this.$updateShadowFrame);
-		task.on('setDescription', this.$taskDescriptionSet);
+		// task.on('exposeNodes', this.$updateShadowFrame);
+		// task.on('setDescription', this.$taskDescriptionSet);
+		this.updateShadowFrame();
 	};
 
-	proto.taskDescriptionSet = function(description) {
-		var task = this.getTask();
-		if(task.isDone()) {
-			var browserShadow = this.getBrowserShadow();
-			browserShadow.markTaskAsDone();
-		}
-	};
+	// proto.taskDescriptionSet = function(description) {
+	// 	var task = this.getTask();
+	// 	if(task.isDone()) {
+	// 		var browserShadow = this.getBrowserShadow();
+	// 		browserShadow.markTaskAsDone();
+	// 	}
+	// };
 
 	proto.updateShadowFrame = function() {
 		if(this.shadowFrame) {
 			this.shadowFrame.destroy();
 		}
-		var task = this.getTask();
-		var computedExposedNodes = task.getComputedExposedNodes();
+		// var task = this.getTask();
+		// var computedExposedNodes = task.getComputedExposedNodes();
+		var computedExposedNodes = this.options.visibleElements;
 
 		if(computedExposedNodes.length > 0) {
 			var firstComputedExposedNode = computedExposedNodes[0];
@@ -87,9 +89,9 @@ var ShadowOutput = function(options) {
 	};
 
 	proto.destroy = function() {
-		var task = this.getTask();
-		task.off('exposeNodes', this.$updateShadowFrame);
-		task.off('setDescription', this.$taskDescriptionSet);
+		// var task = this.getTask();
+		// task.off('exposeNodes', this.$updateShadowFrame);
+		// task.off('setDescription', this.$taskDescriptionSet);
 
 		if(this.shadowFrame) {
 			this.shadowFrame.destroy();
@@ -98,9 +100,9 @@ var ShadowOutput = function(options) {
 
 		log.debug('::: DESTROYED OUTPUT SHADOW ' + this.getTask().getTaskId() + ' :::');
 	};
-	proto.getTask = function() {
-		return this.options.task;
-	};
+	// proto.getTask = function() {
+		// return this.options.task;
+	// };
 
 	proto._getSocket = function() {
 		return this.options.socket;

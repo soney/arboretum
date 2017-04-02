@@ -219,12 +219,12 @@ var ShadowDOM = function(options) {
 		    this._updateChildren(children);
 
 		    var socket = this._getSocket();
-		    console.log('socket emit Children changed ' + this.getId());
+		    // console.log('socket emit Children changed ' + this.getId());
 		    socket.emit('childrenChanged', {
-			parentId: this.getId(),
-			children: this.getChildren().map(function(child) { console.log('socket emit node',child.getId()); return child.serialize(); })
+				parentId: this.getId(),
+				children: this.getChildren().map(function(child) { return child.serialize(); })
 		    });
-                }
+        }
 	};
 
 	proto._nodeValueChanged = function(info) {
@@ -461,14 +461,18 @@ var ShadowDOM = function(options) {
                          promise: promise
                     });
                  } else {*/
-		   var socket = this._getSocket();
-                   var type = type['type'],
-                       value = type['value'];
-		   socket.emit('valueUpdated', {
-			id: this.getId(),
-			type: type,
-			value: value
-		   });
+		var socket = this._getSocket();
+	    var tree = this.getTree();
+		if(tree.isPasswordInput()) {
+		} else {
+			socket.emit('valueUpdated', {
+				id: this.getId(),
+				type: type,
+				value: value
+			});
+		}
+		// var type = type['type'],
+		// value = type['value'];
                 //}
 	};
 

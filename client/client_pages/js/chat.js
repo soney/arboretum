@@ -129,7 +129,7 @@ $.widget('arboretum.chat', {
 		var menu_icon = $('#arboretum_menu_icon', this.element.parents());
 		if(menu_icon.hasClass('arboretum_menu_hidden')) {
 			var senderText = event.sender ? event.sender.handle + ': ' : '';
-			menu_icon.notify(senderText + event.message);
+			// menu_icon.notify(senderText + event.message);
 		}
 		this._appendNewMessage(event.message, event.sender);
 	},

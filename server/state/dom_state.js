@@ -389,6 +389,18 @@ var DOMState = function(options) {
 		});
 	};
 
+	proto.isPasswordInput = function() {
+		var node = this._getNode();
+		if(node) {
+			if(this._getTagName().toLowerCase() === 'input') {
+				var attributesMap = this.getAttributesMap();
+				return attributesMap['type'] == 'password';
+
+			}
+		}
+		return false;
+	};
+
 	proto.getNodeValue = function() {
 		var node = this._getNode(),
 			parent = this.getParent();

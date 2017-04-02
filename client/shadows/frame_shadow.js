@@ -209,8 +209,8 @@ var currentLeader = null;
 			frameState.onDeviceEvent(event);
 
 			var browserShadow = this.getBrowserShadow();
-			var scriptRecorder = browserShadow.getScriptRecorder();
-			scriptRecorder.onDeviceEvent(frameState, event);
+			// var scriptRecorder = browserShadow.getScriptRecorder();
+			// scriptRecorder.onDeviceEvent(frameState, event);
 		}
 	};
 	proto._getDomTree = function() {

@@ -30,12 +30,18 @@ $.widget('arboretum.node_selection', {
 				.add(nodes)
 				.not(this._selectionRectangle)
 				.each(function() {
-					$(this).css('background-color', $(this).data('old_bg_color'));
+					var jqThis = $(this);
+					jqThis.css('background-color', 'yellow');
+					setTimeout(function() {
+						jqThis.css('background-color', jqThis.data('old_bg_color'));
+					}, 500)
 				})
+				/*
 				.effect({
 					effect: 'highlight',
 					duration: 700,
 				});
+				*/
 		var nodeElements = $(nodes).map(function() {
 			return $(this).data('arboretum-id');
 		});

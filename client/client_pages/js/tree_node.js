@@ -320,9 +320,15 @@ $.widget('arboretum.tree_node', {
 
 		this.element.on('click', this.$_onClick);
 		this.element.on('input', this.$_onInput);
+		this.element.on('submit.preventSubmit', function(event) {
+			// if(event.keyCode == 13) {
+			event.preventDefault();
+			// }
+		})
 	},
 	_removeDeviceListeners: function() {
 		this.element.off('click', this.$_onClick);
 		this.element.off('input', this.$_onInput);
+		this.element.off('submit.preventSubmit');
 	}
 });

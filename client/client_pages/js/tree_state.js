@@ -24,6 +24,7 @@ $.widget('arboretum.tree_state', {
 				socket: this.socket,
 				intent: this.intent
 			});
+		// } else if(this.option('viewType') == 'message') {
 		}
 	},
 	_destroy: function() {
@@ -92,6 +93,7 @@ $.widget('arboretum.tree_state', {
 				socket: this.socket,
 				intent: this.intent
 			})
+		} else if(this.option('viewType') == 'message') {
 		} else if(!this.option('frameId')) { // top-level
 			this.element.menu({
 				state: this,

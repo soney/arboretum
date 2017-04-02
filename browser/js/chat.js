@@ -191,7 +191,14 @@ class Chat {
     }
 
     addPageChatMessage(sender, snippetID, options) {
-        const href = snippetID;
+        const url = require('url');
+        const href = url.format({
+            protocol: 'http',
+            hostname: 'localhost',
+            port: 3000,
+            pathname: '/m',
+            query: { m: snippetID }
+        });
         const element = this.getPageChatMessageElement(sender, href, options);
         this.addChatMessage(element);
     }

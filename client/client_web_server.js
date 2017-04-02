@@ -47,6 +47,17 @@ module.exports = {
 								});
 							})
 							.use('/o', express.static(path.join(__dirname, 'client_pages')))
+							.all('/m', function(req, res, next) {
+								var messageId = req.query.m;
+
+								setClientOptions({
+									viewType: 'message',
+									messageId: messageId
+								}).then(function(contents) {
+									res.send(contents);
+								});
+							})
+							.use('/m', express.static(path.join(__dirname, 'client_pages')))
 							.all('/r', function(req, res, next) {
 								var url = req.query.l,
 									tabId = req.query.t,
@@ -147,15 +158,27 @@ module.exports = {
 					socket.once('clientReady', function(clientOptions) {
 						var shadowBrowser;
 						var task = getTask(clientOptions.taskId);
+						var messageId = clientOptions.messageId;
 
 						if(clientOptions.frameId) {
 							shadowBrowser = shadowBrowsers[clientOptions.userId];
+						} else if(clientOptions.viewType == 'message' && messageId) {
+							shadowBrowser = new ShadowBrowser({
+								browserState: browserState,
+								socket: socket,
+								clientOptions: clientOptions,
+								visibleElements: chatServer.getVisibleNodes(messageId)
+								// task: task
+							});
+
+							shadowBrowsers[clientOptions.userId] = shadowBrowser;
+							// shadowBrowser.setVisibleElements(chatServer.getVisibleNodeIDs(messageId));
 						} else { // is the root
 							shadowBrowser = new ShadowBrowser({
 												browserState: browserState,
 												socket: socket,
-												clientOptions: clientOptions,
-												task: task
+												clientOptions: clientOptions
+												// task: task
 											});
 							shadowBrowsers[clientOptions.userId] = shadowBrowser;
 							chatServer.onSocketChatConnect(socket, shadowBrowser);

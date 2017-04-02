@@ -98,15 +98,25 @@ class ChatServer extends EventEmitter {
         participant.notifyClient('connected', this.serialize());
     }
 
+    getVisibleNodes(messageId) {
+        const message = this.messages[messageId];
+        if(message && message instanceof PageChatMessage) {
+            return message.nodes;
+        } else {
+            return [];
+        }
+    }
 
 	onChatLine(sender, messageText) {
-        var message = new TextualChatMessage(sender, messageText);
+        const messageID = this.messages.length;
+        var message = new TextualChatMessage(sender, messageText, messageID);
         this.messages.push(message);
 		this.doNotify('chat-new-message', message.serialize());
 	}
 
-	onChatPage(sender, page) {
-        var message = new PageChatMessage(sender, page);
+	onChatPage(sender, nodes) {
+        const messageID = this.messages.length;
+        var message = new PageChatMessage(sender, nodes, messageID);
         this.messages.push(message);
 		this.doNotify('chat-new-message', message.serialize());
 	}
@@ -196,7 +206,6 @@ class AutomatedChatParticipant extends ChatParticipant {
     }
 
     sendPagePortion() {
-        this.emit('chat-page', this, 'http://umich.edu');
     }
 }
 
@@ -291,8 +300,13 @@ class SocketChatParticipant extends ChatParticipant {
         this.socket.on('chat-line', this.$onChatLine);
         this.socket.on('chat-set-name', this.$onChatSetName);
 
-		this.shadowBrowser.on('nodeReply', function(info) {
-		});
+		this.shadowBrowser.on('nodeReply', _.bind(function(nodes) {
+            // const {nodeIds} = info;
+            // const nodeIds = _.map(nodes, function(node) {
+            //     return node.getId();
+            // });
+            this.emit('chat-page', this, nodes);
+		}, this));
     }
 
     removeListeners() {
@@ -314,14 +328,15 @@ class SocketChatParticipant extends ChatParticipant {
 }
 
 class ChatMessage {
-    constructor(sender) {
+    constructor(sender, messageID) {
         this.sender = sender;
+        this.messageID = messageID
     }
 }
 
 class TextualChatMessage extends ChatMessage {
-	constructor(sender, message) {
-		super(sender);
+	constructor(sender, message, messageID) {
+		super(sender, messageID);
 		this.message = message;
 	}
 
@@ -335,16 +350,16 @@ class TextualChatMessage extends ChatMessage {
 }
 
 class PageChatMessage extends ChatMessage {
-	constructor(sender, snippetID) {
-		super(sender);
-        this.snippetID = snippetID;
+	constructor(sender, nodes, messageID) {
+		super(sender, messageID);
+        this.nodes = nodes;
 	}
 
     serialize() {
         return {
 			type: 'page',
             sender: this.sender ? this.sender.serialize() : false,
-            snippetID: this.snippetID
+            snippetID: this.messageID
         };
     }
 }
