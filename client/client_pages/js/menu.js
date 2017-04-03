@@ -3,7 +3,8 @@ $.widget('arboretum.menu', {
 		state: false,
 		background: '#00274c',
 		radius: '2px',
-		socket: false
+		socket: false,
+		turkMode: true
 	},
 	_create: function() {
 		this.container = $('<div />', {
@@ -80,7 +81,7 @@ $.widget('arboretum.menu', {
 		this._chatRow = $('<div />', { }).appendTo(this._menu).chat({
 			socket: this.option('socket')
 		}).css({
-			'border-top': '1px solid rgb(58, 142, 237)'
+			'border-top':  '1px solid rgb(58, 142, 237)'
 		});
 		this._instructionsRow = $('<div />', { }).appendTo(this._menu).instructions({
 			socket: this.option('socket')
@@ -92,6 +93,15 @@ $.widget('arboretum.menu', {
 		this._addSocketListeners();
 		if(window.arborMenuVisible) {
 			this._expand();
+		}
+
+		if(this.option('turkMode')) {
+			this._addressBar.hide();
+			this._tabsRow.hide();
+			this._addTabRow.hide();
+			this._chatRow.css({
+				'border-top': 'none'
+			});
 		}
 	},
 	_addSocketListeners: function() {

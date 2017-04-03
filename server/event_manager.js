@@ -18,8 +18,8 @@ var EventManager = function(chrome, frameState) {
 	proto.onDeviceEvent = function(event, frame) {
 		var chrome = this._getChrome();
 		var type = event.type;
-		if(type === 'click') {
-			driver.click(chrome, event.id, frame);
+		if(type === 'click' || type==='mousedown' || type==='mouseup' || type==='mousemove') {
+			driver.mouseEvent(chrome, event.id, type);
 		} else if(type === 'input') {
 			driver.setElementValue(chrome, event.id, event.value);
 		}

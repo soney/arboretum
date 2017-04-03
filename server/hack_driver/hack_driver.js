@@ -6,7 +6,7 @@ var _ = require('underscore'),
 	sprintf = require("sprintf-js").sprintf;
 var log = require('../../utils/logging').getColoredLogger('red');
 
-var SIMULATE_CLICK = readFile(path.join(__dirname, 'injectable_js', 'simulate_click.js'));
+var SIMULATE_MOUSE_EVENT = readFile(path.join(__dirname, 'injectable_js', 'simulate_mouse_event.js'));
 var GET_ELEMENT_VALUE = readFile(path.join(__dirname, 'injectable_js', 'get_element_value.js'));
 var SET_ELEMENT_VALUE = readFile(path.join(__dirname, 'injectable_js', 'set_element_value.js'));
 var GET_NAMESPCE = readFile(path.join(__dirname, 'injectable_js', 'get_namespace.js'));
@@ -51,6 +51,8 @@ function callFNOnElement(chrome, fn_promise, nodeId, additional_args) {
 		return releaseObject(chrome, objectId);
 	}).then(function() {
 		return rv;
+	}).catch(function(err) {
+		console.error(err);
 	});
 }
 
@@ -163,8 +165,8 @@ function typedArrayToArray(chrome, objectId) {
 }
 
 module.exports = {
-	click: function (chrome, nodeId) {
-		return callFNOnElement(chrome, SIMULATE_CLICK, nodeId);
+	mouseEvent: function (chrome, nodeId, eventType) {
+		return callFNOnElement(chrome, SIMULATE_MOUSE_EVENT, nodeId, [{value: eventType}]);
 	},
 	focus: function (chrome, nodeId) {
 		return callFNOnElement(chrome, FOCUS_ELEMENT, nodeId);

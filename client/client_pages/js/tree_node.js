@@ -274,7 +274,7 @@ $.widget('arboretum.tree_node', {
 		}
 		return button;
 	},
-	_onClick: function(event) {
+	_onMouseEvent: function(event) {
 		if(event.target === this.element[0]) {
 			var state = this.option('state');
 
@@ -285,19 +285,12 @@ $.widget('arboretum.tree_node', {
 				button: this._getButton(event),
 				modifiers: this._getModifiers(event),
 				device: 'mouse',
-				type: 'click',
+				type: event.type,
 				userId: state.option('userId'),
 				timestamp: (new Date()).getTime(),
 				offsetX: event.offsetX,
 				offsetY: event.offsetY
 			});
-
-/*
-			this.element.effect({
-				effect: 'highlight',
-				duration: 5000
-			});
-			*/
 		}
 	},
 	_onInput: function(event) {
@@ -315,10 +308,13 @@ $.widget('arboretum.tree_node', {
 		}
 	},
 	_addDeviceListeners: function() {
-		this.$_onClick = $.proxy(this._onClick, this);
+		this.$_onMouseEvent = $.proxy(this._onMouseEvent, this);
 		this.$_onInput = $.proxy(this._onInput, this);
 
-		this.element.on('click', this.$_onClick);
+		this.element.on('click', this.$_onMouseEvent);
+		this.element.on('mousedown', this.$_onMouseEvent);
+		this.element.on('mouseup', this.$_onMouseEvent);
+		// this.element.on('mousemove', this.$_onMouseEvent);
 		this.element.on('input', this.$_onInput);
 		this.element.on('submit.preventSubmit', function(event) {
 			// if(event.keyCode == 13) {
@@ -327,7 +323,10 @@ $.widget('arboretum.tree_node', {
 		})
 	},
 	_removeDeviceListeners: function() {
-		this.element.off('click', this.$_onClick);
+		this.element.off('click', this.$_onMouseEvent);
+		this.element.off('mousedown', this.$_onMouseEvent);
+		this.element.off('mouseup', this.$_onMouseEvent);
+		this.element.off('mousemove', this.$_onMouseEvent);
 		this.element.off('input', this.$_onInput);
 		this.element.off('submit.preventSubmit');
 	}
