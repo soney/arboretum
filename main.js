@@ -15,8 +15,8 @@ const webServer = require('./client/client_web_server');
 
 // MTurk set-up
 
-const apiKey = 'AKIAI65DVDSHXSVPQK3Q';
-const secret = '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';
+const apiKey = 'XXXXXXX';
+const secret = 'YYYYYYY';
 
 // log.setLevel('debug');
 
@@ -52,11 +52,12 @@ startChromium().then(function(info) {
         request.post({
             url: 'https://aws.mi2lab.com/mturk/externalQuestion',
             form: {
+				amount: 0.10,
                 apiKey: apiKey,
                 secret: secret,
                 sandbox: sandbox ? '1' : '0',
                 url: 'https://aws.mi2lab.com/mturk/arboretum/?url=' + share_url,
-				maxAssignments: 10,
+				maxAssignments: 1,
 				title: 'Simple browsing task'
             }
         }, function(err, httpResponse, body) {

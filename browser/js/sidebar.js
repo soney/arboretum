@@ -108,12 +108,16 @@ class Sidebar {
     }
 
     static getIPAddress() {
-        const dns = require('dns');
-        const os = require('os');
+        // const dns = require('dns');
+        // const os = require('os');
+        const ip = require("ip");
         return new Promise(function(resolve, reject) {
-            dns.lookup(os.hostname(), function(err, add, fam) {
-                resolve(add);
-            })
+            resolve(ip.address('en0'));
         });
+        // return new Promise(function(resolve, reject) {
+            // dns.lookup(os.hostname(), function(err, add, fam) {
+                // resolve(add);
+            // })
+        // });
     }
 }

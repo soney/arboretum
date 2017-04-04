@@ -28,6 +28,12 @@ $.widget('arboretum.instructions', {
 			'word-break': 'break-word',
 			'white-space': 'pre-wrap'
 		});
+		setTimeout(_.bind(function() {
+			this.instructionsText.effect({
+						effect: 'highlight',
+						duration: 700,
+					});
+		}, this), 2000);
 		this.goalText = $('<div />').appendTo(this.element).text('');
 
 	},

@@ -3,7 +3,7 @@ client/ hosts the code that is responsible for connect with end users
 
 To install Arboretum:
 First, clone the repo using the command:
-	git clone https://github.com/umso/arboretum.git
+	git clone XXXXXXX
 Next, install node.js using their website nodejs.org. Then install Electron using the command:
 	sudo npm install -g electron-prebuilt
 Now Electron should be working. To run Arboretum, run the command:
