@@ -15,17 +15,16 @@ $.widget('arboretum.tree_state', {
 		socket.on('serverReady', _.bind(this._serverReady, this));
 		socket.on('frameChanged', _.bind(this._frameChanged, this));
 
-		socket.emit('clientReady', this.option());
 
 		this._addListeners();
-		if(this.option('viewType') === 'output') {
-			this.element.intent_specifier({
+		if(this.option('viewType') === 'admin') {
+			this.element.admin_interface({
 				state: this,
 				socket: this.socket,
 				intent: this.intent
 			});
-		// } else if(this.option('viewType') == 'message') {
 		}
+		socket.emit('clientReady', this.option());
 	},
 	_destroy: function() {
 		this._removeNodeAndMenu();
@@ -48,9 +47,9 @@ $.widget('arboretum.tree_state', {
 		if(this.element.data('arboretum-menu')) {
 			this.element.menu('destroy');
 		}
-		if(this.element.data('arboretum-intent_specifier')) {
-			this.intent = this.element.intent_specifier('option', 'intent');
-			this.element.intent_specifier('destroy');
+		if(this.element.data('arboretum-admin_interface')) {
+			this.intent = this.element.admin_interface('option', 'intent');
+			this.element.admin_interface('destroy');
 		}
 	},
 	_frameChanged: function() {
@@ -87,8 +86,8 @@ $.widget('arboretum.tree_state', {
 			state: this,
 			socket: this.socket
 		});
-		if(this.option('viewType') === 'output') {
-			this.element.intent_specifier({
+		if(this.option('viewType') === 'admin') {
+			this.element.admin_interface({
 				state: this,
 				socket: this.socket,
 				intent: this.intent

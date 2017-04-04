@@ -39,14 +39,14 @@ module.exports = {
 								});
 							})
 							.use('/f', express.static(path.join(__dirname, 'client_pages')))
-							.all('/o', function(req, res, next) {
+							.all('/a', function(req, res, next) {
 								setClientOptions({
-									viewType: 'output'
+									viewType: 'admin'
 								}).then(function(contents) {
 									res.send(contents);
 								});
 							})
-							.use('/o', express.static(path.join(__dirname, 'client_pages')))
+							.use('/a', express.static(path.join(__dirname, 'client_pages')))
 							.all('/m', function(req, res, next) {
 								var messageId = req.query.m;
 
@@ -173,6 +173,8 @@ module.exports = {
 
 							shadowBrowsers[clientOptions.userId] = shadowBrowser;
 							// shadowBrowser.setVisibleElements(chatServer.getVisibleNodeIDs(messageId));
+						} else if(clientOptions.viewType === 'admin') { // is the root
+							chatServer.onSocketAdminChatConnect(socket);
 						} else { // is the root
 							shadowBrowser = new ShadowBrowser({
 												browserState: browserState,
@@ -208,7 +210,7 @@ module.exports = {
 								console.error(err.stack);
 							});
 						} else {
-							console.error('Seeking browser for non-user');
+							// console.error('Seeking browser for non-user');
 						}
 					});
 				});

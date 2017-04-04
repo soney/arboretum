@@ -62,13 +62,28 @@ class ChatServer extends EventEmitter {
         return participant;
     }
 
-    addSocketParticipant(socket, browserShadow) {
-        const participant = new SocketChatParticipant(this, this.getRemoteName(), this.getRemoteAvatar(), socket, browserShadow)
+    addSocketParticipant(socket, browserShadow, isAdmin) {
+        var avatar, name;
+        if(isAdmin) {
+            avatar = this.getLocalAvatar();
+            name = this.getLocalName();
+        } else {
+            avatar = this.getRemoteAvatar();
+            name = this.getRemoteName();
+        }
+        const participant = new SocketChatParticipant(this, name, avatar, socket, browserShadow)
         this.addParticipant(participant);
         participant.on('chat-line', _.bind(this.onChatLine, this));
         participant.on('chat-set-name', _.bind(this.onSetName, this));
         participant.on('chat-page', _.bind(this.onChatPage, this));
         participant.on('chat-disconnect', _.bind(this.onChatDisconnect, this));
+
+        if(isAdmin) {
+            participant.on('chat-set-title', _.bind(this.onSetTitle, this));
+            participant.on('chat-set-var', _.bind(this.onSetVar, this));
+            participant.on('chat-set-name', _.bind(this.onSetName, this));
+        }
+
         return participant;
     }
 
@@ -89,8 +104,12 @@ class ChatServer extends EventEmitter {
         this.removeParticipant(participant);
     }
 
+    onSocketAdminChatConnect(socket) {
+        this.addSocketParticipant(socket, false, true);
+    }
+
     onSocketChatConnect(socket, browserShadow) {
-        this.addSocketParticipant(socket, browserShadow);
+        this.addSocketParticipant(socket, browserShadow, false);
     }
 
     onIPCChatConnect(info) {
@@ -296,21 +315,32 @@ class SocketChatParticipant extends ChatParticipant {
 
         this.$onChatLine = _.bind(this.onChatLine, this)
         this.$onChatSetName = _.bind(this.onChatSetName, this)
+        this.$onChatSetTitle = _.bind(this.onChatSetTitle, this)
+        this.$onChatSetVar = _.bind(this.onChatSetVar, this)
+        this.$onChatSetName = _.bind(this.onChatSetName, this)
 
         this.socket.on('chat-line', this.$onChatLine);
         this.socket.on('chat-set-name', this.$onChatSetName);
+        this.socket.on('chat-set-title', this.$onChatSetTitle);
+        this.socket.on('chat-set-var', this.$onChatSetVar);
+        this.socket.on('chat-set-name', this.$onChatSetName);
 
-		this.shadowBrowser.on('nodeReply', _.bind(function(nodes) {
-            // const {nodeIds} = info;
-            // const nodeIds = _.map(nodes, function(node) {
-            //     return node.getId();
-            // });
-            this.emit('chat-page', this, nodes);
-		}, this));
+        if(this.shadowBrowser) {
+    		this.shadowBrowser.on('nodeReply', _.bind(function(nodes) {
+                // const {nodeIds} = info;
+                // const nodeIds = _.map(nodes, function(node) {
+                //     return node.getId();
+                // });
+                this.emit('chat-page', this, nodes);
+    		}, this));
+        }
     }
 
     removeListeners() {
         this.socket.removeListener('chat-line', this.$onChatLine);
+        this.socket.removeListener('chat-set-name', this.$onChatSetName);
+        this.socket.removeListener('chat-set-title', this.$onChatSetTitle);
+        this.socket.removeListener('chat-set-var', this.$onChatSetVar);
         this.socket.removeListener('chat-set-name', this.$onChatSetName);
     }
 
@@ -324,6 +354,15 @@ class SocketChatParticipant extends ChatParticipant {
 
     onChatSetName(event) {
         this.emit('chat-set-name', this, event.name);
+    }
+
+	onChatSetTitle(info, event) {
+    }
+
+	onChatSetVar(info, event) {
+	}
+
+    onChatSetName(info, event) {
     }
 }
 

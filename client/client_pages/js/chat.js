@@ -1,9 +1,39 @@
 $.widget('arboretum.chat', {
 	options: {
-		socket: false
+		socket: false,
+		inputStyle: {},
+		bodyStyle: {},
+		chatLineSenderStyle: {},
+		chatLineContentStyle: {}
 	},
 	_create: function() {
 		this._addListeners();
+
+	    this.COMMANDS = [{
+	            name: 'clear',
+	            description: 'Clear the chat window',
+	            action: _.bind(this.clear, this)
+	        }, {
+	            name: 'title',
+	            description: 'Set the title of the task (use ampersands before variable names, like *&var*)',
+	            args: ['description'],
+	            action: _.bind(this.notifySetTitle, this)
+	        }, {
+	            name: 'help',
+	            description: 'Print out this message',
+	            action: _.bind(this.printCommandHelp, this)
+	        }, {
+	            name: 'set',
+	            description: 'Set a variable value',
+	            args: ['var', 'val'],
+	            action: _.bind(this.notifySetVar, this)
+	        }, {
+	            name: 'name',
+	            args: ['name'],
+	            description: 'Set your chat handle',
+	            action: _.bind(this.setName, this)
+	        }];
+
 		this.title = $('<div/>').text('Chat').css({
 			'word-wrap': 'break-word',
 			'white-space': 'pre-line',
@@ -21,7 +51,7 @@ $.widget('arboretum.chat', {
 			'overflow-y': 'auto'
 		});
 		this.chat_form = $('<form />').appendTo(this.element);
-		this.text_input = $("<textarea />").appendTo(this.chat_form).css({
+		this.text_input = $("<textarea />").appendTo(this.chat_form).css(_.extend({
 			width: '100%',
 			padding: '3px',
 			'box-sizing': 'border-box',
@@ -31,7 +61,7 @@ $.widget('arboretum.chat', {
 			'color': '#e4e1df',
 			'margin-top': '5px',
 			'border': 'none'
-		}).attr({
+		}, this.option('inputStyle'))).attr({
 			placeholder: 'Say something'
 		});
 
@@ -47,6 +77,33 @@ $.widget('arboretum.chat', {
             event.preventDefault();
         }, this));
 	},
+    notifySetTitle: function(title) {
+		this.option('socket').emit('chat-set-title', {
+			value: title
+		});
+    },
+    setName: function(name) {
+		this.option('socket').emit('chat-set-name', {
+            name: name
+		});
+    },
+    clear: function() {
+        $('#chat-lines').children().remove();
+    },
+    notifySetVar: function(fullMessage) {
+		var trimmedMessage = fullMessage.trim();
+		var spaceIndex = trimmedMessage.search(/\s/);
+		if (spaceIndex < 0) {
+			spaceIndex = message.length;
+		}
+		var name = trimmedMessage.slice(0, spaceIndex);
+		var value = trimmedMessage.slice(spaceIndex + 1);
+
+        this.option('socket').emit('chat-set-var', {
+            name: name,
+            value: value
+        });
+    },
 	sendCurrentTextMessage: function() {
         var message = this.text_input.val();
         this.text_input.val('');
@@ -71,7 +128,9 @@ $.widget('arboretum.chat', {
 		socket.on('chat-var-changed', this.$_onVarChanged);
 		socket.on('chat-participants-changed', this.$_onParticipantsChanged);
 
-		socket.emit('chat-client-ready');
+		setTimeout(function() {
+			socket.emit('chat-client-ready');
+		}, 100);
 	},
 	_removeListeners: function() {
 		socket.off('chat-connected', this.$_onConnected);
@@ -84,6 +143,25 @@ $.widget('arboretum.chat', {
 	_onParticipantsChanged: function(event) {
 		this._setParticipants(event.participants);
 	},
+
+    printCommandHelp: function(starterLine) {
+        starterLine = starterLine || '';
+        var commandDescriptions = _.map(this.COMMANDS, function(c) {
+            var name = '**/' + c.name + '**';
+            var args = _.map(c.args || [], function(a) {
+                return '{' + a + '}';
+            }).join(' ');
+            if (args.length > 0) {
+                name = name + ' ' + args + '';
+            }
+            name = name + ': ' + c.description + '';
+            return name;
+        });
+        var commandDescriptionString = starterLine + '\n' + commandDescriptions.join('\n');
+        this.addTextualChatMessage(false, commandDescriptionString, {
+            class: 'command'
+        });
+    },
 
 	_onConnected: function(event) {
 		var messages = event.messages,
@@ -120,7 +198,9 @@ $.widget('arboretum.chat', {
         var at_bottom = Math.abs(container.scrollTop() + container.height() - container.prop('scrollHeight')) < 100;
 		$('<div />').appendTo(this.messages).chatLine({
 			message: message,
-			sender: sender
+			sender: sender,
+			contentStyle: this.option('chatLineContentStyle'),
+			senderStyle: this.option('chatLineSenderStyle'),
 		}).css({
 			'font-family': '"HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif',
 			'word-wrap': 'break-word',
@@ -164,7 +244,9 @@ $.widget('arboretum.chat', {
 $.widget('arboretum.chatLine', {
 	options: {
 		sender: {handle: ''},
-		message: ''
+		message: '',
+		contentStyle: {},
+		senderStyle: {}
 	},
 	_create: function() {
 		var sender = this.option('sender');
@@ -177,13 +259,13 @@ $.widget('arboretum.chatLine', {
 					'padding-right': '3px'
 				}).appendTo(this.element);
 	        }
-			this.senderElement = $('<span />', {text: sender.handle+': '}).css({
+			this.senderElement = $('<span />', {text: sender.handle+': '}).css(_.extend({
 				color: '#cfc096'
-			}).appendTo(this.element);
+			}, this.option('senderStyle'))).appendTo(this.element);
 		}
-		this.messageElement = $('<span />', {html: this.mdify(this.option('message'))}).css({
+		this.messageElement = $('<span />', {html: this.mdify(this.option('message'))}).css(_.extend({
 			color: '#e5e5e5'
-		}).appendTo(this.element);
+		}, this.option('contentStyle'))).appendTo(this.element);
 	},
 	_destroy: function() {
 	},

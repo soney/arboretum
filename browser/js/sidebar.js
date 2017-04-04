@@ -38,7 +38,7 @@ class Sidebar {
         this.getMyShortcut().then(function(url) {
             $('#share_url').val(url.replace('http://', '')).prop('disabled', false);
         });
-        this.getMyShortcut('/o').then(function(url) {
+        this.getMyShortcut('/a').then(function(url) {
             $('#admin_url').val(url.replace('http://', '')).prop('disabled', false);
         });
     }

@@ -25,7 +25,6 @@ class Arboretum {
         $(window).on('keydown', function(e) {
             if(e.which === 82 && (e.ctrlKey || e.metaKey)) { // CTRL + ALT + R
                 if(e.altKey){
-                  console.log('altkey');
                   location.reload();
                 }
                 else{
