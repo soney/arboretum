@@ -1,5 +1,7 @@
 const _ = require('underscore');
 const os = require('os');
+
+
 module.exports = function(options) {
     options = _.extend({
         'remote-debugging-port': 9222,
@@ -36,14 +38,14 @@ module.exports = function(options) {
          newWindow = new BrowserWindow({ // TODO: use shared set of options with on'ready' below
                 width: options.width,
                 height: options.height,
-                icon: __dirname + '/resources/logo/icon.png',
+                icon: `${__dirname}/resources/logo/icon.png`,
                 titleBarStyle: 'hidden', // hides title bar
 				frame: false,            // removes default frame
 				title: 'Arboretum',
 				minWidth: 350,
 				minHeight: 250
             });
-            newWindow.loadURL('file://'+__dirname+'/index.html');
+            newWindow.loadURL(`file://${__dirname}/index.html`);
             newWindow.on('closed', function() {
                 // Dereference the window object, usually you would store windows
                 // in an array if your app supports multi windows, this is the time
