@@ -7,14 +7,10 @@ var express = require('express'),
 	_ = require('underscore'),
 	http = require('http'),
 	fs = require('fs')
-	WebSocket = require('ws');
+	WebSocket = require('ws'),
+	WebSocketJSONStream = require('websocket-json-stream'),
+	ShareDB = require('sharedb');
 
-const server = new http.
-const ws = new WebSocket();
-const stream = new WebSocketJSONStream(ws);
-const share = new ShareDB({
-	db: new ShareDB.MemoryDB()
-});
 // share.listen(stream);
 
 require('ssl-root-cas').inject();
@@ -25,89 +21,97 @@ module.exports = {
 		PORT = PORT || 3000;
 
 		return new Promise(function(resolve, reject) {
-			var server = app.all('/', function(req, res, next) {
-								setClientOptions({
-									userId: getUserID()
-								}).then(function(contents) {
-									res.send(contents);
-								});
-							})
-							.use('/', express.static(path.join(__dirname, 'client_pages')))
-							.all('/f', function(req, res, next) {
-								var frameId = req.query.i,
-									tabId = req.query.t,
-									userId = req.query.u,
-									taskId = req.query.k;
+			app.all('/', function(req, res, next) {
+					setClientOptions({
+						userId: getUserID()
+					}).then(function(contents) {
+						res.send(contents);
+					});
+				})
+				.use('/', express.static(path.join(__dirname, 'client_pages')))
+				.all('/f', function(req, res, next) {
+					var frameId = req.query.i,
+						tabId = req.query.t,
+						userId = req.query.u,
+						taskId = req.query.k;
 
-								setClientOptions({
-									userId: userId,
-									frameId: frameId,
-									viewType: 'mirror'
-								}).then(function(contents) {
-									res.send(contents);
-								});
-							})
-							.use('/f', express.static(path.join(__dirname, 'client_pages')))
-							.all('/a', function(req, res, next) {
-								setClientOptions({
-									viewType: 'admin'
-								}).then(function(contents) {
-									res.send(contents);
-								});
-							})
-							.use('/a', express.static(path.join(__dirname, 'client_pages')))
-							.all('/m', function(req, res, next) {
-								var messageId = req.query.m;
+					setClientOptions({
+						userId: userId,
+						frameId: frameId,
+						viewType: 'mirror'
+					}).then(function(contents) {
+						res.send(contents);
+					});
+				})
+				.use('/f', express.static(path.join(__dirname, 'client_pages')))
+				.all('/a', function(req, res, next) {
+					setClientOptions({
+						viewType: 'admin'
+					}).then(function(contents) {
+						res.send(contents);
+					});
+				})
+				.use('/a', express.static(path.join(__dirname, 'client_pages')))
+				.all('/m', function(req, res, next) {
+					var messageId = req.query.m;
 
-								setClientOptions({
-									viewType: 'message',
-									messageId: messageId
-								}).then(function(contents) {
-									res.send(contents);
-								});
-							})
-							.use('/m', express.static(path.join(__dirname, 'client_pages')))
-							.all('/r', function(req, res, next) {
-								var url = req.query.l,
-									tabId = req.query.t,
-									frameId = req.query.f;
+					setClientOptions({
+						viewType: 'message',
+						messageId: messageId
+					}).then(function(contents) {
+						res.send(contents);
+					});
+				})
+				.use('/m', express.static(path.join(__dirname, 'client_pages')))
+				.all('/r', function(req, res, next) {
+					var url = req.query.l,
+						tabId = req.query.t,
+						frameId = req.query.f;
 
-								browserState.requestResource(url, frameId, tabId).then(function(resourceInfo) {
-									var content = resourceInfo.content;
-									res.set('Content-Type', resourceInfo.mimeType);
+					browserState.requestResource(url, frameId, tabId).then(function(resourceInfo) {
+						var content = resourceInfo.content;
+						res.set('Content-Type', resourceInfo.mimeType);
 
-									if(resourceInfo.base64Encoded) {
-										var bodyBuffer = new Buffer(content, 'base64');
-										res.send(bodyBuffer);
-									} else {
-										res.send(content);
-									}
-								}, function(err) {
-									req.pipe(request[req.method.toLowerCase().replace('del', 'delete')](url))
-										.pipe(res);
-									/*
-									var baseURL = pageState.getURL();
-									var headers = _.extend({}, req.headers, {
-										referer: baseURL
-									});
-									var newRequest = request({
-										method: req.method,
-										uri: url,
-										headers: headers,
-										timeout: 5000
-									}).on('error', function(err) {
-										next();
-									}).pipe(res);
-									*/
-								});
-							});
+						if(resourceInfo.base64Encoded) {
+							var bodyBuffer = new Buffer(content, 'base64');
+							res.send(bodyBuffer);
+						} else {
+							res.send(content);
+						}
+					}, function(err) {
+						req.pipe(request[req.method.toLowerCase().replace('del', 'delete')](url))
+							.pipe(res);
+						/*
+						var baseURL = pageState.getURL();
+						var headers = _.extend({}, req.headers, {
+							referer: baseURL
+						});
+						var newRequest = request({
+							method: req.method,
+							uri: url,
+							headers: headers,
+							timeout: 5000
+						}).on('error', function(err) {
+							next();
+						}).pipe(res);
+						*/
+					});
+				});
 
-							//.all('favicon.ico', function(req, res, next) {
-								//pageState.requestResource('favicon.ico');
-							//})
-							.listen(PORT, function() {
-								resolve(server);
-							});
+				//.all('favicon.ico', function(req, res, next) {
+					//pageState.requestResource('favicon.ico');
+				//})
+				// .listen(PORT, function() {
+				// 	resolve(server);
+				// });
+				var server = http.createServer(app)
+				var ws = new WebSocket.Server( { server: server });
+				const stream = new WebSocketJSONStream(ws);
+				const share = new ShareDB({
+					db: new ShareDB.MemoryDB()
+				});
+				server.listen(PORT);
+				return app;
 			}).then(function(server) {
 				var io = socket(server);
 				var shadowBrowsers = {}
@@ -237,7 +241,7 @@ var getUserID = function() {
 	return Math.round(100*Math.random());
 };
 
-function procesFile(filename, onContents) {
+function processFile(filename, onContents) {
 	return new Promise(function(resolve, reject) {
 		fs.readFile(filename, {
 			encoding: 'utf8'
@@ -251,7 +255,7 @@ function procesFile(filename, onContents) {
 }
 
 function setClientOptions(options) {
-	return procesFile(path.join(__dirname, 'client_pages', 'index.html'), function(contents) {
+	return processFile(path.join(__dirname, 'client_pages', 'index.html'), function(contents) {
 		_.each(options, function(val, key) {
 			contents = contents.replace(key+': false', key+': "' + val + '"');
 		});
