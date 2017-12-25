@@ -10,9 +10,6 @@ var repl = require('repl'),
 	replServer,
     hitIds = [];
 
-const share = new ShareDB({
-	db: new ShareDB.MemoryDB()
-});
 
 const ChatServer = require('./server/chat');
 const BrowserState = require('./server/state/browser_state');

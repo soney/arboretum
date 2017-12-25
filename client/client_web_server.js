@@ -1,12 +1,21 @@
 var express = require('express'),
-	socket = require('socket.io'),
 	path = require('path'),
 	request = require('request'),
 	ShadowBrowser = require('./shadows/browser_shadow').ShadowBrowser,
 	ScriptServer = require('./scripts/script_server').ScriptServer,
 	Task = require('./task').Task,
 	_ = require('underscore'),
-	fs = require('fs');
+	http = require('http'),
+	fs = require('fs')
+	WebSocket = require('ws');
+
+const server = new http.
+const ws = new WebSocket();
+const stream = new WebSocketJSONStream(ws);
+const share = new ShareDB({
+	db: new ShareDB.MemoryDB()
+});
+// share.listen(stream);
 
 require('ssl-root-cas').inject();
 
@@ -91,7 +100,8 @@ module.exports = {
 									}).pipe(res);
 									*/
 								});
-							})
+							});
+
 							//.all('favicon.ico', function(req, res, next) {
 								//pageState.requestResource('favicon.ico');
 							//})
