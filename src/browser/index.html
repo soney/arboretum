@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+    <head lang="en">
+        <meta charset="UTF-8">
+        <title>arboretumInternal</title>
+        <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=no">
+
+        <script type='text/javascript' src='bower_components/clipboard/dist/clipboard.min.js'></script>
+        <script type='text/javascript' src='js/tab.js'></script>
+        <script type='text/javascript' src='jquery-toggles-master/toggles.js'></script>
+        <script type='text/javascript' src='js/tabs.js'></script>
+        <script type='text/javascript' src='js/task_bar.js'></script>
+        <script type='text/javascript' src='js/url_bar.js'></script>
+        <script type='text/javascript' src='js/chat.js'></script>
+        <script type='text/javascript' src='js/sidebar.js'></script>
+        <script type='text/javascript' src='js/main.js'></script>
+
+        <!-- <link rel="stylesheet" type="text/css" href="style.css" /> -->
+        <link rel="stylesheet" type="text/css" href="css/browser.css" />
+        <link rel="stylesheet" type="text/css" href="css/browser-tabs.css" />
+        <link rel="stylesheet" type="text/css" href="css/browser-sidebar.css" />
+        <link rel="stylesheet" type="text/css" href="css/browser-navbar.css" />
+        <!-- <link rel="stylesheet" type="text/css" href="bower_components/font-awesome/css/font-awesome.min.css" /> -->
+        <link rel="stylesheet" type="text/css" href="jquery-toggles-master/css/toggles-full.css" />
+        <link rel="stylesheet" type="text/css" href="jquery-toggles-master/css/themes/toggles-modern.css" />
+        <link rel="stylesheet" type="text/css" href="photon-0.1.2-dist/css/photon.css" />
+    </head>
+    <body>
+        <div class="window">
+            <header class="toolbar toolbar-header">
+                <div id="tabsBar" class="tab-group">
+                    <div id='buttonSpacer' class="tab-item tab-item-fixed"> </div>
+                    <!-- <div id='buttonSpacer'></div>
+                    <ul id='tabs'></ul> -->
+                    <!-- <span id='addTab'><i class="fa fa-plus"></i></span> -->
+                    <div class="tab-item tab-item-fixed" id='addTab'>
+                        <span class="icon icon-plus"></span>
+                    </div>
+                </div>
+                <div id="navBar">
+                    <div class="toolbar-actions">
+                        <div class="btn-group">
+                            <button class = 'btn btn-default btn-mini' id='back'><span class='icon icon-left-open-big'></span></button>
+                            <button class = 'btn btn-default btn-mini' id='forward'><span class='icon icon-right-open-big'></span></button>
+                        </div>
+                        <div class="btn-group">
+                            <button class = 'btn btn-default btn-mini' id='reload'><span class='icon icon-ccw'></span></button>
+                            <button class = 'btn btn-default btn-mini' id='task'><span class='icon icon-publish'></span></button>
+                        </div>
+                    </div>
+                    <input class="" id='url' type="text" placeholder="Enter URL or Term to Search" flex />
+                </div>
+            </header>
+            <div class="window-content">
+                <div class="pane-group">
+                    <div class="sidebar" style='display: none' id='script_bar'>
+                        <table id="server-controls">
+                            <tr>
+                                <td>
+                                    <h5 class="nav-group-title">Server</h5>
+                                </td>
+                                <td>
+                                    <h5 class="nav-group-title">Share URL</h5>
+                                </td>
+                                <td>
+                                    <h5 class="nav-group-title">Admin URL</h5>
+                                </td>
+                                <td>
+                                    <h5 class="nav-group-title">MTurk</h5>
+                                </td>
+                            </tr>
+                            <tr id="control_content">
+                                <td>
+                                    <div type="checkbox" class="toggle toggle-modern"></div>
+                                </td>
+                                <td class="copy_area">
+                                    <input id="share_url" value="" disabled="true"/>
+                                    <span data-clipboard-target="#share_url" id="share_copy" class="icon icon-clipboard"></span>
+                                </td>
+                                <td class="copy_area">
+                                    <input id="admin_url" value="" disabled="true"/>
+                                    <span data-clipboard-target="#admin_url" id="admin_copy" class="icon icon-clipboard"></span>
+                                </td>
+                                <td>
+                                    <button id="mturk_post" class='btn btn-default'><span class="icon icon-upload-cloud"></span>&nbsp;Post</button>
+                                    <br />
+                                    <label><input type="checkbox" name="sandbox" value="sandbox" id="sandbox" checked="checked"> Sandbox</label>
+                                </td>
+                            </tr>
+                        </table>
+                        <h6 id="task_title"><span class="icon icon-chat"></span><span id='task-name'>Chat</span></h6>
+                        <div id="chat-participants"></div>
+                        <ul id="chat-lines"></ul>
+                        <form id="chat-form">
+                            <textarea id="chat-box" class="form-control" rows="2" placeholder="Send a message"></textarea>
+                            <!-- <div class="form-actions">
+                                <button class="btn btn-primary" type="submit" id="send_message">Send</button>
+                            </div> -->
+                        </form>
+                    </div>
+                    <div id="browser-pane" class="pane">
+                        <div id="content">
+                            <!--<webview id='wv' autosize="on" src="http://google.com" style="display:inline-flex;"></webview>-->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
