@@ -23,7 +23,7 @@ function readShallowObject(chrome, objectId) {
 	});
 }
 
-function callFNOnElement(chrome, fn_promise:Promise<string>, nodeId, additional_args?) {
+function callFNOnElement(chrome, fn_promise:Promise<string>, nodeId, additional_args?):Promise<any> {
 	var objectId;
 	var rv;
 	var resolvedNodePromise = resolveNode(chrome, nodeId);
@@ -164,19 +164,21 @@ export function mouseEvent(chrome, nodeId, eventType) {
 export function focus(chrome, nodeId) {
 	return callFNOnElement(chrome, FOCUS_ELEMENT, nodeId);
 };
-export function getElementValue(chrome, nodeId) {
+export function getElementValue(chrome, nodeId):Promise<string> {
 	return callFNOnElement(chrome, GET_ELEMENT_VALUE, nodeId).then(function(rv) {
 		return rv.result.value;
 	});
 };
-export function setElementValue(chrome, nodeId, value) {
+export function setElementValue(chrome, nodeId, value:string) {
 	return callFNOnElement(chrome, SET_ELEMENT_VALUE, nodeId, [{value: value}]);
 };
 export function getNamespace(chrome, nodeId) {
 	return callFNOnElement(chrome, GET_NAMESPCE, nodeId);
 };
-export function getUniqueSelector(chrome, nodeId) {
-	return callFNOnElement(chrome, GET_UNIQUE_SELECTOR, nodeId);
+export function getUniqueSelector(chrome, nodeId):Promise<string> {
+	return callFNOnElement(chrome, GET_UNIQUE_SELECTOR, nodeId).then((rv) => {
+		return rv.result.value;
+	});
 };
 export function getCanvasImage(chrome, nodeId) {
 	return callFNOnElement(chrome, GET_CANVAS_IMAGE, nodeId).then(function(rv) {

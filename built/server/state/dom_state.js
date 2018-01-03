@@ -1,9 +1,57 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const hack_driver_1 = require("../hack_driver/hack_driver");
 class DOMState {
-    constructor() {
+    constructor(node, chrome, frame, parent) {
+        this.node = node;
+        this.chrome = chrome;
+        this.frame = frame;
+        this.parent = parent;
+        this.destroyed = false;
+        this.namespace = null;
+        this.inlineStyle = '';
+        this.children = [];
+        this.updateValueInterval = null;
     }
     destroy() {
+    }
+    getNodeId() { return this.node.nodeId; }
+    ;
+    getTagName() { return this.node.nodeName; }
+    ;
+    getFrame() { return this.frame; }
+    ;
+    getParent() { return this.parent; }
+    ;
+    setParent(parent) { this.parent = parent; }
+    getNodeType() { return this.node.nodeType; }
+    getCanvasImage() { return hack_driver_1.getCanvasImage(this.chrome, this.getNodeId()); }
+    ;
+    getUniqueSelector() {
+        return hack_driver_1.getUniqueSelector(this.chrome, this.getNodeId());
+    }
+    ;
+    getInputValue() {
+        return hack_driver_1.getElementValue(this.chrome, this.getNodeId());
+    }
+    ;
+    addValueListeners() {
+        const tagName = this.getTagName().toLowerCase();
+        if (tagName === 'input' || tagName === 'textarea') {
+            this.updateValueInterval = setInterval(() => {
+                this.getInputValue().then((data) => {
+                    // this.emit('valueUpdated', 'input', data);
+                });
+            }, 700);
+        }
+        else if (tagName === 'canvas') {
+        }
+    }
+    remoteValueListeners() {
+        if (this.updateValueInterval) {
+            clearInterval(this.updateValueInterval);
+            this.updateValueInterval = null;
+        }
     }
 }
 exports.DOMState = DOMState;

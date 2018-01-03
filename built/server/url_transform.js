@@ -10,7 +10,7 @@ var Strategy;
     Strategy[Strategy["REFORMAT"] = 1] = "REFORMAT";
 })(Strategy || (Strategy = {}));
 ;
-var containsURLs = {
+exports.urlTransform = {
     'a': {
         'href': {
             strategy: Strategy.REFORMAT,
@@ -101,14 +101,15 @@ function makeBlank() {
     return '';
 }
 function transformSRCSet(attrVal, baseURL, node, shadow) {
-    var parsed = srcset.parse(attrVal);
+    const parsed = srcset.parse(attrVal);
     _.each(parsed, function (p) {
         p.url = transformURL(p.url, baseURL, node, shadow);
     });
     return srcset.stringify(parsed);
 }
 function transformURL(url, baseURL, node, shadow) {
-    var absoluteURL = URL.resolve(baseURL, url), relativeURL = URL.format({
+    const absoluteURL = URL.resolve(baseURL, url);
+    const relativeURL = URL.format({
         pathname: 'r',
         query: {
             u: shadow.getUserId(),
@@ -119,9 +120,6 @@ function transformURL(url, baseURL, node, shadow) {
     });
     return relativeURL;
 }
-module.exports = {
-    urlTransform: containsURLs
-};
 /*
 
 <a href=url>
@@ -152,4 +150,4 @@ HTML 5 adds a few (and HTML5 seems to not use some of the ones above as well):
 <input formaction=url>
 <source src=url>
 <video poster=url> and <video src=url>
-*/ 
+*/

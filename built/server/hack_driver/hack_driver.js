@@ -185,7 +185,9 @@ function getNamespace(chrome, nodeId) {
 exports.getNamespace = getNamespace;
 ;
 function getUniqueSelector(chrome, nodeId) {
-    return callFNOnElement(chrome, GET_UNIQUE_SELECTOR, nodeId);
+    return callFNOnElement(chrome, GET_UNIQUE_SELECTOR, nodeId).then((rv) => {
+        return rv.result.value;
+    });
 }
 exports.getUniqueSelector = getUniqueSelector;
 ;

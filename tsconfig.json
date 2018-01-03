@@ -9,7 +9,11 @@
 		"baseUrl": ".",
 		"paths": {
 			"*": ["node_modules/*"]
-		}
+		},
+		"lib": [
+			"dom",
+			"es2016"
+		]
 	},
 	"include": [
 		"**/*"

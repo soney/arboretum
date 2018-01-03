@@ -8,7 +8,7 @@ enum Strategy {
 	REFORMAT
 };
 
-var containsURLs = {
+export const urlTransform = {
 	'a': {
 		'href': {
 			strategy: Strategy.REFORMAT,
@@ -107,7 +107,7 @@ function makeBlank():string {
 }
 
 function transformSRCSet(attrVal, baseURL, node, shadow):string {
-	var parsed = srcset.parse(attrVal);
+	const parsed = srcset.parse(attrVal);
 	_.each(parsed, function(p:any) {
 		p.url = transformURL(p.url, baseURL, node, shadow);
 	});
@@ -115,23 +115,19 @@ function transformSRCSet(attrVal, baseURL, node, shadow):string {
 }
 
 function transformURL(url, baseURL, node, shadow):string {
-	var absoluteURL = URL.resolve(baseURL, url),
-		relativeURL = URL.format({
-			pathname: 'r',
-			query: {
-				u: shadow.getUserId(),
-				t: node.getTabId(),
-				f: node.getFrameId(),
-				l: absoluteURL
-			}
-		});
+    const absoluteURL:string = URL.resolve(baseURL, url);
+    const relativeURL:string = URL.format({
+                pathname: 'r',
+                query: {
+                    u: shadow.getUserId(),
+                    t: node.getTabId(),
+                    f: node.getFrameId(),
+                    l: absoluteURL
+                }
+            });
 
-	return relativeURL;
+    return relativeURL;
 }
-
-module.exports = {
-	urlTransform: containsURLs
-};
 
 /*
 
