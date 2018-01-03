@@ -1,61 +1,63 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const event_manager_1 = require("../event_manager");
+const resource_tracker_1 = require("../resource_tracker");
 class FrameState {
     constructor(chrome, info) {
         this.chrome = chrome;
         this.info = info;
+        this.setMainFrameExecuted = false;
         this.refreshingRoot = false;
         this.root = false;
+        this.domParent = null;
         this.nodeMap = new Map();
         this.oldNodeMap = new Map();
         this.queuedEvents = [];
-        this._markRefreshingRoot(true);
-        this.chrome = chrome;
-        this.options = options;
+        this.executionContext = null;
+        this.markRefreshingRoot(true);
         this.setMainFrameExecuted = false;
-        this._domParent = false;
-        this._nodeMap = {};
-        this._oldNodeMap = {};
-        this._queuedEvents = [];
-        this._executionContext = false;
-        this._root = false;
-        this.eventManager = new EventManager(chrome, this);
-        this._resourceTracker = new ResourceTracker(chrome, this, options.resources);
-        log.debug('=== CREATED FRAME STATE', this.getFrameId(), ' ====');
+        this.eventManager = new event_manager_1.EventManager(chrome, this);
+        this.resourceTracker = new resource_tracker_1.ResourceTracker(chrome, this, info.resources);
+        // log.debug('=== CREATED FRAME STATE', this.getFrameId(), ' ====');
+    }
+    ;
+    updateInfo(info) {
+    }
+    ;
+    requestWillBeSent(resource) {
+    }
+    ;
+    responseReceived(event) {
+    }
+    ;
+    executionContextCreated(context) {
+    }
+    ;
+    markRefreshingRoot(r) {
+        if (r) {
+            this.refreshingRoot = true;
+        }
+        else {
+            this.refreshingRoot = false;
+            while (this.queuedEvents.length > 0) {
+                var queuedEvent = this.queuedEvents.shift();
+                this.handleQueuedEvent(queuedEvent);
+            }
+        }
+    }
+    ;
+    handleQueuedEvent(eventInfo) {
+        const { type, event, promise } = eventInfo;
+        const val = this[type](event);
+        promise.doResolve(val);
+        return val;
+    }
+    ;
+    destroy() {
     }
     ;
 }
 exports.FrameState = FrameState;
-updateInfo(info, any);
-{
-}
-requestWillBeSent(resource);
-{
-}
-responseReceived(event);
-{
-}
-executionContextCreated(context);
-{
-}
-markRefreshingRoot(r, boolean);
-{
-    if (r) {
-        this._refreshingRoot = true;
-    }
-    else {
-        this._refreshingRoot = false;
-        while (this._queuedEvents.length > 0) {
-            var queuedEvent = this._queuedEvents.shift();
-            // console.log('queuedEvent');
-            this._handleQueuedEvent(queuedEvent);
-        }
-    }
-}
-;
-destroy();
-{
-}
 // var _ = require('underscore'),
 // 	util = require('util'),
 // 	EventEmitter = require('events'),

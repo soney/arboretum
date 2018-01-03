@@ -1,58 +1,64 @@
 import {DOMState} from './dom_state';
+import {EventManager} from '../event_manager';
+import {ResourceTracker} from '../resource_tracker';
+
+type nodeID = string;
+
 export class FrameState {
+	private setMainFrameExecuted:boolean = false;
 	private refreshingRoot:boolean = false;
 	private root:boolean = false;
-	private nodeMap = new Map();
-	private oldNodeMap = new Map();
-	private queuedEvents = [];
+	private domParent:DOMState = null;
+	private nodeMap:Map<nodeID, DOMState> = new Map<nodeID, DOMState>();
+	private oldNodeMap:Map<nodeID, DOMState> = new Map<nodeID, DOMState>();
+	private queuedEvents:Array<any> = [];
+	private executionContext:any = null;
+
 	private eventManager:EventManager;
+	private resourceTracker:ResourceTracker;
 
     constructor(private chrome, private info:any) {
-		this._markRefreshingRoot(true);
+		this.markRefreshingRoot(true);
+        this.setMainFrameExecuted = false;
 
-		this.chrome = chrome;
-		this.options = options;
-	        this.setMainFrameExecuted = false;
-
-		this._domParent = false;
-		this._nodeMap = {};
-		this._oldNodeMap = {};
-		this._queuedEvents = [];
-		this._executionContext = false;
-		this._root = false;
 		this.eventManager = new EventManager(chrome, this);
 
-		this._resourceTracker = new ResourceTracker(chrome, this, options.resources);
-		log.debug('=== CREATED FRAME STATE', this.getFrameId(), ' ====');
+		this.resourceTracker = new ResourceTracker(chrome, this, info.resources);
+		// log.debug('=== CREATED FRAME STATE', this.getFrameId(), ' ====');
 	};
-    }
     public updateInfo(info:any) {
 
-    }
+    };
     public requestWillBeSent(resource) {
 
-    }
+    };
     public responseReceived(event) {
 
-    }
+    };
     public executionContextCreated(context) {
 
-    }
+    };
 	private markRefreshingRoot(r:boolean) {
 		if(r) {
-			this._refreshingRoot = true;
+			this.refreshingRoot = true;
 		} else {
-			this._refreshingRoot = false;
+			this.refreshingRoot = false;
 
-			while(this._queuedEvents.length > 0) {
-				var queuedEvent = this._queuedEvents.shift();
-                               // console.log('queuedEvent');
-				this._handleQueuedEvent(queuedEvent);
+			while(this.queuedEvents.length > 0) {
+				var queuedEvent = this.queuedEvents.shift();
+				this.handleQueuedEvent(queuedEvent);
 			}
 		}
 	};
+	private handleQueuedEvent(eventInfo:any) {
+		const {type, event, promise} = eventInfo;
+		const val = this[type](event);
+		promise.doResolve(val);
+		return val;
+	};
+
     public destroy() {
-    }
+    };
 }
 // var _ = require('underscore'),
 // 	util = require('util'),
