@@ -8,6 +8,9 @@ import * as express from 'express';
 import * as http from 'http';
 import * as WebSocket from 'ws';
 import * as WebSocketJSONStream from 'websocket-json-stream';
+import {getColoredLogger, level, setLevel} from '../../utils/logging';
+
+const log = getColoredLogger('red');
 
 // var cri = require('chrome-remote-interface'),
 // 	_ = require('underscore'),
@@ -36,6 +39,7 @@ export class BrowserState {
 		_.extend(this.options, extraOptions);
 		this.intervalID = setInterval(_.bind(this.refreshTabs, this), 2000);
 		this.refreshTabs();
+		log.debug('=== CREATED BROWSER ===');
 	}
 	private refreshTabs() {
 		const existingTabs = new Set<tabID>(this.tabs.keys());

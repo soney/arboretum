@@ -5,6 +5,8 @@ const _ = require("underscore");
 const fileUrl = require("file-url");
 const path_1 = require("path");
 const tab_state_1 = require("./tab_state");
+const logging_1 = require("../../utils/logging");
+const log = logging_1.getColoredLogger('red');
 const projectFileURLPath = fileUrl(path_1.join(path_1.resolve(__dirname, '..', '..'), 'browser'));
 class BrowserState {
     constructor(state, extraOptions) {
@@ -14,6 +16,7 @@ class BrowserState {
         _.extend(this.options, extraOptions);
         this.intervalID = setInterval(_.bind(this.refreshTabs, this), 2000);
         this.refreshTabs();
+        log.debug('=== CREATED BROWSER ===');
     }
     refreshTabs() {
         const existingTabs = new Set(this.tabs.keys());

@@ -1,15 +1,23 @@
 import {FrameState} from './frame_state';
+import {getColoredLogger, level, setLevel} from '../../utils/logging';
 type frameID = string;
+type tabID = string;
+
+const log = getColoredLogger('orange');
 
 export class TabState {
+    private tabID:tabID;
     private rootFrame = null;
     private frames:Map<frameID, FrameState> = new Map<frameID, FrameState>();
     private pendingFrameEvents:Map<frameID, Array<any>> = new Map<frameID, Array<any>>();
     constructor(private info:any, private chrome) {
+        this.tabID = info.id;
         this.addFrameListeners();
         this.addNetworkListeners();
         this.addExecutionContextListeners();
-    }
+    	log.debug('=== CREATED TAB STATE', this.getTabId(), ' ====');
+    };
+    public getTabId():string { return this.tabID; }
     private addFrameListeners() {
         this.chrome.Page.enable();
         this.getResourceTree().then((tree) => {

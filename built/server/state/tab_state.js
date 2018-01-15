@@ -1,6 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const frame_state_1 = require("./frame_state");
+const logging_1 = require("../../utils/logging");
+const log = logging_1.getColoredLogger('orange');
 class TabState {
     constructor(info, chrome) {
         this.info = info;
@@ -66,10 +68,14 @@ class TabState {
                 console.error(`Could not find frame ${frameId}`);
             }
         };
+        this.tabID = info.id;
         this.addFrameListeners();
         this.addNetworkListeners();
         this.addExecutionContextListeners();
+        log.debug('=== CREATED TAB STATE', this.getTabId(), ' ====');
     }
+    ;
+    getTabId() { return this.tabID; }
     addFrameListeners() {
         this.chrome.Page.enable();
         this.getResourceTree().then((tree) => {
