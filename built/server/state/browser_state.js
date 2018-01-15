@@ -44,20 +44,9 @@ class BrowserState {
     ;
     initializeTab(tabInfo) {
         const { id } = tabInfo;
-        const chromeInstance = cri(_.extend({
-            chooseTab: tabInfo
-        }, this.options));
-        return new Promise((resolve, reject) => {
-            chromeInstance.once('connect', function (chrome) {
-                resolve(chrome);
-            }).once('error', function (err) {
-                reject(err);
-            });
-        }).then((chrome) => {
-            const tab = new tab_state_1.TabState(tabInfo, chrome);
-            this.tabs.set(id, tab);
-            return tab;
-        });
+        const tab = new tab_state_1.TabState(tabInfo);
+        this.tabs.set(id, tab);
+        return tab;
     }
     destroy() {
         clearInterval(this.intervalID);

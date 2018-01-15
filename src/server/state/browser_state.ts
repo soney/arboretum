@@ -64,22 +64,11 @@ export class BrowserState {
 		const existingTab = this.tabs.get(id);
 		existingTab.updateInfo(tabInfo);
 	};
-	private initializeTab(tabInfo):Promise<TabState> {
+	private initializeTab(tabInfo):TabState {
 		const {id} = tabInfo;
-		const chromeInstance = cri(_.extend({
-			chooseTab: tabInfo
-		}, this.options));
-		return new Promise((resolve, reject) => {
-			chromeInstance.once('connect', function(chrome) {
-				resolve(chrome);
-			}).once('error', function(err) {
-				reject(err);
-			});
-		}).then((chrome) => {
-			const tab:TabState = new TabState(tabInfo, chrome);
-			this.tabs.set(id, tab);
-			return tab;
-		});
+		const tab:TabState = new TabState(tabInfo);
+		this.tabs.set(id, tab);
+		return tab;
 	}
 	public destroy() {
 		clearInterval(this.intervalID);

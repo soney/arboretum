@@ -4,13 +4,29 @@ type frameID = string;
 type tabID = string;
 
 const log = getColoredLogger('orange');
+		// const chromeInstance = cri(_.extend({
+		// 	chooseTab: tabInfo
+		// }, this.options));
+		// return new Promise((resolve, reject) => {
+		// 	console.log('a');
+		// 	chromeInstance.once('connect', function(chrome) {
+		// 		console.log('b');
+		// 		resolve(chrome);
+		// 	}).once('error', function(err) {
+		// 		reject(err);
+		// 	});
+		// }).then((chrome) => {
+		// 	this.tabs.set(id, tab);
+		// 	return tab;
+		// });
 
 export class TabState {
     private tabID:tabID;
     private rootFrame = null;
     private frames:Map<frameID, FrameState> = new Map<frameID, FrameState>();
     private pendingFrameEvents:Map<frameID, Array<any>> = new Map<frameID, Array<any>>();
-    constructor(private info:any, private chrome) {
+    private chrome;
+    constructor(private info:any) {
         this.tabID = info.id;
         this.addFrameListeners();
         this.addNetworkListeners();

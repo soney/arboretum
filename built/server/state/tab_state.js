@@ -3,10 +3,24 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const frame_state_1 = require("./frame_state");
 const logging_1 = require("../../utils/logging");
 const log = logging_1.getColoredLogger('orange');
+// const chromeInstance = cri(_.extend({
+// 	chooseTab: tabInfo
+// }, this.options));
+// return new Promise((resolve, reject) => {
+// 	console.log('a');
+// 	chromeInstance.once('connect', function(chrome) {
+// 		console.log('b');
+// 		resolve(chrome);
+// 	}).once('error', function(err) {
+// 		reject(err);
+// 	});
+// }).then((chrome) => {
+// 	this.tabs.set(id, tab);
+// 	return tab;
+// });
 class TabState {
-    constructor(info, chrome) {
+    constructor(info) {
         this.info = info;
-        this.chrome = chrome;
         this.rootFrame = null;
         this.frames = new Map();
         this.pendingFrameEvents = new Map();
