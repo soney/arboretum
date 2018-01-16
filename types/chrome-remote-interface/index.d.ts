@@ -1,10 +1,15 @@
 declare module 'chrome-remote-interface' {
-    export enum TabType {
+    function cri(options:any):Chrome;
+    export = cri;
+    interface Chrome {
+
+    }
+    enum TabType {
         'page'
     }
-    export type TabID = string;
-    export type FrameID = string;
-    export interface TabInfo {
+    type TabID = string;
+    type FrameID = string;
+    interface TabInfo {
         description:string,
         devtoolsFrontendUrl:string,
         id:TabID,
@@ -17,17 +22,17 @@ declare module 'chrome-remote-interface' {
     interface ResourceTree {
 
     }
-    export interface Page {
+    interface Page {
         getResourceTree:(options:any, callback:(err:any, resources:ResourceTree)=>any) => void
     }
-    export interface Network {
+    interface Network {
     }
     interface ListTabsOptions {
         host:string,
         port:number,
         secure?:boolean
     }
-    export function listTabs(options:ListTabsOptions, callback:(err:any, tabs:Array<TabInfo>)=>any):void
+    function listTabs(options:ListTabsOptions, callback:(err:any, tabs:Array<TabInfo>)=>any):void
 
     interface BrowserVersion {
         protocolVersion:string,
@@ -36,7 +41,7 @@ declare module 'chrome-remote-interface' {
         userAgent:string,
         jsVersion:string
     }
-    export interface Browser {
+    interface Browser {
         close:()=>any,
         getVersion:()=>BrowserVersion
     }
