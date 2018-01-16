@@ -1,4 +1,4 @@
-import {listTabs, TabInfo, TabID} from 'chrome-remote-interface';
+import * as cri from 'chrome-remote-interface';
 import * as _ from 'underscore'
 import * as fileUrl from 'file-url';
 import {join, resolve} from 'path';
@@ -30,7 +30,7 @@ const log = getColoredLogger('red');
 
 const projectFileURLPath:string = fileUrl(join(resolve(__dirname, '..', '..'), 'browser'));
 export class BrowserState {
-	private tabs:Map<TabID, any> = new Map<TabID, TabState>();
+	private tabs:Map<cri.TabID, any> = new Map<TabID, TabState>();
 	private options = { host: 'localhost', port: 9222 }
 	private intervalID:NodeJS.Timer;
 	constructor(private state:any, extraOptions?) {
