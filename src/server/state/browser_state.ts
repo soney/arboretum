@@ -1,4 +1,4 @@
-import * as cri from 'chrome-remote-interface';
+import {listTabs, TabInfo, TabID} from 'chrome-remote-interface';
 import * as _ from 'underscore'
 import * as fileUrl from 'file-url';
 import {join, resolve} from 'path';
@@ -28,11 +28,9 @@ const log = getColoredLogger('red');
 // };
 //
 
-type tabID = string;
-
 const projectFileURLPath:string = fileUrl(join(resolve(__dirname, '..', '..'), 'browser'));
 export class BrowserState {
-	private tabs:Map<tabID, any> = new Map<tabID, TabState>();
+	private tabs:Map<TabID, any> = new Map<TabID, TabState>();
 	private options = { host: 'localhost', port: 9222 }
 	private intervalID:NodeJS.Timer;
 	constructor(private state:any, extraOptions?) {
@@ -41,39 +39,33 @@ export class BrowserState {
 		this.refreshTabs();
 		log.debug('=== CREATED BROWSER ===');
 	}
-	private refreshTabs() {
-		const existingTabs = new Set<tabID>(this.tabs.keys());
-		this.getTabs().then((tabInfos) => {
+	private refreshTabs():void {
+		this.getTabs().then((tabInfos:Array<TabInfo>) => {
+			const existingTabs = new Set<TabID>(this.tabs.keys());
 			_.each(tabInfos, (tabInfo) => {
 				const {id} = tabInfo;
+				let tab:TabState;
 				if(existingTabs.has(id)) {
+					tab = this.tabs.get(id);
 					existingTabs.delete(id);
-					this.updateTab(tabInfo);
+					tab.updateInfo(tabInfo);
 				} else {
-					this.initializeTab(tabInfo);
+					tab = new TabState(tabInfo);
+					this.tabs.set(id, tab);
 				}
 			});
 
-			existingTabs.forEach((id:tabID) => {
+			existingTabs.forEach((id:TabID) => {
 				this.destroyTab(id);
 			});
+		}).catch((err) => {
+			throw(err);
 		});
-	}
-	private updateTab(tabInfo) {
-		const {id} = tabInfo;
-		const existingTab = this.tabs.get(id);
-		existingTab.updateInfo(tabInfo);
-	};
-	private initializeTab(tabInfo):TabState {
-		const {id} = tabInfo;
-		const tab:TabState = new TabState(tabInfo);
-		this.tabs.set(id, tab);
-		return tab;
 	}
 	public destroy() {
 		clearInterval(this.intervalID);
 	};
-	private destroyTab(id:tabID) {
+	private destroyTab(id:TabID) {
 		if(this.tabs.has(id)) {
 			const tab = this.getTab(id);
 			tab.destroy();
@@ -117,12 +109,14 @@ export class BrowserState {
 	private tabIsInspectable(tab:any):boolean {
 		return tab.type === 'page' && tab.title!=='arboretumInternal' && tab.url !=='http://localhost:3000/o' && tab.url !=='http://localhost:3000' && tab.url.indexOf('chrome-devtools://') !== 0 && tab.url.indexOf(projectFileURLPath) !== 0;
 	}
-	private getTabs():Promise<Array<any>> {
-		return new Promise((resolve, reject) => {
-			(cri as any).listTabs(this.options, (err, tabs) => {
-				if(err) { reject(tabs); }
+	private getTabs():Promise<Array<TabInfo>> {
+		return new Promise<Array<TabInfo>>((resolve, reject) => {
+			listTabs(this.options, (err, tabs) => {
+				if(err) { reject(err); }
 				else { resolve(_.filter(tabs, (tab)=>this.tabIsInspectable(tab))); }
 			});
+		}).catch((err) => {
+			throw(err);
 		});
 	}
 	public requestResource(url:string, frameID, tabID) {
@@ -131,7 +125,7 @@ export class BrowserState {
 			// return tabState.requestResource(url, frameId);
 		// });
 	};
-	private getTab(id:tabID):TabState {
+	private getTab(id:TabID):TabState {
 		return this.tabs.get(id);
 	}
 };

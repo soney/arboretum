@@ -1,12 +1,27 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const cri = require("chrome-remote-interface");
+const chrome_remote_interface_1 = require("chrome-remote-interface");
 const _ = require("underscore");
 const fileUrl = require("file-url");
 const path_1 = require("path");
 const tab_state_1 = require("./tab_state");
 const logging_1 = require("../../utils/logging");
 const log = logging_1.getColoredLogger('red');
+// var cri = require('chrome-remote-interface'),
+// 	_ = require('underscore'),
+// 	util = require('util'),
+// 	EventEmitter = require('events'),
+// 	TabState = require('./tab_state').TabState;
+// var log = require('../../utils/logging').getColoredLogger('red');
+// var fileUrl = require('file-url'),
+// 	path = require('path'),
+//     electron = require('electron'),
+//     ipcMain = electron.ipcMain;
+// var OPTION_DEFAULTS = {
+// 	host: 'localhost',
+// 	port: 9222
+// };
+//
 const projectFileURLPath = fileUrl(path_1.join(path_1.resolve(__dirname, '..', '..'), 'browser'));
 class BrowserState {
     constructor(state, extraOptions) {
@@ -19,34 +34,27 @@ class BrowserState {
         log.debug('=== CREATED BROWSER ===');
     }
     refreshTabs() {
-        const existingTabs = new Set(this.tabs.keys());
         this.getTabs().then((tabInfos) => {
+            const existingTabs = new Set(this.tabs.keys());
             _.each(tabInfos, (tabInfo) => {
                 const { id } = tabInfo;
+                let tab;
                 if (existingTabs.has(id)) {
+                    tab = this.tabs.get(id);
                     existingTabs.delete(id);
-                    this.updateTab(tabInfo);
+                    tab.updateInfo(tabInfo);
                 }
                 else {
-                    this.initializeTab(tabInfo);
+                    tab = new tab_state_1.TabState(tabInfo);
+                    this.tabs.set(id, tab);
                 }
             });
             existingTabs.forEach((id) => {
                 this.destroyTab(id);
             });
+        }).catch((err) => {
+            throw (err);
         });
-    }
-    updateTab(tabInfo) {
-        const { id } = tabInfo;
-        const existingTab = this.tabs.get(id);
-        existingTab.updateInfo(tabInfo);
-    }
-    ;
-    initializeTab(tabInfo) {
-        const { id } = tabInfo;
-        const tab = new tab_state_1.TabState(tabInfo);
-        this.tabs.set(id, tab);
-        return tab;
     }
     destroy() {
         clearInterval(this.intervalID);
@@ -99,14 +107,16 @@ class BrowserState {
     }
     getTabs() {
         return new Promise((resolve, reject) => {
-            cri.listTabs(this.options, (err, tabs) => {
+            chrome_remote_interface_1.listTabs(this.options, (err, tabs) => {
                 if (err) {
-                    reject(tabs);
+                    reject(err);
                 }
                 else {
                     resolve(_.filter(tabs, (tab) => this.tabIsInspectable(tab)));
                 }
             });
+        }).catch((err) => {
+            throw (err);
         });
     }
     requestResource(url, frameID, tabID) {

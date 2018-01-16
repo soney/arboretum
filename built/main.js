@@ -10,6 +10,7 @@ const express = require("express");
 const browser_state_1 = require("./server/state/browser_state");
 // const ChatServer = require('./server/chat');
 // const BrowserState = require('./server/state/browser_state');
+// process.traceProcessWarnings = true;
 const state = { chat: {}, browser: {} };
 const RDB_PORT = 9222;
 const HTTP_PORT = 3000;
@@ -229,6 +230,8 @@ function processFile(filename, onContents) {
                 resolve(data);
             }
         });
+    }).catch((err) => {
+        throw (err);
     });
 }
 function setClientOptions(options) {

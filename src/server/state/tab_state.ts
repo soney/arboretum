@@ -1,3 +1,4 @@
+import {TabInfo, TabID, FrameID} from 'chrome-remote-interface';
 import {FrameState} from './frame_state';
 import {getColoredLogger, level, setLevel} from '../../utils/logging';
 type frameID = string;
@@ -26,14 +27,14 @@ export class TabState {
     private frames:Map<frameID, FrameState> = new Map<frameID, FrameState>();
     private pendingFrameEvents:Map<frameID, Array<any>> = new Map<frameID, Array<any>>();
     private chrome;
-    constructor(private info:any) {
-        this.tabID = info.id;
-        this.addFrameListeners();
-        this.addNetworkListeners();
-        this.addExecutionContextListeners();
+    constructor(private info:TabInfo) {
+        this.getResourceTree();
+        // this.addFrameListeners();
+        // this.addNetworkListeners();
+        // this.addExecutionContextListeners();
     	log.debug('=== CREATED TAB STATE', this.getTabId(), ' ====');
     };
-    public getTabId():string { return this.tabID; }
+    public getTabId():string { return this.info.id; }
     private addFrameListeners() {
         this.chrome.Page.enable();
         this.getResourceTree().then((tree) => {
@@ -132,6 +133,7 @@ export class TabState {
     private getResourceTree():Promise<any> {
         return new Promise((resolve, reject) => {
             this.chrome.Page.getResourceTree({}, (err, value) => {
+                console.log(value);
                 if(err) { reject(value); }
                 else { resolve(value); }
             });

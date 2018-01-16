@@ -11,6 +11,7 @@ import * as WebSocketJSONStream from 'websocket-json-stream';
 import {BrowserState} from './server/state/browser_state';
 // const ChatServer = require('./server/chat');
 // const BrowserState = require('./server/state/browser_state');
+// process.traceProcessWarnings = true;
 
 const state = { chat:{}, browser: { }};
 
@@ -234,14 +235,16 @@ expressApp.all('/', (req, res, next) => {
 // 	return browserState.destroy();
 // }
 function processFile(filename:string, onContents):Promise<string> {
-	return new Promise(function(resolve, reject) {
+	return new Promise<string>(function(resolve, reject) {
 		readFile(filename, {
 			encoding: 'utf8'
 		}, function(err, data) {
 			if(err) { reject(err); }
 			else { resolve(data); }
 		})
-	});
+	}).catch((err) => {
+        throw(err);
+    });
 }
 function setClientOptions(options):Promise<string> {
 	return processFile(join(__dirname, 'client_pages', 'index.html'), function(contents) {
