@@ -4,22 +4,7 @@ import {getColoredLogger, level, setLevel} from '../../utils/logging';
 type frameID = string;
 type tabID = string;
 
-const log = getColoredLogger('orange');
-		// const chromeInstance = cri(_.extend({
-		// 	chooseTab: tabInfo
-		// }, this.options));
-		// return new Promise((resolve, reject) => {
-		// 	console.log('a');
-		// 	chromeInstance.once('connect', function(chrome) {
-		// 		console.log('b');
-		// 		resolve(chrome);
-		// 	}).once('error', function(err) {
-		// 		reject(err);
-		// 	});
-		// }).then((chrome) => {
-		// 	this.tabs.set(id, tab);
-		// 	return tab;
-		// });
+const log = getColoredLogger('yellow');
 
 export class TabState {
     private tabID:tabID;
@@ -27,21 +12,30 @@ export class TabState {
     private frames:Map<frameID, FrameState> = new Map<frameID, FrameState>();
     private pendingFrameEvents:Map<frameID, Array<any>> = new Map<frameID, Array<any>>();
     private chrome:CRI.Chrome;
+    private connected:Promise<CRI.Chrome>;
     constructor(private info:CRI.TabInfo) {
         this.getResourceTree();
         this.chrome = cri({
             chooseTab: this.info
         });
-        this.chrome.once('connect', (chrome) => {
-
+        this.connected = new Promise<CRI.Chrome>((resolve, reject) => {
+            this.chrome.once('connect', (chrome:CRI.Chrome) => {
+                resolve(chrome);
+            });
+        }).catch((err) => {
+            throw(err);
         });
-        // this.addFrameListeners();
-        // this.addNetworkListeners();
-        // this.addExecutionContextListeners();
+
+        this.connected.then(() => {
+            this.addFrameListeners();
+            this.addNetworkListeners();
+            this.addExecutionContextListeners();
+        });
     	log.debug('=== CREATED TAB STATE', this.getTabId(), ' ====');
     };
     public getTabId():string { return this.info.id; }
     private addFrameListeners() {
+        console.log(this.chrome);
         this.chrome.Page.enable();
         this.getResourceTree().then((tree) => {
             this.chrome.Page.frameAttached(this.onFrameAttached);

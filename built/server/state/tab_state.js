@@ -3,22 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const cri = require("chrome-remote-interface");
 const frame_state_1 = require("./frame_state");
 const logging_1 = require("../../utils/logging");
-const log = logging_1.getColoredLogger('orange');
-// const chromeInstance = cri(_.extend({
-// 	chooseTab: tabInfo
-// }, this.options));
-// return new Promise((resolve, reject) => {
-// 	console.log('a');
-// 	chromeInstance.once('connect', function(chrome) {
-// 		console.log('b');
-// 		resolve(chrome);
-// 	}).once('error', function(err) {
-// 		reject(err);
-// 	});
-// }).then((chrome) => {
-// 	this.tabs.set(id, tab);
-// 	return tab;
-// });
+const log = logging_1.getColoredLogger('yellow');
 class TabState {
     constructor(info) {
         this.info = info;
@@ -87,16 +72,24 @@ class TabState {
         this.chrome = cri({
             chooseTab: this.info
         });
-        this.chrome.once('connect', (chrome) => {
+        this.connected = new Promise((resolve, reject) => {
+            this.chrome.once('connect', (chrome) => {
+                resolve(chrome);
+            });
+        }).catch((err) => {
+            throw (err);
         });
-        // this.addFrameListeners();
-        // this.addNetworkListeners();
-        // this.addExecutionContextListeners();
+        this.connected.then(() => {
+            this.addFrameListeners();
+            this.addNetworkListeners();
+            this.addExecutionContextListeners();
+        });
         log.debug('=== CREATED TAB STATE', this.getTabId(), ' ====');
     }
     ;
     getTabId() { return this.info.id; }
     addFrameListeners() {
+        console.log(this.chrome);
         this.chrome.Page.enable();
         this.getResourceTree().then((tree) => {
             this.chrome.Page.frameAttached(this.onFrameAttached);
