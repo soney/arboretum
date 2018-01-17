@@ -1,6 +1,6 @@
-interface EventEmitter {
-    once:(event:string, callback:(err:any, data:any)=>void) => void;
-    on:(event:string, callback:(err:any, data:any)=>void) => void;
+interface EventEmitter<E> {
+    once:(event:string, callback:(err:any, data:E)=>void) => void;
+    on:(event:string, callback:(err:any, data:E)=>void) => void;
 }
 declare namespace CRI {
     enum TabType {
@@ -46,16 +46,31 @@ declare namespace CRI {
     interface Frame {
 
     }
-    type frameAttachedEvent = (frameId:FrameID, parentFrameId:FrameID, stack:StackTrace) => void;
-    type frameDetachedEvent = (frameId:FrameID) => void;
-    type frameNavigatedEvent = (frame:Frame) => void;
+    interface FrameAttachedEvent {
+        frameId: FrameID,
+        parentFrameId:FrameID,
+        stack:StackTrace
+    }
+    interface FrameAttachedEvent {
+        frameId:FrameID,
+        parentFrameId:FrameID,
+        stack:StackTrace
+    }
+    interface FrameDetachedEvent {
+        frameId:FrameID
+    }
+    interface ExecutionContextCreatedEvent {
+
+    }
+
+    interface GetResourceTreeOptions {}
     interface Page {
         enable:()=>void;
         disable:()=>void;
-        getResourceTree:(options:any, callback:(err:any, resources:ResourceTree)=>any) => void;
-        frameAttached:(event:frameAttachedEvent)=>void;
-        frameDetached:(event:frameDetachedEvent)=>void;
-        frameNavigated:(event:frameNavigatedEvent)=>void;
+        getResourceTree:(options:GetResourceTreeOptions, callback:(err:any, resources:ResourceTree)=>any) => void;
+        frameAttached:(callback:(FrameAttachedEvent)=>void) => void;
+        frameDetached:(callback:(FrameDetachedEvent)=>void) => void;
+        frameNavigated:(callback:(FrameNavigatedEvent)=>void) => void;
     }
     interface ListTabsOptions {
         host:string,
@@ -74,7 +89,7 @@ declare namespace CRI {
         close:()=>any,
         getVersion:()=>BrowserVersion
     }
-    interface Chrome extends EventEmitter {
+    interface Chrome extends EventEmitter<any> {
         Page:Page,
         DOM:DOM,
         Runtime:Runtime,
@@ -86,6 +101,15 @@ declare namespace CRI {
     }
     interface DOM {
         getDocument:(params:getDocumentOptions, callback:(err:any, root:Node)=>void) => void
+    }
+    interface FrameResourceTree {
+        frame:Frame,
+        childFrames:Array<FrameResourceTree>,
+        resources:Array<FrameResourceTree>
+    }
+    interface FrameTree {
+        frame:Frame,
+        childFrames:Array<FrameTree>
     }
     interface Node {
         nodeId:NodeID,
@@ -120,7 +144,7 @@ declare namespace CRI {
     interface Runtime {
         enable:()=>void,
         disable:()=>void,
-        executionContextCreated:(callback:(event:RequestWillBeSentCallback)=>void) => void,
+        executionContextCreated:(callback:(event:ExecutionContextCreatedEvent)=>void) => void,
     }
     interface Initiator {
         type:string,
@@ -128,7 +152,7 @@ declare namespace CRI {
         url:string,
         lineNumber:number
     }
-    interface RequestWillBeSentCallback {
+    interface RequestWillBeSentEvent {
         requestId:RequestID,
         loaderId:LoaderID,
         documentURL:string,
@@ -140,7 +164,7 @@ declare namespace CRI {
         type:ResourceType,
         frameId:FrameID
     }
-    interface ResponseReceivedCallback {
+    interface ResponseReceivedEvent {
         requestId:RequestID,
         loaderId:LoaderID,
         timestamp:MonotonicTime,
@@ -150,8 +174,8 @@ declare namespace CRI {
     }
     interface Network {
         enable:()=>void,
-        requestWillBeSent:(callback:(event:RequestWillBeSentCallback)=>void) => void,
-        responseReceived:(callback:(event:ResponseReceivedCallback)=>void) => void
+        requestWillBeSent:(callback:(event:RequestWillBeSentEvent)=>void) => void,
+        responseReceived:(callback:(event:ResponseReceivedEvent)=>void) => void
     }
 }
 
@@ -164,7 +188,7 @@ declare module 'chrome-remote-interface' {
         protocol?:string,
         local?:boolean
     }
-    function CRIFunction(options:CRIOptions):CRI.Chrome;
+    function CRIFunction(options:CRIOptions):EventEmitter<CRI.Chrome>;
     namespace CRIFunction {
         function listTabs(options:CRI.ListTabsOptions, callback:(err:any, tabs:Array<CRI.TabInfo>)=>any):void;
         function spawnTab();

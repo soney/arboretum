@@ -12,30 +12,32 @@ export class TabState {
     private frames:Map<frameID, FrameState> = new Map<frameID, FrameState>();
     private pendingFrameEvents:Map<frameID, Array<any>> = new Map<frameID, Array<any>>();
     private chrome:CRI.Chrome;
-    private connected:Promise<CRI.Chrome>;
+    private chromePromise:Promise<CRI.Chrome>;
     constructor(private info:CRI.TabInfo) {
         this.getResourceTree();
-        this.chrome = cri({
+        const chromeEventEmitter:EventEmitter<CRI.Chrome> = cri({
             chooseTab: this.info
         });
-        this.connected = new Promise<CRI.Chrome>((resolve, reject) => {
-            this.chrome.once('connect', (chrome:CRI.Chrome) => {
+        this.chromePromise = new Promise<CRI.Chrome>((resolve, reject) => {
+            chromeEventEmitter.once('connect', (chrome:CRI.Chrome) => {
+                this.chrome = chrome;
                 resolve(chrome);
             });
         }).catch((err) => {
             throw(err);
         });
 
-        this.connected.then(() => {
+        this.chromePromise.then(() => {
             this.addFrameListeners();
             this.addNetworkListeners();
             this.addExecutionContextListeners();
+        }).catch((err) => {
+            throw(err);
         });
     	log.debug('=== CREATED TAB STATE', this.getTabId(), ' ====');
     };
     public getTabId():string { return this.info.id; }
     private addFrameListeners() {
-        console.log(this.chrome);
         this.chrome.Page.enable();
         this.getResourceTree().then((tree) => {
             this.chrome.Page.frameAttached(this.onFrameAttached);
@@ -108,7 +110,7 @@ export class TabState {
             });
         }
     }
-    private executionContextCreated = (event) => {
+    private executionContextCreated = (event:CRI.ExecutionContextCreatedEvent) => {
         const {context} = event;
         const {auxData} = context;
         const {frameId} = auxData;
@@ -116,7 +118,7 @@ export class TabState {
             const frameState = this.getFrame(frameId);
             frameState.executionContextCreated(event);
         } else {
-            console.error(`Could not find frame ${frameId}`);
+            log.error(`Could not find frame ${frameId}`);
         }
     };
     private addPendingFrameEvent(eventInfo:any):void {
@@ -133,7 +135,6 @@ export class TabState {
     private getResourceTree():Promise<any> {
         return new Promise((resolve, reject) => {
             this.chrome.Page.getResourceTree({}, (err, value) => {
-                console.log(value);
                 if(err) { reject(value); }
                 else { resolve(value); }
             });
@@ -145,6 +146,8 @@ export class TabState {
                 if(err) { reject(value); }
                 else { resolve(value); }
             });
+        }).catch((err) => {
+            throw(err);
         });
     };
     private destroyFrame(frameState:FrameState) {

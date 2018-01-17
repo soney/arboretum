@@ -65,31 +65,33 @@ class TabState {
                 frameState.executionContextCreated(event);
             }
             else {
-                console.error(`Could not find frame ${frameId}`);
+                log.error(`Could not find frame ${frameId}`);
             }
         };
         this.getResourceTree();
-        this.chrome = cri({
+        const chromeEventEmitter = cri({
             chooseTab: this.info
         });
-        this.connected = new Promise((resolve, reject) => {
-            this.chrome.once('connect', (chrome) => {
+        this.chromePromise = new Promise((resolve, reject) => {
+            chromeEventEmitter.once('connect', (chrome) => {
+                this.chrome = chrome;
                 resolve(chrome);
             });
         }).catch((err) => {
             throw (err);
         });
-        this.connected.then(() => {
+        this.chromePromise.then(() => {
             this.addFrameListeners();
             this.addNetworkListeners();
             this.addExecutionContextListeners();
+        }).catch((err) => {
+            throw (err);
         });
         log.debug('=== CREATED TAB STATE', this.getTabId(), ' ====');
     }
     ;
     getTabId() { return this.info.id; }
     addFrameListeners() {
-        console.log(this.chrome);
         this.chrome.Page.enable();
         this.getResourceTree().then((tree) => {
             this.chrome.Page.frameAttached(this.onFrameAttached);
@@ -134,7 +136,6 @@ class TabState {
     getResourceTree() {
         return new Promise((resolve, reject) => {
             this.chrome.Page.getResourceTree({}, (err, value) => {
-                console.log(value);
                 if (err) {
                     reject(value);
                 }
@@ -155,6 +156,8 @@ class TabState {
                     resolve(value);
                 }
             });
+        }).catch((err) => {
+            throw (err);
         });
     }
     ;
