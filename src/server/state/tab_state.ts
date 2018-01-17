@@ -1,4 +1,4 @@
-import {TabInfo, TabID, FrameID} from 'chrome-remote-interface';
+import * as cri from 'chrome-remote-interface';
 import {FrameState} from './frame_state';
 import {getColoredLogger, level, setLevel} from '../../utils/logging';
 type frameID = string;
@@ -26,9 +26,15 @@ export class TabState {
     private rootFrame = null;
     private frames:Map<frameID, FrameState> = new Map<frameID, FrameState>();
     private pendingFrameEvents:Map<frameID, Array<any>> = new Map<frameID, Array<any>>();
-    private chrome;
-    constructor(private info:TabInfo) {
+    private chrome:CRI.Chrome;
+    constructor(private info:CRI.TabInfo) {
         this.getResourceTree();
+        this.chrome = cri({
+            chooseTab: this.info
+        });
+        this.chrome.once('connect', (chrome) => {
+
+        });
         // this.addFrameListeners();
         // this.addNetworkListeners();
         // this.addExecutionContextListeners();
@@ -83,20 +89,20 @@ export class TabState {
         const {frameId} = frameInfo;
         this.destroyFrame(frameId);
     };
-    private requestWillBeSent  = (resource) => {
-        const {frameId} = resource;
+    private requestWillBeSent  = (event:CRI.RequestWillBeSentCallback) => {
+        const {frameId} = event;
         if(this.hasFrame(frameId)) {
             const frame = this.getFrame(frameId);
-            frame.requestWillBeSent(resource);
+            frame.requestWillBeSent(event);
         } else {
             this.addPendingFrameEvent({
                 frameId: frameId,
-                event: resource,
+                event: event,
                 type: 'requestWillBeSent'
             });
         }
     }
-    private responseReceived = (event) => {
+    private responseReceived = (event:CRI.ResponseReceivedCallback) => {
         const {frameId} = event;
         if(this.hasFrame(frameId)) {
             this.getFrame(frameId).responseReceived(event);

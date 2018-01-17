@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const cri = require("chrome-remote-interface");
 const frame_state_1 = require("./frame_state");
 const logging_1 = require("../../utils/logging");
 const log = logging_1.getColoredLogger('orange');
@@ -43,16 +44,16 @@ class TabState {
             const { frameId } = frameInfo;
             this.destroyFrame(frameId);
         };
-        this.requestWillBeSent = (resource) => {
-            const { frameId } = resource;
+        this.requestWillBeSent = (event) => {
+            const { frameId } = event;
             if (this.hasFrame(frameId)) {
                 const frame = this.getFrame(frameId);
-                frame.requestWillBeSent(resource);
+                frame.requestWillBeSent(event);
             }
             else {
                 this.addPendingFrameEvent({
                     frameId: frameId,
-                    event: resource,
+                    event: event,
                     type: 'requestWillBeSent'
                 });
             }
@@ -83,6 +84,11 @@ class TabState {
             }
         };
         this.getResourceTree();
+        this.chrome = cri({
+            chooseTab: this.info
+        });
+        this.chrome.once('connect', (chrome) => {
+        });
         // this.addFrameListeners();
         // this.addNetworkListeners();
         // this.addExecutionContextListeners();
