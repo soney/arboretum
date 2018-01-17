@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const cri = require("chrome-remote-interface");
 const _ = require("underscore");
 const fileUrl = require("file-url");
 const path_1 = require("path");
@@ -106,7 +107,7 @@ class BrowserState {
     }
     getTabs() {
         return new Promise((resolve, reject) => {
-            listTabs(this.options, (err, tabs) => {
+            cri.listTabs(this.options, (err, tabs) => {
                 if (err) {
                     reject(err);
                 }

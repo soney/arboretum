@@ -30,7 +30,7 @@ const log = getColoredLogger('red');
 
 const projectFileURLPath:string = fileUrl(join(resolve(__dirname, '..', '..'), 'browser'));
 export class BrowserState {
-	private tabs:Map<cri.TabID, any> = new Map<TabID, TabState>();
+	private tabs:Map<CRI.TabID, any> = new Map<CRI.TabID, TabState>();
 	private options = { host: 'localhost', port: 9222 }
 	private intervalID:NodeJS.Timer;
 	constructor(private state:any, extraOptions?) {
@@ -40,8 +40,8 @@ export class BrowserState {
 		log.debug('=== CREATED BROWSER ===');
 	}
 	private refreshTabs():void {
-		this.getTabs().then((tabInfos:Array<TabInfo>) => {
-			const existingTabs = new Set<TabID>(this.tabs.keys());
+		this.getTabs().then((tabInfos:Array<CRI.TabInfo>) => {
+			const existingTabs = new Set<CRI.TabID>(this.tabs.keys());
 			_.each(tabInfos, (tabInfo) => {
 				const {id} = tabInfo;
 				let tab:TabState;
@@ -55,7 +55,7 @@ export class BrowserState {
 				}
 			});
 
-			existingTabs.forEach((id:TabID) => {
+			existingTabs.forEach((id:CRI.TabID) => {
 				this.destroyTab(id);
 			});
 		}).catch((err) => {
@@ -65,7 +65,7 @@ export class BrowserState {
 	public destroy() {
 		clearInterval(this.intervalID);
 	};
-	private destroyTab(id:TabID) {
+	private destroyTab(id:CRI.TabID) {
 		if(this.tabs.has(id)) {
 			const tab = this.getTab(id);
 			tab.destroy();
@@ -109,9 +109,9 @@ export class BrowserState {
 	private tabIsInspectable(tab:any):boolean {
 		return tab.type === 'page' && tab.title!=='arboretumInternal' && tab.url !=='http://localhost:3000/o' && tab.url !=='http://localhost:3000' && tab.url.indexOf('chrome-devtools://') !== 0 && tab.url.indexOf(projectFileURLPath) !== 0;
 	}
-	private getTabs():Promise<Array<TabInfo>> {
-		return new Promise<Array<TabInfo>>((resolve, reject) => {
-			listTabs(this.options, (err, tabs) => {
+	private getTabs():Promise<Array<CRI.TabInfo>> {
+		return new Promise<Array<CRI.TabInfo>>((resolve, reject) => {
+			cri.listTabs(this.options, (err, tabs) => {
 				if(err) { reject(err); }
 				else { resolve(_.filter(tabs, (tab)=>this.tabIsInspectable(tab))); }
 			});
@@ -125,7 +125,7 @@ export class BrowserState {
 			// return tabState.requestResource(url, frameId);
 		// });
 	};
-	private getTab(id:TabID):TabState {
+	private getTab(id:CRI.TabID):TabState {
 		return this.tabs.get(id);
 	}
 };
