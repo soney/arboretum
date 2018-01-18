@@ -1,6 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const hack_driver_1 = require("../hack_driver/hack_driver");
+const logging_1 = require("../../utils/logging");
+const log = logging_1.getColoredLogger('magenta');
 class DOMState {
     constructor(node, chrome, frame, parent) {
         this.node = node;

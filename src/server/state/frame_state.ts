@@ -1,7 +1,9 @@
 import {DOMState} from './dom_state';
 import {EventManager} from '../event_manager';
 import {ResourceTracker} from '../resource_tracker';
+import {getColoredLogger, level, setLevel} from '../../utils/logging';
 
+const log = getColoredLogger('green');
 type nodeID = string;
 
 export class FrameState {
@@ -17,14 +19,14 @@ export class FrameState {
 	private eventManager:EventManager;
 	private resourceTracker:ResourceTracker;
 
-    constructor(private chrome, private info:any) {
+    constructor(private chrome, private info:CRI.Frame) {
 		this.markRefreshingRoot(true);
         this.setMainFrameExecuted = false;
 
 		this.eventManager = new EventManager(chrome, this);
 
-		this.resourceTracker = new ResourceTracker(chrome, this, info.resources);
-		// log.debug('=== CREATED FRAME STATE', this.getFrameId(), ' ====');
+		// this.resourceTracker = new ResourceTracker(chrome, this, info.resources);
+		log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
 	};
     public updateInfo(info:any) {
 
@@ -59,6 +61,9 @@ export class FrameState {
 
     public destroy() {
     };
+	public getFrameId():CRI.FrameID {
+		return this.info.id;
+	}
 }
 // var _ = require('underscore'),
 // 	util = require('util'),

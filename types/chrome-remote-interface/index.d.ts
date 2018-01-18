@@ -8,6 +8,7 @@ declare namespace CRI {
     }
     type NodeID = number;
     type BackendNodeID = number;
+    type ExecutionContextID = number;
     type TabID = string;
     type FrameID = string;
     type PseudoType = string;
@@ -44,23 +45,38 @@ declare namespace CRI {
         StackTrace:StackTrace
     }
     interface Frame {
-
+        id:FrameID,
+        parentId:string,
+        loaderId:LoaderID,
+        name:string,
+        url:string,
+        securityOrigin:string,
+        mimeType:string,
+        unreachableUrl?:string
     }
     interface FrameAttachedEvent {
         frameId: FrameID,
         parentFrameId:FrameID,
         stack:StackTrace
     }
-    interface FrameAttachedEvent {
-        frameId:FrameID,
-        parentFrameId:FrameID,
-        stack:StackTrace
+    interface FrameNavigatedEvent {
+        frame: Frame
     }
     interface FrameDetachedEvent {
         frameId:FrameID
     }
-    interface ExecutionContextCreatedEvent {
-
+    interface ExecutionContextEvent {
+        context:ExecutionContextDescription
+    }
+    interface ExecutionContextAuxData {
+        isDefault:boolean,
+        frameId:FrameID
+    }
+    interface ExecutionContextDescription {
+        id:ExecutionContextID,
+        origin:string,
+        name:string,
+        auxData:ExecutionContextAuxData
     }
 
     interface GetResourceTreeOptions {}
@@ -144,7 +160,7 @@ declare namespace CRI {
     interface Runtime {
         enable:()=>void,
         disable:()=>void,
-        executionContextCreated:(callback:(event:ExecutionContextCreatedEvent)=>void) => void,
+        executionContextCreated:(callback:(event:ExecutionContextEvent)=>void) => void,
     }
     interface Initiator {
         type:string,

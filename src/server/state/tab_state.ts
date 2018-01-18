@@ -26,6 +26,7 @@ export class TabState {
         }).catch((err) => {
             throw(err);
         });
+        log.debug("HELLO");
 
         this.chromePromise.then(() => {
             this.addFrameListeners();
@@ -34,7 +35,7 @@ export class TabState {
         }).catch((err) => {
             throw(err);
         });
-    	log.debug('=== CREATED TAB STATE', this.getTabId(), ' ====');
+    	log.debug(`=== CREATED TAB STATE ${this.getTabId()} ====`);
     };
     public getTabId():string { return this.info.id; }
     private addFrameListeners() {
@@ -67,25 +68,27 @@ export class TabState {
         this.setTitle(title);
         this.setURL(url);
     }
-    private onFrameAttached = (frameInfo) => {
+    private onFrameAttached = (frameInfo:CRI.FrameAttachedEvent) => {
 		const {frameId, parentFrameId} = frameInfo;
 		// this._createEmptyFrame(frameInfo, parentFrameId ? this.getFrame(parentFrameId) : false);
 	};
-    private onFrameNavigated = (frameInfo) => {
-        const {frame, id, url} = frameInfo;
+    private onFrameNavigated = (frameInfo:CRI.FrameNavigatedEvent) => {
+        const {frame} = frameInfo;
+        const {id, url} = frame;
+
         let frameState:FrameState;
         if(this.hasFrame(id)) {
             frameState = this.getFrame(id);
         } else {
-            frameState = new FrameState(this.chrome, frameInfo);
+            frameState = new FrameState(this.chrome, frame);
         }
         frameState.updateInfo(frameInfo);
     }
-    private onFrameDetached = (frameInfo) => {
+    private onFrameDetached = (frameInfo:CRI.FrameDetachedEvent) => {
         const {frameId} = frameInfo;
         this.destroyFrame(frameId);
     };
-    private requestWillBeSent  = (event:CRI.RequestWillBeSentCallback) => {
+    private requestWillBeSent  = (event:CRI.RequestWillBeSentEvent) => {
         const {frameId} = event;
         if(this.hasFrame(frameId)) {
             const frame = this.getFrame(frameId);
@@ -98,7 +101,7 @@ export class TabState {
             });
         }
     }
-    private responseReceived = (event:CRI.ResponseReceivedCallback) => {
+    private responseReceived = (event:CRI.ResponseReceivedEvent) => {
         const {frameId} = event;
         if(this.hasFrame(frameId)) {
             this.getFrame(frameId).responseReceived(event);
@@ -110,7 +113,7 @@ export class TabState {
             });
         }
     }
-    private executionContextCreated = (event:CRI.ExecutionContextCreatedEvent) => {
+    private executionContextCreated = (event:CRI.ExecutionContextEvent) => {
         const {context} = event;
         const {auxData} = context;
         const {frameId} = auxData;
@@ -132,16 +135,18 @@ export class TabState {
     private getFrame(id:frameID):FrameState { return this.frames.get(id); }
     private hasFrame(id:frameID):boolean { return this.frames.has(id); }
 
-    private getResourceTree():Promise<any> {
-        return new Promise((resolve, reject) => {
-            this.chrome.Page.getResourceTree({}, (err, value) => {
+    private getResourceTree():Promise<CRI.ResourceTree> {
+        return new Promise<CRI.ResourceTree>((resolve, reject) => {
+            this.chrome.Page.getResourceTree({}, (err, value:CRI.ResourceTree) => {
                 if(err) { reject(value); }
                 else { resolve(value); }
             });
+        }).catch((err) => {
+            throw(err);
         });
     };
-    private getDocument():Promise<any> {
-        return new Promise((resolve, reject) => {
+    private getDocument():Promise<CRI.Node> {
+        return new Promise<CRI.Node>((resolve, reject) => {
             this.chrome.DOM.getDocument({}, (err, value) => {
                 if(err) { reject(value); }
                 else { resolve(value); }
@@ -150,8 +155,11 @@ export class TabState {
             throw(err);
         });
     };
-    private destroyFrame(frameState:FrameState) {
-
+    private destroyFrame(frameId:CRI.FrameID) {
+        if(this.hasFrame(frameId)) {
+            const frameState = this.getFrame(frameId);
+            frameState.destroy();
+        }
     }
     public destroy() {
 

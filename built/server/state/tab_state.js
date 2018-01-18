@@ -15,13 +15,14 @@ class TabState {
             // this._createEmptyFrame(frameInfo, parentFrameId ? this.getFrame(parentFrameId) : false);
         };
         this.onFrameNavigated = (frameInfo) => {
-            const { frame, id, url } = frameInfo;
+            const { frame } = frameInfo;
+            const { id, url } = frame;
             let frameState;
             if (this.hasFrame(id)) {
                 frameState = this.getFrame(id);
             }
             else {
-                frameState = new frame_state_1.FrameState(this.chrome, frameInfo);
+                frameState = new frame_state_1.FrameState(this.chrome, frame);
             }
             frameState.updateInfo(frameInfo);
         };
@@ -80,6 +81,7 @@ class TabState {
         }).catch((err) => {
             throw (err);
         });
+        log.debug("HELLO");
         this.chromePromise.then(() => {
             this.addFrameListeners();
             this.addNetworkListeners();
@@ -87,7 +89,7 @@ class TabState {
         }).catch((err) => {
             throw (err);
         });
-        log.debug('=== CREATED TAB STATE', this.getTabId(), ' ====');
+        log.debug(`=== CREATED TAB STATE ${this.getTabId()} ====`);
     }
     ;
     getTabId() { return this.info.id; }
@@ -143,6 +145,8 @@ class TabState {
                     resolve(value);
                 }
             });
+        }).catch((err) => {
+            throw (err);
         });
     }
     ;
@@ -161,7 +165,11 @@ class TabState {
         });
     }
     ;
-    destroyFrame(frameState) {
+    destroyFrame(frameId) {
+        if (this.hasFrame(frameId)) {
+            const frameState = this.getFrame(frameId);
+            frameState.destroy();
+        }
     }
     destroy() {
     }

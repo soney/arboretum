@@ -1,7 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const event_manager_1 = require("../event_manager");
-const resource_tracker_1 = require("../resource_tracker");
+const logging_1 = require("../../utils/logging");
+const log = logging_1.getColoredLogger('green');
 class FrameState {
     constructor(chrome, info) {
         this.chrome = chrome;
@@ -17,8 +18,8 @@ class FrameState {
         this.markRefreshingRoot(true);
         this.setMainFrameExecuted = false;
         this.eventManager = new event_manager_1.EventManager(chrome, this);
-        this.resourceTracker = new resource_tracker_1.ResourceTracker(chrome, this, info.resources);
-        // log.debug('=== CREATED FRAME STATE', this.getFrameId(), ' ====');
+        // this.resourceTracker = new ResourceTracker(chrome, this, info.resources);
+        log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
     }
     ;
     updateInfo(info) {
@@ -56,6 +57,9 @@ class FrameState {
     destroy() {
     }
     ;
+    getFrameId() {
+        return this.info.id;
+    }
 }
 exports.FrameState = FrameState;
 // var _ = require('underscore'),

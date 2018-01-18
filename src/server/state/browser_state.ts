@@ -46,16 +46,19 @@ export class BrowserState {
 				const {id} = tabInfo;
 				let tab:TabState;
 				if(existingTabs.has(id)) {
+					log.trace(`Updating info for tab ${id}`);
 					tab = this.tabs.get(id);
 					existingTabs.delete(id);
 					tab.updateInfo(tabInfo);
 				} else {
+					log.trace(`Creating tab ${id}`);
 					tab = new TabState(tabInfo);
 					this.tabs.set(id, tab);
 				}
 			});
 
 			existingTabs.forEach((id:CRI.TabID) => {
+				log.trace(`Destroying tab ${id}`);
 				this.destroyTab(id);
 			});
 		}).catch((err) => {

@@ -1,5 +1,8 @@
 import {FrameState} from './frame_state';
 import {getCanvasImage, getUniqueSelector, getElementValue} from '../hack_driver/hack_driver';
+import {getColoredLogger, level, setLevel} from '../../utils/logging';
+
+const log = getColoredLogger('magenta');
 
 export class DOMState {
     private destroyed:boolean = false;
