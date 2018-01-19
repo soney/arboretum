@@ -96,7 +96,11 @@ export class TabState {
 		var frame = this.getMainFrame();
 		frame.documentUpdated();
 	};
-	private onSetChildNodes = function(event):void {
+	private onSetChildNodes = function(event:CRI.SetChildNodesEvent):void {
+        const frameStates:Array<FrameState> = this.frames.values();
+        frameStates.forEach((frameState:FrameState) => {
+            frameState.setChildNodes(event);
+        });
         console.log('SETCHILDNODES')
         console.log(event);
 		// var promises = _.map(this._frames, function(frame) {

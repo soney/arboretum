@@ -15,6 +15,10 @@ class TabState {
             frame.documentUpdated();
         };
         this.onSetChildNodes = function (event) {
+            const frameStates = this.frames.values();
+            frameStates.forEach((frameState) => {
+                frameState.setChildNodes(event);
+            });
             console.log('SETCHILDNODES');
             console.log(event);
             // var promises = _.map(this._frames, function(frame) {

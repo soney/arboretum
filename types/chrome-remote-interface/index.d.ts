@@ -205,6 +205,10 @@ declare namespace CRI {
         response:Response,
         frameId:FrameID
     }
+    interface SetChildNodesResponse {
+        parentId:NodeID,
+        nodes:Array<Node>
+    }
     interface Network {
         enable:()=>void,
         requestWillBeSent:(callback:(event:RequestWillBeSentEvent)=>void) => void,

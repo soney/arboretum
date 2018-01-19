@@ -40,6 +40,33 @@ export class FrameState {
     public executionContextCreated(context) {
 
     };
+		public setChildNodes(event:CRI.SetChildNodesEvent) {
+		// if(this._isRefreshingRoot()) {
+		// 	log.debug('(queue) Character Data Modified');
+		// 	var promise = getResolvablePromise();
+		// 	this._queuedEvents.push({
+		// 		event: event,
+		// 		type: 'setChildNodes',
+		// 		promise: promise
+		// 	});
+		// 	return promise;
+		// } else {
+		// 	var parent = this._getWrappedDOMNodeWithID(event.parentId);
+    //
+		// 	if(parent) {
+		// 		var nodes = event.nodes;
+    //
+		// 		log.debug('Set Child Nodes ' + event.parentId + ' -> ['+_.map(event.nodes, function(node) { return node.nodeId; }).join(', ')+']');
+    //
+		// 		this._setChildrenRecursive(parent, nodes);
+		// 		return true;
+		// 	} else if(this._oldNodeMap[event.parentId]) {
+		// 		return true;
+		// 	} else {
+		// 		return false;
+		// 	}
+		// }
+	};
 	private markRefreshingRoot(r:boolean) {
 		if(r) {
 			this.refreshingRoot = true;
