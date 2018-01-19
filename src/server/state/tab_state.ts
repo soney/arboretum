@@ -14,7 +14,6 @@ export class TabState {
     private chrome:CRI.Chrome;
     private chromePromise:Promise<CRI.Chrome>;
     constructor(private info:CRI.TabInfo) {
-        this.getResourceTree();
         const chromeEventEmitter:EventEmitter<CRI.Chrome> = cri({
             chooseTab: this.info
         });
@@ -26,10 +25,11 @@ export class TabState {
         }).catch((err) => {
             throw(err);
         });
-        log.debug("HELLO");
 
         this.chromePromise.then(() => {
+            this.getResourceTree();
             this.addFrameListeners();
+            this.addDOMListeners();
             this.addNetworkListeners();
             this.addExecutionContextListeners();
         }).catch((err) => {
@@ -55,6 +55,28 @@ export class TabState {
         this.chrome.Runtime.enable();
         this.chrome.Runtime.executionContextCreated(this.executionContextCreated);
     }
+    private static DOMEventTypes:Array<string> = [ 'attributeModified', 'attributeRemoved', 'characterDataModified',
+		'childNodeCountUpdated', 'childNodeInserted', 'childNodeRemoved',
+		'documentUpdated', 'setChildNodes', 'inlineStyleInvalidated' ];
+	private addDOMListeners():void {
+        this.getDocument().then((root:CRI.Node) => {
+            // this.rootFrame.setRoot(root);
+            TabState.DOMEventTypes.forEach((eventType) => {
+                const capitalizedEventType = `on${eventType[0].toUpperCase()}${eventType.substr(1)}`;
+                const func:(event:any)=>void = this[capitalizedEventType];
+                this.chrome.on(`DOM.${eventType}`, func);
+            });
+            this.requestChildNodes(root.nodeId);
+		});
+	};
+	private requestChildNodes(nodeId:CRI.NodeID, depth:number=-1):Promise<null> {
+        return new Promise<null>((resolve, reject) => {
+            this.chrome.DOM.requestChildNodes({nodeId, depth}, (err, val) => {
+                if(err) { reject(val); }
+                else { resolve(null); }
+            });
+        });
+	};
     public getTitle():string { return this.info.title; }
     public getURL():string { return this.info.url; }
     private setTitle(title:string):void {
@@ -68,11 +90,147 @@ export class TabState {
         this.setTitle(title);
         this.setURL(url);
     }
-    private onFrameAttached = (frameInfo:CRI.FrameAttachedEvent) => {
+    private setMainFrame(frameInfo) {
+    }
+	private onDocumentUpdated = function():void {
+		var frame = this.getMainFrame();
+		frame.documentUpdated();
+	};
+	private onSetChildNodes = function(event):void {
+        console.log('SETCHILDNODES')
+        console.log(event);
+		// var promises = _.map(this._frames, function(frame) {
+		// 	return frame.setChildNodes(event);
+		// });
+		// return Promise.all(promises).then(function(vals) {
+		// 	return _.any(vals);
+		// }).then(function(wasHandled) {
+		// 	if(!wasHandled) {
+		// 		log.error('No frame found for set child nodes event', event);
+		// 	}
+		// }).catch(function(err) {
+		// 	if(err.stack) { console.error(err.stack); }
+		// 	else { console.error(err); }
+		// });
+	};
+	private onCharacterDataModified = function(event):void {
+		// var promises = _.map(this._frames, function(frame) {
+		// 	return frame.characterDataModified(event);
+		// });
+		// return Promise.all(promises).then(function(vals) {
+		// 	return _.any(vals);
+		// }).then(function(wasHandled) {
+		// 	if(!wasHandled) {
+		// 		log.error('No frame found for character data modified event', event);
+		// 	}
+		// }).catch(function(err) {
+		// 	if(err.stack) { console.error(err.stack); }
+		// 	else { console.error(err); }
+		// });
+	};
+	private onChildNodeRemoved = function(event):void {
+		// var promises = _.map(this._frames, function(frame) {
+		// 	return frame.childNodeRemoved(event);
+		// });
+        //
+		// return Promise.all(promises).then(function(vals) {
+		// 	return _.any(vals);
+		// }).then(function(wasHandled) {
+		// 	if(!wasHandled) {
+		// 		log.error('No frame found for child node removed event', event);
+		// 	}
+		// }).catch(function(err) {
+		// 	if(err.stack) { console.error(err.stack); }
+		// 	else { console.error(err); }
+		// });
+	};
+	private onChildNodeInserted = function(event):void {
+		// var promises = _.map(this._frames, function(frame) {
+		// 	return frame.childNodeInserted(event);
+		// });
+        //
+		// return Promise.all(promises).then(function(vals) {
+		// 	return _.any(vals);
+		// }).then(function(wasHandled) {
+		// 	if(!wasHandled) {
+		// 		log.error('No frame found for child node inserted event', event);
+		// 	}
+		// }).catch(function(err) {
+		// 	if(err.stack) { console.error(err.stack); }
+		// 	else { console.error(err); }
+		// });
+	};
+
+	private onAttributeModified = function(event):void {
+		// var promises = _.map(this._frames, function(frame) {
+		// 	return frame.attributeModified(event);
+		// });
+        //
+		// return Promise.all(promises).then(function(vals) {
+		// 	return _.any(vals);
+		// }).then(function(wasHandled) {
+		// 	if(!wasHandled) {
+		// 		log.error('No frame found for attribute modified event', event);
+		// 	}
+		// }).catch(function(err) {
+		// 	if(err.stack) { console.error(err.stack); }
+		// 	else { console.error(err); }
+		//    });
+	};
+	private onAttributeRemoved = function(event):void {
+		// var promises = _.map(this._frames, function(frame) {
+		// 	return frame.attributeRemoved(event);
+		// });
+        //
+		// return Promise.all(promises).then(function(vals) {
+		// 	return _.any(vals);
+		// }).then(function(wasHandled) {
+		// 	if(!wasHandled) {
+		// 		log.error('No frame found for attribute removed event', event);
+		// 	}
+		// }).catch(function(err) {
+		// 	if(err.stack) { console.error(err.stack); }
+		// 	else { console.error(err); }
+		// });
+	};
+	private onChildNodeCountUpdated = function(event):void {
+		// var promises = _.map(this._frames, function(frame) {
+		// 	return frame.childNodeCountUpdated(event);
+		// });
+        //
+		// return Promise.all(promises).then(function(vals) {
+		// 	return _.any(vals);
+		// }).then(function(wasHandled) {
+		// 	if(!wasHandled) {
+		// 		log.error('No frame found for child node count updated event', event);
+		// 	}
+		// }).catch(function(err) {
+		// 	if(err.stack) { console.error(err.stack); }
+		// 	else { console.error(err); }
+		// });
+	};
+	private onInlineStyleInvalidated = function(event):void {
+		// var promises = _.map(this._frames, function(frame) {
+		// 	return frame.inlineStyleInvalidated(event);
+		// });
+        //
+		// return Promise.all(promises).then(function(vals) {
+		// 	return _.any(vals);
+		// }).then(function(wasHandled) {
+		// 	if(!wasHandled) {
+		// 		log.error('No frame found for inline style invalidated event', event);
+		// 	}
+		// }).catch(function(err) {
+		// 	if(err.stack) { console.error(err.stack); }
+		// 	else { console.error(err); }
+		// });
+	};
+
+    private onFrameAttached = (frameInfo:CRI.FrameAttachedEvent):void => {
 		const {frameId, parentFrameId} = frameInfo;
 		// this._createEmptyFrame(frameInfo, parentFrameId ? this.getFrame(parentFrameId) : false);
 	};
-    private onFrameNavigated = (frameInfo:CRI.FrameNavigatedEvent) => {
+    private onFrameNavigated = (frameInfo:CRI.FrameNavigatedEvent):void => {
         const {frame} = frameInfo;
         const {id, url} = frame;
 
@@ -84,11 +242,11 @@ export class TabState {
         }
         frameState.updateInfo(frameInfo);
     }
-    private onFrameDetached = (frameInfo:CRI.FrameDetachedEvent) => {
+    private onFrameDetached = (frameInfo:CRI.FrameDetachedEvent):void => {
         const {frameId} = frameInfo;
         this.destroyFrame(frameId);
     };
-    private requestWillBeSent  = (event:CRI.RequestWillBeSentEvent) => {
+    private requestWillBeSent  = (event:CRI.RequestWillBeSentEvent):void => {
         const {frameId} = event;
         if(this.hasFrame(frameId)) {
             const frame = this.getFrame(frameId);
@@ -101,7 +259,7 @@ export class TabState {
             });
         }
     }
-    private responseReceived = (event:CRI.ResponseReceivedEvent) => {
+    private responseReceived = (event:CRI.ResponseReceivedEvent):void => {
         const {frameId} = event;
         if(this.hasFrame(frameId)) {
             this.getFrame(frameId).responseReceived(event);
@@ -113,7 +271,7 @@ export class TabState {
             });
         }
     }
-    private executionContextCreated = (event:CRI.ExecutionContextEvent) => {
+    private executionContextCreated = (event:CRI.ExecutionContextEvent):void => {
         const {context} = event;
         const {auxData} = context;
         const {frameId} = auxData;
@@ -149,7 +307,7 @@ export class TabState {
         return new Promise<CRI.Node>((resolve, reject) => {
             this.chrome.DOM.getDocument({}, (err, value) => {
                 if(err) { reject(value); }
-                else { resolve(value); }
+                else { resolve(value.root); }
             });
         }).catch((err) => {
             throw(err);

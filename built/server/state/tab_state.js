@@ -10,6 +10,138 @@ class TabState {
         this.rootFrame = null;
         this.frames = new Map();
         this.pendingFrameEvents = new Map();
+        this.onDocumentUpdated = function () {
+            var frame = this.getMainFrame();
+            frame.documentUpdated();
+        };
+        this.onSetChildNodes = function (event) {
+            console.log('SETCHILDNODES');
+            console.log(event);
+            // var promises = _.map(this._frames, function(frame) {
+            // 	return frame.setChildNodes(event);
+            // });
+            // return Promise.all(promises).then(function(vals) {
+            // 	return _.any(vals);
+            // }).then(function(wasHandled) {
+            // 	if(!wasHandled) {
+            // 		log.error('No frame found for set child nodes event', event);
+            // 	}
+            // }).catch(function(err) {
+            // 	if(err.stack) { console.error(err.stack); }
+            // 	else { console.error(err); }
+            // });
+        };
+        this.onCharacterDataModified = function (event) {
+            // var promises = _.map(this._frames, function(frame) {
+            // 	return frame.characterDataModified(event);
+            // });
+            // return Promise.all(promises).then(function(vals) {
+            // 	return _.any(vals);
+            // }).then(function(wasHandled) {
+            // 	if(!wasHandled) {
+            // 		log.error('No frame found for character data modified event', event);
+            // 	}
+            // }).catch(function(err) {
+            // 	if(err.stack) { console.error(err.stack); }
+            // 	else { console.error(err); }
+            // });
+        };
+        this.onChildNodeRemoved = function (event) {
+            // var promises = _.map(this._frames, function(frame) {
+            // 	return frame.childNodeRemoved(event);
+            // });
+            //
+            // return Promise.all(promises).then(function(vals) {
+            // 	return _.any(vals);
+            // }).then(function(wasHandled) {
+            // 	if(!wasHandled) {
+            // 		log.error('No frame found for child node removed event', event);
+            // 	}
+            // }).catch(function(err) {
+            // 	if(err.stack) { console.error(err.stack); }
+            // 	else { console.error(err); }
+            // });
+        };
+        this.onChildNodeInserted = function (event) {
+            // var promises = _.map(this._frames, function(frame) {
+            // 	return frame.childNodeInserted(event);
+            // });
+            //
+            // return Promise.all(promises).then(function(vals) {
+            // 	return _.any(vals);
+            // }).then(function(wasHandled) {
+            // 	if(!wasHandled) {
+            // 		log.error('No frame found for child node inserted event', event);
+            // 	}
+            // }).catch(function(err) {
+            // 	if(err.stack) { console.error(err.stack); }
+            // 	else { console.error(err); }
+            // });
+        };
+        this.onAttributeModified = function (event) {
+            // var promises = _.map(this._frames, function(frame) {
+            // 	return frame.attributeModified(event);
+            // });
+            //
+            // return Promise.all(promises).then(function(vals) {
+            // 	return _.any(vals);
+            // }).then(function(wasHandled) {
+            // 	if(!wasHandled) {
+            // 		log.error('No frame found for attribute modified event', event);
+            // 	}
+            // }).catch(function(err) {
+            // 	if(err.stack) { console.error(err.stack); }
+            // 	else { console.error(err); }
+            //    });
+        };
+        this.onAttributeRemoved = function (event) {
+            // var promises = _.map(this._frames, function(frame) {
+            // 	return frame.attributeRemoved(event);
+            // });
+            //
+            // return Promise.all(promises).then(function(vals) {
+            // 	return _.any(vals);
+            // }).then(function(wasHandled) {
+            // 	if(!wasHandled) {
+            // 		log.error('No frame found for attribute removed event', event);
+            // 	}
+            // }).catch(function(err) {
+            // 	if(err.stack) { console.error(err.stack); }
+            // 	else { console.error(err); }
+            // });
+        };
+        this.onChildNodeCountUpdated = function (event) {
+            // var promises = _.map(this._frames, function(frame) {
+            // 	return frame.childNodeCountUpdated(event);
+            // });
+            //
+            // return Promise.all(promises).then(function(vals) {
+            // 	return _.any(vals);
+            // }).then(function(wasHandled) {
+            // 	if(!wasHandled) {
+            // 		log.error('No frame found for child node count updated event', event);
+            // 	}
+            // }).catch(function(err) {
+            // 	if(err.stack) { console.error(err.stack); }
+            // 	else { console.error(err); }
+            // });
+        };
+        this.onInlineStyleInvalidated = function (event) {
+            // var promises = _.map(this._frames, function(frame) {
+            // 	return frame.inlineStyleInvalidated(event);
+            // });
+            //
+            // return Promise.all(promises).then(function(vals) {
+            // 	return _.any(vals);
+            // }).then(function(wasHandled) {
+            // 	if(!wasHandled) {
+            // 		log.error('No frame found for inline style invalidated event', event);
+            // 	}
+            // }).catch(function(err) {
+            // 	if(err.stack) { console.error(err.stack); }
+            // 	else { console.error(err); }
+            // });
+        };
         this.onFrameAttached = (frameInfo) => {
             const { frameId, parentFrameId } = frameInfo;
             // this._createEmptyFrame(frameInfo, parentFrameId ? this.getFrame(parentFrameId) : false);
@@ -69,7 +201,6 @@ class TabState {
                 log.error(`Could not find frame ${frameId}`);
             }
         };
-        this.getResourceTree();
         const chromeEventEmitter = cri({
             chooseTab: this.info
         });
@@ -81,9 +212,10 @@ class TabState {
         }).catch((err) => {
             throw (err);
         });
-        log.debug("HELLO");
         this.chromePromise.then(() => {
+            this.getResourceTree();
             this.addFrameListeners();
+            this.addDOMListeners();
             this.addNetworkListeners();
             this.addExecutionContextListeners();
         }).catch((err) => {
@@ -111,6 +243,31 @@ class TabState {
         this.chrome.Runtime.enable();
         this.chrome.Runtime.executionContextCreated(this.executionContextCreated);
     }
+    addDOMListeners() {
+        this.getDocument().then((root) => {
+            // this.rootFrame.setRoot(root);
+            TabState.DOMEventTypes.forEach((eventType) => {
+                const capitalizedEventType = `on${eventType[0].toUpperCase()}${eventType.substr(1)}`;
+                const func = this[capitalizedEventType];
+                this.chrome.on(`DOM.${eventType}`, func);
+            });
+            this.requestChildNodes(root.nodeId);
+        });
+    }
+    ;
+    requestChildNodes(nodeId, depth = -1) {
+        return new Promise((resolve, reject) => {
+            this.chrome.DOM.requestChildNodes({ nodeId, depth }, (err, val) => {
+                if (err) {
+                    reject(val);
+                }
+                else {
+                    resolve(null);
+                }
+            });
+        });
+    }
+    ;
     getTitle() { return this.info.title; }
     getURL() { return this.info.url; }
     setTitle(title) {
@@ -123,6 +280,8 @@ class TabState {
         const { title, url } = tabInfo;
         this.setTitle(title);
         this.setURL(url);
+    }
+    setMainFrame(frameInfo) {
     }
     addPendingFrameEvent(eventInfo) {
         const { frameId } = eventInfo;
@@ -157,7 +316,7 @@ class TabState {
                     reject(value);
                 }
                 else {
-                    resolve(value);
+                    resolve(value.root);
                 }
             });
         }).catch((err) => {
@@ -175,6 +334,9 @@ class TabState {
     }
     ;
 }
+TabState.DOMEventTypes = ['attributeModified', 'attributeRemoved', 'characterDataModified',
+    'childNodeCountUpdated', 'childNodeInserted', 'childNodeRemoved',
+    'documentUpdated', 'setChildNodes', 'inlineStyleInvalidated'];
 exports.TabState = TabState;
 // var _ = require('underscore'),
 // 	util = require('util'),

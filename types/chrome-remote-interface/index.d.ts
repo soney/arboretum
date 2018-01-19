@@ -111,12 +111,29 @@ declare namespace CRI {
         Runtime:Runtime,
         Network:Network
     }
-    interface getDocumentOptions {
+    interface GetDocumentOptions {
         depth?:number,
         pierce?:boolean
     }
+    interface RequestChildNodesOptions {
+        nodeId:NodeID,
+        depth?:number,
+        pierce?:boolean
+    }
+    interface GetDocumentResult {
+        root:Node
+    }
+    interface RequestChildNodesResult {
+        frameId:FrameID,
+        parentFrameId:FrameID
+    }
+    interface SetChildNodesEvent {
+        parentID:NodeID,
+        nodes:Array<Node>
+    }
     interface DOM {
-        getDocument:(params:getDocumentOptions, callback:(err:any, root:Node)=>void) => void
+        getDocument:(params:GetDocumentOptions, callback:(err:any, value:GetDocumentResult)=>void) => void
+        requestChildNodes:(params:RequestChildNodesOptions, callback:(err:any, value:RequestChildNodesResult)=>void) => void
     }
     interface FrameResourceTree {
         frame:Frame,
@@ -135,27 +152,27 @@ declare namespace CRI {
         nodeName:string,
         localName:string,
         nodeValue:string,
-        childNodeCoult:number,
+        childNodeCount:number,
         children:Array<Node>,
         attributes:Array<string>,
-        documentURL:string,
-        baseURL:string,
-        publicId:string,
-        systemId:string,
-        internalSubset:string,
-        xmlVersion:string,
-        name:string,
-        value:string,
-        pseudoType:PseudoType,
-        shadowRootType:ShadowRootType,
-        frameId:FrameID,
-        contentDocument:Node,
-        shadowRoots:Array<Node>,
-        templateContent:Node,
-        pseudoElement:Array<Node>,
-        importedDocument:Node,
-        distributedNodes:Array<BackendNode>,
-        isSVG:boolean
+        documentURL?:string,
+        baseURL?:string,
+        publicId?:string,
+        systemId?:string,
+        internalSubset?:string,
+        xmlVersion?:string,
+        name?:string,
+        value?:string,
+        pseudoType?:PseudoType,
+        shadowRootType?:ShadowRootType,
+        frameId?:FrameID,
+        contentDocument?:Node,
+        shadowRoots?:Array<Node>,
+        templateContent?:Node,
+        pseudoElements?:Array<Node>,
+        importedDocument?:Node,
+        distributedNodes?:Array<BackendNode>,
+        isSVG?:boolean
     }
     interface Runtime {
         enable:()=>void,

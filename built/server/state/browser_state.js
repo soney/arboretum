@@ -30,7 +30,6 @@ class BrowserState {
         this.options = { host: 'localhost', port: 9222 };
         _.extend(this.options, extraOptions);
         this.intervalID = setInterval(_.bind(this.refreshTabs, this), 2000);
-        this.refreshTabs();
         log.debug('=== CREATED BROWSER ===');
     }
     refreshTabs() {

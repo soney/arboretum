@@ -36,7 +36,6 @@ export class BrowserState {
 	constructor(private state:any, extraOptions?) {
 		_.extend(this.options, extraOptions);
 		this.intervalID = setInterval(_.bind(this.refreshTabs, this), 2000);
-		this.refreshTabs();
 		log.debug('=== CREATED BROWSER ===');
 	}
 	private refreshTabs():void {
