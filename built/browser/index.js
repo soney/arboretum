@@ -1,85 +1,69 @@
-const _ = require('underscore');
-const os = require('os');
-
-
-module.exports = function(options) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const _ = require("underscore");
+const os_1 = require("os");
+const electron_1 = require("electron");
+function default_1(options) {
     options = _.extend({
         'remote-debugging-port': 9222,
         width: 800,
         height: 600
     }, options);
-
-    const electron = require('electron');
-
-    //const ipc = require('ipc');
-    //const {app} = electron;
-    //const {BrowserWindow} = electron;
-    const app = electron.app;  // Module to control application life.
-    const BrowserWindow = electron.BrowserWindow;  // Module to create native browser window.
-    const ipcMain = electron.ipcMain;
-    var isMac = /^dar/.test(os.platform());
-    var frame = true;
-    app.commandLine.appendSwitch('remote-debugging-port', options['remote-debugging-port']+'');
-
+    const isMac = /^dar/.test(os_1.platform());
+    let frame = isMac ? false : true;
+    electron_1.app.commandLine.appendSwitch('remote-debugging-port', `${options['remote-debugging-port']}`);
     // Keep a global reference of the window object, if you don't, the window will
     // be closed automatically when the JavaScript object is garbage collected.
-    var mainWindow = null;
-    var newWindow = null;
-
+    let mainWindow = null;
+    let newWindow = null;
     // Quit when all windows are closed.
-    app.on('window-all-closed', function() {
+    electron_1.app.on('window-all-closed', () => {
         // On OS X it is common for applications and their menu bar
         // to stay active until the user quits explicitly with Cmd + Q
         if (process.platform != 'darwin') {
-            app.quit();
+            electron_1.app.quit();
         }
     });
-    ipcMain.on('New-Window',function(event,arg){
-         newWindow = new BrowserWindow({ // TODO: use shared set of options with on'ready' below
-                width: options.width,
-                height: options.height,
-                icon: `${__dirname}/resources/logo/icon.png`,
-                titleBarStyle: 'hidden', // hides title bar
-				frame: false,            // removes default frame
-				title: 'Arboretum',
-				minWidth: 350,
-				minHeight: 250
-            });
-            newWindow.loadURL(`file://${__dirname}/index.html`);
-            newWindow.on('closed', function() {
-                // Dereference the window object, usually you would store windows
-                // in an array if your app supports multi windows, this is the time
-                // when you should delete the corresponding element.
-                newWindow = null;
-            });
+    electron_1.ipcMain.on('New-Window', (event, arg) => {
+        newWindow = new electron_1.BrowserWindow({
+            width: options.width,
+            height: options.height,
+            icon: `${__dirname}/resources/logo/icon.png`,
+            titleBarStyle: 'hidden',
+            frame: false,
+            title: 'Arboretum',
+            minWidth: 350,
+            minHeight: 250
+        });
+        newWindow.loadURL(`file://${__dirname}/index.html`);
+        newWindow.on('closed', function () {
+            // Dereference the window object, usually you would store windows
+            // in an array if your app supports multi windows, this is the time
+            // when you should delete the corresponding element.
+            newWindow = null;
+        });
     });
-
-    return new Promise(function(resolve, reject) {
+    return new Promise((resolve, reject) => {
         // This method will be called when Electron has finished
         // initialization and is ready to create browser windows.
-        if (isMac) {
-            frame = false;
-        }
-        app.on('ready', function() {
+        electron_1.app.on('ready', () => {
             // Create the browser window.
-            mainWindow = new BrowserWindow({
+            mainWindow = new electron_1.BrowserWindow({
                 width: options.width,
                 height: options.height,
                 icon: __dirname + '/resources/logo/icon.png',
                 titleBarStyle: 'hidden',
-                                frame: frame,
-				title: 'Arboretum',
-				minWidth: 350,
-				minHeight: 250
+                frame: frame,
+                title: 'Arboretum',
+                minWidth: 350,
+                minHeight: 250
             });
-             // and load the index.html of the app.
-            mainWindow.loadURL('file://'+__dirname+'/index.html');
-
+            // and load the index.html of the app.
+            mainWindow.loadURL(`file://${__dirname}/index.html`);
             // Open the DevTools.
             // mainWindow.webContents.openDevTools();
-
             // Emitted when the window is closed.
-            mainWindow.on('closed', function() {
+            mainWindow.on('closed', function () {
                 // Dereference the window object, usually you would store windows
                 // in an array if your app supports multi windows, this is the time
                 // when you should delete the corresponding element.
@@ -91,4 +75,6 @@ module.exports = function(options) {
             });
         });
     });
-};
+}
+exports.default = default_1;
+;

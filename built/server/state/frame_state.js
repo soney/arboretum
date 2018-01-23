@@ -34,7 +34,11 @@ class FrameState {
     executionContextCreated(context) {
     }
     ;
+    isRefreshingRoot() { return this.refreshingRoot; }
     setChildNodes(event) {
+        return new Promise((resolve, reject) => {
+            resolve(true);
+        });
         // if(this._isRefreshingRoot()) {
         // 	log.debug('(queue) Character Data Modified');
         // 	var promise = getResolvablePromise();

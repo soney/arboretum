@@ -40,7 +40,11 @@ export class FrameState {
     public executionContextCreated(context) {
 
     };
-		public setChildNodes(event:CRI.SetChildNodesEvent) {
+	private isRefreshingRoot():boolean { return this.refreshingRoot; }
+	public setChildNodes(event:CRI.SetChildNodesEvent):Promise<boolean> {
+		return new Promise<boolean>((resolve, reject) => {
+			resolve(true);
+		});
 		// if(this._isRefreshingRoot()) {
 		// 	log.debug('(queue) Character Data Modified');
 		// 	var promise = getResolvablePromise();

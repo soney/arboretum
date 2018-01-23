@@ -14,13 +14,15 @@ class TabState {
             var frame = this.getMainFrame();
             frame.documentUpdated();
         };
-        this.onSetChildNodes = function (event) {
-            const frameStates = this.frames.values();
-            frameStates.forEach((frameState) => {
-                frameState.setChildNodes(event);
+        this.onSetChildNodes = (event) => {
+            const setChildNodesPromises = [];
+            this.frames.forEach((frameState) => {
+                const p = frameState.setChildNodes(event);
+                setChildNodesPromises.push(p);
             });
-            console.log('SETCHILDNODES');
-            console.log(event);
+            Promise.all(setChildNodesPromises).then((vals) => {
+            });
+            // console.log(event);
             // var promises = _.map(this._frames, function(frame) {
             // 	return frame.setChildNodes(event);
             // });

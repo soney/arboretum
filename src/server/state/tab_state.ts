@@ -1,16 +1,14 @@
 import * as cri from 'chrome-remote-interface';
 import {FrameState} from './frame_state';
 import {getColoredLogger, level, setLevel} from '../../utils/logging';
-type frameID = string;
-type tabID = string;
 
 const log = getColoredLogger('yellow');
 
 export class TabState {
-    private tabID:tabID;
+    private tabID:CRI.TabID;
     private rootFrame = null;
-    private frames:Map<frameID, FrameState> = new Map<frameID, FrameState>();
-    private pendingFrameEvents:Map<frameID, Array<any>> = new Map<frameID, Array<any>>();
+    private frames:Map<CRI.FrameID, FrameState> = new Map<CRI.FrameID, FrameState>();
+    private pendingFrameEvents:Map<CRI.FrameID, Array<any>> = new Map<CRI.FrameID, Array<any>>();
     private chrome:CRI.Chrome;
     private chromePromise:Promise<CRI.Chrome>;
     constructor(private info:CRI.TabInfo) {
@@ -96,13 +94,17 @@ export class TabState {
 		var frame = this.getMainFrame();
 		frame.documentUpdated();
 	};
-	private onSetChildNodes = function(event:CRI.SetChildNodesEvent):void {
-        const frameStates:Array<FrameState> = this.frames.values();
-        frameStates.forEach((frameState:FrameState) => {
-            frameState.setChildNodes(event);
+	private onSetChildNodes = (event:CRI.SetChildNodesEvent):void => {
+        const setChildNodesPromises:Array<Promise<boolean>> = [];
+        this.frames.forEach((frameState:FrameState) => {
+            const p = frameState.setChildNodes(event);
+            setChildNodesPromises.push(p);
         });
-        console.log('SETCHILDNODES')
-        console.log(event);
+
+        Promise.all(setChildNodesPromises).then((vals:Array<boolean>) => {
+            
+        });
+        // console.log(event);
 		// var promises = _.map(this._frames, function(frame) {
 		// 	return frame.setChildNodes(event);
 		// });
