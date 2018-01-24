@@ -45,6 +45,7 @@ export class TabState extends EventEmitter {
     private addFrameListeners() {
         this.chrome.Page.enable();
         this.getResourceTree().then((tree) => {
+            console.log('OK');
             this.chrome.Page.frameAttached(this.onFrameAttached);
             this.chrome.Page.frameDetached(this.onFrameDetached);
             this.chrome.Page.frameNavigated(this.onFrameNavigated);
@@ -130,29 +131,6 @@ export class TabState extends EventEmitter {
             throw(err);
         });
 	};
-    private createEmptyFrame(frameInfo:CRI.FrameAttachedEvent) {
-		// this._createEmptyFrame(frameInfo, parentFrameId ? this.getFrame(parentFrameId) : false);
-        const {frameId, parentFrameId} = frameInfo;
-        // const frameState:FrameState = new FrameState();
-    };
-// 	proto._createEmptyFrame = function(frameInfo) {
-// 		var frameId = frameInfo.frameId;
-//
-// 		var frameState = this._frames[frameId] = new FrameState(_.extend({
-// 			chrome: this._getChrome()
-// 		}, {
-// 			id: frameId,
-// 			page: this,
-// 			parentId: frameInfo.parentFrameId
-// 		}));
-//
-// 		if(!frameInfo.parentFrameId) {
-// 			this._setMainFrame(frameState);
-// 		}
-// 		this._updateFrameOnEvents(frameState);
-//
-// 		return frameState;
-// 	};
 	private onCharacterDataModified = function(event):void {
 		// var promises = _.map(this._frames, function(frame) {
 		// 	return frame.characterDataModified(event);

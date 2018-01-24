@@ -14,9 +14,7 @@ class TabState extends events_1.EventEmitter {
         this.pendingFrameEvents = new Map();
         this.onDocumentUpdated = () => {
             var frame = this.getMainFrame();
-            // if(frame) {
             frame.documentUpdated();
-            // }
         };
         this.onSetChildNodes = (event) => {
             const setChildNodesPromises = [];
@@ -34,24 +32,6 @@ class TabState extends events_1.EventEmitter {
                 throw (err);
             });
         };
-        // 	proto._createEmptyFrame = function(frameInfo) {
-        // 		var frameId = frameInfo.frameId;
-        //
-        // 		var frameState = this._frames[frameId] = new FrameState(_.extend({
-        // 			chrome: this._getChrome()
-        // 		}, {
-        // 			id: frameId,
-        // 			page: this,
-        // 			parentId: frameInfo.parentFrameId
-        // 		}));
-        //
-        // 		if(!frameInfo.parentFrameId) {
-        // 			this._setMainFrame(frameState);
-        // 		}
-        // 		this._updateFrameOnEvents(frameState);
-        //
-        // 		return frameState;
-        // 	};
         this.onCharacterDataModified = function (event) {
             // var promises = _.map(this._frames, function(frame) {
             // 	return frame.characterDataModified(event);
@@ -262,6 +242,7 @@ class TabState extends events_1.EventEmitter {
     addFrameListeners() {
         this.chrome.Page.enable();
         this.getResourceTree().then((tree) => {
+            console.log('OK');
             this.chrome.Page.frameAttached(this.onFrameAttached);
             this.chrome.Page.frameDetached(this.onFrameDetached);
             this.chrome.Page.frameNavigated(this.onFrameNavigated);
@@ -330,12 +311,6 @@ class TabState extends events_1.EventEmitter {
             this.emit('mainFrameChanged');
         });
     }
-    createEmptyFrame(frameInfo) {
-        // this._createEmptyFrame(frameInfo, parentFrameId ? this.getFrame(parentFrameId) : false);
-        const { frameId, parentFrameId } = frameInfo;
-        // const frameState:FrameState = new FrameState();
-    }
-    ;
     updateFrameOnEvents(frameState) {
         const frameId = frameState.getFrameId();
         const pendingFrameEvents = this.pendingFrameEvents.get(frameId);
