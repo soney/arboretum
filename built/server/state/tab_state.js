@@ -3,9 +3,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const cri = require("chrome-remote-interface");
 const frame_state_1 = require("./frame_state");
 const logging_1 = require("../../utils/logging");
+const _ = require("underscore");
+const events_1 = require("events");
 const log = logging_1.getColoredLogger('yellow');
-class TabState {
+class TabState extends events_1.EventEmitter {
     constructor(info) {
+        super();
         this.info = info;
         this.rootFrame = null;
         this.frames = new Map();
@@ -21,22 +24,33 @@ class TabState {
                 setChildNodesPromises.push(p);
             });
             Promise.all(setChildNodesPromises).then((vals) => {
+                const wasHandled = _.any(vals);
+                if (!wasHandled) {
+                    log.error('No frame found for set child nodes event', event);
+                }
+                return wasHandled;
+            }).catch((err) => {
+                throw (err);
             });
-            // console.log(event);
-            // var promises = _.map(this._frames, function(frame) {
-            // 	return frame.setChildNodes(event);
-            // });
-            // return Promise.all(promises).then(function(vals) {
-            // 	return _.any(vals);
-            // }).then(function(wasHandled) {
-            // 	if(!wasHandled) {
-            // 		log.error('No frame found for set child nodes event', event);
-            // 	}
-            // }).catch(function(err) {
-            // 	if(err.stack) { console.error(err.stack); }
-            // 	else { console.error(err); }
-            // });
         };
+        // 	proto._createEmptyFrame = function(frameInfo) {
+        // 		var frameId = frameInfo.frameId;
+        //
+        // 		var frameState = this._frames[frameId] = new FrameState(_.extend({
+        // 			chrome: this._getChrome()
+        // 		}, {
+        // 			id: frameId,
+        // 			page: this,
+        // 			parentId: frameInfo.parentFrameId
+        // 		}));
+        //
+        // 		if(!frameInfo.parentFrameId) {
+        // 			this._setMainFrame(frameState);
+        // 		}
+        // 		this._updateFrameOnEvents(frameState);
+        //
+        // 		return frameState;
+        // 	};
         this.onCharacterDataModified = function (event) {
             // var promises = _.map(this._frames, function(frame) {
             // 	return frame.characterDataModified(event);
@@ -133,6 +147,8 @@ class TabState {
             // });
         };
         this.onInlineStyleInvalidated = function (event) {
+            this.frames.forEach((frame) => {
+            });
             // var promises = _.map(this._frames, function(frame) {
             // 	return frame.inlineStyleInvalidated(event);
             // });
@@ -150,7 +166,15 @@ class TabState {
         };
         this.onFrameAttached = (frameInfo) => {
             const { frameId, parentFrameId } = frameInfo;
-            // this._createEmptyFrame(frameInfo, parentFrameId ? this.getFrame(parentFrameId) : false);
+            const frameState = new frame_state_1.FrameState(this.chrome, {
+                id: frameId,
+                parentId: parentFrameId
+            }, this);
+            this.frames.set(frameId, frameState);
+            if (!parentFrameId) {
+                this.setMainFrame(frameState);
+            }
+            this.updateFrameOnEvents(frameState);
         };
         this.onFrameNavigated = (frameInfo) => {
             const { frame } = frameInfo;
@@ -160,7 +184,7 @@ class TabState {
                 frameState = this.getFrame(id);
             }
             else {
-                frameState = new frame_state_1.FrameState(this.chrome, frame);
+                frameState = new frame_state_1.FrameState(this.chrome, frame, this);
             }
             frameState.updateInfo(frameInfo);
         };
@@ -287,8 +311,45 @@ class TabState {
         this.setTitle(title);
         this.setURL(url);
     }
-    setMainFrame(frameInfo) {
+    setMainFrame(frame) {
+        if (this.rootFrame) {
+            this.frames.forEach((frame, id) => {
+                if (id !== frame.getFrameId()) {
+                    this.destroyFrame(id);
+                }
+            });
+        }
+        this.rootFrame = frame;
+        frame.markSetMainFrameExecuted(true);
+        return this.getDocument().then((root) => {
+            this.rootFrame.setRoot(root);
+            this.emit('mainFrameChanged');
+        });
     }
+    createEmptyFrame(frameInfo) {
+        // this._createEmptyFrame(frameInfo, parentFrameId ? this.getFrame(parentFrameId) : false);
+        const { frameId, parentFrameId } = frameInfo;
+        // const frameState:FrameState = new FrameState();
+    }
+    ;
+    updateFrameOnEvents(frameState) {
+        const frameId = frameState.getFrameId();
+        const pendingFrameEvents = this.pendingFrameEvents.get(frameId);
+        if (pendingFrameEvents) {
+            const resourceTracker = frameState.resourceTracker;
+            pendingFrameEvents.forEach((eventInfo) => {
+                const { type, event } = eventInfo;
+                if (type === 'responseReceived') {
+                    resourceTracker.responseReceived(event);
+                }
+                else if (type === 'requestWillBeSent') {
+                    resourceTracker.requestWillBeSent(event);
+                }
+            });
+            this.pendingFrameEvents.delete(frameId);
+        }
+    }
+    ;
     addPendingFrameEvent(eventInfo) {
         const { frameId } = eventInfo;
         if (this.pendingFrameEvents.has(frameId)) {

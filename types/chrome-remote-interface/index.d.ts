@@ -1,12 +1,13 @@
-interface EventEmitter<E> {
-    once:(event:string, callback:(err:any, data:E)=>void) => void;
-    on:(event:string, callback:(err:any, data:E)=>void) => void;
+interface EventEmitter {
+    once:(event:string, callback:(err:any, data:any)=>void) => void;
+    on:(event:string, callback:(err:any, data:any)=>void) => void;
 }
 declare namespace CRI {
     enum TabType {
         'page'
     }
     type NodeID = number;
+    type StyleSheetID = string;
     type BackendNodeID = number;
     type ExecutionContextID = number;
     type TabID = string;
@@ -46,13 +47,16 @@ declare namespace CRI {
     }
     interface Frame {
         id:FrameID,
-        parentId:string,
-        loaderId:LoaderID,
-        name:string,
-        url:string,
-        securityOrigin:string,
-        mimeType:string,
+        parentId:FrameID,
+        loaderId?:LoaderID,
+        name?:string,
+        url?:string,
+        securityOrigin?:string,
+        mimeType?:string,
         unreachableUrl?:string
+    }
+    interface InlineStyleInvalidatedEvent {
+        nodeIds:Array<NodeID>
     }
     interface FrameAttachedEvent {
         frameId: FrameID,
@@ -105,7 +109,7 @@ declare namespace CRI {
         close:()=>any,
         getVersion:()=>BrowserVersion
     }
-    interface Chrome extends EventEmitter<any> {
+    interface Chrome extends EventEmitter {
         Page:Page,
         DOM:DOM,
         Runtime:Runtime,
@@ -214,6 +218,44 @@ declare namespace CRI {
         requestWillBeSent:(callback:(event:RequestWillBeSentEvent)=>void) => void,
         responseReceived:(callback:(event:ResponseReceivedEvent)=>void) => void
     }
+    interface CSSProperty {
+        name:string,
+        value:string,
+        important?:boolean,
+        implicit?:boolean,
+        text:string,
+        parsedOk?:boolean,
+        disabled?:boolean,
+        range?:SourceRange
+    }
+    interface ShorthandEntry {
+        name:string,
+        value:string,
+        important?:boolean
+    }
+    interface SourceRange {
+        startLine:number,
+        startColumn:number,
+        endLine:number,
+        endColumn:number
+    }
+    interface CSSStyle {
+        styleSheetId:StyleSheetID,
+        cssProperties:Array<CSSProperty>,
+        shorthandEntries:Array<ShorthandEntry>,
+        cssText:string,
+        range:SourceRange
+    }
+    interface GetInlineStylesForNodeOptions {
+        nodeId:NodeID
+    }
+    interface GetInlineStylesResponse {
+        inlineStyle:CSSStyle,
+        attributesStyle:CSSStyle
+    }
+    interface CSS {
+        getInlineStylesForNode(options:GetInlineStylesForNodeOptions, callback:(err:any, data:CSSStyle)=>any):void
+    }
 }
 
 declare module 'chrome-remote-interface' {
@@ -225,7 +267,7 @@ declare module 'chrome-remote-interface' {
         protocol?:string,
         local?:boolean
     }
-    function CRIFunction(options:CRIOptions):EventEmitter<CRI.Chrome>;
+    function CRIFunction(options:CRIOptions):EventEmitter;
     namespace CRIFunction {
         function listTabs(options:CRI.ListTabsOptions, callback:(err:any, tabs:Array<CRI.TabInfo>)=>any):void;
         function spawnTab();

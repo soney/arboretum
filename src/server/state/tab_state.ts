@@ -1,10 +1,12 @@
 import * as cri from 'chrome-remote-interface';
 import {FrameState} from './frame_state';
 import {getColoredLogger, level, setLevel} from '../../utils/logging';
+import * as _ from 'underscore';
+import {EventEmitter} from 'events';
 
 const log = getColoredLogger('yellow');
 
-export class TabState {
+export class TabState extends EventEmitter {
     private tabID:CRI.TabID;
     private rootFrame = null;
     private frames:Map<CRI.FrameID, FrameState> = new Map<CRI.FrameID, FrameState>();
@@ -12,7 +14,8 @@ export class TabState {
     private chrome:CRI.Chrome;
     private chromePromise:Promise<CRI.Chrome>;
     constructor(private info:CRI.TabInfo) {
-        const chromeEventEmitter:EventEmitter<CRI.Chrome> = cri({
+        super();
+        const chromeEventEmitter = cri({
             chooseTab: this.info
         });
         this.chromePromise = new Promise<CRI.Chrome>((resolve, reject) => {
@@ -88,7 +91,20 @@ export class TabState {
         this.setTitle(title);
         this.setURL(url);
     }
-    private setMainFrame(frameInfo) {
+    private setMainFrame(frame:FrameState) {
+        if(this.rootFrame) {
+            this.frames.forEach((frame:FrameState, id:CRI.FrameID) => {
+                if(id !== frame.getFrameId()) {
+                    this.destroyFrame(id);
+                }
+            });
+        }
+        this.rootFrame = frame;
+        frame.markSetMainFrameExecuted(true);
+        return this.getDocument().then((root:CRI.Node) => {
+            this.rootFrame.setRoot(root);
+            this.emit('mainFrameChanged');
+        });
     }
 	private onDocumentUpdated = function():void {
 		var frame = this.getMainFrame();
@@ -102,23 +118,38 @@ export class TabState {
         });
 
         Promise.all(setChildNodesPromises).then((vals:Array<boolean>) => {
-            
+            const wasHandled:boolean = _.any(vals);
+            if(!wasHandled) {
+                log.error('No frame found for set child nodes event', event);
+            }
+            return wasHandled;
+        }).catch((err) => {
+            throw(err);
         });
-        // console.log(event);
-		// var promises = _.map(this._frames, function(frame) {
-		// 	return frame.setChildNodes(event);
-		// });
-		// return Promise.all(promises).then(function(vals) {
-		// 	return _.any(vals);
-		// }).then(function(wasHandled) {
-		// 	if(!wasHandled) {
-		// 		log.error('No frame found for set child nodes event', event);
-		// 	}
-		// }).catch(function(err) {
-		// 	if(err.stack) { console.error(err.stack); }
-		// 	else { console.error(err); }
-		// });
 	};
+    private createEmptyFrame(frameInfo:CRI.FrameAttachedEvent) {
+		// this._createEmptyFrame(frameInfo, parentFrameId ? this.getFrame(parentFrameId) : false);
+        const {frameId, parentFrameId} = frameInfo;
+        // const frameState:FrameState = new FrameState();
+    };
+// 	proto._createEmptyFrame = function(frameInfo) {
+// 		var frameId = frameInfo.frameId;
+//
+// 		var frameState = this._frames[frameId] = new FrameState(_.extend({
+// 			chrome: this._getChrome()
+// 		}, {
+// 			id: frameId,
+// 			page: this,
+// 			parentId: frameInfo.parentFrameId
+// 		}));
+//
+// 		if(!frameInfo.parentFrameId) {
+// 			this._setMainFrame(frameState);
+// 		}
+// 		this._updateFrameOnEvents(frameState);
+//
+// 		return frameState;
+// 	};
 	private onCharacterDataModified = function(event):void {
 		// var promises = _.map(this._frames, function(frame) {
 		// 	return frame.characterDataModified(event);
@@ -215,7 +246,9 @@ export class TabState {
 		// 	else { console.error(err); }
 		// });
 	};
-	private onInlineStyleInvalidated = function(event):void {
+	private onInlineStyleInvalidated = function(event:CRI.InlineStyleInvalidatedEvent):void {
+        this.frames.forEach((frame:FrameState) => {
+        });
 		// var promises = _.map(this._frames, function(frame) {
 		// 	return frame.inlineStyleInvalidated(event);
 		// });
@@ -234,7 +267,33 @@ export class TabState {
 
     private onFrameAttached = (frameInfo:CRI.FrameAttachedEvent):void => {
 		const {frameId, parentFrameId} = frameInfo;
-		// this._createEmptyFrame(frameInfo, parentFrameId ? this.getFrame(parentFrameId) : false);
+        const frameState:FrameState = new FrameState(this.chrome, {
+            id: frameId,
+            parentId: parentFrameId
+        }, this);
+        this.frames.set(frameId, frameState);
+
+        if(!parentFrameId) {
+            this.setMainFrame(frameState);
+        }
+        this.updateFrameOnEvents(frameState);
+	};
+	private updateFrameOnEvents(frameState:FrameState) {
+        const frameId = frameState.getFrameId();
+        const pendingFrameEvents = this.pendingFrameEvents.get(frameId);
+
+		if(pendingFrameEvents) {
+            const resourceTracker = frameState.resourceTracker;
+            pendingFrameEvents.forEach((eventInfo) => {
+                const {type, event} = eventInfo;
+                if(type === 'responseReceived') {
+                    resourceTracker.responseReceived(event);
+                } else if(type === 'requestWillBeSent') {
+                    resourceTracker.requestWillBeSent(event);
+                }
+            });
+            this.pendingFrameEvents.delete(frameId);
+		}
 	};
     private onFrameNavigated = (frameInfo:CRI.FrameNavigatedEvent):void => {
         const {frame} = frameInfo;
@@ -244,7 +303,7 @@ export class TabState {
         if(this.hasFrame(id)) {
             frameState = this.getFrame(id);
         } else {
-            frameState = new FrameState(this.chrome, frame);
+            frameState = new FrameState(this.chrome, frame, this);
         }
         frameState.updateInfo(frameInfo);
     }
@@ -296,8 +355,8 @@ export class TabState {
             this.pendingFrameEvents.set(frameId, [eventInfo])
         }
     }
-    private getFrame(id:frameID):FrameState { return this.frames.get(id); }
-    private hasFrame(id:frameID):boolean { return this.frames.has(id); }
+    private getFrame(id:CRI.FrameID):FrameState { return this.frames.get(id); }
+    private hasFrame(id:CRI.FrameID):boolean { return this.frames.has(id); }
 
     private getResourceTree():Promise<CRI.ResourceTree> {
         return new Promise<CRI.ResourceTree>((resolve, reject) => {

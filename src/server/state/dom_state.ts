@@ -1,26 +1,31 @@
 import {FrameState} from './frame_state';
 import {getCanvasImage, getUniqueSelector, getElementValue} from '../hack_driver/hack_driver';
 import {getColoredLogger, level, setLevel} from '../../utils/logging';
+import {processCSSURLs} from '../css_parser';
+import {EventEmitter} from 'events';
 
 const log = getColoredLogger('magenta');
 
-export class DOMState {
+export class DOMState extends EventEmitter {
     private destroyed:boolean = false;
     private namespace:any = null;
     private inlineStyle:string = '';
     private children:Array<any> = [];
 	private updateValueInterval:NodeJS.Timer = null;
 
-    constructor(private node:any, private chrome:any, private frame:FrameState, private parent:DOMState) {
+    constructor(private node:CRI.Node, private chrome:any, private frame:FrameState, private parent:DOMState) {
+		super();
     }
     public destroy() {
     }
-	public getNodeId():string { return this.node.nodeId; };
+	public getNodeId():CRI.NodeID { return this.node.nodeId; };
     public getTagName():string { return this.node.nodeName; };
     public getFrame():FrameState { return this.frame;};
+	public getFrameId():CRI.FrameID { return this.getFrame().getFrameId(); };
+	public getTabId():CRI.TabID { return this.getFrame().getTabId(); };
     public getParent():DOMState { return this.parent; };
     public setParent(parent:DOMState):void { this.parent = parent; }
-	public getNodeType():string { return this.node.nodeType; }
+	public getNodeType():number { return this.node.nodeType; }
 	public getCanvasImage():Promise<any> { return getCanvasImage(this.chrome, this.getNodeId()); };
 	public getUniqueSelector():Promise<string> {
 		return getUniqueSelector(this.chrome, this.getNodeId());
@@ -46,7 +51,78 @@ export class DOMState {
 			this.updateValueInterval = null;
 		}
 	}
+    public updateInlineStyle():void {
+		const oldInlineStyle:string = this.inlineStyle;
+		this.requestInlineStyle().then((inlineStyle) => {
+			this.inlineStyle = inlineStyle.cssText;
+			if(this.inlineStyle !== oldInlineStyle) {
+				this.emit('inlineStyleChanged', {
+					inlineStyle: this.inlineStyle
+				});
+			}
+		});
+	};
+	private requestInlineStyle():Promise<CRI.CSSStyle> {
+		const nodeType = this.getNodeType();
+		if(nodeType === 1) {
+			return new Promise<CRI.CSSStyle>((resolve, reject) => {
+				this.chrome.CSS.getInlineStylesForNode({
+					nodeId: this.getNodeId()
+				}, (err, data:CRI.GetInlineStylesResponse) => {
+					if(this.destroyed) {
+						reject(new Error(`Node ${this.getNodeId()} was destroyed`));
+					} else if(err) {
+						reject(err);
+					} else {
+						const {inlineStyle} = data;
+						const {cssText} = inlineStyle;
+						const baseURL = this.getBaseURL();
+
+						if(cssText) {
+							const newCSSText = processCSSURLs(cssText, url, this.getFrameId(), this.getTabId());
+						}
+					}
+				});
+			});
+
+		// 	return new Promise(_.bind(function(resolve, reject) {
+		// 		chrome.CSS.getInlineStylesForNode({
+		// 			nodeId: id
+		// 		}, _.bind(function(err, value) {
+		// 			if(this._destroyed) {
+		// 				var myError = new Error('Node ' + id + ' was destroyed');
+		// 				myError.expected = true;
+		// 				reject(myError);
+		// 			} else if(err) {
+		// 				//reject(new Error('Could not find node ' + id));
+		// 			} else {
+		// 				resolve(value.inlineStyle);
+		// 			}
+		// 		}, this));
+		// 	}, this)).then(_.bind(function(is) {
+		// 		inlineStyle = is;
+		// 		if(inlineStyle.cssText) {
+		// 			return this._getBaseURL();
+		// 		}
+		// 	}, this)).then(_.bind(function(url) {
+		// 		if(inlineStyle.cssText) {
+		// 			inlineStyle.cssText = processCSSURLs(inlineStyle.cssText, url, this.getFrameId(), this.getTabId());
+		// 		}
+		// 		return inlineStyle;
+		// 	}, this));
+		// } else {
+		// 	return new Promise(function(resolve, reject) {
+		// 		resolve({
+		// 			cssText: ''
+		// 		});
+		// 	});
+		// }
+	}
 }
+private getBaseURL():string {
+	const frame = this.getFrame();
+	return frame.getURL();
+};
 // var _ = require('underscore'),
 // 	URL = require('url'),
 // 	util = require('util'),

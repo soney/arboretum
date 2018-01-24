@@ -1,33 +1,51 @@
+import {TabState} from './tab_state';
 import {DOMState} from './dom_state';
 import {EventManager} from '../event_manager';
 import {ResourceTracker} from '../resource_tracker';
 import {getColoredLogger, level, setLevel} from '../../utils/logging';
 
 const log = getColoredLogger('green');
-type nodeID = string;
+
+interface QueuedEvent<E> {
+	event:E,
+	promise:ResolvablePromise<E>,
+	type:string
+}
 
 export class FrameState {
 	private setMainFrameExecuted:boolean = false;
 	private refreshingRoot:boolean = false;
 	private root:boolean = false;
 	private domParent:DOMState = null;
-	private nodeMap:Map<nodeID, DOMState> = new Map<nodeID, DOMState>();
-	private oldNodeMap:Map<nodeID, DOMState> = new Map<nodeID, DOMState>();
-	private queuedEvents:Array<any> = [];
+	private nodeMap:Map<CRI.NodeID, DOMState> = new Map<CRI.NodeID, DOMState>();
+	private oldNodeMap:Map<CRI.NodeID, DOMState> = new Map<CRI.NodeID, DOMState>();
+	private queuedEvents:Array<QueuedEvent<any>> = [];
 	private executionContext:any = null;
 
 	private eventManager:EventManager;
-	private resourceTracker:ResourceTracker;
+	private _resourceTracker:ResourceTracker;
 
-    constructor(private chrome, private info:CRI.Frame) {
+    constructor(private chrome, private info:CRI.Frame, private tab:TabState) {
 		this.markRefreshingRoot(true);
-        this.setMainFrameExecuted = false;
-
-		this.eventManager = new EventManager(chrome, this);
-
+		this.eventManager = new EventManager(this.chrome, this);
 		// this.resourceTracker = new ResourceTracker(chrome, this, info.resources);
 		log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
 	};
+	public markSetMainFrameExecuted(val:boolean):void {
+		this.setMainFrameExecuted = val;
+	};
+	private getWrappedDOMNodeWithID(nodeId:CRI.NodeID):DOMState {
+		return this.nodeMap.get(nodeId);
+	};
+	public getURL():string {
+		return this.info.url;
+	};
+	public getTabId():CRI.TabID {
+		return this.tab.getTabId();
+	}
+// 	proto._getWrappedDOMNodeWithID = function(id) {
+// 		return this._nodeMap[id];
+// 	};
     public updateInfo(info:any) {
 
     };
@@ -40,6 +58,26 @@ export class FrameState {
     public executionContextCreated(context) {
 
     };
+	public inlineStyleInvalidated(event:CRI.InlineStyleInvalidatedEvent):void {
+		if(this.isRefreshingRoot) {
+			log.debug('(queue) Inline Style Invalidated');
+
+			this.queuedEvents.push({
+				event: event,
+				type: 'inlineStyleInvalidated',
+				promise: new ResolvablePromise<CRI.InlineStyleInvalidatedEvent>()
+			});
+		} else {
+			let hasAnyNode:boolean = false;
+			event.nodeIds.forEach((nodeId:CRI.NodeID) => {
+				const node = this.getWrappedDOMNodeWithID(nodeId);
+				if(node) {
+					node.updateInlineStyle();
+				}
+			});
+		}
+	};
+	public get resourceTracker():ResourceTracker { return this._resourceTracker; };
 	private isRefreshingRoot():boolean { return this.refreshingRoot; }
 	public setChildNodes(event:CRI.SetChildNodesEvent):Promise<boolean> {
 		return new Promise<boolean>((resolve, reject) => {
@@ -607,3 +645,20 @@ export class FrameState {
 // module.exports = {
 // 	FrameState: FrameState
 // };
+class ResolvablePromise<E> {
+	private _resolve:(E)=>any;
+	private _reject:(any)=>any;
+	private _promise:Promise<E>;
+	constructor() {
+		this._promise = new Promise<E>((resolve, reject) => {
+			this._resolve = resolve;
+			this._reject = reject;
+		});
+	}
+	public resolve(val:E):void {
+		this._resolve(val);
+	}
+	public reject(val:any):void {
+		this._reject(val);
+	}
+}

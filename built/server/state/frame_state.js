@@ -4,9 +4,10 @@ const event_manager_1 = require("../event_manager");
 const logging_1 = require("../../utils/logging");
 const log = logging_1.getColoredLogger('green');
 class FrameState {
-    constructor(chrome, info) {
+    constructor(chrome, info, tab) {
         this.chrome = chrome;
         this.info = info;
+        this.tab = tab;
         this.setMainFrameExecuted = false;
         this.refreshingRoot = false;
         this.root = false;
@@ -16,12 +17,29 @@ class FrameState {
         this.queuedEvents = [];
         this.executionContext = null;
         this.markRefreshingRoot(true);
-        this.setMainFrameExecuted = false;
-        this.eventManager = new event_manager_1.EventManager(chrome, this);
+        this.eventManager = new event_manager_1.EventManager(this.chrome, this);
         // this.resourceTracker = new ResourceTracker(chrome, this, info.resources);
         log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
     }
     ;
+    markSetMainFrameExecuted(val) {
+        this.setMainFrameExecuted = val;
+    }
+    ;
+    getWrappedDOMNodeWithID(nodeId) {
+        return this.nodeMap.get(nodeId);
+    }
+    ;
+    getURL() {
+        return this.info.url;
+    }
+    ;
+    getTabId() {
+        return this.tab.getTabId();
+    }
+    // 	proto._getWrappedDOMNodeWithID = function(id) {
+    // 		return this._nodeMap[id];
+    // 	};
     updateInfo(info) {
     }
     ;
@@ -33,6 +51,28 @@ class FrameState {
     ;
     executionContextCreated(context) {
     }
+    ;
+    inlineStyleInvalidated(event) {
+        if (this.isRefreshingRoot) {
+            log.debug('(queue) Inline Style Invalidated');
+            this.queuedEvents.push({
+                event: event,
+                type: 'inlineStyleInvalidated',
+                promise: new ResolvablePromise()
+            });
+        }
+        else {
+            let hasAnyNode = false;
+            event.nodeIds.forEach((nodeId) => {
+                const node = this.getWrappedDOMNodeWithID(nodeId);
+                if (node) {
+                    node.updateInlineStyle();
+                }
+            });
+        }
+    }
+    ;
+    get resourceTracker() { return this._resourceTracker; }
     ;
     isRefreshingRoot() { return this.refreshingRoot; }
     setChildNodes(event) {
@@ -605,3 +645,17 @@ exports.FrameState = FrameState;
 // module.exports = {
 // 	FrameState: FrameState
 // };
+class ResolvablePromise {
+    constructor() {
+        this._promise = new Promise((resolve, reject) => {
+            this._resolve = resolve;
+            this._reject = reject;
+        });
+    }
+    resolve(val) {
+        this._resolve(val);
+    }
+    reject(val) {
+        this._reject(val);
+    }
+}
