@@ -3,9 +3,9 @@ import * as _ from 'underscore';
 
 var urlRegex = /((?:@import\s+)?url\s*\(['"]?)(\S*?)(['"]?\s*\))|(@import\s+['"]?)([^;'"]+)/ig;
 
-export function processCSSURLs(str, url, frameId, tabId) {
+export function processCSSURLs(str:string, url:string, frameId:CRI.FrameID, tabId:CRI.TabID):string {
 	if(url) {
-		return str.replace(urlRegex, function(m, arg1, arg2, arg3, arg4, arg5) {
+		return str.replace(urlRegex, (m, arg1, arg2, arg3, arg4, arg5) => {
 						var specifiedURL = arg2 || arg5;
 						var absoluteURL = URL.resolve(url, specifiedURL),
 							relativeURL = URL.format({
@@ -23,7 +23,7 @@ export function processCSSURLs(str, url, frameId, tabId) {
 	}
 }
 
-export function parseCSS(cssStr, url, frameId, tabId) {
+export function parseCSS(cssStr:string, url:string, frameId:CRI.FrameID, tabId:CRI.TabID):string {
 	return processCSSURLs(cssStr, url, frameId, tabId);
 	/*
 	try {

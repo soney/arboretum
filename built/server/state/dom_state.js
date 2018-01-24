@@ -49,7 +49,7 @@ class DOMState extends events_1.EventEmitter {
         if (tagName === 'input' || tagName === 'textarea') {
             this.updateValueInterval = setInterval(() => {
                 this.getInputValue().then((data) => {
-                    // this.emit('valueUpdated', 'input', data);
+                    this.emit('valueUpdated', 'input', data);
                 });
             }, 700);
         }
@@ -89,10 +89,9 @@ class DOMState extends events_1.EventEmitter {
                     }
                     else {
                         const { inlineStyle } = data;
-                        const { cssText } = inlineStyle;
-                        const baseURL = this.getBaseURL();
-                        if (cssText) {
-                            const newCSSText = css_parser_1.processCSSURLs(cssText, url, this.getFrameId(), this.getTabId());
+                        if (inlineStyle.cssText) {
+                            const newCSSText = css_parser_1.processCSSURLs(inlineStyle.cssText, this.getBaseURL(), this.getFrameId(), this.getTabId());
+                            inlineStyle.cssText = newCSSText;
                         }
                     }
                 });

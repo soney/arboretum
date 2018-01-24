@@ -38,7 +38,7 @@ export class DOMState extends EventEmitter {
 		if(tagName === 'input' || tagName === 'textarea') {
 			this.updateValueInterval = setInterval(() => {
 				this.getInputValue().then((data:string) => {
-					// this.emit('valueUpdated', 'input', data);
+					this.emit('valueUpdated', 'input', data);
 				});
 			}, 700);
 		} else if(tagName === 'canvas') {
@@ -75,11 +75,9 @@ export class DOMState extends EventEmitter {
 						reject(err);
 					} else {
 						const {inlineStyle} = data;
-						const {cssText} = inlineStyle;
-						const baseURL = this.getBaseURL();
-
-						if(cssText) {
-							const newCSSText = processCSSURLs(cssText, url, this.getFrameId(), this.getTabId());
+						if(inlineStyle.cssText) {
+							const newCSSText = processCSSURLs(inlineStyle.cssText, this.getBaseURL(), this.getFrameId(), this.getTabId());
+							inlineStyle.cssText = newCSSText;
 						}
 					}
 				});

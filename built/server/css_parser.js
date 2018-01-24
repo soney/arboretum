@@ -4,7 +4,7 @@ const URL = require("url");
 var urlRegex = /((?:@import\s+)?url\s*\(['"]?)(\S*?)(['"]?\s*\))|(@import\s+['"]?)([^;'"]+)/ig;
 function processCSSURLs(str, url, frameId, tabId) {
     if (url) {
-        return str.replace(urlRegex, function (m, arg1, arg2, arg3, arg4, arg5) {
+        return str.replace(urlRegex, (m, arg1, arg2, arg3, arg4, arg5) => {
             var specifiedURL = arg2 || arg5;
             var absoluteURL = URL.resolve(url, specifiedURL), relativeURL = URL.format({
                 pathname: 'r',
