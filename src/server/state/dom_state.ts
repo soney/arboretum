@@ -13,7 +13,7 @@ export class DOMState extends EventEmitter {
     private children:Array<any> = [];
 	private updateValueInterval:NodeJS.Timer = null;
 
-    constructor(private node:CRI.Node, private chrome:any, private frame:FrameState, private parent:DOMState) {
+    constructor(private chrome:CRI.Chrome, private node:CRI.Node, private frame:FrameState, private parent:DOMState) {
 		super();
     }
     public destroy() {
@@ -79,9 +79,11 @@ export class DOMState extends EventEmitter {
 							const newCSSText = processCSSURLs(inlineStyle.cssText, this.getBaseURL(), this.getFrameId(), this.getTabId());
 							inlineStyle.cssText = newCSSText;
 						}
+						resolve(inlineStyle);
 					}
 				});
 			});
+		}
 
 		// 	return new Promise(_.bind(function(resolve, reject) {
 		// 		chrome.CSS.getInlineStylesForNode({
@@ -116,11 +118,11 @@ export class DOMState extends EventEmitter {
 		// 	});
 		// }
 	}
+    private getBaseURL():string {
+    	const frame = this.getFrame();
+    	return frame.getURL();
+    };
 }
-private getBaseURL():string {
-	const frame = this.getFrame();
-	return frame.getURL();
-};
 // var _ = require('underscore'),
 // 	URL = require('url'),
 // 	util = require('util'),

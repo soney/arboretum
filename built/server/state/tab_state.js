@@ -10,12 +10,13 @@ class TabState extends events_1.EventEmitter {
     constructor(info) {
         super();
         this.info = info;
-        this.rootFrame = null;
         this.frames = new Map();
         this.pendingFrameEvents = new Map();
-        this.onDocumentUpdated = function () {
+        this.onDocumentUpdated = () => {
             var frame = this.getMainFrame();
+            // if(frame) {
             frame.documentUpdated();
+            // }
         };
         this.onSetChildNodes = (event) => {
             const setChildNodesPromises = [];
@@ -254,6 +255,9 @@ class TabState extends events_1.EventEmitter {
         log.debug(`=== CREATED TAB STATE ${this.getTabId()} ====`);
     }
     ;
+    getMainFrame() {
+        return this.rootFrame;
+    }
     getTabId() { return this.info.id; }
     addFrameListeners() {
         this.chrome.Page.enable();

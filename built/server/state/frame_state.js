@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const dom_state_1 = require("./dom_state");
 const event_manager_1 = require("../event_manager");
 const logging_1 = require("../../utils/logging");
 const log = logging_1.getColoredLogger('green');
@@ -10,7 +11,6 @@ class FrameState {
         this.tab = tab;
         this.setMainFrameExecuted = false;
         this.refreshingRoot = false;
-        this.root = false;
         this.domParent = null;
         this.nodeMap = new Map();
         this.oldNodeMap = new Map();
@@ -26,10 +26,13 @@ class FrameState {
         this.setMainFrameExecuted = val;
     }
     ;
-    getWrappedDOMNodeWithID(nodeId) {
+    getDOMStateWithID(nodeId) {
         return this.nodeMap.get(nodeId);
     }
     ;
+    hasDOMStateWithID(nodeId) {
+        return this.nodeMap.has(nodeId);
+    }
     getURL() {
         return this.info.url;
     }
@@ -64,9 +67,9 @@ class FrameState {
         else {
             let hasAnyNode = false;
             event.nodeIds.forEach((nodeId) => {
-                const node = this.getWrappedDOMNodeWithID(nodeId);
-                if (node) {
-                    node.updateInlineStyle();
+                const domState = this.getDOMStateWithID(nodeId);
+                if (domState) {
+                    domState.updateInlineStyle();
                 }
             });
         }
@@ -131,6 +134,59 @@ class FrameState {
     ;
     getFrameId() {
         return this.info.id;
+    }
+    getRoot() {
+        return this.root;
+    }
+    setRoot(root) {
+        const oldRoot = this.getRoot();
+        if (oldRoot) {
+            oldRoot.destroy();
+        }
+        if (root) {
+            const rootState = this.getOrCreateDOMState(root);
+        }
+    }
+    getOrCreateDOMState(node, parent = null) {
+        const { nodeId } = node;
+        if (this.hasDOMStateWithID(nodeId)) {
+            return this.getDOMStateWithID(nodeId);
+        }
+        else {
+            const domState = new dom_state_1.DOMState(this.chrome, node, this, parent);
+            domState.once('destroyed', () => {
+                this.removeDOMState(domState);
+            });
+            this.nodeMap.set(nodeId, domState);
+        }
+    }
+    removeDOMState(domState) {
+        const nodeId = domState.getNodeId();
+        if (this.hasDOMStateWithID(nodeId)) {
+            this.nodeMap.delete(nodeId);
+            this.oldNodeMap.set(nodeId, true);
+        }
+    }
+    documentUpdated(event) {
+        if (this.isRefreshingRoot()) {
+            log.debug('(queue) Character Data Modified');
+            this.queuedEvents.push({
+                event: event,
+                type: 'documentUpdated',
+                promise: new ResolvablePromise()
+            });
+        }
+        else {
+            log.debug('Document Updated');
+            this.refreshRoot();
+        }
+    }
+    ;
+    refreshRoot() {
+        this.markRefreshingRoot(true);
+        this.tab.getDocument().then((root) => {
+            this.setRoot(root);
+        });
     }
 }
 exports.FrameState = FrameState;

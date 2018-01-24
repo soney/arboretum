@@ -8,7 +8,7 @@ const log = getColoredLogger('yellow');
 
 export class TabState extends EventEmitter {
     private tabID:CRI.TabID;
-    private rootFrame = null;
+    private rootFrame:FrameState;
     private frames:Map<CRI.FrameID, FrameState> = new Map<CRI.FrameID, FrameState>();
     private pendingFrameEvents:Map<CRI.FrameID, Array<any>> = new Map<CRI.FrameID, Array<any>>();
     private chrome:CRI.Chrome;
@@ -38,6 +38,9 @@ export class TabState extends EventEmitter {
         });
     	log.debug(`=== CREATED TAB STATE ${this.getTabId()} ====`);
     };
+    public getMainFrame():FrameState {
+        return this.rootFrame;
+    }
     public getTabId():string { return this.info.id; }
     private addFrameListeners() {
         this.chrome.Page.enable();
@@ -106,7 +109,7 @@ export class TabState extends EventEmitter {
             this.emit('mainFrameChanged');
         });
     }
-	private onDocumentUpdated = function():void {
+	private onDocumentUpdated = ():void => {
 		var frame = this.getMainFrame();
 		frame.documentUpdated();
 	};
@@ -368,7 +371,7 @@ export class TabState extends EventEmitter {
             throw(err);
         });
     };
-    private getDocument():Promise<CRI.Node> {
+    public getDocument():Promise<CRI.Node> {
         return new Promise<CRI.Node>((resolve, reject) => {
             this.chrome.DOM.getDocument({}, (err, value) => {
                 if(err) { reject(value); }

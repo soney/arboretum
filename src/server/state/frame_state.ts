@@ -15,10 +15,10 @@ interface QueuedEvent<E> {
 export class FrameState {
 	private setMainFrameExecuted:boolean = false;
 	private refreshingRoot:boolean = false;
-	private root:boolean = false;
+	private root:DOMState;
 	private domParent:DOMState = null;
 	private nodeMap:Map<CRI.NodeID, DOMState> = new Map<CRI.NodeID, DOMState>();
-	private oldNodeMap:Map<CRI.NodeID, DOMState> = new Map<CRI.NodeID, DOMState>();
+	private oldNodeMap:Map<CRI.NodeID, boolean> = new Map<CRI.NodeID, boolean>();
 	private queuedEvents:Array<QueuedEvent<any>> = [];
 	private executionContext:any = null;
 
@@ -34,9 +34,12 @@ export class FrameState {
 	public markSetMainFrameExecuted(val:boolean):void {
 		this.setMainFrameExecuted = val;
 	};
-	private getWrappedDOMNodeWithID(nodeId:CRI.NodeID):DOMState {
+	private getDOMStateWithID(nodeId:CRI.NodeID):DOMState {
 		return this.nodeMap.get(nodeId);
 	};
+	private hasDOMStateWithID(nodeId:CRI.NodeID):boolean {
+		return this.nodeMap.has(nodeId);
+	}
 	public getURL():string {
 		return this.info.url;
 	};
@@ -70,9 +73,9 @@ export class FrameState {
 		} else {
 			let hasAnyNode:boolean = false;
 			event.nodeIds.forEach((nodeId:CRI.NodeID) => {
-				const node = this.getWrappedDOMNodeWithID(nodeId);
-				if(node) {
-					node.updateInlineStyle();
+				const domState = this.getDOMStateWithID(nodeId);
+				if(domState) {
+					domState.updateInlineStyle();
 				}
 			});
 		}
@@ -133,6 +136,108 @@ export class FrameState {
 	public getFrameId():CRI.FrameID {
 		return this.info.id;
 	}
+	public getRoot():DOMState {
+		return this.root;
+	}
+	public setRoot(root:CRI.Node):void {
+		const oldRoot:DOMState = this.getRoot();
+		if(oldRoot) {
+			oldRoot.destroy();
+		}
+		if(root) {
+			const rootState =  this.getOrCreateDOMState(root);
+		}
+	}
+	private getOrCreateDOMState(node:CRI.Node, parent:DOMState=null):DOMState {
+		const {nodeId} = node;
+		if(this.hasDOMStateWithID(nodeId)) {
+			return this.getDOMStateWithID(nodeId);
+		} else {
+			const domState = new DOMState(this.chrome, node, this, parent);
+			domState.once('destroyed', () => {
+				this.removeDOMState(domState);
+			})
+			this.nodeMap.set(nodeId, domState);
+		}
+	}
+	private removeDOMState(domState:DOMState):void {
+		const nodeId = domState.getNodeId();
+		if(this.hasDOMStateWithID(nodeId)) {
+			this.nodeMap.delete(nodeId);
+			this.oldNodeMap.set(nodeId, true);
+		}
+	}
+	public documentUpdated(event?:CRI.DocumentUpdatedEvent):void {
+		if(this.isRefreshingRoot()) {
+			log.debug('(queue) Character Data Modified');
+			this.queuedEvents.push({
+				event: event,
+				type: 'documentUpdated',
+				promise: new ResolvablePromise<CRI.DocumentUpdatedEvent>()
+			});
+		} else {
+			log.debug('Document Updated');
+			this.refreshRoot();
+		}
+	};
+	private refreshRoot():void {
+		this.markRefreshingRoot(true);
+		this.tab.getDocument().then((root:CRI.Node) => {
+			this.setRoot(root);
+		});
+	}
+// 	proto.refreshRoot = function() {
+// 		var page = this.getPage();
+// 		this._markRefreshingRoot(true);
+// 		return page._getDocument().then(_.bind(function(doc) {
+// 			var root = doc.root;
+// 			this.setRoot(root);
+// 		}, this));
+// 	};
+// 	proto._getWrappedDOMNode = function(node, parent) {
+// 		var id = node.nodeId;
+// 		if(this._hasWrappedDOMNodeWithID(id)) {
+// 			return this._getWrappedDOMNodeWithID(id);
+// 		} else {
+// 			var node = new DOMState({
+// 				parent: parent,
+// 				node: node,
+// 				chrome: this._getChrome(),
+// 				frame: this
+// 			});
+// 			node.once('destroyed', _.bind(function() {
+// 				this._removeWrappedNode(node);
+// 			}, this));
+// 			return this._nodeMap[id] = node;
+// 		}
+// 	};
+// 	proto.setRoot = function(rootNode){ //smfe goes for set main frame executed
+// 		var oldRoot = this.getRoot();
+// 		if(oldRoot) {
+// 			oldRoot.destroy();
+// 		}
+// 		if(rootNode) {
+// 			var root = this._getWrappedDOMNode(rootNode, false);
+// 			var chrome = this._getChrome();
+// 			this._root = this._setChildrenRecursive(root, rootNode.children);
+//
+// 			var page = this.getPage();
+// 			page.requestChildNodes(rootNode.nodeId, -1);
+//             //console.log('setroot rootnode',new Error().stack);
+//             var smfe = this.getSetMainFrameExecuted();
+//             this.setSetMainFrameExecuted(false);
+//             var destroy;
+//             if (smfe) {
+// 			  destroy = false;
+//             } else {
+//               destroy = true;
+//             }
+//
+// 			this.emit('rootInvalidated', destroy);
+// 			this._markRefreshingRoot(false);
+// 		}
+// 		return this._root;
+// 	};
 }
 // var _ = require('underscore'),
 // 	util = require('util'),

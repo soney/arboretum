@@ -113,7 +113,8 @@ declare namespace CRI {
         Page:Page,
         DOM:DOM,
         Runtime:Runtime,
-        Network:Network
+        Network:Network,
+        CSS:CSS
     }
     interface GetDocumentOptions {
         depth?:number,
@@ -209,6 +210,9 @@ declare namespace CRI {
         response:Response,
         frameId:FrameID
     }
+    interface DocumentUpdatedEvent {
+        
+    }
     interface SetChildNodesResponse {
         parentId:NodeID,
         nodes:Array<Node>
@@ -254,7 +258,7 @@ declare namespace CRI {
         attributesStyle:CSSStyle
     }
     interface CSS {
-        getInlineStylesForNode(options:GetInlineStylesForNodeOptions, callback:(err:any, data:CSSStyle)=>any):void
+        getInlineStylesForNode(options:GetInlineStylesForNodeOptions, callback:(err:any, data:GetInlineStylesResponse)=>any):void
     }
 }
 
