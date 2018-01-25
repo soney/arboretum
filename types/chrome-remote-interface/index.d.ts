@@ -1,6 +1,7 @@
 interface EventEmitter {
     once:(event:string, callback:(err:any, data:any)=>void) => void;
     on:(event:string, callback:(err:any, data:any)=>void) => void;
+    removeListener:(event:string, callback:(err:any, data:any)=>void) => void;
 }
 declare namespace CRI {
     enum TabType {
@@ -13,7 +14,6 @@ declare namespace CRI {
     type TabID = string;
     type FrameID = string;
     type PseudoType = string;
-    type LoaderID = string;
     type RequestID = string;
     type InterceptionID = string;
     type ErrorReason = string;
@@ -22,6 +22,7 @@ declare namespace CRI {
     type Headers = any;
     type ShadowRootType = 'user-agent' | 'open' | 'closed';
     type ResourceType = 'Document' | 'Stylesheet' | 'Image' | 'Media' | 'Font' | 'Script' | 'TextTrack' | 'XHR' | 'Fetch' | 'EventSource' | 'WebSocket' | 'Manifest' | 'Other';
+    type TransitionType = 'link' | 'typed' | 'auto_bookmark' | 'auto_subframe' | 'manual_subframe' | 'generated' | 'auto_toplevel' | 'form_submit' | 'reload' | 'keyword' | 'keyword_generated' | 'other';
     interface BackendNode {
         nodeType:number,
         nodeName:string,
@@ -48,7 +49,7 @@ declare namespace CRI {
     interface Frame {
         id:FrameID,
         parentId:FrameID,
-        loaderId?:LoaderID,
+        loaderId?:Network.LoaderID,
         name?:string,
         url?:string,
         securityOrigin?:string,
@@ -84,6 +85,18 @@ declare namespace CRI {
     }
 
     interface GetResourceTreeOptions {}
+    interface NavigateOptions {
+        url:string,
+        referrer?:string,
+        transitionType?:TransitionType
+    }
+    namespace Page {
+        interface NavigateResult {
+            frameId:FrameID,
+            loaderId:Network.LoaderID,
+            errorText?:string
+        }
+    }
     interface Page {
         enable:()=>void;
         disable:()=>void;
@@ -91,6 +104,7 @@ declare namespace CRI {
         frameAttached:(callback:(FrameAttachedEvent)=>void) => void;
         frameDetached:(callback:(FrameDetachedEvent)=>void) => void;
         frameNavigated:(callback:(FrameNavigatedEvent)=>void) => void;
+        navigate:(options:NavigateOptions, callback:(err:any, result:Page.NavigateResult)=>any) => void
     }
     interface ListTabsOptions {
         host:string,
@@ -192,7 +206,7 @@ declare namespace CRI {
     }
     interface RequestWillBeSentEvent {
         requestId:RequestID,
-        loaderId:LoaderID,
+        loaderId:Network.LoaderID,
         documentURL:string,
         request:Request,
         timestamp:MonotonicTime,
@@ -204,7 +218,7 @@ declare namespace CRI {
     }
     interface ResponseReceivedEvent {
         requestId:RequestID,
-        loaderId:LoaderID,
+        loaderId:Network.LoaderID,
         timestamp:MonotonicTime,
         type:ResourceType,
         response:Response,
@@ -224,7 +238,7 @@ declare namespace CRI {
         previousNodeId:NodeID,
         node:Node
     }
-    interface ChildNodeRemoved {
+    interface ChildNodeRemovedEvent {
         parentNodeId:NodeID,
         nodeId:NodeID
     }
@@ -232,10 +246,22 @@ declare namespace CRI {
         parentId:NodeID,
         nodes:Array<Node>
     }
+    interface AttributeModifiedEvent {
+        nodeId:NodeID,
+        name:string,
+        value:string
+    }
+    interface AttributeRemovedEvent {
+        nodeId:NodeID,
+        name:string
+    }
     interface Network {
         enable:()=>void,
         requestWillBeSent:(callback:(event:RequestWillBeSentEvent)=>void) => void,
         responseReceived:(callback:(event:ResponseReceivedEvent)=>void) => void
+    }
+    namespace Network {
+        type LoaderID = string;
     }
     interface CSSProperty {
         name:string,

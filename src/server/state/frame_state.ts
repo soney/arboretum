@@ -112,7 +112,7 @@ export class FrameState {
 		// 	}
 		// }
 	};
-	private markRefreshingRoot(r:boolean) {
+	private markRefreshingRoot(r:boolean):void {
 		if(r) {
 			this.refreshingRoot = true;
 		} else {
@@ -124,11 +124,11 @@ export class FrameState {
 			}
 		}
 	};
-	private handleQueuedEvent(eventInfo:any) {
+	private handleQueuedEvent(eventInfo:any):void {
 		const {type, event, promise} = eventInfo;
 		const val = this[type](event);
 		promise.doResolve(val);
-		return val;
+		// return val;
 	};
 
     public destroy() {
@@ -144,16 +144,17 @@ export class FrameState {
 		if(oldRoot) {
 			oldRoot.destroy();
 		}
-		if(root) {
+		if(rootNode) {
 			const rootState =  this.getOrCreateDOMState(rootNode);
 			this.root = rootState;
-			this.setChildrenRecursive(root, rootNode.children);
+			this.setChildrenRecursive(rootState, rootNode.children);
 		}
 	}
-	private setChildrenRecursive(parentState:DOMState, children:Array<CRI.Node>):void {
+	private setChildrenRecursive(parentState:DOMState, children:Array<CRI.Node>):DOMState {
 		parentState.setChildren(children.map((child:CRI.Node) => {
 			return this.setChildrenRecursive(this.getOrCreateDOMState(child, parentState), child.children);
-		}))
+		}));
+		return parentState;
 	}
 	private getOrCreateDOMState(node:CRI.Node, parent:DOMState=null):DOMState {
 		const {nodeId} = node;
@@ -183,12 +184,14 @@ export class FrameState {
 	}
 	public documentUpdated(event?:CRI.DocumentUpdatedEvent):Promise<boolean> {
 		if(this.isRefreshingRoot()) {
+			const resolvablePromise = new ResolvablePromise<CRI.DocumentUpdatedEvent>();
 			log.debug('(queue) Character Data Modified');
 			this.queuedEvents.push({
 				event: event,
 				type: 'documentUpdated',
-				promise: new ResolvablePromise<CRI.DocumentUpdatedEvent>()
+				promise: resolvablePromise
 			});
+			return resolvablePromise.getPromise();
 		} else {
 			log.debug('Document Updated');
 			this.refreshRoot();
@@ -775,5 +778,8 @@ class ResolvablePromise<E> {
 	}
 	public reject(val:any):void {
 		this._reject(val);
+	}
+	public getPromise():Promise<E> {
+		return this._promise;
 	}
 }

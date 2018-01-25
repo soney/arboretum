@@ -5,6 +5,7 @@ const frame_state_1 = require("./frame_state");
 const logging_1 = require("../../utils/logging");
 const _ = require("underscore");
 const events_1 = require("events");
+const url_1 = require("url");
 const log = logging_1.getColoredLogger('yellow');
 class TabState extends events_1.EventEmitter {
     constructor(info) {
@@ -12,143 +13,35 @@ class TabState extends events_1.EventEmitter {
         this.info = info;
         this.frames = new Map();
         this.pendingFrameEvents = new Map();
+        this.onSetChildNodes = (event) => {
+            this.forwardEventToFrames(event, 'setChildNodes');
+        };
+        this.onCharacterDataModified = (event) => {
+            this.forwardEventToFrames(event, 'characterDataModified');
+        };
+        this.onChildNodeRemoved = (event) => {
+            this.forwardEventToFrames(event, 'childNodeRemoved');
+        };
+        this.onChildNodeInserted = (event) => {
+            this.forwardEventToFrames(event, 'childNodeInserted');
+        };
+        this.onAttributeModified = (event) => {
+            this.forwardEventToFrames(event, 'attributeModified');
+        };
+        this.onAttributeRemoved = (event) => {
+            this.forwardEventToFrames(event, 'attributeRemoved');
+        };
+        this.onChildNodeCountUpdated = (event) => {
+            this.forwardEventToFrames(event, 'childNodeCountUpdated');
+        };
+        this.onInlineStyleInvalidated = (event) => {
+            this.forwardEventToFrames(event, 'inlineStyleInvalidated');
+        };
         this.onDocumentUpdated = () => {
             var frame = this.getMainFrame();
             if (frame) {
                 frame.documentUpdated();
             }
-        };
-        this.onSetChildNodes = (event) => {
-            const setChildNodesPromises = [];
-            this.frames.forEach((frameState) => {
-                const p = frameState.setChildNodes(event);
-                setChildNodesPromises.push(p);
-            });
-            Promise.all(setChildNodesPromises).then((vals) => {
-                const wasHandled = _.any(vals);
-                if (!wasHandled) {
-                    log.error('No frame found for set child nodes event', event);
-                }
-                return wasHandled;
-            }).catch((err) => {
-                throw (err);
-            });
-        };
-        this.onCharacterDataModified = (event) => {
-            this.frames.forEach((frameState) => {
-                frameState.characterDataModified(event);
-            });
-            // var promises = _.map(this._frames, function(frame) {
-            // 	return frame.characterDataModified(event);
-            // });
-            // return Promise.all(promises).then(function(vals) {
-            // 	return _.any(vals);
-            // }).then(function(wasHandled) {
-            // 	if(!wasHandled) {
-            // 		log.error('No frame found for character data modified event', event);
-            // 	}
-            // }).catch(function(err) {
-            // 	if(err.stack) { console.error(err.stack); }
-            // 	else { console.error(err); }
-            // });
-        };
-        this.onChildNodeRemoved = (event) => {
-            // var promises = _.map(this._frames, function(frame) {
-            // 	return frame.childNodeRemoved(event);
-            // });
-            //
-            // return Promise.all(promises).then(function(vals) {
-            // 	return _.any(vals);
-            // }).then(function(wasHandled) {
-            // 	if(!wasHandled) {
-            // 		log.error('No frame found for child node removed event', event);
-            // 	}
-            // }).catch(function(err) {
-            // 	if(err.stack) { console.error(err.stack); }
-            // 	else { console.error(err); }
-            // });
-        };
-        this.onChildNodeInserted = (event) => {
-            // var promises = _.map(this._frames, function(frame) {
-            // 	return frame.childNodeInserted(event);
-            // });
-            //
-            // return Promise.all(promises).then(function(vals) {
-            // 	return _.any(vals);
-            // }).then(function(wasHandled) {
-            // 	if(!wasHandled) {
-            // 		log.error('No frame found for child node inserted event', event);
-            // 	}
-            // }).catch(function(err) {
-            // 	if(err.stack) { console.error(err.stack); }
-            // 	else { console.error(err); }
-            // });
-        };
-        this.onAttributeModified = (event) => {
-            // var promises = _.map(this._frames, function(frame) {
-            // 	return frame.attributeModified(event);
-            // });
-            //
-            // return Promise.all(promises).then(function(vals) {
-            // 	return _.any(vals);
-            // }).then(function(wasHandled) {
-            // 	if(!wasHandled) {
-            // 		log.error('No frame found for attribute modified event', event);
-            // 	}
-            // }).catch(function(err) {
-            // 	if(err.stack) { console.error(err.stack); }
-            // 	else { console.error(err); }
-            //    });
-        };
-        this.onAttributeRemoved = (event) => {
-            // var promises = _.map(this._frames, function(frame) {
-            // 	return frame.attributeRemoved(event);
-            // });
-            //
-            // return Promise.all(promises).then(function(vals) {
-            // 	return _.any(vals);
-            // }).then(function(wasHandled) {
-            // 	if(!wasHandled) {
-            // 		log.error('No frame found for attribute removed event', event);
-            // 	}
-            // }).catch(function(err) {
-            // 	if(err.stack) { console.error(err.stack); }
-            // 	else { console.error(err); }
-            // });
-        };
-        this.onChildNodeCountUpdated = (event) => {
-            // var promises = _.map(this._frames, function(frame) {
-            // 	return frame.childNodeCountUpdated(event);
-            // });
-            //
-            // return Promise.all(promises).then(function(vals) {
-            // 	return _.any(vals);
-            // }).then(function(wasHandled) {
-            // 	if(!wasHandled) {
-            // 		log.error('No frame found for child node count updated event', event);
-            // 	}
-            // }).catch(function(err) {
-            // 	if(err.stack) { console.error(err.stack); }
-            // 	else { console.error(err); }
-            // });
-        };
-        this.onInlineStyleInvalidated = (event) => {
-            this.frames.forEach((frame) => {
-            });
-            // var promises = _.map(this._frames, function(frame) {
-            // 	return frame.inlineStyleInvalidated(event);
-            // });
-            //
-            // return Promise.all(promises).then(function(vals) {
-            // 	return _.any(vals);
-            // }).then(function(wasHandled) {
-            // 	if(!wasHandled) {
-            // 		log.error('No frame found for inline style invalidated event', event);
-            // 	}
-            // }).catch(function(err) {
-            // 	if(err.stack) { console.error(err.stack); }
-            // 	else { console.error(err); }
-            // });
         };
         this.onFrameAttached = (frameInfo) => {
             const { frameId, parentFrameId } = frameInfo;
@@ -274,6 +167,31 @@ class TabState extends events_1.EventEmitter {
         });
     }
     ;
+    removeDOMListeners() {
+        this.getDocument().then((root) => {
+            // this.rootFrame.setRoot(root);
+            TabState.DOMEventTypes.forEach((eventType) => {
+                const capitalizedEventType = `on${eventType[0].toUpperCase()}${eventType.substr(1)}`;
+                const func = this[capitalizedEventType];
+                this.chrome.removeListener(`DOM.${eventType}`, func);
+            });
+        });
+    }
+    forwardEventToFrames(event, methodName) {
+        const frameArray = Array.from(this.frames.values());
+        const eventResultPromise = frameArray.map((frameState) => {
+            return frameState[methodName](event);
+        });
+        return Promise.all(eventResultPromise).then((vals) => {
+            const wasHandled = _.any(vals);
+            if (!wasHandled) {
+                log.error(`No frame found for ${methodName} event`, event);
+            }
+            return wasHandled;
+        }).catch((err) => {
+            throw (err);
+        });
+    }
     requestChildNodes(nodeId, depth = -1) {
         return new Promise((resolve, reject) => {
             this.chrome.DOM.requestChildNodes({ nodeId, depth }, (err, val) => {
@@ -313,6 +231,23 @@ class TabState extends events_1.EventEmitter {
         return this.getDocument().then((root) => {
             this.rootFrame.setRoot(root);
             this.emit('mainFrameChanged');
+        });
+    }
+    navigate(url) {
+        const parsedURL = url_1.parse(url);
+        if (!parsedURL.protocol) {
+            parsedURL.protocol = 'http';
+        }
+        url = url_1.format(parsedURL);
+        return new Promise((resolve, reject) => {
+            this.chrome.Page.navigate({ url }, (err, result) => {
+                if (err) {
+                    throw (err);
+                }
+                else {
+                    resolve(result.frameId);
+                }
+            });
         });
     }
     updateFrameOnEvents(frameState) {

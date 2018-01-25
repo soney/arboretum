@@ -126,7 +126,7 @@ class FrameState {
         const { type, event, promise } = eventInfo;
         const val = this[type](event);
         promise.doResolve(val);
-        return val;
+        // return val;
     }
     ;
     destroy() {
@@ -143,16 +143,17 @@ class FrameState {
         if (oldRoot) {
             oldRoot.destroy();
         }
-        if (root) {
+        if (rootNode) {
             const rootState = this.getOrCreateDOMState(rootNode);
             this.root = rootState;
-            this.setChildrenRecursive(root, rootNode.children);
+            this.setChildrenRecursive(rootState, rootNode.children);
         }
     }
     setChildrenRecursive(parentState, children) {
         parentState.setChildren(children.map((child) => {
             return this.setChildrenRecursive(this.getOrCreateDOMState(child, parentState), child.children);
         }));
+        return parentState;
     }
     getOrCreateDOMState(node, parent = null) {
         const { nodeId } = node;
@@ -183,12 +184,14 @@ class FrameState {
     }
     documentUpdated(event) {
         if (this.isRefreshingRoot()) {
+            const resolvablePromise = new ResolvablePromise();
             log.debug('(queue) Character Data Modified');
             this.queuedEvents.push({
                 event: event,
                 type: 'documentUpdated',
-                promise: new ResolvablePromise()
+                promise: resolvablePromise
             });
+            return resolvablePromise.getPromise();
         }
         else {
             log.debug('Document Updated');
@@ -723,5 +726,8 @@ class ResolvablePromise {
     }
     reject(val) {
         this._reject(val);
+    }
+    getPromise() {
+        return this._promise;
     }
 }
