@@ -182,6 +182,27 @@ class FrameState {
             return root;
         });
     }
+    doHandleDocumentUpdated(event) {
+        return true;
+    }
+    ;
+    handleFrameEvent(event, eventType) {
+        if (this.isRefreshingRoot()) {
+            const resolvablePromise = new ResolvablePromise();
+            log.debug(`(queue) ${eventType}`);
+            this.queuedEvents.push({
+                event: event,
+                type: eventType,
+                promise: resolvablePromise
+            });
+            return resolvablePromise.getPromise().then(() => {
+                switch (eventType) {
+                    case 'documentUpdated':
+                        return this.doHandleDocumentUpdated(event);
+                }
+            });
+        }
+    }
     documentUpdated(event) {
         if (this.isRefreshingRoot()) {
             const resolvablePromise = new ResolvablePromise();
@@ -191,16 +212,29 @@ class FrameState {
                 type: 'documentUpdated',
                 promise: resolvablePromise
             });
-            return resolvablePromise.getPromise();
+            return resolvablePromise.getPromise().then(() => {
+                return true;
+            });
         }
         else {
             log.debug('Document Updated');
-            this.refreshRoot();
+            this.refreshRoot().then(() => {
+                return true;
+            });
         }
     }
     ;
     characterDataModified(event) {
+        if (this.isRefreshingRoot()) {
+        }
+        else {
+            log.debug('Character Data Modified');
+            const domState = this.getDOMStateWithID(event.nodeId);
+            if (domState) {
+            }
+        }
     }
+    ;
 }
 exports.FrameState = FrameState;
 // var _ = require('underscore'),

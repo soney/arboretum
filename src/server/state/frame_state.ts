@@ -182,6 +182,26 @@ export class FrameState {
 			return root;
 		});
 	}
+	private doHandleDocumentUpdated(event:CRI.DocumentUpdatedEvent):boolean {
+		return true;
+	};
+	public handleFrameEvent<E>(event:E, eventType:string):Promise<boolean> {
+		if(this.isRefreshingRoot()) {
+			const resolvablePromise = new ResolvablePromise<E>();
+			log.debug(`(queue) ${eventType}`);
+			this.queuedEvents.push({
+				event: event,
+				type: eventType,
+				promise: resolvablePromise
+			});
+			return resolvablePromise.getPromise().then(() => {
+				switch(eventType) {
+					case 'documentUpdated':
+						return this.doHandleDocumentUpdated(event);
+				}
+			});
+		}
+	}
 	public documentUpdated(event?:CRI.DocumentUpdatedEvent):Promise<boolean> {
 		if(this.isRefreshingRoot()) {
 			const resolvablePromise = new ResolvablePromise<CRI.DocumentUpdatedEvent>();
@@ -191,14 +211,27 @@ export class FrameState {
 				type: 'documentUpdated',
 				promise: resolvablePromise
 			});
-			return resolvablePromise.getPromise();
+			return resolvablePromise.getPromise().then(() => {
+				return true;
+			});
 		} else {
 			log.debug('Document Updated');
-			this.refreshRoot();
+
+			this.refreshRoot().then(() => {
+				return true;
+			});
 		}
 	};
 	public characterDataModified(event:CRI.CharacterDataModifiedEvent):Promise<boolean> {
-	}
+		if(this.isRefreshingRoot()) {
+
+		} else {
+			log.debug('Character Data Modified');
+			const domState = this.getDOMStateWithID(event.nodeId);
+			if(domState) {
+			}
+		}
+	};
 // 	proto.refreshRoot = function() {
 // 		var page = this.getPage();
 // 		this._markRefreshingRoot(true);
