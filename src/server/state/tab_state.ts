@@ -84,15 +84,15 @@ export class TabState extends EventEmitter {
             });
 		});
     }
-    private forwardEventToFrames<E>(event:E, methodName:string):Promise<boolean> {
+    private forwardEventToFrames<E>(event:E, eventType:string):Promise<boolean> {
         const frameArray:Array<FrameState> = Array.from(this.frames.values());
         const eventResultPromise:Array<Promise<boolean>> = frameArray.map((frameState:FrameState) => {
-            return frameState[methodName](event);
+            return frameState.handleFrameEvent<E>(event, eventType);
         });
         return Promise.all(eventResultPromise).then((vals:Array<boolean>) => {
             const wasHandled:boolean = _.any(vals);
             if(!wasHandled) {
-                log.error(`No frame found for ${methodName} event`, event);
+                log.error(`No frame found for ${eventType} event`, event);
             }
             return wasHandled;
         }).catch((err) => {

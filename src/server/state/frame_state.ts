@@ -185,6 +185,20 @@ export class FrameState {
 	private doHandleDocumentUpdated(event:CRI.DocumentUpdatedEvent):boolean {
 		return true;
 	};
+	private doHandleCharacterDataModified(event:CRI.CharacterDataModifiedEvent):boolean {
+		const {nodeId} = event;
+		const domState = this.getDOMStateWithID(nodeId);
+		if(domState) {
+			log.debug(`Character Data Modified ${nodeId}`)
+			domState.setCharacterData(event.characterData);
+			return true;
+		} else {
+			return false;
+		}
+	}
+    private static DOMEventTypes:Array<string> = [ 'attributeModified', 'attributeRemoved', 'characterDataModified',
+		'childNodeCountUpdated', 'childNodeInserted', 'childNodeRemoved',
+		'documentUpdated', 'setChildNodes', 'inlineStyleInvalidated' ];
 	public handleFrameEvent<E>(event:E, eventType:string):Promise<boolean> {
 		if(this.isRefreshingRoot()) {
 			const resolvablePromise = new ResolvablePromise<E>();
@@ -198,40 +212,26 @@ export class FrameState {
 				switch(eventType) {
 					case 'documentUpdated':
 						return this.doHandleDocumentUpdated(event);
+					case 'setChildNodes':
+						return this.doHandleSetChildNodes(event);
+					case 'inlineStyleInvalidated':
+						return this.doHandleInlineStyleInvalidated(event);
+					case 'childNodeCountUpdated':
+						return this.doHandleChildNodeCountUpdated(event);
+					case 'childNodeInserted':
+						return this.doHandleChildNodeInserted(event);
+					case 'childchildNodeRemoved':
+						return this.doHandleChildNodeRemoved(event);
+					case 'attributeModified':
+						return this.doHandleAttributeModified(event);
+					case 'attributeRemoved':
+						return this.doHandleAttributeRemoved(event);
+					case 'characterDataModified':
+						return this.doHandleCharacterDataModified(event);
 				}
 			});
 		}
 	}
-	public documentUpdated(event?:CRI.DocumentUpdatedEvent):Promise<boolean> {
-		if(this.isRefreshingRoot()) {
-			const resolvablePromise = new ResolvablePromise<CRI.DocumentUpdatedEvent>();
-			log.debug('(queue) Character Data Modified');
-			this.queuedEvents.push({
-				event: event,
-				type: 'documentUpdated',
-				promise: resolvablePromise
-			});
-			return resolvablePromise.getPromise().then(() => {
-				return true;
-			});
-		} else {
-			log.debug('Document Updated');
-
-			this.refreshRoot().then(() => {
-				return true;
-			});
-		}
-	};
-	public characterDataModified(event:CRI.CharacterDataModifiedEvent):Promise<boolean> {
-		if(this.isRefreshingRoot()) {
-
-		} else {
-			log.debug('Character Data Modified');
-			const domState = this.getDOMStateWithID(event.nodeId);
-			if(domState) {
-			}
-		}
-	};
 // 	proto.refreshRoot = function() {
 // 		var page = this.getPage();
 // 		this._markRefreshingRoot(true);

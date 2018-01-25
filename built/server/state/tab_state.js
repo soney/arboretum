@@ -177,15 +177,15 @@ class TabState extends events_1.EventEmitter {
             });
         });
     }
-    forwardEventToFrames(event, methodName) {
+    forwardEventToFrames(event, eventType) {
         const frameArray = Array.from(this.frames.values());
         const eventResultPromise = frameArray.map((frameState) => {
-            return frameState[methodName](event);
+            return frameState.handleFrameEvent(event, eventType);
         });
         return Promise.all(eventResultPromise).then((vals) => {
             const wasHandled = _.any(vals);
             if (!wasHandled) {
-                log.error(`No frame found for ${methodName} event`, event);
+                log.error(`No frame found for ${eventType} event`, event);
             }
             return wasHandled;
         }).catch((err) => {

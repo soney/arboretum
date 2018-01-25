@@ -186,6 +186,18 @@ class FrameState {
         return true;
     }
     ;
+    doHandleCharacterDataModified(event) {
+        const { nodeId } = event;
+        const domState = this.getDOMStateWithID(nodeId);
+        if (domState) {
+            log.debug(`Character Data Modified ${nodeId}`);
+            domState.setCharacterData(event.characterData);
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
     handleFrameEvent(event, eventType) {
         if (this.isRefreshingRoot()) {
             const resolvablePromise = new ResolvablePromise();
@@ -199,43 +211,30 @@ class FrameState {
                 switch (eventType) {
                     case 'documentUpdated':
                         return this.doHandleDocumentUpdated(event);
+                    case 'setChildNodes':
+                        return this.doHandleSetChildNodes(event);
+                    case 'inlineStyleInvalidated':
+                        return this.doHandleInlineStyleInvalidated(event);
+                    case 'childNodeCountUpdated':
+                        return this.doHandleChildNodeCountUpdated(event);
+                    case 'childNodeInserted':
+                        return this.doHandleChildNodeInserted(event);
+                    case 'childchildNodeRemoved':
+                        return this.doHandleChildNodeRemoved(event);
+                    case 'attributeModified':
+                        return this.doHandleAttributeModified(event);
+                    case 'attributeRemoved':
+                        return this.doHandleAttributeRemoved(event);
+                    case 'characterDataModified':
+                        return this.doHandleCharacterDataModified(event);
                 }
             });
         }
     }
-    documentUpdated(event) {
-        if (this.isRefreshingRoot()) {
-            const resolvablePromise = new ResolvablePromise();
-            log.debug('(queue) Character Data Modified');
-            this.queuedEvents.push({
-                event: event,
-                type: 'documentUpdated',
-                promise: resolvablePromise
-            });
-            return resolvablePromise.getPromise().then(() => {
-                return true;
-            });
-        }
-        else {
-            log.debug('Document Updated');
-            this.refreshRoot().then(() => {
-                return true;
-            });
-        }
-    }
-    ;
-    characterDataModified(event) {
-        if (this.isRefreshingRoot()) {
-        }
-        else {
-            log.debug('Character Data Modified');
-            const domState = this.getDOMStateWithID(event.nodeId);
-            if (domState) {
-            }
-        }
-    }
-    ;
 }
+FrameState.DOMEventTypes = ['attributeModified', 'attributeRemoved', 'characterDataModified',
+    'childNodeCountUpdated', 'childNodeInserted', 'childNodeRemoved',
+    'documentUpdated', 'setChildNodes', 'inlineStyleInvalidated'];
 exports.FrameState = FrameState;
 // var _ = require('underscore'),
 // 	util = require('util'),
