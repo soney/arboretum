@@ -118,6 +118,19 @@ export class DOMState extends EventEmitter {
 		// 	});
 		// }
 	}
+    public setChildren(children:Array<DOMState>):void {
+		this.children.forEach((child:DOMState) => {
+			if(!children.includes(child)) {
+				child.destroy();
+			}
+		});
+		this.children = children;
+		this.children.forEach((child) => {
+			child.setParent(this);
+		});
+		this.emit('childrenChanged', { children })
+    }
+	
     private getBaseURL():string {
     	const frame = this.getFrame();
     	return frame.getURL();

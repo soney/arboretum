@@ -14,7 +14,9 @@ class TabState extends events_1.EventEmitter {
         this.pendingFrameEvents = new Map();
         this.onDocumentUpdated = () => {
             var frame = this.getMainFrame();
-            frame.documentUpdated();
+            if (frame) {
+                frame.documentUpdated();
+            }
         };
         this.onSetChildNodes = (event) => {
             const setChildNodesPromises = [];
@@ -32,7 +34,10 @@ class TabState extends events_1.EventEmitter {
                 throw (err);
             });
         };
-        this.onCharacterDataModified = function (event) {
+        this.onCharacterDataModified = (event) => {
+            this.frames.forEach((frameState) => {
+                frameState.characterDataModified(event);
+            });
             // var promises = _.map(this._frames, function(frame) {
             // 	return frame.characterDataModified(event);
             // });
@@ -47,7 +52,7 @@ class TabState extends events_1.EventEmitter {
             // 	else { console.error(err); }
             // });
         };
-        this.onChildNodeRemoved = function (event) {
+        this.onChildNodeRemoved = (event) => {
             // var promises = _.map(this._frames, function(frame) {
             // 	return frame.childNodeRemoved(event);
             // });
@@ -63,7 +68,7 @@ class TabState extends events_1.EventEmitter {
             // 	else { console.error(err); }
             // });
         };
-        this.onChildNodeInserted = function (event) {
+        this.onChildNodeInserted = (event) => {
             // var promises = _.map(this._frames, function(frame) {
             // 	return frame.childNodeInserted(event);
             // });
@@ -79,7 +84,7 @@ class TabState extends events_1.EventEmitter {
             // 	else { console.error(err); }
             // });
         };
-        this.onAttributeModified = function (event) {
+        this.onAttributeModified = (event) => {
             // var promises = _.map(this._frames, function(frame) {
             // 	return frame.attributeModified(event);
             // });
@@ -95,7 +100,7 @@ class TabState extends events_1.EventEmitter {
             // 	else { console.error(err); }
             //    });
         };
-        this.onAttributeRemoved = function (event) {
+        this.onAttributeRemoved = (event) => {
             // var promises = _.map(this._frames, function(frame) {
             // 	return frame.attributeRemoved(event);
             // });
@@ -111,7 +116,7 @@ class TabState extends events_1.EventEmitter {
             // 	else { console.error(err); }
             // });
         };
-        this.onChildNodeCountUpdated = function (event) {
+        this.onChildNodeCountUpdated = (event) => {
             // var promises = _.map(this._frames, function(frame) {
             // 	return frame.childNodeCountUpdated(event);
             // });
@@ -127,7 +132,7 @@ class TabState extends events_1.EventEmitter {
             // 	else { console.error(err); }
             // });
         };
-        this.onInlineStyleInvalidated = function (event) {
+        this.onInlineStyleInvalidated = (event) => {
             this.frames.forEach((frame) => {
             });
             // var promises = _.map(this._frames, function(frame) {
@@ -209,7 +214,7 @@ class TabState extends events_1.EventEmitter {
                 frameState.executionContextCreated(event);
             }
             else {
-                log.error(`Could not find frame ${frameId}`);
+                log.error(`Could not find frame ${frameId} for execution context`);
             }
         };
         const chromeEventEmitter = cri({
@@ -242,7 +247,6 @@ class TabState extends events_1.EventEmitter {
     addFrameListeners() {
         this.chrome.Page.enable();
         this.getResourceTree().then((tree) => {
-            console.log('OK');
             this.chrome.Page.frameAttached(this.onFrameAttached);
             this.chrome.Page.frameDetached(this.onFrameDetached);
             this.chrome.Page.frameNavigated(this.onFrameNavigated);

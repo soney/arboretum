@@ -131,6 +131,18 @@ class DOMState extends events_1.EventEmitter {
         // 	});
         // }
     }
+    setChildren(children) {
+        this.children.forEach((child) => {
+            if (!children.includes(child)) {
+                child.destroy();
+            }
+        });
+        this.children = children;
+        this.children.forEach((child) => {
+            child.setParent(this);
+        });
+        this.emit('childrenChanged', { children });
+    }
     getBaseURL() {
         const frame = this.getFrame();
         return frame.getURL();

@@ -210,8 +210,23 @@ declare namespace CRI {
         response:Response,
         frameId:FrameID
     }
-    interface DocumentUpdatedEvent {
-        
+    interface DocumentUpdatedEvent { }
+    interface CharacterDataModifiedEvent {
+        nodeId:NodeID,
+        characterData:string
+    }
+    interface ChildNodeCountUpdatedEvent {
+        nodeId:NodeID,
+        childNodeCount:number
+    }
+    interface ChildNodeInsertedEvent {
+        parentNodeId:NodeID,
+        previousNodeId:NodeID,
+        node:Node
+    }
+    interface ChildNodeRemoved {
+        parentNodeId:NodeID,
+        nodeId:NodeID
     }
     interface SetChildNodesResponse {
         parentId:NodeID,

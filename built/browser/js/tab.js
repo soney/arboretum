@@ -22,7 +22,7 @@ class Tab extends EventEmitter {
         let icon = $('<span />', {class: 'tab-icon'});
         this.closeButton = $('<span />', {class:'icon icon-cancel icon-close-tab'});
         // this.closeIcon = $('<i />', {class: 'fa fa-close'}).appendTo(this.closeButton);
-        let webView = $('<webview />', {src: 'http://osu.edu/',id:'wv'+tabNum});
+        let webView = $('<webview />', {src: 'http://www.umich.edu/',id:'wv'+tabNum});
         let thisTab = this;
         let expecting = false;
         let lastStatus = null;

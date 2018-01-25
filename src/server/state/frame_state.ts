@@ -139,14 +139,21 @@ export class FrameState {
 	public getRoot():DOMState {
 		return this.root;
 	}
-	public setRoot(root:CRI.Node):void {
+	public setRoot(rootNode:CRI.Node):void {
 		const oldRoot:DOMState = this.getRoot();
 		if(oldRoot) {
 			oldRoot.destroy();
 		}
 		if(root) {
-			const rootState =  this.getOrCreateDOMState(root);
+			const rootState =  this.getOrCreateDOMState(rootNode);
+			this.root = rootState;
+			this.setChildrenRecursive(root, rootNode.children);
 		}
+	}
+	private setChildrenRecursive(parentState:DOMState, children:Array<CRI.Node>):void {
+		parentState.setChildren(children.map((child:CRI.Node) => {
+			return this.setChildrenRecursive(this.getOrCreateDOMState(child, parentState), child.children);
+		}))
 	}
 	private getOrCreateDOMState(node:CRI.Node, parent:DOMState=null):DOMState {
 		const {nodeId} = node;
@@ -167,7 +174,14 @@ export class FrameState {
 			this.oldNodeMap.set(nodeId, true);
 		}
 	}
-	public documentUpdated(event?:CRI.DocumentUpdatedEvent):void {
+	private refreshRoot():Promise<CRI.Node> {
+		this.markRefreshingRoot(true);
+		return this.tab.getDocument().then((root:CRI.Node) => {
+			this.setRoot(root);
+			return root;
+		});
+	}
+	public documentUpdated(event?:CRI.DocumentUpdatedEvent):Promise<boolean> {
 		if(this.isRefreshingRoot()) {
 			log.debug('(queue) Character Data Modified');
 			this.queuedEvents.push({
@@ -180,11 +194,7 @@ export class FrameState {
 			this.refreshRoot();
 		}
 	};
-	private refreshRoot():void {
-		this.markRefreshingRoot(true);
-		this.tab.getDocument().then((root:CRI.Node) => {
-			this.setRoot(root);
-		});
+	public characterDataModified(event:CRI.CharacterDataModifiedEvent):Promise<boolean> {
 	}
 // 	proto.refreshRoot = function() {
 // 		var page = this.getPage();
