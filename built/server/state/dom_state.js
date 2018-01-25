@@ -20,6 +20,8 @@ class DOMState extends events_1.EventEmitter {
     }
     destroy() {
     }
+    getTab() { return this.frame.getTab(); }
+    ;
     getNodeId() { return this.node.nodeId; }
     ;
     getTagName() { return this.node.nodeName; }
@@ -74,6 +76,77 @@ class DOMState extends events_1.EventEmitter {
         });
     }
     ;
+    insertChild(childDomState, previousDomState = null) {
+        if (previousDomState) {
+            const index = this.children.indexOf(previousDomState);
+            this.children.splice(index + 1, 0, childDomState);
+        }
+        else {
+            this.children.unshift(childDomState);
+        }
+        childDomState.setParent(this);
+        this.emit('childAdded', {
+            child: childDomState,
+            previousNode: previousDomState
+        });
+    }
+    setCharacterData(characterData) {
+        this.node.nodeValue = characterData;
+        this.emit('nodeValueChanged', {
+            value: this.getNodeValue()
+        });
+    }
+    getNodeValue() {
+        return this.node.nodeValue;
+    }
+    removeChild(child) {
+        const index = this.children.indexOf(child);
+        if (index >= 0) {
+            this.children.splice(index, 1);
+            this.emit('childRemoved', { child });
+            child.destroy();
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    setAttribute(name, value) {
+        const node = this.node;
+        const { attributes } = node;
+        let found = false;
+        for (let i = 0; i < attributes.length; i += 2) {
+            const n = attributes[i];
+            if (n === name) {
+                attributes[i + 1] = value;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            attributes.push(name, value);
+        }
+        this.notifyAttributeChange();
+    }
+    removeAttribute(name) {
+        const node = this.node;
+        const { attributes } = node;
+        const attributeIndex = attributes.indexOf(name);
+        if (attributeIndex >= 0) {
+            attributes.splice(attributeIndex, 2);
+            this.notifyAttributeChange();
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    notifyAttributeChange() {
+        this.emit('attributesChanged');
+    }
+    childCountUpdated(count) {
+        this.getTab().requestChildNodes(this.getNodeId());
+    }
     requestInlineStyle() {
         const nodeType = this.getNodeType();
         if (nodeType === 1) {

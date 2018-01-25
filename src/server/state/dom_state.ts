@@ -3,6 +3,7 @@ import {getCanvasImage, getUniqueSelector, getElementValue} from '../hack_driver
 import {getColoredLogger, level, setLevel} from '../../utils/logging';
 import {processCSSURLs} from '../css_parser';
 import {EventEmitter} from 'events';
+import {TabState} from './tab_state';
 
 const log = getColoredLogger('magenta');
 
@@ -18,6 +19,7 @@ export class DOMState extends EventEmitter {
     }
     public destroy() {
     }
+	public getTab():TabState { return this.frame.getTab(); };
 	public getNodeId():CRI.NodeID { return this.node.nodeId; };
     public getTagName():string { return this.node.nodeName; };
     public getFrame():FrameState { return this.frame;};
@@ -62,6 +64,75 @@ export class DOMState extends EventEmitter {
 			}
 		});
 	};
+	public insertChild(childDomState:DOMState, previousDomState:DOMState=null):void {
+		if(previousDomState) {
+			const index = this.children.indexOf(previousDomState);
+			this.children.splice(index+1, 0, childDomState);
+		} else {
+			this.children.unshift(childDomState);
+		}
+		childDomState.setParent(this);
+		this.emit('childAdded', {
+			child: childDomState,
+			previousNode: previousDomState
+		})
+	}
+
+    public setCharacterData(characterData:string):void {
+		this.node.nodeValue = characterData;
+		this.emit('nodeValueChanged', {
+			value: this.getNodeValue()
+		})
+    }
+	public getNodeValue():string {
+		return this.node.nodeValue;
+	}
+	public removeChild(child:DOMState):boolean {
+		const index = this.children.indexOf(child);
+		if(index >= 0) {
+			this.children.splice(index, 1);
+			this.emit('childRemoved', { child })
+			child.destroy();
+			return true;
+		} else {
+			return false;
+		}
+	}
+	public setAttribute(name:string, value:string):void {
+		const node = this.node;
+		const {attributes} = node;
+		let found:boolean = false;
+		for(let i:number = 0; i<attributes.length; i+=2) {
+			const n = attributes[i];
+			if(n === name) {
+				attributes[i+1] = value;
+				found = true;
+				break;
+			}
+		}
+		if(!found) {
+			attributes.push(name, value);
+		}
+		this.notifyAttributeChange();
+	}
+	public removeAttribute(name:string):boolean {
+		const node = this.node;
+		const {attributes} = node;
+		const attributeIndex = attributes.indexOf(name);
+		if(attributeIndex >= 0) {
+			attributes.splice(attributeIndex, 2);
+			this.notifyAttributeChange();
+			return true;
+		} else {
+			return false;
+		}
+	}
+	private notifyAttributeChange():void {
+		this.emit('attributesChanged');
+	}
+	public childCountUpdated(count:number):void {
+		this.getTab().requestChildNodes(this.getNodeId())
+	}
 	private requestInlineStyle():Promise<CRI.CSSStyle> {
 		const nodeType = this.getNodeType();
 		if(nodeType === 1) {
@@ -130,7 +201,7 @@ export class DOMState extends EventEmitter {
 		});
 		this.emit('childrenChanged', { children })
     }
-	
+
     private getBaseURL():string {
     	const frame = this.getFrame();
     	return frame.getURL();

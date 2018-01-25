@@ -3,6 +3,7 @@ import {DOMState} from './dom_state';
 import {EventManager} from '../event_manager';
 import {ResourceTracker} from '../resource_tracker';
 import {getColoredLogger, level, setLevel} from '../../utils/logging';
+import * as _ from 'underscore';
 
 const log = getColoredLogger('green');
 
@@ -31,6 +32,9 @@ export class FrameState {
 		// this.resourceTracker = new ResourceTracker(chrome, this, info.resources);
 		log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
 	};
+	public getTab():TabState {
+		return this.tab;
+	}
 	public markSetMainFrameExecuted(val:boolean):void {
 		this.setMainFrameExecuted = val;
 	};
@@ -156,7 +160,7 @@ export class FrameState {
 		}));
 		return parentState;
 	}
-	private getOrCreateDOMState(node:CRI.Node, parent:DOMState=null):DOMState {
+	private getOrCreateDOMState(node:CRI.Node, parent:DOMState=null, previousNode:DOMState=null):DOMState {
 		const {nodeId} = node;
 		if(this.hasDOMStateWithID(nodeId)) {
 			return this.getDOMStateWithID(nodeId);
@@ -166,6 +170,10 @@ export class FrameState {
 				this.removeDOMState(domState);
 			})
 			this.nodeMap.set(nodeId, domState);
+			if(parent) {
+				parent.insertChild(domState, previousNode);
+			}
+			return domState;
 		}
 	}
 	private removeDOMState(domState:DOMState):void {
@@ -196,12 +204,103 @@ export class FrameState {
 			return false;
 		}
 	}
+	private doHandleSetChildNodes(event:CRI.SetChildNodesEvent):boolean {
+		const {parentId} = event;
+		const parent = this.getDOMStateWithID(parentId);
+		if(parent) {
+			const {nodes} = event;
+			log.debug(`Set child nodes ${parentId} -> [${nodes.map((node) => node.nodeId).join(', ')}]`);
+			this.setChildrenRecursive(parent, nodes);
+			return true;
+		} else {
+			return false;
+		}
+	};
+	private doHandleInlineStyleInvalidated(event:CRI.InlineStyleInvalidatedEvent):boolean {
+		const {nodeIds} = event;
+		const updatedInlineStyles:Array<boolean> = nodeIds.map((nodeId) => {
+			const node = this.getDOMStateWithID(nodeId);
+			if(node) {
+				node.updateInlineStyle();
+				return true;
+			} else {
+				return false;
+			}
+		});
+		return _.any(updatedInlineStyles);
+	};
+	private doHandleChildNodeCountUpdated(event:CRI.ChildNodeCountUpdatedEvent):boolean {
+		const {nodeId} = event;
+		const domState = this.getDOMStateWithID(nodeId);
+		if(domState) {
+			log.debug(`Child count updated for ${nodeId}`);
+			domState.childCountUpdated(event.childNodeCount);
+			return true;
+		} else {
+			return false;
+		}
+	}
+	private doHandleChildNodeInserted(event:CRI.ChildNodeInsertedEvent):boolean {
+		const {parentNodeId} = event;
+		const parentDomState = this.getDOMStateWithID(parentNodeId);
+		if(parentDomState) {
+			const {previousNodeId, node} = event;
+			const {nodeId} = node;
+			const previousDomState:DOMState = previousNodeId > 0 ? this.getDOMStateWithID(previousNodeId) : null;
+			const domState = this.getOrCreateDOMState(node, parentDomState, previousDomState);
+
+			log.debug(`Child node inserted ${nodeId} (parent: ${parentNodeId} / previous: ${previousNodeId})`);
+			this.setChildrenRecursive(domState, node.children);
+			const tab = this.getTab();
+			tab.requestChildNodes(nodeId);
+			return true;
+		} else {
+			return false;
+		}
+	}
+	private doHandleChildNodeRemoved(event:CRI.ChildNodeRemovedEvent):boolean {
+		const {parentNodeId, nodeId} = event;
+		const domState = this.getDOMStateWithID(nodeId);
+		const parentDomState = this.getDOMStateWithID(parentNodeId);
+		if(domState && parentDomState) {
+			log.debug(`Child node removed ${nodeId} (parent: ${parentNodeId})`);
+			parentDomState.removeChild(domState);
+			return true;
+		} else {
+			return false;
+		}
+	};
+	private doHandleAttributeModified(event:CRI.AttributeModifiedEvent) {
+		const {nodeId} = event;
+		const domState = this.getDOMStateWithID(nodeId);
+		if(domState) {
+			const {name, value} = event;
+			log.debug(`Attribute modified ${name} to ${value}`);
+			domState.setAttribute(name, value);
+			return true;
+		} else {
+			return false;
+		}
+	}
+	private doHandleAttributeRemoved(event:CRI.AttributeRemovedEvent) {
+		const {nodeId} = event;
+		const domState = this.getDOMStateWithID(nodeId);
+		if(domState) {
+			const {name} = event;
+			log.debug(`Attribute removed ${name}`);
+			domState.removeAttribute(name);
+			return true;
+		} else {
+			return false;
+		}
+	}
+
     private static DOMEventTypes:Array<string> = [ 'attributeModified', 'attributeRemoved', 'characterDataModified',
 		'childNodeCountUpdated', 'childNodeInserted', 'childNodeRemoved',
 		'documentUpdated', 'setChildNodes', 'inlineStyleInvalidated' ];
-	public handleFrameEvent<E>(event:E, eventType:string):Promise<boolean> {
+	public handleFrameEvent(event:any, eventType:string):Promise<boolean> {
 		if(this.isRefreshingRoot()) {
-			const resolvablePromise = new ResolvablePromise<E>();
+			const resolvablePromise = new ResolvablePromise<any>();
 			log.debug(`(queue) ${eventType}`);
 			this.queuedEvents.push({
 				event: event,
@@ -211,23 +310,23 @@ export class FrameState {
 			return resolvablePromise.getPromise().then(() => {
 				switch(eventType) {
 					case 'documentUpdated':
-						return this.doHandleDocumentUpdated(event);
+						return this.doHandleDocumentUpdated(event as CRI.DocumentUpdatedEvent);
 					case 'setChildNodes':
-						return this.doHandleSetChildNodes(event);
+						return this.doHandleSetChildNodes(event as CRI.SetChildNodesEvent);
 					case 'inlineStyleInvalidated':
-						return this.doHandleInlineStyleInvalidated(event);
+						return this.doHandleInlineStyleInvalidated(event as CRI.InlineStyleInvalidatedEvent);
 					case 'childNodeCountUpdated':
-						return this.doHandleChildNodeCountUpdated(event);
+						return this.doHandleChildNodeCountUpdated(event as CRI.ChildNodeCountUpdatedEvent);
 					case 'childNodeInserted':
-						return this.doHandleChildNodeInserted(event);
-					case 'childchildNodeRemoved':
-						return this.doHandleChildNodeRemoved(event);
+						return this.doHandleChildNodeInserted(event as CRI.ChildNodeInsertedEvent);
+					case 'childNodeRemoved':
+						return this.doHandleChildNodeRemoved(event as CRI.ChildNodeRemovedEvent);
 					case 'attributeModified':
-						return this.doHandleAttributeModified(event);
+						return this.doHandleAttributeModified(event as CRI.AttributeModifiedEvent);
 					case 'attributeRemoved':
-						return this.doHandleAttributeRemoved(event);
+						return this.doHandleAttributeRemoved(event as CRI.AttributeRemovedEvent);
 					case 'characterDataModified':
-						return this.doHandleCharacterDataModified(event);
+						return this.doHandleCharacterDataModified(event as CRI.CharacterDataModifiedEvent);
 				}
 			});
 		}

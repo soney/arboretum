@@ -147,7 +147,7 @@ declare namespace CRI {
         parentFrameId:FrameID
     }
     interface SetChildNodesEvent {
-        parentID:NodeID,
+        parentId:NodeID,
         nodes:Array<Node>
     }
     interface DOM {

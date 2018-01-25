@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const dom_state_1 = require("./dom_state");
 const event_manager_1 = require("../event_manager");
 const logging_1 = require("../../utils/logging");
+const _ = require("underscore");
 const log = logging_1.getColoredLogger('green');
 class FrameState {
     constructor(chrome, info, tab) {
@@ -22,6 +23,9 @@ class FrameState {
         log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
     }
     ;
+    getTab() {
+        return this.tab;
+    }
     markSetMainFrameExecuted(val) {
         this.setMainFrameExecuted = val;
     }
@@ -155,7 +159,7 @@ class FrameState {
         }));
         return parentState;
     }
-    getOrCreateDOMState(node, parent = null) {
+    getOrCreateDOMState(node, parent = null, previousNode = null) {
         const { nodeId } = node;
         if (this.hasDOMStateWithID(nodeId)) {
             return this.getDOMStateWithID(nodeId);
@@ -166,6 +170,10 @@ class FrameState {
                 this.removeDOMState(domState);
             });
             this.nodeMap.set(nodeId, domState);
+            if (parent) {
+                parent.insertChild(domState, previousNode);
+            }
+            return domState;
         }
     }
     removeDOMState(domState) {
@@ -198,6 +206,105 @@ class FrameState {
             return false;
         }
     }
+    doHandleSetChildNodes(event) {
+        const { parentId } = event;
+        const parent = this.getDOMStateWithID(parentId);
+        if (parent) {
+            const { nodes } = event;
+            log.debug(`Set child nodes ${parentId} -> [${nodes.map((node) => node.nodeId).join(', ')}]`);
+            this.setChildrenRecursive(parent, nodes);
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    ;
+    doHandleInlineStyleInvalidated(event) {
+        const { nodeIds } = event;
+        const updatedInlineStyles = nodeIds.map((nodeId) => {
+            const node = this.getDOMStateWithID(nodeId);
+            if (node) {
+                node.updateInlineStyle();
+                return true;
+            }
+            else {
+                return false;
+            }
+        });
+        return _.any(updatedInlineStyles);
+    }
+    ;
+    doHandleChildNodeCountUpdated(event) {
+        const { nodeId } = event;
+        const domState = this.getDOMStateWithID(nodeId);
+        if (domState) {
+            log.debug(`Child count updated for ${nodeId}`);
+            domState.childCountUpdated(event.childNodeCount);
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    doHandleChildNodeInserted(event) {
+        const { parentNodeId } = event;
+        const parentDomState = this.getDOMStateWithID(parentNodeId);
+        if (parentDomState) {
+            const { previousNodeId, node } = event;
+            const { nodeId } = node;
+            const previousDomState = previousNodeId > 0 ? this.getDOMStateWithID(previousNodeId) : null;
+            const domState = this.getOrCreateDOMState(node, parentDomState, previousDomState);
+            log.debug(`Child node inserted ${nodeId} (parent: ${parentNodeId} / previous: ${previousNodeId})`);
+            this.setChildrenRecursive(domState, node.children);
+            const tab = this.getTab();
+            tab.requestChildNodes(nodeId);
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    doHandleChildNodeRemoved(event) {
+        const { parentNodeId, nodeId } = event;
+        const domState = this.getDOMStateWithID(nodeId);
+        const parentDomState = this.getDOMStateWithID(parentNodeId);
+        if (domState && parentDomState) {
+            log.debug(`Child node removed ${nodeId} (parent: ${parentNodeId})`);
+            parentDomState.removeChild(domState);
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    ;
+    doHandleAttributeModified(event) {
+        const { nodeId } = event;
+        const domState = this.getDOMStateWithID(nodeId);
+        if (domState) {
+            const { name, value } = event;
+            log.debug(`Attribute modified ${name} to ${value}`);
+            domState.setAttribute(name, value);
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    doHandleAttributeRemoved(event) {
+        const { nodeId } = event;
+        const domState = this.getDOMStateWithID(nodeId);
+        if (domState) {
+            const { name } = event;
+            log.debug(`Attribute removed ${name}`);
+            domState.removeAttribute(name);
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
     handleFrameEvent(event, eventType) {
         if (this.isRefreshingRoot()) {
             const resolvablePromise = new ResolvablePromise();
@@ -219,7 +326,7 @@ class FrameState {
                         return this.doHandleChildNodeCountUpdated(event);
                     case 'childNodeInserted':
                         return this.doHandleChildNodeInserted(event);
-                    case 'childchildNodeRemoved':
+                    case 'childNodeRemoved':
                         return this.doHandleChildNodeRemoved(event);
                     case 'attributeModified':
                         return this.doHandleAttributeModified(event);

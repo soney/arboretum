@@ -65,6 +65,13 @@ export class TabState extends EventEmitter {
 		'documentUpdated', 'setChildNodes', 'inlineStyleInvalidated' ];
 	private addDOMListeners():void {
         this.getDocument().then((root:CRI.Node) => {
+            this.chrome.on('DOM.attributeModified', this.onAttributeModified);
+            this.chrome.on('DOM.attributeRemoved', this.onAttributeRemoved);
+            this.chrome.on('DOM.characterDataModified', this.onCharacterDataModified);
+            this.chrome.on('DOM.childNodeCountUpdated', this.onChildNodeCountUpdated);
+            this.chrome.on('DOM.childNodeInserted', this.onChildNodeInserted);
+            this.chrome.on('DOM.childNodeRemoved', this.onChildNodeRemoved);
+            this.chrome.on('DOM.documentUpdated', this.onDocumentUpdated);
             // this.rootFrame.setRoot(root);
             TabState.DOMEventTypes.forEach((eventType) => {
                 const capitalizedEventType = `on${eventType[0].toUpperCase()}${eventType.substr(1)}`;
@@ -84,10 +91,10 @@ export class TabState extends EventEmitter {
             });
 		});
     }
-    private forwardEventToFrames<E>(event:E, eventType:string):Promise<boolean> {
+    private forwardEventToFrames(event:any, eventType:string):Promise<boolean> {
         const frameArray:Array<FrameState> = Array.from(this.frames.values());
         const eventResultPromise:Array<Promise<boolean>> = frameArray.map((frameState:FrameState) => {
-            return frameState.handleFrameEvent<E>(event, eventType);
+            return frameState.handleFrameEvent(event, eventType);
         });
         return Promise.all(eventResultPromise).then((vals:Array<boolean>) => {
             const wasHandled:boolean = _.any(vals);
@@ -99,31 +106,34 @@ export class TabState extends EventEmitter {
             throw(err);
         });
     }
+    private onDocumentUpdated = (event:CRI.DocumentUpdatedEvent):void => {
+        this.forwardEventToFrames(event, 'documentUpdated');
+    };
 	private onSetChildNodes = (event:CRI.SetChildNodesEvent):void => {
-        this.forwardEventToFrames<CRI.SetChildNodesEvent>(event, 'setChildNodes');
+        this.forwardEventToFrames(event, 'setChildNodes');
 	};
 	private onCharacterDataModified = (event:CRI.CharacterDataModifiedEvent):void => {
-        this.forwardEventToFrames<CRI.CharacterDataModifiedEvent>(event, 'characterDataModified');
+        this.forwardEventToFrames(event, 'characterDataModified');
 	};
 	private onChildNodeRemoved = (event:CRI.ChildNodeRemovedEvent):void => {
-        this.forwardEventToFrames<CRI.ChildNodeRemovedEvent>(event, 'childNodeRemoved');
+        this.forwardEventToFrames(event, 'childNodeRemoved');
 	};
 	private onChildNodeInserted = (event:CRI.ChildNodeInsertedEvent):void => {
-        this.forwardEventToFrames<CRI.ChildNodeInsertedEvent>(event, 'childNodeInserted');
+        this.forwardEventToFrames(event, 'childNodeInserted');
 	};
 	private onAttributeModified = (event:CRI.AttributeModifiedEvent):void => {
-        this.forwardEventToFrames<CRI.AttributeModifiedEvent>(event, 'attributeModified');
+        this.forwardEventToFrames(event, 'attributeModified');
 	};
 	private onAttributeRemoved = (event:CRI.AttributeRemovedEvent):void => {
-        this.forwardEventToFrames<CRI.AttributeRemovedEvent>(event, 'attributeRemoved');
+        this.forwardEventToFrames(event, 'attributeRemoved');
 	};
 	private onChildNodeCountUpdated = (event:CRI.ChildNodeCountUpdatedEvent):void => {
-        this.forwardEventToFrames<CRI.ChildNodeCountUpdatedEvent>(event, 'childNodeCountUpdated');
+        this.forwardEventToFrames(event, 'childNodeCountUpdated');
 	};
 	private onInlineStyleInvalidated = (event:CRI.InlineStyleInvalidatedEvent):void => {
-        this.forwardEventToFrames<CRI.InlineStyleInvalidatedEvent>(event, 'inlineStyleInvalidated');
+        this.forwardEventToFrames(event, 'inlineStyleInvalidated');
 	};
-	private requestChildNodes(nodeId:CRI.NodeID, depth:number=-1):Promise<null> {
+	public requestChildNodes(nodeId:CRI.NodeID, depth:number=-1):Promise<null> {
         return new Promise<null>((resolve, reject) => {
             this.chrome.DOM.requestChildNodes({nodeId, depth}, (err, val) => {
                 if(err) { reject(val); }
@@ -159,12 +169,6 @@ export class TabState extends EventEmitter {
             this.emit('mainFrameChanged');
         });
     }
-	private onDocumentUpdated = ():void => {
-		var frame = this.getMainFrame();
-        if(frame) {
-    		frame.documentUpdated();
-        }
-	};
     public navigate(url:string):Promise<CRI.FrameID> {
         const parsedURL = parse(url);
         if(!parsedURL.protocol) { parsedURL.protocol = 'http'; }

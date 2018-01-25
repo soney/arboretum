@@ -13,6 +13,9 @@ class TabState extends events_1.EventEmitter {
         this.info = info;
         this.frames = new Map();
         this.pendingFrameEvents = new Map();
+        this.onDocumentUpdated = (event) => {
+            this.forwardEventToFrames(event, 'documentUpdated');
+        };
         this.onSetChildNodes = (event) => {
             this.forwardEventToFrames(event, 'setChildNodes');
         };
@@ -36,12 +39,6 @@ class TabState extends events_1.EventEmitter {
         };
         this.onInlineStyleInvalidated = (event) => {
             this.forwardEventToFrames(event, 'inlineStyleInvalidated');
-        };
-        this.onDocumentUpdated = () => {
-            var frame = this.getMainFrame();
-            if (frame) {
-                frame.documentUpdated();
-            }
         };
         this.onFrameAttached = (frameInfo) => {
             const { frameId, parentFrameId } = frameInfo;
@@ -157,6 +154,13 @@ class TabState extends events_1.EventEmitter {
     }
     addDOMListeners() {
         this.getDocument().then((root) => {
+            this.chrome.on('DOM.attributeModified', this.onAttributeModified);
+            this.chrome.on('DOM.attributeRemoved', this.onAttributeRemoved);
+            this.chrome.on('DOM.characterDataModified', this.onCharacterDataModified);
+            this.chrome.on('DOM.childNodeCountUpdated', this.onChildNodeCountUpdated);
+            this.chrome.on('DOM.childNodeInserted', this.onChildNodeInserted);
+            this.chrome.on('DOM.childNodeRemoved', this.onChildNodeRemoved);
+            this.chrome.on('DOM.documentUpdated', this.onDocumentUpdated);
             // this.rootFrame.setRoot(root);
             TabState.DOMEventTypes.forEach((eventType) => {
                 const capitalizedEventType = `on${eventType[0].toUpperCase()}${eventType.substr(1)}`;
