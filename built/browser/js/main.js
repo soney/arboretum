@@ -22,7 +22,7 @@ class Arboretum {
     listen() {
         const {ipcRenderer} = require('electron');
         ipcRenderer.send('asynchronous-message','test');
-        $(window).on('keydown', function(e) {
+        $(window).on('keydown', (e) => {
             if(e.which === 82 && (e.ctrlKey || e.metaKey)) { // CTRL + ALT + R
                 if(e.altKey){
                   location.reload();
@@ -33,13 +33,13 @@ class Arboretum {
                 }
             } else if((e.which === 73 && e.ctrlKey && e.shiftKey) || e.which === 123) { // F12 OR CTRL + SHIFT + I
                 var activeTab = this.tabs.active;
-                if(activeTab) {
-                    if(activeTab.WebView.isDevToolsOpened()) {
-                        activeTab.WebView.closeDevTools();
-                    } else {
-                        activeTab.WebView.openDevTools();
-                    }
-                }
+                // if(activeTab) {
+                //     if(activeTab.WebView.isDevToolsOpened()) {
+                //         activeTab.WebView.closeDevTools();
+                //     } else {
+                //         activeTab.WebView.openDevTools();
+                //     }
+                // }
             } else if(e.which === 76 && (e.ctrlKey || e.metaKey)) {
                 window.arboretum.urlBar.urlInput.focus();
             } else if((e.which === 9 && (e.ctrlKey || e.metaKey)) ||( e.which === 9)) {

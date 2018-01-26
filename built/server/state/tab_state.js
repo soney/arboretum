@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const cri = require("chrome-remote-interface");
 const frame_state_1 = require("./frame_state");
 const logging_1 = require("../../utils/logging");
-const _ = require("underscore");
 const events_1 = require("events");
 const url_1 = require("url");
 const log = logging_1.getColoredLogger('yellow');
@@ -13,33 +12,6 @@ class TabState extends events_1.EventEmitter {
         this.info = info;
         this.frames = new Map();
         this.pendingFrameEvents = new Map();
-        this.onDocumentUpdated = (event) => {
-            this.forwardEventToFrames(event, 'documentUpdated');
-        };
-        this.onSetChildNodes = (event) => {
-            this.forwardEventToFrames(event, 'setChildNodes');
-        };
-        this.onCharacterDataModified = (event) => {
-            this.forwardEventToFrames(event, 'characterDataModified');
-        };
-        this.onChildNodeRemoved = (event) => {
-            this.forwardEventToFrames(event, 'childNodeRemoved');
-        };
-        this.onChildNodeInserted = (event) => {
-            this.forwardEventToFrames(event, 'childNodeInserted');
-        };
-        this.onAttributeModified = (event) => {
-            this.forwardEventToFrames(event, 'attributeModified');
-        };
-        this.onAttributeRemoved = (event) => {
-            this.forwardEventToFrames(event, 'attributeRemoved');
-        };
-        this.onChildNodeCountUpdated = (event) => {
-            this.forwardEventToFrames(event, 'childNodeCountUpdated');
-        };
-        this.onInlineStyleInvalidated = (event) => {
-            this.forwardEventToFrames(event, 'inlineStyleInvalidated');
-        };
         this.onFrameAttached = (frameInfo) => {
             const { frameId, parentFrameId } = frameInfo;
             this.createFrameState({
@@ -166,32 +138,21 @@ class TabState extends events_1.EventEmitter {
     }
     addDOMListeners() {
         this.getDocument().then((root) => {
-            this.chrome.on('DOM.attributeModified', this.onAttributeModified);
-            this.chrome.on('DOM.attributeRemoved', this.onAttributeRemoved);
-            this.chrome.on('DOM.characterDataModified', this.onCharacterDataModified);
-            this.chrome.on('DOM.childNodeCountUpdated', this.onChildNodeCountUpdated);
-            this.chrome.on('DOM.childNodeInserted', this.onChildNodeInserted);
-            this.chrome.on('DOM.childNodeRemoved', this.onChildNodeRemoved);
-            this.chrome.on('DOM.documentUpdated', this.onDocumentUpdated);
+            TabState.DOMEventTypes.forEach((eventType) => {
+                this.forwardEventToFrames(eventType);
+            });
             this.requestChildNodes(root.nodeId);
         }).catch((err) => {
             throw (err);
         });
     }
     ;
-    forwardEventToFrames(event, eventType) {
-        const frameArray = Array.from(this.frames.values());
-        const eventResultPromise = frameArray.map((frameState) => {
-            return frameState.handleFrameEvent(event, eventType);
-        });
-        return Promise.all(eventResultPromise).then((vals) => {
-            const wasHandled = _.any(vals);
-            if (!wasHandled) {
-                log.error(`No frame found for ${eventType} event`, event);
-            }
-            return wasHandled;
-        }).catch((err) => {
-            throw (err);
+    forwardEventToFrames(eventType, namespace = 'DOM') {
+        this.chrome.on(`${namespace}.${eventType}`, (event) => {
+            const frameArray = Array.from(this.frames.values());
+            const eventResultPromise = frameArray.map((frameState) => {
+                return frameState.handleFrameEvent(event, eventType);
+            });
         });
     }
     requestChildNodes(nodeId, depth = -1) {
@@ -332,6 +293,10 @@ class TabState extends events_1.EventEmitter {
     }
     ;
 }
+TabState.DOMEventTypes = ['inlineStyleInvalidated', 'attributeModified',
+    'attributeRemoved', 'characterDataModified', 'childNodeCountUpdated',
+    'childNodeInserted', 'childNodeRemoved', 'documentUpdated'
+];
 exports.TabState = TabState;
 // var _ = require('underscore'),
 // 	util = require('util'),
