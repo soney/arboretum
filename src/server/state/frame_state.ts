@@ -65,56 +65,7 @@ export class FrameState {
     public executionContextCreated(context:CRI.ExecutionContextDescription):void {
 		this.executionContext = context;
     };
-	public inlineStyleInvalidated(event:CRI.InlineStyleInvalidatedEvent):void {
-		if(this.isRefreshingRoot) {
-			log.debug('(queue) Inline Style Invalidated');
-
-			this.queuedEvents.push({
-				event: event,
-				type: 'inlineStyleInvalidated',
-				promise: new ResolvablePromise<CRI.InlineStyleInvalidatedEvent>()
-			});
-		} else {
-			let hasAnyNode:boolean = false;
-			event.nodeIds.forEach((nodeId:CRI.NodeID) => {
-				const domState = this.getDOMStateWithID(nodeId);
-				if(domState) {
-					domState.updateInlineStyle();
-				}
-			});
-		}
-	};
 	private isRefreshingRoot():boolean { return this.refreshingRoot; }
-	public setChildNodes(event:CRI.SetChildNodesEvent):Promise<boolean> {
-		return new Promise<boolean>((resolve, reject) => {
-			resolve(true);
-		});
-		// if(this._isRefreshingRoot()) {
-		// 	log.debug('(queue) Character Data Modified');
-		// 	var promise = getResolvablePromise();
-		// 	this._queuedEvents.push({
-		// 		event: event,
-		// 		type: 'setChildNodes',
-		// 		promise: promise
-		// 	});
-		// 	return promise;
-		// } else {
-		// 	var parent = this._getWrappedDOMNodeWithID(event.parentId);
-    //
-		// 	if(parent) {
-		// 		var nodes = event.nodes;
-    //
-		// 		log.debug('Set Child Nodes ' + event.parentId + ' -> ['+_.map(event.nodes, function(node) { return node.nodeId; }).join(', ')+']');
-    //
-		// 		this._setChildrenRecursive(parent, nodes);
-		// 		return true;
-		// 	} else if(this._oldNodeMap[event.parentId]) {
-		// 		return true;
-		// 	} else {
-		// 		return false;
-		// 	}
-		// }
-	};
 	private markRefreshingRoot(r:boolean):void {
 		if(r) {
 			this.refreshingRoot = true;
@@ -151,6 +102,7 @@ export class FrameState {
 			const rootState =  this.getOrCreateDOMState(rootNode);
 			this.root = rootState;
 			this.setChildrenRecursive(rootState, rootNode.children);
+			this.markRefreshingRoot(false);
 		}
 	}
 	private setChildrenRecursive(parentState:DOMState, children:Array<CRI.Node>):DOMState {
@@ -219,8 +171,6 @@ export class FrameState {
 	};
 	private doHandleInlineStyleInvalidated(event:CRI.InlineStyleInvalidatedEvent):boolean {
 		const {nodeIds} = event;
-		console.log('x');
-		console.log(nodeIds);
 		const updatedInlineStyles:Array<boolean> = nodeIds.map((nodeId) => {
 			const node = this.getDOMStateWithID(nodeId);
 			if(node) {

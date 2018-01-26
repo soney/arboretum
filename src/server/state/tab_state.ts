@@ -94,6 +94,7 @@ export class TabState extends EventEmitter {
         });
 	};
     private forwardEventToFrames(eventType:string, namespace:string='DOM'):void {
+        console.log(`${namespace}.${eventType}`);
         this.chrome.on(`${namespace}.${eventType}`, (event:any) => {
             const frameArray:Array<FrameState> = Array.from(this.frames.values());
             const eventResultPromise:Array<Promise<boolean>> = frameArray.map((frameState:FrameState) => {

@@ -62,58 +62,7 @@ class FrameState {
         this.executionContext = context;
     }
     ;
-    inlineStyleInvalidated(event) {
-        if (this.isRefreshingRoot) {
-            log.debug('(queue) Inline Style Invalidated');
-            this.queuedEvents.push({
-                event: event,
-                type: 'inlineStyleInvalidated',
-                promise: new ResolvablePromise()
-            });
-        }
-        else {
-            let hasAnyNode = false;
-            event.nodeIds.forEach((nodeId) => {
-                const domState = this.getDOMStateWithID(nodeId);
-                if (domState) {
-                    domState.updateInlineStyle();
-                }
-            });
-        }
-    }
-    ;
     isRefreshingRoot() { return this.refreshingRoot; }
-    setChildNodes(event) {
-        return new Promise((resolve, reject) => {
-            resolve(true);
-        });
-        // if(this._isRefreshingRoot()) {
-        // 	log.debug('(queue) Character Data Modified');
-        // 	var promise = getResolvablePromise();
-        // 	this._queuedEvents.push({
-        // 		event: event,
-        // 		type: 'setChildNodes',
-        // 		promise: promise
-        // 	});
-        // 	return promise;
-        // } else {
-        // 	var parent = this._getWrappedDOMNodeWithID(event.parentId);
-        //
-        // 	if(parent) {
-        // 		var nodes = event.nodes;
-        //
-        // 		log.debug('Set Child Nodes ' + event.parentId + ' -> ['+_.map(event.nodes, function(node) { return node.nodeId; }).join(', ')+']');
-        //
-        // 		this._setChildrenRecursive(parent, nodes);
-        // 		return true;
-        // 	} else if(this._oldNodeMap[event.parentId]) {
-        // 		return true;
-        // 	} else {
-        // 		return false;
-        // 	}
-        // }
-    }
-    ;
     markRefreshingRoot(r) {
         if (r) {
             this.refreshingRoot = true;
@@ -152,6 +101,7 @@ class FrameState {
             const rootState = this.getOrCreateDOMState(rootNode);
             this.root = rootState;
             this.setChildrenRecursive(rootState, rootNode.children);
+            this.markRefreshingRoot(false);
         }
     }
     setChildrenRecursive(parentState, children) {
@@ -225,8 +175,6 @@ class FrameState {
     ;
     doHandleInlineStyleInvalidated(event) {
         const { nodeIds } = event;
-        console.log('x');
-        console.log(nodeIds);
         const updatedInlineStyles = nodeIds.map((nodeId) => {
             const node = this.getDOMStateWithID(nodeId);
             if (node) {
