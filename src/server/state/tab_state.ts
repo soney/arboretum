@@ -77,9 +77,11 @@ export class TabState extends EventEmitter {
         this.chrome.Runtime.enable();
         this.chrome.Runtime.executionContextCreated(this.executionContextCreated);
     }
-    private static DOMEventTypes = ['inlineStyleInvalidated', 'attributeModified',
-        'attributeRemoved', 'characterDataModified', 'childNodeCountUpdated',
-        'childNodeInserted', 'childNodeRemoved', 'documentUpdated'
+    private static DOMEventTypes = [
+        'attributeRemoved', 'attributeModified', 'characterDataModified',
+        'childNodeInserted', 'childNodeRemoved',
+        'setChildNodes', 'childNodeCountUpdated',
+        'inlineStyleInvalidated', 'documentUpdated'
     ];
 	private addDOMListeners():void {
         this.getDocument().then((root:CRI.Node) => {

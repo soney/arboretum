@@ -293,9 +293,11 @@ class TabState extends events_1.EventEmitter {
     }
     ;
 }
-TabState.DOMEventTypes = ['inlineStyleInvalidated', 'attributeModified',
-    'attributeRemoved', 'characterDataModified', 'childNodeCountUpdated',
-    'childNodeInserted', 'childNodeRemoved', 'documentUpdated'
+TabState.DOMEventTypes = [
+    'attributeRemoved', 'attributeModified', 'characterDataModified',
+    'childNodeInserted', 'childNodeRemoved',
+    'setChildNodes', 'childNodeCountUpdated',
+    'inlineStyleInvalidated', 'documentUpdated'
 ];
 exports.TabState = TabState;
 // var _ = require('underscore'),
