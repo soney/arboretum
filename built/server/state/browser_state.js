@@ -71,13 +71,8 @@ class BrowserState extends events_1.EventEmitter {
         if (this.tabs.has(id)) {
             const tab = this.getTab(id);
             tab.destroy();
-            // tab.statePromise.then(_.bind(function(state) {
-            // 	state.destroy();
-            // 	delete this._tabs[id];
-            // 	this.emit('tabDestroyed', {
-            // 		id: id
-            // 	});
-            // }, this));
+            this.tabs.delete(id);
+            this.emit('tabDestroyed', { id });
         }
     }
     ;
@@ -127,6 +122,7 @@ class BrowserState extends events_1.EventEmitter {
         });
     }
     requestResource(url, frameID, tabID) {
+        this.getTabState(tabID);
         return null;
         // return this.getTabState(tabId).then(function(tabState) {
         // return tabState.requestResource(url, frameId);

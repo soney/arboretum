@@ -18,9 +18,9 @@ class FrameState {
         this.oldNodeMap = new Map();
         this.queuedEvents = [];
         this.executionContext = null;
-        this.markRefreshingRoot(true);
         this.eventManager = new event_manager_1.EventManager(this.chrome, this);
         this.resourceTracker = new resource_tracker_1.ResourceTracker(chrome, this, resources);
+        this.refreshRoot();
         log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
     }
     ;
@@ -294,9 +294,6 @@ class FrameState {
         }
     }
 }
-FrameState.DOMEventTypes = ['attributeModified', 'attributeRemoved', 'characterDataModified',
-    'childNodeCountUpdated', 'childNodeInserted', 'childNodeRemoved',
-    'documentUpdated', 'setChildNodes', 'inlineStyleInvalidated'];
 exports.FrameState = FrameState;
 // var _ = require('underscore'),
 // 	util = require('util'),

@@ -76,13 +76,8 @@ export class BrowserState extends EventEmitter {
 		if(this.tabs.has(id)) {
 			const tab = this.getTab(id);
 			tab.destroy();
-			// tab.statePromise.then(_.bind(function(state) {
-			// 	state.destroy();
-			// 	delete this._tabs[id];
-			// 	this.emit('tabDestroyed', {
-			// 		id: id
-			// 	});
-			// }, this));
+			this.tabs.delete(id);
+			this.emit('tabDestroyed', {id});
 		}
 	};
 	// private refreshTabs() {
@@ -126,7 +121,8 @@ export class BrowserState extends EventEmitter {
 			throw(err);
 		});
 	}
-	public requestResource(url:string, frameID, tabID) {
+	public requestResource(url:string, frameID:CRI.FrameID, tabID:CRI.TabID) {
+		this.getTabState(tabID);
 		return null;
 		// return this.getTabState(tabId).then(function(tabState) {
 			// return tabState.requestResource(url, frameId);

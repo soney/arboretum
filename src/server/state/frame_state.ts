@@ -27,9 +27,9 @@ export class FrameState {
 	public resourceTracker:ResourceTracker;
 
     constructor(private chrome, private info:CRI.Frame, private tab:TabState, resources:Array<CRI.FrameResource>=[]) {
-		this.markRefreshingRoot(true);
 		this.eventManager = new EventManager(this.chrome, this);
 		this.resourceTracker = new ResourceTracker(chrome, this, resources);
+		this.refreshRoot();
 		log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
 	};
 	public getTab():TabState {
@@ -248,9 +248,6 @@ export class FrameState {
 		}
 	}
 
-    private static DOMEventTypes:Array<string> = [ 'attributeModified', 'attributeRemoved', 'characterDataModified',
-		'childNodeCountUpdated', 'childNodeInserted', 'childNodeRemoved',
-		'documentUpdated', 'setChildNodes', 'inlineStyleInvalidated' ];
 	public handleFrameEvent(event:any, eventType:string):Promise<boolean> {
 		if(this.isRefreshingRoot()) {
 			const resolvablePromise = new ResolvablePromise<any>();
