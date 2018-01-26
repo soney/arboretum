@@ -9,6 +9,7 @@ import * as http from 'http';
 import * as WebSocket from 'ws';
 import * as WebSocketJSONStream from 'websocket-json-stream';
 import {getColoredLogger, level, setLevel} from '../../utils/logging';
+import {EventEmitter} from 'events';
 
 const log = getColoredLogger('red');
 
@@ -29,11 +30,12 @@ const log = getColoredLogger('red');
 //
 
 const projectFileURLPath:string = fileUrl(join(resolve(__dirname, '..', '..'), 'browser'));
-export class BrowserState {
+export class BrowserState extends EventEmitter {
 	private tabs:Map<CRI.TabID, any> = new Map<CRI.TabID, TabState>();
 	private options = { host: 'localhost', port: 9222 }
 	private intervalID:NodeJS.Timer;
 	constructor(private state:any, extraOptions?) {
+		super();
 		_.extend(this.options, extraOptions);
 		this.intervalID = setInterval(_.bind(this.refreshTabs, this), 2000);
 		log.debug('=== CREATED BROWSER ===');
@@ -53,6 +55,9 @@ export class BrowserState {
 					log.trace(`Creating tab ${id}`);
 					tab = new TabState(tabInfo);
 					this.tabs.set(id, tab);
+					this.emit('tabCreated', {
+						id: id
+					});
 				}
 			});
 

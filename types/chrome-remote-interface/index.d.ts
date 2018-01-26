@@ -17,7 +17,6 @@ declare namespace CRI {
     type RequestID = string;
     type InterceptionID = string;
     type ErrorReason = string;
-    type TimeSinceEpoch = number;
     type MonotonicTime = number;
     type Headers = any;
     type ShadowRootType = 'user-agent' | 'open' | 'closed';
@@ -43,8 +42,6 @@ declare namespace CRI {
     }
     interface ExecutionContextCreatedEvent {
         context:ExecutionContextDescription
-    }
-    interface ResourceTree {
     }
     interface Runtime {
         StackTrace:StackTrace
@@ -97,14 +94,16 @@ declare namespace CRI {
             errorText?:string
         }
     }
+    interface GetFrameTreeOptions{}
     interface Page {
         enable:()=>void;
         disable:()=>void;
-        getResourceTree:(options:GetResourceTreeOptions, callback:(err:any, resources:ResourceTree)=>any) => void;
+        getResourceTree:(options:GetResourceTreeOptions, callback:(err:any, resources:FrameResourceTree)=>any) => void;
         frameAttached:(callback:(FrameAttachedEvent)=>void) => void;
         frameDetached:(callback:(FrameDetachedEvent)=>void) => void;
         frameNavigated:(callback:(FrameNavigatedEvent)=>void) => void;
-        navigate:(options:NavigateOptions, callback:(err:any, result:Page.NavigateResult)=>any) => void
+        navigate:(options:NavigateOptions, callback:(err:any, result:Page.NavigateResult)=>any) => void;
+        getFrameTree:(options:GetFrameTreeOptions, callback:(err:any, result:FrameTree)=>void)=>void;
     }
     interface ListTabsOptions {
         host:string,
@@ -128,7 +127,8 @@ declare namespace CRI {
         DOM:DOM,
         Runtime:Runtime,
         Network:Network,
-        CSS:CSS
+        CSS:CSS,
+        send:(command:string, params:any, callback:(err:any, value:any)=>void)=>void
     }
     interface GetDocumentOptions {
         depth?:number,
@@ -155,13 +155,22 @@ declare namespace CRI {
         requestChildNodes:(params:RequestChildNodesOptions, callback:(err:any, value:RequestChildNodesResult)=>void) => void
     }
     interface FrameResourceTree {
-        frame:Frame,
-        childFrames:Array<FrameResourceTree>,
-        resources:Array<FrameResourceTree>
+        frameTree:FrameTree
     }
+    interface FrameResource {
+        url:string,
+        type:ResourceType,
+        mimeType:string,
+        lastModified:Network.TimeSinceEpoch,
+        contentSize:number,
+        failed:boolean,
+        canceled:boolean
+    }
+
     interface FrameTree {
         frame:Frame,
-        childFrames:Array<FrameTree>
+        childFrames:Array<FrameTree>,
+        resources:Array<FrameResource>
     }
     interface Node {
         nodeId:NodeID,
@@ -210,7 +219,7 @@ declare namespace CRI {
         documentURL:string,
         request:Request,
         timestamp:MonotonicTime,
-        wallTime:TimeSinceEpoch,
+        wallTime:Network.TimeSinceEpoch,
         initiator:Initiator,
         redirectResponse:Response,
         type:ResourceType,
@@ -262,6 +271,7 @@ declare namespace CRI {
     }
     namespace Network {
         type LoaderID = string;
+        type TimeSinceEpoch = number;
     }
     interface CSSProperty {
         name:string,
@@ -301,6 +311,9 @@ declare namespace CRI {
     interface CSS {
         getInlineStylesForNode(options:GetInlineStylesForNodeOptions, callback:(err:any, data:GetInlineStylesResponse)=>any):void
     }
+    interface Protocol {
+
+    }
 }
 
 declare module 'chrome-remote-interface' {
@@ -314,6 +327,7 @@ declare module 'chrome-remote-interface' {
     }
     function CRIFunction(options:CRIOptions):EventEmitter;
     namespace CRIFunction {
+        function Protocol(callback:(err:any,val:CRI.Protocol)=>void):void;
         function listTabs(options:CRI.ListTabsOptions, callback:(err:any, tabs:Array<CRI.TabInfo>)=>any):void;
         function spawnTab();
         function closeTab();

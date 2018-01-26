@@ -24,12 +24,12 @@ export class FrameState {
 	private executionContext:CRI.ExecutionContextDescription = null;
 
 	private eventManager:EventManager;
-	private _resourceTracker:ResourceTracker;
+	public resourceTracker:ResourceTracker;
 
-    constructor(private chrome, private info:CRI.Frame, private tab:TabState) {
+    constructor(private chrome, private info:CRI.Frame, private tab:TabState, resources:Array<CRI.FrameResource>=[]) {
 		this.markRefreshingRoot(true);
 		this.eventManager = new EventManager(this.chrome, this);
-		// this.resourceTracker = new ResourceTracker(chrome, this, info.resources);
+		this.resourceTracker = new ResourceTracker(chrome, this, resources);
 		log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
 	};
 	public getTab():TabState {
@@ -84,7 +84,6 @@ export class FrameState {
 			});
 		}
 	};
-	public get resourceTracker():ResourceTracker { return this._resourceTracker; };
 	private isRefreshingRoot():boolean { return this.refreshingRoot; }
 	public setChildNodes(event:CRI.SetChildNodesEvent):Promise<boolean> {
 		return new Promise<boolean>((resolve, reject) => {
@@ -155,9 +154,11 @@ export class FrameState {
 		}
 	}
 	private setChildrenRecursive(parentState:DOMState, children:Array<CRI.Node>):DOMState {
-		parentState.setChildren(children.map((child:CRI.Node) => {
-			return this.setChildrenRecursive(this.getOrCreateDOMState(child, parentState), child.children);
-		}));
+		if(children) {
+			parentState.setChildren(children.map((child:CRI.Node) => {
+				return this.setChildrenRecursive(this.getOrCreateDOMState(child, parentState), child.children);
+			}));
+		}
 		return parentState;
 	}
 	private getOrCreateDOMState(node:CRI.Node, parent:DOMState=null, previousNode:DOMState=null):DOMState {
@@ -218,6 +219,8 @@ export class FrameState {
 	};
 	private doHandleInlineStyleInvalidated(event:CRI.InlineStyleInvalidatedEvent):boolean {
 		const {nodeIds} = event;
+		console.log('x');
+		console.log(nodeIds);
 		const updatedInlineStyles:Array<boolean> = nodeIds.map((nodeId) => {
 			const node = this.getDOMStateWithID(nodeId);
 			if(node) {
@@ -328,6 +331,8 @@ export class FrameState {
 					case 'characterDataModified':
 						return this.doHandleCharacterDataModified(event as CRI.CharacterDataModifiedEvent);
 				}
+			}).catch((err) => {
+				throw(err);
 			});
 		}
 	}

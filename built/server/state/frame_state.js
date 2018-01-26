@@ -2,11 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const dom_state_1 = require("./dom_state");
 const event_manager_1 = require("../event_manager");
+const resource_tracker_1 = require("../resource_tracker");
 const logging_1 = require("../../utils/logging");
 const _ = require("underscore");
 const log = logging_1.getColoredLogger('green');
 class FrameState {
-    constructor(chrome, info, tab) {
+    constructor(chrome, info, tab, resources = []) {
         this.chrome = chrome;
         this.info = info;
         this.tab = tab;
@@ -19,7 +20,7 @@ class FrameState {
         this.executionContext = null;
         this.markRefreshingRoot(true);
         this.eventManager = new event_manager_1.EventManager(this.chrome, this);
-        // this.resourceTracker = new ResourceTracker(chrome, this, info.resources);
+        this.resourceTracker = new resource_tracker_1.ResourceTracker(chrome, this, resources);
         log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
     }
     ;
@@ -80,8 +81,6 @@ class FrameState {
             });
         }
     }
-    ;
-    get resourceTracker() { return this._resourceTracker; }
     ;
     isRefreshingRoot() { return this.refreshingRoot; }
     setChildNodes(event) {
@@ -156,9 +155,11 @@ class FrameState {
         }
     }
     setChildrenRecursive(parentState, children) {
-        parentState.setChildren(children.map((child) => {
-            return this.setChildrenRecursive(this.getOrCreateDOMState(child, parentState), child.children);
-        }));
+        if (children) {
+            parentState.setChildren(children.map((child) => {
+                return this.setChildrenRecursive(this.getOrCreateDOMState(child, parentState), child.children);
+            }));
+        }
         return parentState;
     }
     getOrCreateDOMState(node, parent = null, previousNode = null) {
@@ -224,6 +225,8 @@ class FrameState {
     ;
     doHandleInlineStyleInvalidated(event) {
         const { nodeIds } = event;
+        console.log('x');
+        console.log(nodeIds);
         const updatedInlineStyles = nodeIds.map((nodeId) => {
             const node = this.getDOMStateWithID(nodeId);
             if (node) {
@@ -337,6 +340,8 @@ class FrameState {
                     case 'characterDataModified':
                         return this.doHandleCharacterDataModified(event);
                 }
+            }).catch((err) => {
+                throw (err);
             });
         }
     }

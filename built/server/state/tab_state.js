@@ -42,15 +42,10 @@ class TabState extends events_1.EventEmitter {
         };
         this.onFrameAttached = (frameInfo) => {
             const { frameId, parentFrameId } = frameInfo;
-            const frameState = new frame_state_1.FrameState(this.chrome, {
+            this.createFrameState({
                 id: frameId,
                 parentId: parentFrameId
-            }, this);
-            this.frames.set(frameId, frameState);
-            if (!parentFrameId) {
-                this.setMainFrame(frameState);
-            }
-            this.updateFrameOnEvents(frameState);
+            });
         };
         this.onFrameNavigated = (frameInfo) => {
             const { frame } = frameInfo;
@@ -60,7 +55,7 @@ class TabState extends events_1.EventEmitter {
                 frameState = this.getFrame(id);
             }
             else {
-                frameState = new frame_state_1.FrameState(this.chrome, frame, this);
+                frameState = this.createFrameState(frame);
             }
             frameState.updateInfo(frame);
         };
@@ -119,7 +114,12 @@ class TabState extends events_1.EventEmitter {
             throw (err);
         });
         this.chromePromise.then(() => {
-            this.getResourceTree();
+            //TODO: Convert getResourceTree call to getFrameTree when supported
+            this.getResourceTree().then((tree) => {
+                const { frameTree } = tree;
+                const { frame, childFrames, resources } = frameTree;
+                this.createFrameState(frame, null, childFrames, resources);
+            });
             this.addFrameListeners();
             this.addDOMListeners();
             this.addNetworkListeners();
@@ -133,14 +133,26 @@ class TabState extends events_1.EventEmitter {
     getMainFrame() {
         return this.rootFrame;
     }
+    createFrameState(info, parentFrame = null, childFrames = [], resources = []) {
+        const { id, parentId } = info;
+        const frameState = new frame_state_1.FrameState(this.chrome, info, this, resources);
+        this.frames.set(id, frameState);
+        if (!parentId) {
+            this.setMainFrame(frameState);
+        }
+        this.updateFrameOnEvents(frameState);
+        childFrames.forEach((childFrame) => {
+            const { frame, childFrames, resources } = childFrame;
+            this.createFrameState(frame, frameState, childFrames, resources);
+        });
+        return frameState;
+    }
     getTabId() { return this.info.id; }
     addFrameListeners() {
         this.chrome.Page.enable();
-        this.getResourceTree().then((tree) => {
-            this.chrome.Page.frameAttached(this.onFrameAttached);
-            this.chrome.Page.frameDetached(this.onFrameDetached);
-            this.chrome.Page.frameNavigated(this.onFrameNavigated);
-        });
+        this.chrome.Page.frameAttached(this.onFrameAttached);
+        this.chrome.Page.frameDetached(this.onFrameDetached);
+        this.chrome.Page.frameNavigated(this.onFrameNavigated);
     }
     addNetworkListeners() {
         this.chrome.Network.enable();
@@ -161,26 +173,12 @@ class TabState extends events_1.EventEmitter {
             this.chrome.on('DOM.childNodeInserted', this.onChildNodeInserted);
             this.chrome.on('DOM.childNodeRemoved', this.onChildNodeRemoved);
             this.chrome.on('DOM.documentUpdated', this.onDocumentUpdated);
-            // this.rootFrame.setRoot(root);
-            TabState.DOMEventTypes.forEach((eventType) => {
-                const capitalizedEventType = `on${eventType[0].toUpperCase()}${eventType.substr(1)}`;
-                const func = this[capitalizedEventType];
-                this.chrome.on(`DOM.${eventType}`, func);
-            });
             this.requestChildNodes(root.nodeId);
+        }).catch((err) => {
+            throw (err);
         });
     }
     ;
-    removeDOMListeners() {
-        this.getDocument().then((root) => {
-            // this.rootFrame.setRoot(root);
-            TabState.DOMEventTypes.forEach((eventType) => {
-                const capitalizedEventType = `on${eventType[0].toUpperCase()}${eventType.substr(1)}`;
-                const func = this[capitalizedEventType];
-                this.chrome.removeListener(`DOM.${eventType}`, func);
-            });
-        });
-    }
     forwardEventToFrames(event, eventType) {
         const frameArray = Array.from(this.frames.values());
         const eventResultPromise = frameArray.map((frameState) => {
@@ -283,6 +281,17 @@ class TabState extends events_1.EventEmitter {
     }
     getFrame(id) { return this.frames.get(id); }
     hasFrame(id) { return this.frames.has(id); }
+    getFrameTree() {
+        throw new Error("Not supported yet");
+        // return new Promise<CRI.FrameTree>((resolve, reject) => {
+        //     this.chrome.Page.getFrameTree({}, (err, value:CRI.FrameTree) => {
+        //         if(err) { reject(value); }
+        //         else { resolve(value); }
+        //     });
+        // }).catch((err) => {
+        //     throw(err);
+        // });
+    }
     getResourceTree() {
         return new Promise((resolve, reject) => {
             this.chrome.Page.getResourceTree({}, (err, value) => {
@@ -323,9 +332,6 @@ class TabState extends events_1.EventEmitter {
     }
     ;
 }
-TabState.DOMEventTypes = ['attributeModified', 'attributeRemoved', 'characterDataModified',
-    'childNodeCountUpdated', 'childNodeInserted', 'childNodeRemoved',
-    'documentUpdated', 'setChildNodes', 'inlineStyleInvalidated'];
 exports.TabState = TabState;
 // var _ = require('underscore'),
 // 	util = require('util'),

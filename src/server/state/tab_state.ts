@@ -29,7 +29,12 @@ export class TabState extends EventEmitter {
         });
 
         this.chromePromise.then(() => {
-            this.getResourceTree();
+            //TODO: Convert getResourceTree call to getFrameTree when supported
+            this.getResourceTree().then((tree:CRI.FrameResourceTree) => {
+                const {frameTree} = tree;
+                const {frame, childFrames, resources} = frameTree;
+    			this.createFrameState(frame, null, childFrames, resources);
+            });
             this.addFrameListeners();
             this.addDOMListeners();
             this.addNetworkListeners();
@@ -42,14 +47,26 @@ export class TabState extends EventEmitter {
     public getMainFrame():FrameState {
         return this.rootFrame;
     }
+    private createFrameState(info:CRI.Frame, parentFrame:FrameState=null, childFrames:Array<CRI.FrameTree>=[], resources:Array<CRI.FrameResource>=[]):FrameState {
+        const {id, parentId} = info;
+        const frameState:FrameState = new FrameState(this.chrome, info, this, resources);
+        this.frames.set(id, frameState);
+        if(!parentId) {
+            this.setMainFrame(frameState);
+        }
+        this.updateFrameOnEvents(frameState);
+        childFrames.forEach((childFrame) => {
+            const {frame, childFrames, resources} = childFrame;
+            this.createFrameState(frame, frameState, childFrames, resources);
+        });
+        return frameState;
+    }
     public getTabId():string { return this.info.id; }
     private addFrameListeners() {
         this.chrome.Page.enable();
-        this.getResourceTree().then((tree) => {
-            this.chrome.Page.frameAttached(this.onFrameAttached);
-            this.chrome.Page.frameDetached(this.onFrameDetached);
-            this.chrome.Page.frameNavigated(this.onFrameNavigated);
-        });
+        this.chrome.Page.frameAttached(this.onFrameAttached);
+        this.chrome.Page.frameDetached(this.onFrameDetached);
+        this.chrome.Page.frameNavigated(this.onFrameNavigated);
     }
     private addNetworkListeners() {
         this.chrome.Network.enable();
@@ -60,9 +77,6 @@ export class TabState extends EventEmitter {
         this.chrome.Runtime.enable();
         this.chrome.Runtime.executionContextCreated(this.executionContextCreated);
     }
-    private static DOMEventTypes:Array<string> = [ 'attributeModified', 'attributeRemoved', 'characterDataModified',
-		'childNodeCountUpdated', 'childNodeInserted', 'childNodeRemoved',
-		'documentUpdated', 'setChildNodes', 'inlineStyleInvalidated' ];
 	private addDOMListeners():void {
         this.getDocument().then((root:CRI.Node) => {
             this.chrome.on('DOM.attributeModified', this.onAttributeModified);
@@ -72,25 +86,11 @@ export class TabState extends EventEmitter {
             this.chrome.on('DOM.childNodeInserted', this.onChildNodeInserted);
             this.chrome.on('DOM.childNodeRemoved', this.onChildNodeRemoved);
             this.chrome.on('DOM.documentUpdated', this.onDocumentUpdated);
-            // this.rootFrame.setRoot(root);
-            TabState.DOMEventTypes.forEach((eventType) => {
-                const capitalizedEventType = `on${eventType[0].toUpperCase()}${eventType.substr(1)}`;
-                const func:(event:any)=>void = this[capitalizedEventType];
-                this.chrome.on(`DOM.${eventType}`, func);
-            });
             this.requestChildNodes(root.nodeId);
-		});
+		}).catch((err) => {
+            throw(err);
+        });
 	};
-    private removeDOMListeners():void {
-        this.getDocument().then((root:CRI.Node) => {
-            // this.rootFrame.setRoot(root);
-            TabState.DOMEventTypes.forEach((eventType) => {
-                const capitalizedEventType = `on${eventType[0].toUpperCase()}${eventType.substr(1)}`;
-                const func:(event:any)=>void = this[capitalizedEventType];
-                this.chrome.removeListener(`DOM.${eventType}`, func);
-            });
-		});
-    }
     private forwardEventToFrames(event:any, eventType:string):Promise<boolean> {
         const frameArray:Array<FrameState> = Array.from(this.frames.values());
         const eventResultPromise:Array<Promise<boolean>> = frameArray.map((frameState:FrameState) => {
@@ -183,16 +183,10 @@ export class TabState extends EventEmitter {
 
     private onFrameAttached = (frameInfo:CRI.FrameAttachedEvent):void => {
 		const {frameId, parentFrameId} = frameInfo;
-        const frameState:FrameState = new FrameState(this.chrome, {
+        this.createFrameState({
             id: frameId,
-            parentId: parentFrameId
-        }, this);
-        this.frames.set(frameId, frameState);
-
-        if(!parentFrameId) {
-            this.setMainFrame(frameState);
-        }
-        this.updateFrameOnEvents(frameState);
+            parentId:parentFrameId
+        })
 	};
 	private updateFrameOnEvents(frameState:FrameState):void {
         const frameId = frameState.getFrameId();
@@ -219,7 +213,7 @@ export class TabState extends EventEmitter {
         if(this.hasFrame(id)) {
             frameState = this.getFrame(id);
         } else {
-            frameState = new FrameState(this.chrome, frame, this);
+            frameState = this.createFrameState(frame);
         }
         frameState.updateInfo(frame);
     }
@@ -273,10 +267,21 @@ export class TabState extends EventEmitter {
     }
     private getFrame(id:CRI.FrameID):FrameState { return this.frames.get(id); }
     private hasFrame(id:CRI.FrameID):boolean { return this.frames.has(id); }
+    private getFrameTree():Promise<CRI.FrameTree> {
+        throw new Error("Not supported yet")
+        // return new Promise<CRI.FrameTree>((resolve, reject) => {
+        //     this.chrome.Page.getFrameTree({}, (err, value:CRI.FrameTree) => {
+        //         if(err) { reject(value); }
+        //         else { resolve(value); }
+        //     });
+        // }).catch((err) => {
+        //     throw(err);
+        // });
+    }
 
-    private getResourceTree():Promise<CRI.ResourceTree> {
-        return new Promise<CRI.ResourceTree>((resolve, reject) => {
-            this.chrome.Page.getResourceTree({}, (err, value:CRI.ResourceTree) => {
+    private getResourceTree():Promise<CRI.FrameResourceTree> {
+        return new Promise<CRI.FrameResourceTree>((resolve, reject) => {
+            this.chrome.Page.getResourceTree({}, (err, value:CRI.FrameResourceTree) => {
                 if(err) { reject(value); }
                 else { resolve(value); }
             });

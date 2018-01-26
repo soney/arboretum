@@ -6,6 +6,7 @@ const fileUrl = require("file-url");
 const path_1 = require("path");
 const tab_state_1 = require("./tab_state");
 const logging_1 = require("../../utils/logging");
+const events_1 = require("events");
 const log = logging_1.getColoredLogger('red');
 // var cri = require('chrome-remote-interface'),
 // 	_ = require('underscore'),
@@ -23,8 +24,9 @@ const log = logging_1.getColoredLogger('red');
 // };
 //
 const projectFileURLPath = fileUrl(path_1.join(path_1.resolve(__dirname, '..', '..'), 'browser'));
-class BrowserState {
+class BrowserState extends events_1.EventEmitter {
     constructor(state, extraOptions) {
+        super();
         this.state = state;
         this.tabs = new Map();
         this.options = { host: 'localhost', port: 9222 };
@@ -48,6 +50,9 @@ class BrowserState {
                     log.trace(`Creating tab ${id}`);
                     tab = new tab_state_1.TabState(tabInfo);
                     this.tabs.set(id, tab);
+                    this.emit('tabCreated', {
+                        id: id
+                    });
                 }
             });
             existingTabs.forEach((id) => {
