@@ -16,10 +16,11 @@ export class DOMState extends EventEmitter {
 
     constructor(private chrome:CRI.Chrome, private node:CRI.Node, private frame:FrameState, private parent:DOMState) {
 		super();
+		log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     }
     public destroy() {
     }
-	public getTab():TabState { return this.frame.getTab(); };
+	public getTab():TabState { return this.getFrame().getTab(); };
 	public getNodeId():CRI.NodeID { return this.node.nodeId; };
     public getTagName():string { return this.node.nodeName; };
     public getFrame():FrameState { return this.frame;};

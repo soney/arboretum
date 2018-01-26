@@ -21,7 +21,7 @@ export class FrameState {
 	private nodeMap:Map<CRI.NodeID, DOMState> = new Map<CRI.NodeID, DOMState>();
 	private oldNodeMap:Map<CRI.NodeID, boolean> = new Map<CRI.NodeID, boolean>();
 	private queuedEvents:Array<QueuedEvent<any>> = [];
-	private executionContext:any = null;
+	private executionContext:CRI.ExecutionContextDescription = null;
 
 	private eventManager:EventManager;
 	private _resourceTracker:ResourceTracker;
@@ -53,8 +53,8 @@ export class FrameState {
 // 	proto._getWrappedDOMNodeWithID = function(id) {
 // 		return this._nodeMap[id];
 // 	};
-    public updateInfo(info:any) {
-
+    public updateInfo(info:CRI.Frame) {
+		this.info = info;
     };
     public requestWillBeSent(resource) {
 
@@ -62,8 +62,8 @@ export class FrameState {
     public responseReceived(event) {
 
     };
-    public executionContextCreated(context) {
-
+    public executionContextCreated(context:CRI.ExecutionContextDescription):void {
+		this.executionContext = context;
     };
 	public inlineStyleInvalidated(event:CRI.InlineStyleInvalidatedEvent):void {
 		if(this.isRefreshingRoot) {

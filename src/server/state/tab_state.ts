@@ -221,7 +221,7 @@ export class TabState extends EventEmitter {
         } else {
             frameState = new FrameState(this.chrome, frame, this);
         }
-        frameState.updateInfo(frameInfo);
+        frameState.updateInfo(frame);
     }
     private onFrameDetached = (frameInfo:CRI.FrameDetachedEvent):void => {
         const {frameId} = frameInfo;
@@ -252,13 +252,13 @@ export class TabState extends EventEmitter {
             });
         }
     }
-    private executionContextCreated = (event:CRI.ExecutionContextEvent):void => {
+    private executionContextCreated = (event:CRI.ExecutionContextCreatedEvent):void => {
         const {context} = event;
         const {auxData} = context;
         const {frameId} = auxData;
         if(this.hasFrame(frameId)) {
             const frameState = this.getFrame(frameId);
-            frameState.executionContextCreated(event);
+            frameState.executionContextCreated(context);
         } else {
             log.error(`Could not find frame ${frameId} for execution context`);
         }

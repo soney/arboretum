@@ -16,7 +16,7 @@ class Arboretum {
         this.sidebar = new Sidebar();
 
         this.listen();
-        // this.tabs.createNew('http://www.umich.edu/', true);
+        this.tabs.createNew('http://www.umich.edu/', true);
     }
 
     listen() {

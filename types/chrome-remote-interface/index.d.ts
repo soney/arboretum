@@ -41,6 +41,9 @@ declare namespace CRI {
     interface StackTrace {
 
     }
+    interface ExecutionContextCreatedEvent {
+        context:ExecutionContextDescription
+    }
     interface ResourceTree {
     }
     interface Runtime {
@@ -70,9 +73,6 @@ declare namespace CRI {
     interface FrameDetachedEvent {
         frameId:FrameID
     }
-    interface ExecutionContextEvent {
-        context:ExecutionContextDescription
-    }
     interface ExecutionContextAuxData {
         isDefault:boolean,
         frameId:FrameID
@@ -81,7 +81,7 @@ declare namespace CRI {
         id:ExecutionContextID,
         origin:string,
         name:string,
-        auxData:ExecutionContextAuxData
+        auxData:any
     }
 
     interface GetResourceTreeOptions {}
@@ -196,7 +196,7 @@ declare namespace CRI {
     interface Runtime {
         enable:()=>void,
         disable:()=>void,
-        executionContextCreated:(callback:(event:ExecutionContextEvent)=>void) => void,
+        executionContextCreated:(callback:(event:ExecutionContextCreatedEvent)=>void) => void,
     }
     interface Initiator {
         type:string,

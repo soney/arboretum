@@ -62,7 +62,7 @@ class TabState extends events_1.EventEmitter {
             else {
                 frameState = new frame_state_1.FrameState(this.chrome, frame, this);
             }
-            frameState.updateInfo(frameInfo);
+            frameState.updateInfo(frame);
         };
         this.onFrameDetached = (frameInfo) => {
             const { frameId } = frameInfo;
@@ -101,7 +101,7 @@ class TabState extends events_1.EventEmitter {
             const { frameId } = auxData;
             if (this.hasFrame(frameId)) {
                 const frameState = this.getFrame(frameId);
-                frameState.executionContextCreated(event);
+                frameState.executionContextCreated(context);
             }
             else {
                 log.error(`Could not find frame ${frameId} for execution context`);

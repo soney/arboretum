@@ -48,6 +48,7 @@ class FrameState {
     // 		return this._nodeMap[id];
     // 	};
     updateInfo(info) {
+        this.info = info;
     }
     ;
     requestWillBeSent(resource) {
@@ -57,6 +58,7 @@ class FrameState {
     }
     ;
     executionContextCreated(context) {
+        this.executionContext = context;
     }
     ;
     inlineStyleInvalidated(event) {

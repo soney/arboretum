@@ -17,10 +17,11 @@ class DOMState extends events_1.EventEmitter {
         this.inlineStyle = '';
         this.children = [];
         this.updateValueInterval = null;
+        log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     }
     destroy() {
     }
-    getTab() { return this.frame.getTab(); }
+    getTab() { return this.getFrame().getTab(); }
     ;
     getNodeId() { return this.node.nodeId; }
     ;
