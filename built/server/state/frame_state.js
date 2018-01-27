@@ -293,6 +293,9 @@ class FrameState {
             });
         }
     }
+    requestResource(url) {
+        return this.resourceTracker.getResource(url);
+    }
 }
 exports.FrameState = FrameState;
 // var _ = require('underscore'),

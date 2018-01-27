@@ -149,7 +149,6 @@ class TabState extends events_1.EventEmitter {
     ;
     forwardEventToFrames(eventType, namespace = 'DOM') {
         this.chrome.on(`${namespace}.${eventType}`, (event) => {
-            console.log(eventType);
             const frameArray = Array.from(this.frames.values());
             const eventResultPromise = frameArray.map((frameState) => {
                 return frameState.handleFrameEvent(event, eventType);
@@ -169,6 +168,10 @@ class TabState extends events_1.EventEmitter {
         });
     }
     ;
+    requestResource(url, frameId) {
+        const frame = this.getFrame(frameId);
+        return frame.requestResource(url);
+    }
     getTitle() { return this.info.title; }
     getURL() { return this.info.url; }
     setTitle(title) {

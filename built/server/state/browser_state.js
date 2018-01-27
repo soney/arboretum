@@ -122,11 +122,8 @@ class BrowserState extends events_1.EventEmitter {
         });
     }
     requestResource(url, frameID, tabID) {
-        this.getTabState(tabID);
-        return null;
-        // return this.getTabState(tabId).then(function(tabState) {
-        // return tabState.requestResource(url, frameId);
-        // });
+        const tabState = this.tabs.get(tabID);
+        return tabState.requestResource(url, frameID);
     }
     ;
     getTab(id) {

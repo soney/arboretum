@@ -121,12 +121,9 @@ export class BrowserState extends EventEmitter {
 			throw(err);
 		});
 	}
-	public requestResource(url:string, frameID:CRI.FrameID, tabID:CRI.TabID) {
-		this.getTabState(tabID);
-		return null;
-		// return this.getTabState(tabId).then(function(tabState) {
-			// return tabState.requestResource(url, frameId);
-		// });
+	public requestResource(url:string, frameID:CRI.FrameID, tabID:CRI.TabID):Promise<any> {
+		const tabState:TabState = this.tabs.get(tabID);
+		return tabState.requestResource(url, frameID);
 	};
 	private getTab(id:CRI.TabID):TabState {
 		return this.tabs.get(id);

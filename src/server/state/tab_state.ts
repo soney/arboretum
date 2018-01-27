@@ -95,7 +95,6 @@ export class TabState extends EventEmitter {
 	};
     private forwardEventToFrames(eventType:string, namespace:string='DOM'):void {
         this.chrome.on(`${namespace}.${eventType}`, (event:any) => {
-            console.log(eventType);
             const frameArray:Array<FrameState> = Array.from(this.frames.values());
             const eventResultPromise:Array<Promise<boolean>> = frameArray.map((frameState:FrameState) => {
                 return frameState.handleFrameEvent(event, eventType);
@@ -110,6 +109,10 @@ export class TabState extends EventEmitter {
             });
         });
 	};
+    public requestResource(url:string, frameId:CRI.FrameID):Promise<any> {
+        const frame = this.getFrame(frameId);
+        return frame.requestResource(url);
+    }
     public getTitle():string { return this.info.title; }
     public getURL():string { return this.info.url; }
     private setTitle(title:string):void {

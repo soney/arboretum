@@ -283,6 +283,9 @@ export class FrameState {
 			});
 		}
 	}
+	public requestResource(url:string):Promise<any> {
+		return this.resourceTracker.getResource(url);
+	}
 // 	proto.refreshRoot = function() {
 // 		var page = this.getPage();
 // 		this._markRefreshingRoot(true);
