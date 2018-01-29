@@ -74,15 +74,11 @@ export class FrameState {
 
 			while(this.queuedEvents.length > 0) {
 				var queuedEvent = this.queuedEvents.shift();
-				this.handleQueuedEvent(queuedEvent);
+				queuedEvent.promise.resolve(queuedEvent.event).catch((err) => {
+					console.error(err);
+				});
 			}
 		}
-	};
-	private handleQueuedEvent(eventInfo:any):void {
-		const {type, event, promise} = eventInfo;
-		const val = this[type](event);
-		promise.doResolve(val);
-		// return val;
 	};
 
     public destroy() {
@@ -248,6 +244,31 @@ export class FrameState {
 		}
 	}
 
+	private doHandleEvent(event:any, eventType:string):boolean {
+		switch(eventType) {
+			case 'documentUpdated':
+				return this.doHandleDocumentUpdated(event as CRI.DocumentUpdatedEvent);
+			case 'setChildNodes':
+				return this.doHandleSetChildNodes(event as CRI.SetChildNodesEvent);
+			case 'inlineStyleInvalidated':
+				return this.doHandleInlineStyleInvalidated(event as CRI.InlineStyleInvalidatedEvent);
+			case 'childNodeCountUpdated':
+				return this.doHandleChildNodeCountUpdated(event as CRI.ChildNodeCountUpdatedEvent);
+			case 'childNodeInserted':
+				return this.doHandleChildNodeInserted(event as CRI.ChildNodeInsertedEvent);
+			case 'childNodeRemoved':
+				return this.doHandleChildNodeRemoved(event as CRI.ChildNodeRemovedEvent);
+			case 'attributeModified':
+				return this.doHandleAttributeModified(event as CRI.AttributeModifiedEvent);
+			case 'attributeRemoved':
+				return this.doHandleAttributeRemoved(event as CRI.AttributeRemovedEvent);
+			case 'characterDataModified':
+				return this.doHandleCharacterDataModified(event as CRI.CharacterDataModifiedEvent);
+			default:
+				throw new Error(`Could not find event type ${eventType}`);
+		}
+	};
+
 	public handleFrameEvent(event:any, eventType:string):Promise<boolean> {
 		if(this.isRefreshingRoot()) {
 			const resolvablePromise = new ResolvablePromise<any>();
@@ -258,29 +279,12 @@ export class FrameState {
 				promise: resolvablePromise
 			});
 			return resolvablePromise.getPromise().then(() => {
-				switch(eventType) {
-					case 'documentUpdated':
-						return this.doHandleDocumentUpdated(event as CRI.DocumentUpdatedEvent);
-					case 'setChildNodes':
-						return this.doHandleSetChildNodes(event as CRI.SetChildNodesEvent);
-					case 'inlineStyleInvalidated':
-						return this.doHandleInlineStyleInvalidated(event as CRI.InlineStyleInvalidatedEvent);
-					case 'childNodeCountUpdated':
-						return this.doHandleChildNodeCountUpdated(event as CRI.ChildNodeCountUpdatedEvent);
-					case 'childNodeInserted':
-						return this.doHandleChildNodeInserted(event as CRI.ChildNodeInsertedEvent);
-					case 'childNodeRemoved':
-						return this.doHandleChildNodeRemoved(event as CRI.ChildNodeRemovedEvent);
-					case 'attributeModified':
-						return this.doHandleAttributeModified(event as CRI.AttributeModifiedEvent);
-					case 'attributeRemoved':
-						return this.doHandleAttributeRemoved(event as CRI.AttributeRemovedEvent);
-					case 'characterDataModified':
-						return this.doHandleCharacterDataModified(event as CRI.CharacterDataModifiedEvent);
-				}
+				return this.doHandleEvent(event, eventType);
 			}).catch((err) => {
 				throw(err);
 			});
+		} else {
+			return Promise.resolve(this.doHandleEvent(event, eventType));
 		}
 	}
 	public requestResource(url:string):Promise<any> {
@@ -860,11 +864,13 @@ class ResolvablePromise<E> {
 			this._reject = reject;
 		});
 	}
-	public resolve(val:E):void {
+	public resolve(val:E):Promise<E> {
 		this._resolve(val);
+		return this.getPromise();
 	}
-	public reject(val:any):void {
+	public reject(val:any):Promise<E> {
 		this._reject(val);
+		return this.getPromise();
 	}
 	public getPromise():Promise<E> {
 		return this._promise;

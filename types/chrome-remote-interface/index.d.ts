@@ -17,6 +17,7 @@ declare namespace CRI {
     type PseudoType = string;
     type RequestID = string;
     type InterceptionID = string;
+    type RemoteObjectID = string;
     type ErrorReason = string;
     type MonotonicTime = number;
     type Headers = any;
@@ -46,6 +47,36 @@ declare namespace CRI {
     }
     interface Runtime {
         StackTrace:StackTrace
+        releaseObject:(options:ReleaseObjectOptions, callback:(err:any, result:ReleaseObjectResult)=>any) => void
+        getProperties:(options:GetPropertiesOptions, callback:(err:any, result:ReleaseObjectResult)=>any) => void
+    }
+    interface ReleaseObjectOptions {
+        objectId:RemoteObjectID
+    }
+    interface ReleaseObjectResult {}
+    interface GetPropertiesOptions {
+        objectId:RemoteObjectID,
+        ownProperties:boolean,
+        accessorPropertiesOnly?:boolean,
+        generatePreview?:boolean
+    }
+    interface GetPropertiesResult {
+        result:Array<PropertyDescriptor>,
+        internalProperties:Array<InternalPropertyDescriptor>,
+        exceptionDetails:ExceptionDetails
+    }
+    interface PropertyDescriptor {
+        name:string,
+        value:RemoteObject
+    }
+    interface InternalPropertyDescriptor {
+
+    }
+    interface ExceptionDetails {
+
+    }
+    interface GetPropertiesResult {}
+    namespace Runtime {
     }
     interface Frame {
         id:FrameID,

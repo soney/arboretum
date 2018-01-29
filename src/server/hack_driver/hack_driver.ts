@@ -23,7 +23,7 @@ function readShallowObject(chrome, objectId) {
 	});
 }
 
-function callFNOnElement(chrome, fn_promise:Promise<string>, nodeId, additional_args?):Promise<any> {
+function callFNOnElement(chrome:CRI.Chrome, fn_promise:Promise<string>, nodeId:CRI.NodeID, additional_args?):Promise<any> {
 	var objectId;
 	var rv;
 	var resolvedNodePromise = resolveNode(chrome, nodeId);
@@ -49,7 +49,7 @@ function callFNOnElement(chrome, fn_promise:Promise<string>, nodeId, additional_
 	});
 }
 
-function releaseObject(chrome, objectId) {
+function releaseObject(chrome:CRI.Chrome, objectId) {
 	return new Promise(function(resolve, reject) {
 		chrome.Runtime.releaseObject({
 			objectId: objectId
@@ -60,7 +60,7 @@ function releaseObject(chrome, objectId) {
 	});
 }
 
-function getProperties(chrome, objectId, ownProperties) {
+function getProperties(chrome:CRI.Chrome, objectId, ownProperties) {
 	return new Promise(function(resolve, reject) {
 		chrome.Runtime.getProperties({
 			objectId: objectId,
@@ -75,7 +75,7 @@ function getProperties(chrome, objectId, ownProperties) {
 	});
 }
 
-function getObjectProperty(chrome, objectId, property_name) {
+function getObjectProperty(chrome:CRI.Chrome, objectId, property_name:string) {
 	return callFunctionOn(chrome, objectId, {
 		functionDeclaration: '(function() { return this.' + property_name + ';})',
 		arguments: []

@@ -71,16 +71,11 @@ class FrameState {
             this.refreshingRoot = false;
             while (this.queuedEvents.length > 0) {
                 var queuedEvent = this.queuedEvents.shift();
-                this.handleQueuedEvent(queuedEvent);
+                queuedEvent.promise.resolve(queuedEvent.event).catch((err) => {
+                    console.error(err);
+                });
             }
         }
-    }
-    ;
-    handleQueuedEvent(eventInfo) {
-        const { type, event, promise } = eventInfo;
-        const val = this[type](event);
-        promise.doResolve(val);
-        // return val;
     }
     ;
     destroy() {
@@ -258,6 +253,31 @@ class FrameState {
             return false;
         }
     }
+    doHandleEvent(event, eventType) {
+        switch (eventType) {
+            case 'documentUpdated':
+                return this.doHandleDocumentUpdated(event);
+            case 'setChildNodes':
+                return this.doHandleSetChildNodes(event);
+            case 'inlineStyleInvalidated':
+                return this.doHandleInlineStyleInvalidated(event);
+            case 'childNodeCountUpdated':
+                return this.doHandleChildNodeCountUpdated(event);
+            case 'childNodeInserted':
+                return this.doHandleChildNodeInserted(event);
+            case 'childNodeRemoved':
+                return this.doHandleChildNodeRemoved(event);
+            case 'attributeModified':
+                return this.doHandleAttributeModified(event);
+            case 'attributeRemoved':
+                return this.doHandleAttributeRemoved(event);
+            case 'characterDataModified':
+                return this.doHandleCharacterDataModified(event);
+            default:
+                throw new Error(`Could not find event type ${eventType}`);
+        }
+    }
+    ;
     handleFrameEvent(event, eventType) {
         if (this.isRefreshingRoot()) {
             const resolvablePromise = new ResolvablePromise();
@@ -268,29 +288,13 @@ class FrameState {
                 promise: resolvablePromise
             });
             return resolvablePromise.getPromise().then(() => {
-                switch (eventType) {
-                    case 'documentUpdated':
-                        return this.doHandleDocumentUpdated(event);
-                    case 'setChildNodes':
-                        return this.doHandleSetChildNodes(event);
-                    case 'inlineStyleInvalidated':
-                        return this.doHandleInlineStyleInvalidated(event);
-                    case 'childNodeCountUpdated':
-                        return this.doHandleChildNodeCountUpdated(event);
-                    case 'childNodeInserted':
-                        return this.doHandleChildNodeInserted(event);
-                    case 'childNodeRemoved':
-                        return this.doHandleChildNodeRemoved(event);
-                    case 'attributeModified':
-                        return this.doHandleAttributeModified(event);
-                    case 'attributeRemoved':
-                        return this.doHandleAttributeRemoved(event);
-                    case 'characterDataModified':
-                        return this.doHandleCharacterDataModified(event);
-                }
+                return this.doHandleEvent(event, eventType);
             }).catch((err) => {
                 throw (err);
             });
+        }
+        else {
+            return Promise.resolve(this.doHandleEvent(event, eventType));
         }
     }
     requestResource(url) {
@@ -818,9 +822,11 @@ class ResolvablePromise {
     }
     resolve(val) {
         this._resolve(val);
+        return this.getPromise();
     }
     reject(val) {
         this._reject(val);
+        return this.getPromise();
     }
     getPromise() {
         return this._promise;

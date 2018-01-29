@@ -5,6 +5,7 @@ const logging_1 = require("../../utils/logging");
 const css_parser_1 = require("../css_parser");
 const events_1 = require("events");
 const node_code_1 = require("../../utils/node_code");
+const url_transform_1 = require("../url_transform");
 const log = logging_1.getColoredLogger('magenta');
 class DOMState extends events_1.EventEmitter {
     constructor(chrome, node, frame, parent) {
@@ -18,20 +19,9 @@ class DOMState extends events_1.EventEmitter {
         this.inlineStyle = '';
         this.children = [];
         this.updateValueInterval = null;
-        this.serialize = function () {
-            var nodeType = this.getNodeType();
-            var rv = {
-                type: nodeType,
-                name: this.getNodeName(),
-                value: this.getNodeValue(),
-                attributes: this.getAttributesMap(),
-                children: _.map(this.getChildren(), function (child) {
-                    return child.serialize();
-                }),
-                inlineStyle: this.getInlineStyle()
-            };
-            return rv;
-        };
+        this.getFullString().then((fullNodeValue) => {
+            this.setNodeValue(fullNodeValue);
+        });
         log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     }
     destroy() {
@@ -41,6 +31,8 @@ class DOMState extends events_1.EventEmitter {
     getNodeId() { return this.node.nodeId; }
     ;
     getTagName() { return this.node.nodeName; }
+    ;
+    getNodeAttributes() { return this.node.attributes; }
     ;
     getFrame() { return this.frame; }
     ;
@@ -60,6 +52,28 @@ class DOMState extends events_1.EventEmitter {
     ;
     getInputValue() {
         return hack_driver_1.getElementValue(this.chrome, this.getNodeId());
+    }
+    ;
+    getFullString() {
+        return new Promise((resolve, reject) => {
+            const nodeType = this.getNodeType();
+            const nodeValue = this.getNodeValue();
+            if (nodeType === node_code_1.NodeCode.TEXT_NODE && nodeValue && nodeValue.endsWith('…')) {
+                this.chrome.DOM.getOuterHTML({
+                    nodeId: this.getNodeId()
+                }, (err, value) => {
+                    if (err) {
+                        reject(value);
+                    }
+                    else {
+                        resolve(value.outerHTML);
+                    }
+                });
+            }
+            else {
+                resolve(nodeValue);
+            }
+        });
     }
     ;
     addValueListeners() {
@@ -112,6 +126,9 @@ class DOMState extends events_1.EventEmitter {
             value: this.getNodeValue()
         });
     }
+    setNodeValue(value) {
+        this.node.nodeValue = value;
+    }
     getNodeValue() {
         return this.node.nodeValue;
     }
@@ -130,6 +147,9 @@ class DOMState extends events_1.EventEmitter {
     setAttribute(name, value) {
         const node = this.node;
         const { attributes } = node;
+        if (!attributes) {
+            throw new Error('Could not find attributes');
+        }
         let found = false;
         for (let i = 0; i < attributes.length; i += 2) {
             const n = attributes[i];
@@ -240,38 +260,35 @@ class DOMState extends events_1.EventEmitter {
     stringifySelf() {
         const MAX_TEXT_LENGTH = 50;
         const type = this.getNodeType();
-        var node = this._getNode(), type = this.getNodeType(), id = this.getId();
+        const id = this.getNodeId();
         if (type === node_code_1.NodeCode.DOCUMENT_NODE) {
-            return '(' + id + ') ' + this.getNodeName();
+            return `(${id}) ${this.getTagName()}`;
         }
         else if (type === node_code_1.NodeCode.TEXT_NODE) {
             var text = this.getNodeValue().replace(/(\n|\t)/gi, '');
             if (text.length > MAX_TEXT_LENGTH) {
-                text = text.substr(0, MAX_TEXT_LENGTH) + '...';
+                text = `${text.substr(0, MAX_TEXT_LENGTH)}...`;
             }
-            return '(' + id + ') text: ' + text;
+            return `(${id}) text: ${text}`;
         }
         else if (type === node_code_1.NodeCode.DOCUMENT_TYPE_NODE) {
-            return '(' + id + ') <' + this.getNodeName() + '>';
+            return `(${id}) <${this.getTagName()}>`;
         }
         else if (type === node_code_1.NodeCode.ELEMENT_NODE) {
-            var text = '(' + id + ') <' + this.getNodeName();
+            let text = `(${id}) <${this.getTagName()}`;
             var attributesMap = this.getAttributesMap();
             var style = this.getInlineStyle();
             if (style) {
-                attributesMap.style = style;
+                attributesMap.set('style', style);
             }
-            _.each(attributesMap, function (val, name) {
-                text += ' ' + name + ' = "' + val + '"';
+            attributesMap.forEach((val, key) => {
+                text += ` ${key} = '${val}'`;
             });
-            //for(var i = 0; i<node.attributes.length; i+=2) {
-            //text += ' ' + node.attributes[i] +  ' = "' + node.attributes[i+1] + '"';
-            //}
             text += '>';
             return text;
         }
         else if (type === node_code_1.NodeCode.COMMENT_NODE) {
-            var text = '(' + id + ') <!-- ';
+            let text = `(${id}) <!-- `;
             text += this.getNodeValue().replace(/(\n|\t)/gi, '');
             if (text.length > MAX_TEXT_LENGTH) {
                 text = text.substr(0, MAX_TEXT_LENGTH) + '...';
@@ -280,12 +297,52 @@ class DOMState extends events_1.EventEmitter {
             return text;
         }
         else {
-            console.log(node);
+            return 'node';
         }
-        return 'node';
+    }
+    ;
+    getInlineStyle() {
+        return this.inlineStyle;
+    }
+    shouldIncludeAttribute(attributeName) {
+        const lowercaseAttributeName = attributeName.toLowerCase();
+        return DOMState.attributesToIgnore.indexOf(lowercaseAttributeName) < 0;
+    }
+    ;
+    getAttributesMap(shadow) {
+        const tagName = this.getTagName();
+        const tagTransform = url_transform_1.urlTransform[tagName.toLowerCase()];
+        const attributes = this.getNodeAttributes();
+        const rv = new Map();
+        const len = attributes.length;
+        let i = 0;
+        while (i < len) {
+            const [attributeName, attributeValue] = [attributes[i], attributes[i + 1]];
+            let newValue = attributeValue;
+            if (this.shouldIncludeAttribute(attributeName)) {
+                newValue = '';
+            }
+            else {
+                if (tagTransform) {
+                    const attributeTransofrm = tagTransform(attributeName.toLowerCase());
+                    const url = this.getBaseURL();
+                    if (url) {
+                        newValue = attributeTransofrm.transform(attributeValue, url, this, shadow);
+                    }
+                    else {
+                        log.debug('No base URL');
+                    }
+                }
+            }
+            rv.set(attributeName, newValue);
+            i += 2;
+        }
+        return rv;
     }
     ;
 }
+DOMState.attributesToIgnore = ['onload', 'onclick', 'onmouseover', 'onmouseout',
+    'onmouseenter', 'onmouseleave', 'action', 'oncontextmenu', 'onfocus'];
 exports.DOMState = DOMState;
 // var _ = require('underscore'),
 // 	URL = require('url'),

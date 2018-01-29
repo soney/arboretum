@@ -131,6 +131,9 @@ export class DOMState extends EventEmitter {
 	public setAttribute(name:string, value:string):void {
 		const node = this.node;
 		const {attributes} = node;
+		if(!attributes) {
+			throw new Error('Could not find attributes');
+		}
 		let found:boolean = false;
 		for(let i:number = 0; i<attributes.length; i+=2) {
 			const n = attributes[i];
@@ -237,7 +240,7 @@ export class DOMState extends EventEmitter {
     	return frame.getURL();
     };
 
-	private stringifySelf():string {
+	public stringifySelf():string {
 		const MAX_TEXT_LENGTH:number = 50;
 		const type = this.getNodeType();
 		const id = this.getNodeId();

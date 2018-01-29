@@ -6,12 +6,17 @@ import {EventEmitter} from 'events';
 import {parse, format} from 'url';
 
 const log = getColoredLogger('yellow');
+interface PendingFrameEvent {
+    frameId:CRI.FrameID,
+    event:any,
+    type:string
+};
 
 export class TabState extends EventEmitter {
     private tabID:CRI.TabID;
     private rootFrame:FrameState;
     private frames:Map<CRI.FrameID, FrameState> = new Map<CRI.FrameID, FrameState>();
-    private pendingFrameEvents:Map<CRI.FrameID, Array<any>> = new Map<CRI.FrameID, Array<any>>();
+    private pendingFrameEvents:Map<CRI.FrameID, Array<PendingFrameEvent>> = new Map<CRI.FrameID, Array<PendingFrameEvent>>();
     private chrome:CRI.Chrome;
     private chromePromise:Promise<CRI.Chrome>;
     constructor(private info:CRI.TabInfo) {
@@ -107,6 +112,8 @@ export class TabState extends EventEmitter {
                 if(err) { reject(val); }
                 else { resolve(null); }
             });
+        }).catch((err) => {
+            throw(err);
         });
 	};
     public requestResource(url:string, frameId:CRI.FrameID):Promise<any> {
@@ -145,11 +152,13 @@ export class TabState extends EventEmitter {
         const parsedURL = parse(url);
         if(!parsedURL.protocol) { parsedURL.protocol = 'http'; }
         url = format(parsedURL);
-        return new Promise((resolve, reject) => {
+        return new Promise<CRI.FrameID>((resolve, reject) => {
             this.chrome.Page.navigate({ url }, (err, result:CRI.Page.NavigateResult) => {
                 if(err) { throw(err); }
                 else { resolve(result.frameId); }
             })
+        }).catch((err) => {
+            throw(err);
         });
     }
 
@@ -229,7 +238,7 @@ export class TabState extends EventEmitter {
             log.error(`Could not find frame ${frameId} for execution context`);
         }
     };
-    private addPendingFrameEvent(eventInfo:any):void {
+    private addPendingFrameEvent(eventInfo:PendingFrameEvent):void {
         const {frameId} = eventInfo;
         if(this.pendingFrameEvents.has(frameId)) {
             this.pendingFrameEvents.get(frameId).push(eventInfo);

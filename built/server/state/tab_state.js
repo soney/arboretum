@@ -6,6 +6,7 @@ const logging_1 = require("../../utils/logging");
 const events_1 = require("events");
 const url_1 = require("url");
 const log = logging_1.getColoredLogger('yellow');
+;
 class TabState extends events_1.EventEmitter {
     constructor(info) {
         super();
@@ -165,6 +166,8 @@ class TabState extends events_1.EventEmitter {
                     resolve(null);
                 }
             });
+        }).catch((err) => {
+            throw (err);
         });
     }
     ;
@@ -215,6 +218,8 @@ class TabState extends events_1.EventEmitter {
                     resolve(result.frameId);
                 }
             });
+        }).catch((err) => {
+            throw (err);
         });
     }
     updateFrameOnEvents(frameState) {
