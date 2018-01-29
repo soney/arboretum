@@ -1,4 +1,4 @@
-enum codes {
+export enum NodeCode {
 	ELEMENT_NODE = 1,
 	ATTRIBUTE_NODE = 2,
 	TEXT_NODE = 3,
@@ -12,4 +12,3 @@ enum codes {
 	DOCUMENT_FRAGMENT_NODE = 11,
 	NOTATION_NODE = 12
 };
-export default codes;

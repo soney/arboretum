@@ -117,6 +117,11 @@ expressApp.all('/', (req, res, next) => {
 			.pipe(res);
 	});
 });
+// process.stdin.setRawMode(true);
+process.stdin.on('data', (event) => {
+	const key:string = String(process.stdin.read());
+	console.log(key);
+});
 
 // var repl = require('repl'),
 // 	child_process = require('child_process'),

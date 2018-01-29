@@ -4,6 +4,8 @@ import {getColoredLogger, level, setLevel} from '../../utils/logging';
 import {processCSSURLs} from '../css_parser';
 import {EventEmitter} from 'events';
 import {TabState} from './tab_state';
+import {NodeCode} from '../../utils/node_code';
+import {urlTransform} from '../url_transform';
 
 const log = getColoredLogger('magenta');
 
@@ -16,6 +18,9 @@ export class DOMState extends EventEmitter {
 
     constructor(private chrome:CRI.Chrome, private node:CRI.Node, private frame:FrameState, private parent:DOMState) {
 		super();
+		this.getFullString().then((fullNodeValue:string) => {
+			this.setNodeValue(fullNodeValue);
+		});
 		log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     }
     public destroy() {
@@ -23,6 +28,7 @@ export class DOMState extends EventEmitter {
 	public getTab():TabState { return this.getFrame().getTab(); };
 	public getNodeId():CRI.NodeID { return this.node.nodeId; };
     public getTagName():string { return this.node.nodeName; };
+    public getNodeAttributes():Array<string> { return this.node.attributes;};
     public getFrame():FrameState { return this.frame;};
 	public getFrameId():CRI.FrameID { return this.getFrame().getFrameId(); };
 	public getTabId():CRI.TabID { return this.getFrame().getTabId(); };
@@ -35,6 +41,26 @@ export class DOMState extends EventEmitter {
 	};
 	public getInputValue():Promise<string> {
 		return getElementValue(this.chrome, this.getNodeId());
+	};
+	private getFullString():Promise<string> {
+		return new Promise((resolve, reject) => {
+			const nodeType = this.getNodeType();
+			const nodeValue = this.getNodeValue();
+
+			if(nodeType === NodeCode.TEXT_NODE && nodeValue && nodeValue.endsWith('…')) {
+				this.chrome.DOM.getOuterHTML({
+					nodeId: this.getNodeId()
+				}, (err, value) => {
+					if(err) {
+						reject(value);
+					} else {
+						resolve(value.outerHTML);
+					}
+				});
+			} else {
+				resolve(nodeValue);
+			}
+		});
 	};
 	private addValueListeners() {
 		const tagName:string = this.getTagName().toLowerCase();
@@ -85,6 +111,9 @@ export class DOMState extends EventEmitter {
 			value: this.getNodeValue()
 		})
     }
+	private setNodeValue(value:string):void {
+		this.node.nodeValue = value;
+	}
 	public getNodeValue():string {
 		return this.node.nodeValue;
 	}
@@ -207,6 +236,124 @@ export class DOMState extends EventEmitter {
     	const frame = this.getFrame();
     	return frame.getURL();
     };
+
+	private stringifySelf():string {
+		const MAX_TEXT_LENGTH:number = 50;
+		const type = this.getNodeType();
+		const id = this.getNodeId();
+		if(type === NodeCode.DOCUMENT_NODE) {
+			return `(${id}) ${this.getTagName()}`
+		} else if(type === NodeCode.TEXT_NODE) {
+			var text = this.getNodeValue().replace(/(\n|\t)/gi, '');
+			if(text.length > MAX_TEXT_LENGTH) {
+				text = `${text.substr(0, MAX_TEXT_LENGTH)}...`;
+			}
+			return `(${id}) text: ${text}`
+		} else if(type === NodeCode.DOCUMENT_TYPE_NODE) {
+			return `(${id}) <${this.getTagName()}>`;
+		} else if(type === NodeCode.ELEMENT_NODE) {
+			let text = `(${id}) <${this.getTagName()}`;
+			var attributesMap = this.getAttributesMap();
+			var style = this.getInlineStyle();
+			if(style) {
+				attributesMap.set('style', style);
+			}
+			attributesMap.forEach((val:string, key:string) => {
+				text += ` ${key} = '${val}'`;
+			});
+			text += '>';
+			return text;
+		} else if(type === NodeCode.COMMENT_NODE) {
+			let text = `(${id}) <!-- `
+			text += this.getNodeValue().replace(/(\n|\t)/gi, '');
+			if(text.length > MAX_TEXT_LENGTH) {
+				text = text.substr(0, MAX_TEXT_LENGTH) + '...';
+			}
+			text +=  ' -->';
+			return text;
+		} else {
+			return 'node';
+		}
+	};
+	private getInlineStyle():string {
+		return this.inlineStyle;
+	}
+	private static attributesToIgnore:Array<string> = ['onload', 'onclick', 'onmouseover', 'onmouseout',
+			'onmouseenter', 'onmouseleave', 'action', 'oncontextmenu', 'onfocus'];
+	private shouldIncludeAttribute(attributeName:string):boolean {
+		const lowercaseAttributeName = attributeName.toLowerCase();
+		return DOMState.attributesToIgnore.indexOf(lowercaseAttributeName) < 0;
+	};
+	private getAttributesMap(shadow?):Map<string, string> {
+		const tagName = this.getTagName();
+		const tagTransform = urlTransform[tagName.toLowerCase()];
+		const attributes = this.getNodeAttributes();
+		const rv = new Map<string, string>();
+
+		const len:number = attributes.length;
+		let i:number = 0;
+		while(i < len) {
+			const [attributeName, attributeValue] = [attributes[i], attributes[i+1]];
+			let newValue:string = attributeValue;
+			if(this.shouldIncludeAttribute(attributeName)) {
+				newValue = '';
+			} else {
+				if(tagTransform) {
+					const attributeTransofrm = tagTransform(attributeName.toLowerCase());
+					const url = this.getBaseURL();
+					if(url) {
+						newValue = attributeTransofrm.transform(attributeValue, url, this, shadow);
+					} else {
+						log.debug('No base URL')
+					}
+				}
+			}
+			rv.set(attributeName, newValue);
+			i += 2;
+		}
+		return rv;
+	};
+// 	proto._requestInlineStyle = function() {
+// 		var node = this._getNode(),
+// 			type = node.nodeType;
+// 		if(type === 1) {
+// 			var id = this.getId(),
+// 				chrome = this._getChrome(),
+// 				inlineStyle;
+//
+// 			return new Promise(_.bind(function(resolve, reject) {
+// 				chrome.CSS.getInlineStylesForNode({
+// 					nodeId: id
+// 				}, _.bind(function(err, value) {
+// 					if(this._destroyed) {
+// 						var myError = new Error('Node ' + id + ' was destroyed');
+// 						myError.expected = true;
+// 						reject(myError);
+// 					} else if(err) {
+// 						//reject(new Error('Could not find node ' + id));
+// 					} else {
+// 						resolve(value.inlineStyle);
+// 					}
+// 				}, this));
+// 			}, this)).then(_.bind(function(is) {
+// 				inlineStyle = is;
+// 				if(inlineStyle.cssText) {
+// 					return this._getBaseURL();
+// 				}
+// 			}, this)).then(_.bind(function(url) {
+// 				if(inlineStyle.cssText) {
+// 					inlineStyle.cssText = processCSSURLs(inlineStyle.cssText, url, this.getFrameId(), this.getTabId());
+// 				}
+// 				return inlineStyle;
+// 			}, this));
+// 		} else {
+// 			return new Promise(function(resolve, reject) {
+// 				resolve({
+// 					cssText: ''
+// 				});
+// 			});
+// 		}
+// 	};
 }
 // var _ = require('underscore'),
 // 	URL = require('url'),

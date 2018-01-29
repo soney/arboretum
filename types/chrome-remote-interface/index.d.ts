@@ -7,6 +7,7 @@ declare namespace CRI {
     enum TabType {
         'page'
     }
+    type NodeType = number;
     type NodeID = number;
     type StyleSheetID = string;
     type BackendNodeID = number;
@@ -150,9 +151,18 @@ declare namespace CRI {
         parentId:NodeID,
         nodes:Array<Node>
     }
+    interface GetOuterHTMLOptions {
+        nodeId:NodeID,
+        backendNodeId?:BackendNodeID,
+        objectId?:Runtime.RemoteObjectId
+    }
+    interface GetOuterHTMLResult {
+        outerHTML:string
+    }
     interface DOM {
         getDocument:(params:GetDocumentOptions, callback:(err:any, value:GetDocumentResult)=>void) => void
         requestChildNodes:(params:RequestChildNodesOptions, callback:(err:any, value:RequestChildNodesResult)=>void) => void
+        getOuterHTML:(params:GetOuterHTMLOptions, callback:(err:any, value:GetOuterHTMLResult)=>void) => void
     }
     interface FrameResourceTree {
         frameTree:FrameTree
@@ -165,6 +175,9 @@ declare namespace CRI {
         contentSize:number,
         failed:boolean,
         canceled:boolean
+    }
+    namespace Runtime {
+        type RemoteObjectId = string;
     }
 
     interface FrameTree {

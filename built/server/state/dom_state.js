@@ -4,6 +4,7 @@ const hack_driver_1 = require("../hack_driver/hack_driver");
 const logging_1 = require("../../utils/logging");
 const css_parser_1 = require("../css_parser");
 const events_1 = require("events");
+const node_code_1 = require("../../utils/node_code");
 const log = logging_1.getColoredLogger('magenta');
 class DOMState extends events_1.EventEmitter {
     constructor(chrome, node, frame, parent) {
@@ -17,6 +18,20 @@ class DOMState extends events_1.EventEmitter {
         this.inlineStyle = '';
         this.children = [];
         this.updateValueInterval = null;
+        this.serialize = function () {
+            var nodeType = this.getNodeType();
+            var rv = {
+                type: nodeType,
+                name: this.getNodeName(),
+                value: this.getNodeValue(),
+                attributes: this.getAttributesMap(),
+                children: _.map(this.getChildren(), function (child) {
+                    return child.serialize();
+                }),
+                inlineStyle: this.getInlineStyle()
+            };
+            return rv;
+        };
         log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     }
     destroy() {
@@ -220,6 +235,54 @@ class DOMState extends events_1.EventEmitter {
     getBaseURL() {
         const frame = this.getFrame();
         return frame.getURL();
+    }
+    ;
+    stringifySelf() {
+        const MAX_TEXT_LENGTH = 50;
+        const type = this.getNodeType();
+        var node = this._getNode(), type = this.getNodeType(), id = this.getId();
+        if (type === node_code_1.NodeCode.DOCUMENT_NODE) {
+            return '(' + id + ') ' + this.getNodeName();
+        }
+        else if (type === node_code_1.NodeCode.TEXT_NODE) {
+            var text = this.getNodeValue().replace(/(\n|\t)/gi, '');
+            if (text.length > MAX_TEXT_LENGTH) {
+                text = text.substr(0, MAX_TEXT_LENGTH) + '...';
+            }
+            return '(' + id + ') text: ' + text;
+        }
+        else if (type === node_code_1.NodeCode.DOCUMENT_TYPE_NODE) {
+            return '(' + id + ') <' + this.getNodeName() + '>';
+        }
+        else if (type === node_code_1.NodeCode.ELEMENT_NODE) {
+            var text = '(' + id + ') <' + this.getNodeName();
+            var attributesMap = this.getAttributesMap();
+            var style = this.getInlineStyle();
+            if (style) {
+                attributesMap.style = style;
+            }
+            _.each(attributesMap, function (val, name) {
+                text += ' ' + name + ' = "' + val + '"';
+            });
+            //for(var i = 0; i<node.attributes.length; i+=2) {
+            //text += ' ' + node.attributes[i] +  ' = "' + node.attributes[i+1] + '"';
+            //}
+            text += '>';
+            return text;
+        }
+        else if (type === node_code_1.NodeCode.COMMENT_NODE) {
+            var text = '(' + id + ') <!-- ';
+            text += this.getNodeValue().replace(/(\n|\t)/gi, '');
+            if (text.length > MAX_TEXT_LENGTH) {
+                text = text.substr(0, MAX_TEXT_LENGTH) + '...';
+            }
+            text += ' -->';
+            return text;
+        }
+        else {
+            console.log(node);
+        }
+        return 'node';
     }
     ;
 }
