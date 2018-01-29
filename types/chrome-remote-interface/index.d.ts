@@ -9,6 +9,7 @@ declare namespace CRI {
     }
     type NodeType = number;
     type NodeID = number;
+    type ScriptID = string;
     type StyleSheetID = string;
     type BackendNodeID = number;
     type ExecutionContextID = number;
@@ -18,6 +19,7 @@ declare namespace CRI {
     type RequestID = string;
     type InterceptionID = string;
     type RemoteObjectID = string;
+    type UnserializableValue = string;
     type ErrorReason = string;
     type MonotonicTime = number;
     type Headers = any;
@@ -69,11 +71,57 @@ declare namespace CRI {
         name:string,
         value:RemoteObject
     }
+    interface RemoteObject {
+        type:string,
+        subtype:string,
+        className:string,
+        value:any,
+        unserializableValue:UnserializableValue,
+        description:string,
+        objectId:RemoteObjectID,
+        preview: ObjectPreview,
+        customPreview: CustomPreview
+    }
+    interface ObjectPreview {
+        type:string,
+        subtype:string,
+        description:string,
+        overflow:boolean,
+        properties:Array<PropertyPreview>,
+        entries:Array<EntryPreview>
+    }
+    interface PropertyPreview {
+        name:string,
+        type:string,
+        value:string,
+        valuePreview:ObjectPreview,
+        subtype:string
+    }
+    interface CustomPreview {
+        header:string,
+        hasBody:boolean,
+        formatterObjectId:RemoteObjectID,
+        bindRemoteObjectFunctionId:RemoteObjectID,
+        configObjectId:RemoteObjectID
+    }
+    interface EntryPreview {
+        key:ObjectPreview,
+        value:ObjectPreview
+    }
     interface InternalPropertyDescriptor {
-
+        name:string,
+        value:RemoteObject
     }
     interface ExceptionDetails {
-
+        exceptionId:number,
+        text:string,
+        lineNumber:number,
+        columnNumber:number,
+        scriptId:ScriptID,
+        url:string,
+        stackTrace:StackTrace,
+        exception:RemoteObject,
+        executionContextId:ExecutionContextID
     }
     interface GetPropertiesResult {}
     namespace Runtime {

@@ -2,6 +2,7 @@
 import * as URL from 'url';
 import * as srcset from 'srcset';
 import * as _ from 'underscore';
+import {DOMState} from './state/dom_state';
 
 enum Strategy {
 	TRANSFORM,
@@ -106,7 +107,7 @@ function makeBlank():string {
 	return '';
 }
 
-function transformSRCSet(attrVal, baseURL, node, shadow):string {
+function transformSRCSet(attrVal:string, baseURL:string, node:DOMState, shadow):string {
 	const parsed = srcset.parse(attrVal);
 	_.each(parsed, function(p:any) {
 		p.url = transformURL(p.url, baseURL, node, shadow);
@@ -114,7 +115,7 @@ function transformSRCSet(attrVal, baseURL, node, shadow):string {
 	return srcset.stringify(parsed);
 }
 
-function transformURL(url, baseURL, node, shadow):string {
+function transformURL(url:string, baseURL:string, node:DOMState, shadow):string {
     const absoluteURL:string = URL.resolve(baseURL, url);
     const relativeURL:string = URL.format({
                 pathname: 'r',
