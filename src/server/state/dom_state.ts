@@ -43,7 +43,7 @@ export class DOMState extends EventEmitter {
 		return getElementValue(this.chrome, this.getNodeId());
 	};
 	private getFullString():Promise<string> {
-		return new Promise((resolve, reject) => {
+		return new Promise<string>((resolve, reject) => {
 			const nodeType = this.getNodeType();
 			const nodeValue = this.getNodeValue();
 
@@ -60,7 +60,9 @@ export class DOMState extends EventEmitter {
 			} else {
 				resolve(nodeValue);
 			}
-		});
+		}).catch((err) => {
+            throw(err);
+        });
 	};
 	private addValueListeners() {
 		const tagName:string = this.getTagName().toLowerCase();
@@ -186,7 +188,9 @@ export class DOMState extends EventEmitter {
 						resolve(inlineStyle);
 					}
 				});
-			});
+			}).catch((err) => {
+                throw(err);
+            });
 		}
 
 		// 	return new Promise(_.bind(function(resolve, reject) {

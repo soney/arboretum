@@ -73,6 +73,8 @@ class DOMState extends events_1.EventEmitter {
             else {
                 resolve(nodeValue);
             }
+        }).catch((err) => {
+            throw (err);
         });
     }
     ;
@@ -205,6 +207,8 @@ class DOMState extends events_1.EventEmitter {
                         resolve(inlineStyle);
                     }
                 });
+            }).catch((err) => {
+                throw (err);
             });
         }
         // 	return new Promise(_.bind(function(resolve, reject) {
