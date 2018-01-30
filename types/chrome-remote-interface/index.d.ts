@@ -184,6 +184,7 @@ declare namespace CRI {
         frameNavigated:(callback:(FrameNavigatedEvent)=>void) => void;
         navigate:(options:NavigateOptions, callback:(err:any, result:Page.NavigateResult)=>any) => void;
         getFrameTree:(options:GetFrameTreeOptions, callback:(err:any, result:FrameTree)=>void)=>void;
+        getResourceContent:(params:GetResourceContentParams, callback:(err:any, data:GetResourceContentResponse)=>any) => void
     }
     interface ListTabsOptions {
         host:string,
@@ -360,11 +361,29 @@ declare namespace CRI {
         enable:()=>void,
         requestWillBeSent:(callback:(event:RequestWillBeSentEvent)=>void) => void,
         responseReceived:(callback:(event:ResponseReceivedEvent)=>void) => void
+        getResponseBody:(params:GetResponseBodyParams, callback:(err:any, data:GetResponseBodyResponse)=>any) => void
     }
+    interface GetResponseBodyParams {
+        requestId:RequestID
+    }
+    interface GetResponseBodyResponse {
+        body:string,
+        base64Encoded:boolean
+    }
+    interface GetResourceContentParams {
+        frameId:FrameID,
+        url:string
+    }
+    interface GetResourceContentResponse {
+        content:string,
+        base64Encoded:boolean
+    }
+
     namespace Network {
         type LoaderID = string;
         type TimeSinceEpoch = number;
     }
+
     interface CSSProperty {
         name:string,
         value:string,

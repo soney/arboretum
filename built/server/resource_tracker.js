@@ -80,6 +80,8 @@ class ResourceTracker {
                     resolve(val);
                 }
             });
+        }).catch((err) => {
+            throw (err);
         });
     }
     getFrameId() { return this.frame.getFrameId(); }
