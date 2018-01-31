@@ -25,6 +25,13 @@ class DOMState extends events_1.EventEmitter {
         log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     }
     destroy() {
+        this.removeValueListeners();
+        this.children.forEach((child) => {
+            child.destroy();
+        });
+        this.emit('destroyed');
+        this.destroyed = true;
+        log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
     }
     getTab() { return this.getFrame().getTab(); }
     ;
@@ -74,6 +81,7 @@ class DOMState extends events_1.EventEmitter {
                 resolve(nodeValue);
             }
         }).catch((err) => {
+            log.error(err);
             throw (err);
         });
     }
@@ -90,7 +98,7 @@ class DOMState extends events_1.EventEmitter {
         else if (tagName === 'canvas') {
         }
     }
-    remoteValueListeners() {
+    removeValueListeners() {
         if (this.updateValueInterval) {
             clearInterval(this.updateValueInterval);
             this.updateValueInterval = null;
@@ -208,6 +216,7 @@ class DOMState extends events_1.EventEmitter {
                     }
                 });
             }).catch((err) => {
+                log.error(err);
                 throw (err);
             });
         }

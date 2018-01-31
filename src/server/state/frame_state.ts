@@ -75,14 +75,21 @@ export class FrameState {
 			while(this.queuedEvents.length > 0) {
 				var queuedEvent = this.queuedEvents.shift();
 				queuedEvent.promise.resolve(queuedEvent.event).catch((err) => {
-					console.error(err);
+					log.error(err);
 				});
 			}
 		}
 	};
 
-    public destroy() {
+    public destroy():void {
+		const root = this.getRoot();
+		if(root) {
+			root.destroy();
+		}
+		this.resourceTracker.destroy();
+		log.debug(`=== DESTROYED FRAME STATE ${this.getFrameId()} ====`);
     };
+
 	public getFrameId():CRI.FrameID {
 		return this.info.id;
 	}
@@ -219,7 +226,7 @@ export class FrameState {
 			return false;
 		}
 	};
-	private doHandleAttributeModified(event:CRI.AttributeModifiedEvent) {
+	private doHandleAttributeModified(event:CRI.AttributeModifiedEvent):boolean {
 		const {nodeId} = event;
 		const domState = this.getDOMStateWithID(nodeId);
 		if(domState) {
@@ -231,7 +238,7 @@ export class FrameState {
 			return false;
 		}
 	}
-	private doHandleAttributeRemoved(event:CRI.AttributeRemovedEvent) {
+	private doHandleAttributeRemoved(event:CRI.AttributeRemovedEvent):boolean {
 		const {nodeId} = event;
 		const domState = this.getDOMStateWithID(nodeId);
 		if(domState) {
@@ -281,6 +288,7 @@ export class FrameState {
 			return resolvablePromise.getPromise().then(() => {
 				return this.doHandleEvent(event, eventType);
 			}).catch((err) => {
+				log.error(err);
 				throw(err);
 			});
 		} else {

@@ -31,7 +31,7 @@ const log = getColoredLogger('red');
 
 const projectFileURLPath:string = fileUrl(join(resolve(__dirname, '..', '..'), 'browser'));
 export class BrowserState extends EventEmitter {
-	private tabs:Map<CRI.TabID, any> = new Map<CRI.TabID, TabState>();
+	private tabs:Map<CRI.TabID, TabState> = new Map<CRI.TabID, TabState>();
 	private options = { host: 'localhost', port: 9222 }
 	private intervalID:NodeJS.Timer;
 	constructor(private state:any, extraOptions?) {
@@ -66,13 +66,17 @@ export class BrowserState extends EventEmitter {
 				this.destroyTab(id);
 			});
 		}).catch((err) => {
+			log.error(err);
 			throw(err);
 		});
 	}
-	public destroy() {
+	public destroy():void {
 		clearInterval(this.intervalID);
+		this.tabs.forEach((tabState:TabState, tabId:CRI.TabID) => {
+			tabState.destroy();
+		});
 	};
-	private destroyTab(id:CRI.TabID) {
+	private destroyTab(id:CRI.TabID):void {
 		if(this.tabs.has(id)) {
 			const tab = this.getTab(id);
 			tab.destroy();
@@ -118,6 +122,7 @@ export class BrowserState extends EventEmitter {
 				else { resolve(_.filter(tabs, (tab)=>this.tabIsInspectable(tab))); }
 			});
 		}).catch((err) => {
+			log.error(err);
 			throw(err);
 		});
 	}

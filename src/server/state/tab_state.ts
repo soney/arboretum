@@ -30,6 +30,7 @@ export class TabState extends EventEmitter {
                 resolve(chrome);
             });
         }).catch((err) => {
+            log.error(err);
             throw(err);
         });
 
@@ -45,6 +46,7 @@ export class TabState extends EventEmitter {
             this.addNetworkListeners();
             this.addExecutionContextListeners();
         }).catch((err) => {
+            log.error(err);
             throw(err);
         });
     	log.debug(`=== CREATED TAB STATE ${this.getTabId()} ====`);
@@ -95,6 +97,7 @@ export class TabState extends EventEmitter {
             });
             this.requestChildNodes(root.nodeId);
 		}).catch((err) => {
+            log.error(err);
             throw(err);
         });
 	};
@@ -106,11 +109,11 @@ export class TabState extends EventEmitter {
             });
         });
     }
-	public requestChildNodes(nodeId:CRI.NodeID, depth:number=-1):Promise<null> {
-        return new Promise<null>((resolve, reject) => {
+	public requestChildNodes(nodeId:CRI.NodeID, depth:number=-1):Promise<CRI.RequestChildNodesResult> {
+        return new Promise<CRI.RequestChildNodesResult>((resolve, reject) => {
             this.chrome.DOM.requestChildNodes({nodeId, depth}, (err, val) => {
                 if(err) { reject(val); }
-                else { resolve(null); }
+                else { resolve(val); }
             });
         }).catch((err) => {
             throw(err);
@@ -158,6 +161,7 @@ export class TabState extends EventEmitter {
                 else { resolve(result.frameId); }
             })
         }).catch((err) => {
+            log.error(err);
             throw(err);
         });
     }
@@ -267,6 +271,7 @@ export class TabState extends EventEmitter {
                 else { resolve(value); }
             });
         }).catch((err) => {
+            log.error(err);
             throw(err);
         });
     };
@@ -277,6 +282,7 @@ export class TabState extends EventEmitter {
                 else { resolve(value.root); }
             });
         }).catch((err) => {
+            log.error(err);
             throw(err);
         });
     };
@@ -287,7 +293,8 @@ export class TabState extends EventEmitter {
         }
     }
     public destroy() {
-
+        this.chrome.close();
+		log.debug(`=== DESTROYED TAB STATE ${this.getTabId()} ====`);
     };
 }
 // var _ = require('underscore'),

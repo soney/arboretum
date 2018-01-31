@@ -60,11 +60,15 @@ class BrowserState extends events_1.EventEmitter {
                 this.destroyTab(id);
             });
         }).catch((err) => {
+            log.error(err);
             throw (err);
         });
     }
     destroy() {
         clearInterval(this.intervalID);
+        this.tabs.forEach((tabState, tabId) => {
+            tabState.destroy();
+        });
     }
     ;
     destroyTab(id) {
@@ -118,6 +122,7 @@ class BrowserState extends events_1.EventEmitter {
                 }
             });
         }).catch((err) => {
+            log.error(err);
             throw (err);
         });
     }

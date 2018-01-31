@@ -24,6 +24,13 @@ export class DOMState extends EventEmitter {
 		log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     }
     public destroy() {
+		this.removeValueListeners();
+		this.children.forEach((child:DOMState) => {
+			child.destroy();
+		});
+		this.emit('destroyed');
+		this.destroyed = true;
+		log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
     }
 	public getTab():TabState { return this.getFrame().getTab(); };
 	public getNodeId():CRI.NodeID { return this.node.nodeId; };
@@ -61,6 +68,7 @@ export class DOMState extends EventEmitter {
 				resolve(nodeValue);
 			}
 		}).catch((err) => {
+			log.error(err);
             throw(err);
         });
 	};
@@ -76,7 +84,7 @@ export class DOMState extends EventEmitter {
 
 		}
 	}
-	private remoteValueListeners() {
+	private removeValueListeners() {
 		if(this.updateValueInterval) {
 			clearInterval(this.updateValueInterval);
 			this.updateValueInterval = null;
@@ -189,6 +197,7 @@ export class DOMState extends EventEmitter {
 					}
 				});
 			}).catch((err) => {
+				log.error(err);
                 throw(err);
             });
 		}

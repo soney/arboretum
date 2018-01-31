@@ -72,13 +72,19 @@ class FrameState {
             while (this.queuedEvents.length > 0) {
                 var queuedEvent = this.queuedEvents.shift();
                 queuedEvent.promise.resolve(queuedEvent.event).catch((err) => {
-                    console.error(err);
+                    log.error(err);
                 });
             }
         }
     }
     ;
     destroy() {
+        const root = this.getRoot();
+        if (root) {
+            root.destroy();
+        }
+        this.resourceTracker.destroy();
+        log.debug(`=== DESTROYED FRAME STATE ${this.getFrameId()} ====`);
     }
     ;
     getFrameId() {
@@ -290,6 +296,7 @@ class FrameState {
             return resolvablePromise.getPromise().then(() => {
                 return this.doHandleEvent(event, eventType);
             }).catch((err) => {
+                log.error(err);
                 throw (err);
             });
         }

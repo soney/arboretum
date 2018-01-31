@@ -210,6 +210,7 @@ declare namespace CRI {
         Network:Network,
         CSS:CSS,
         send:(command:string, params:any, callback:(err:any, value:any)=>void)=>void
+        close:()=>void;
     }
     interface GetDocumentOptions {
         depth?:number,

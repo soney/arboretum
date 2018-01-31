@@ -84,6 +84,7 @@ class TabState extends events_1.EventEmitter {
                 resolve(chrome);
             });
         }).catch((err) => {
+            log.error(err);
             throw (err);
         });
         this.chromePromise.then(() => {
@@ -98,6 +99,7 @@ class TabState extends events_1.EventEmitter {
             this.addNetworkListeners();
             this.addExecutionContextListeners();
         }).catch((err) => {
+            log.error(err);
             throw (err);
         });
         log.debug(`=== CREATED TAB STATE ${this.getTabId()} ====`);
@@ -144,6 +146,7 @@ class TabState extends events_1.EventEmitter {
             });
             this.requestChildNodes(root.nodeId);
         }).catch((err) => {
+            log.error(err);
             throw (err);
         });
     }
@@ -163,7 +166,7 @@ class TabState extends events_1.EventEmitter {
                     reject(val);
                 }
                 else {
-                    resolve(null);
+                    resolve(val);
                 }
             });
         }).catch((err) => {
@@ -219,6 +222,7 @@ class TabState extends events_1.EventEmitter {
                 }
             });
         }).catch((err) => {
+            log.error(err);
             throw (err);
         });
     }
@@ -273,6 +277,7 @@ class TabState extends events_1.EventEmitter {
                 }
             });
         }).catch((err) => {
+            log.error(err);
             throw (err);
         });
     }
@@ -288,6 +293,7 @@ class TabState extends events_1.EventEmitter {
                 }
             });
         }).catch((err) => {
+            log.error(err);
             throw (err);
         });
     }
@@ -299,6 +305,8 @@ class TabState extends events_1.EventEmitter {
         }
     }
     destroy() {
+        this.chrome.close();
+        log.debug(`=== DESTROYED TAB STATE ${this.getTabId()} ====`);
     }
     ;
 }
