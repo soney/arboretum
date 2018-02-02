@@ -106,8 +106,8 @@ class FrameState {
             oldRoot.destroy();
         }
         if (rootNode) {
-            log.info(`Set root of frame ${this.getFrameId()} to ${rootState.getNodeId()}`);
             const rootState = this.getOrCreateDOMState(rootNode);
+            log.info(`Set root of frame ${this.getFrameId()} to ${rootState.getNodeId()}`);
             this.root = rootState;
             this.setChildrenRecursive(rootState, rootNode.children);
             this.markRefreshingRoot(false);

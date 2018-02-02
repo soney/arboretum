@@ -3,6 +3,7 @@
 var $ = require('jquery'),
     _ = require('underscore');
 require('jquery-ui');
+var path = require('path');
 
 class Arboretum {
     constructor() {
@@ -16,7 +17,9 @@ class Arboretum {
         this.sidebar = new Sidebar();
 
         this.listen();
-        this.tabs.createNew('file:///Users/soney/code/arboretum/test/simple.html', true);
+        let testPath = __dirname.split(path.sep).concat(['..', '..', 'test', 'simple.html'])
+        this.tabs.createNew(`file://${__dirname.split(path.sep).join('/')}`);
+        // this.tabs.createNew('file:///Users/soney/code/arboretum/test/simple.html', true);
     }
 
     listen() {
