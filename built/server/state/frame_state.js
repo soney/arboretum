@@ -7,10 +7,11 @@ const logging_1 = require("../../utils/logging");
 const _ = require("underscore");
 const log = logging_1.getColoredLogger('green');
 class FrameState {
-    constructor(chrome, info, tab, resources = []) {
+    constructor(chrome, info, tab, parentFrame = null, resources = []) {
         this.chrome = chrome;
         this.info = info;
         this.tab = tab;
+        this.parentFrame = parentFrame;
         this.setMainFrameExecuted = false;
         this.refreshingRoot = false;
         this.domParent = null;
@@ -24,6 +25,12 @@ class FrameState {
         log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
     }
     ;
+    getParentFrame() {
+        return this.parentFrame;
+    }
+    setDOMParent(parent) {
+        this.domParent = parent;
+    }
     getTab() {
         return this.tab;
     }
@@ -284,28 +291,53 @@ class FrameState {
         }
     }
     ;
+    getExecutionContext() {
+        return this.executionContext;
+    }
+    ;
+    getFrameStack() {
+        const rv = [];
+        let frameState = this;
+        while (frameState) {
+            rv.unshift(frameState);
+            frameState = frameState.getParentFrame();
+        }
+        return rv;
+    }
     handleFrameEvent(event, eventType) {
-        if (this.isRefreshingRoot()) {
-            const resolvablePromise = new ResolvablePromise();
-            log.debug(`(queue) ${eventType}`);
-            this.queuedEvents.push({
-                event: event,
-                type: eventType,
-                promise: resolvablePromise
-            });
-            return resolvablePromise.getPromise().then(() => {
-                return this.doHandleEvent(event, eventType);
-            }).catch((err) => {
-                log.error(err);
-                throw (err);
-            });
-        }
-        else {
-            return Promise.resolve(this.doHandleEvent(event, eventType));
-        }
+        // if(this.isRefreshingRoot()) {
+        // 	const resolvablePromise = new ResolvablePromise<any>();
+        // 	log.debug(`(queue) ${eventType}`);
+        // 	this.queuedEvents.push({
+        // 		event: event,
+        // 		type: eventType,
+        // 		promise: resolvablePromise
+        // 	});
+        // 	return resolvablePromise.getPromise().then(() => {
+        // 		return this.doHandleEvent(event, eventType);
+        // 	}).catch((err) => {
+        // 		log.error(err);
+        // 		throw(err);
+        // 	});
+        // } else {
+        return Promise.resolve(this.doHandleEvent(event, eventType));
+        // }
     }
     requestResource(url) {
         return this.resourceTracker.getResource(url);
+    }
+    print(level = 0) {
+        this.getRoot().print(level);
+    }
+    querySelectorAll(selector) {
+        if (this.root) {
+            return this.root.querySelectorAll(selector);
+        }
+        else {
+            return new Promise(function (resolve, reject) {
+                reject(new Error('Could not find root'));
+            });
+        }
     }
 }
 exports.FrameState = FrameState;
@@ -802,7 +834,6 @@ exports.FrameState = FrameState;
 // 				reject(new Error('Could not find root'));
 // 			});
 // 		}
-//
 // 	};
 // }(FrameState));
 //

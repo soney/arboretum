@@ -26,12 +26,18 @@ export class FrameState {
 	private eventManager:EventManager;
 	public resourceTracker:ResourceTracker;
 
-    constructor(private chrome, private info:CRI.Frame, private tab:TabState, resources:Array<CRI.FrameResource>=[]) {
+    constructor(private chrome, private info:CRI.Frame, private tab:TabState, private parentFrame:FrameState=null, resources:Array<CRI.FrameResource>=[]) {
 		this.eventManager = new EventManager(this.chrome, this);
 		this.resourceTracker = new ResourceTracker(chrome, this, resources);
 		this.refreshRoot();
 		log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
 	};
+	public getParentFrame():FrameState {
+		return this.parentFrame;
+	}
+	public setDOMParent(parent:DOMState):void {
+		this.domParent = parent;
+	}
 	public getTab():TabState {
 		return this.tab;
 	}
@@ -275,29 +281,68 @@ export class FrameState {
 				throw new Error(`Could not find event type ${eventType}`);
 		}
 	};
+	public getExecutionContext():CRI.ExecutionContextDescription {
+		return this.executionContext;
+	};
+
+	public getFrameStack():Array<FrameState> {
+		const rv:Array<FrameState> = [];
+		let frameState:FrameState = this;
+		while(frameState) {
+			rv.unshift(frameState);
+			frameState = frameState.getParentFrame();
+		}
+		return rv;
+	}
 
 	public handleFrameEvent(event:any, eventType:string):Promise<boolean> {
-		if(this.isRefreshingRoot()) {
-			const resolvablePromise = new ResolvablePromise<any>();
-			log.debug(`(queue) ${eventType}`);
-			this.queuedEvents.push({
-				event: event,
-				type: eventType,
-				promise: resolvablePromise
-			});
-			return resolvablePromise.getPromise().then(() => {
-				return this.doHandleEvent(event, eventType);
-			}).catch((err) => {
-				log.error(err);
-				throw(err);
-			});
-		} else {
+		// if(this.isRefreshingRoot()) {
+		// 	const resolvablePromise = new ResolvablePromise<any>();
+		// 	log.debug(`(queue) ${eventType}`);
+		// 	this.queuedEvents.push({
+		// 		event: event,
+		// 		type: eventType,
+		// 		promise: resolvablePromise
+		// 	});
+		// 	return resolvablePromise.getPromise().then(() => {
+		// 		return this.doHandleEvent(event, eventType);
+		// 	}).catch((err) => {
+		// 		log.error(err);
+		// 		throw(err);
+		// 	});
+		// } else {
 			return Promise.resolve(this.doHandleEvent(event, eventType));
-		}
+		// }
 	}
 	public requestResource(url:string):Promise<any> {
 		return this.resourceTracker.getResource(url);
 	}
+	public print(level:number=0):void {
+		this.getRoot().print(level);
+	}
+	public querySelectorAll(selector:string):Promise<Array<CRI.NodeID>> {
+		if(this.root) {
+			return this.root.querySelectorAll(selector)
+		} else {
+			return new Promise(function(resolve, reject) {
+				reject(new Error('Could not find root'));
+			});
+		}
+	}
+// 	proto.querySelectorAll = function() {
+// 		var root = this.getRoot();
+// 		if(root) {
+// 			return root.querySelectorAll.apply(root, arguments);
+// 		} else {
+// 			return new Promise(function(resolve, reject) {
+// 				reject(new Error('Could not find root'));
+// 			});
+// 		}
+// 	};
+
+// 	proto.print = function(level) {
+// 		this.getRoot().print(level);
+// 	};
 // 	proto.refreshRoot = function() {
 // 		var page = this.getPage();
 // 		this._markRefreshingRoot(true);
@@ -844,7 +889,6 @@ export class FrameState {
 // 				reject(new Error('Could not find root'));
 // 			});
 // 		}
-//
 // 	};
 // }(FrameState));
 //

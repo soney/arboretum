@@ -54,9 +54,23 @@ export class TabState extends EventEmitter {
     public getMainFrame():FrameState {
         return this.rootFrame;
     }
+    public evaluate(expression:string, frameId:CRI.FrameID=null):Promise<CRI.EvaluateResult> {
+        const frame:FrameState = frameId ? this.getFrame(frameId) : this.getMainFrame();
+        const executionContext:CRI.ExecutionContextDescription = frame.getExecutionContext();
+
+        return new Promise<CRI.EvaluateResult>((resolve, reject) => {
+            this.chrome.Runtime.evaluate({
+                contextId:executionContext.id,
+                expression: expression
+            }, (err, result) => {
+                if(err) { reject(result); }
+                else { resolve(result); }
+            });
+        });
+    }
     private createFrameState(info:CRI.Frame, parentFrame:FrameState=null, childFrames:Array<CRI.FrameTree>=[], resources:Array<CRI.FrameResource>=[]):FrameState {
         const {id, parentId} = info;
-        const frameState:FrameState = new FrameState(this.chrome, info, this, resources);
+        const frameState:FrameState = new FrameState(this.chrome, info, this, parentFrame, resources);
         this.frames.set(id, frameState);
         if(!parentId) {
             this.setMainFrame(frameState);
@@ -144,15 +158,20 @@ export class TabState extends EventEmitter {
                 }
             });
         }
+        log.info(`Set main frame to ${frame.getFrameId()}`);
         this.rootFrame = frame;
         frame.markSetMainFrameExecuted(true);
         return this.getDocument().then((root:CRI.Node) => {
             this.rootFrame.setRoot(root);
             this.emit('mainFrameChanged');
+        }).catch((err) => {
+            log.error(err);
+            throw(err);
         });
     }
     public navigate(url:string):Promise<CRI.FrameID> {
         const parsedURL = parse(url);
+        console.log(parsedURL);
         if(!parsedURL.protocol) { parsedURL.protocol = 'http'; }
         url = format(parsedURL);
         return new Promise<CRI.FrameID>((resolve, reject) => {
@@ -166,13 +185,6 @@ export class TabState extends EventEmitter {
         });
     }
 
-    private onFrameAttached = (frameInfo:CRI.FrameAttachedEvent):void => {
-		const {frameId, parentFrameId} = frameInfo;
-        this.createFrameState({
-            id: frameId,
-            parentId:parentFrameId
-        })
-	};
 	private updateFrameOnEvents(frameState:FrameState):void {
         const frameId = frameState.getFrameId();
         const pendingFrameEvents = this.pendingFrameEvents.get(frameId);
@@ -189,6 +201,13 @@ export class TabState extends EventEmitter {
             });
             this.pendingFrameEvents.delete(frameId);
 		}
+	};
+    private onFrameAttached = (frameInfo:CRI.FrameAttachedEvent):void => {
+		const {frameId, parentFrameId} = frameInfo;
+        this.createFrameState({
+            id: frameId,
+            parentId:parentFrameId
+        });
 	};
     private onFrameNavigated = (frameInfo:CRI.FrameNavigatedEvent):void => {
         const {frame} = frameInfo;
@@ -250,7 +269,7 @@ export class TabState extends EventEmitter {
             this.pendingFrameEvents.set(frameId, [eventInfo])
         }
     }
-    private getFrame(id:CRI.FrameID):FrameState { return this.frames.get(id); }
+    public getFrame(id:CRI.FrameID):FrameState { return this.frames.get(id); }
     private hasFrame(id:CRI.FrameID):boolean { return this.frames.has(id); }
     private getFrameTree():Promise<CRI.FrameTree> {
         throw new Error("Not supported yet")
@@ -292,6 +311,9 @@ export class TabState extends EventEmitter {
             frameState.destroy();
         }
     }
+    public print():void {
+        this.rootFrame.print();
+    };
     public destroy() {
         this.chrome.close();
 		log.debug(`=== DESTROYED TAB STATE ${this.getTabId()} ====`);

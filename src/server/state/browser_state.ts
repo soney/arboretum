@@ -133,6 +133,11 @@ export class BrowserState extends EventEmitter {
 	private getTab(id:CRI.TabID):TabState {
 		return this.tabs.get(id);
 	}
+	public print():void {
+		this.tabs.forEach((tabState:TabState) => {
+			tabState.print();
+		});
+	}
 };
 
 // var BrowserState = function(options) {

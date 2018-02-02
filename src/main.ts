@@ -9,6 +9,7 @@ import * as ShareDB from 'sharedb';
 import * as WebSocket from 'ws';
 import * as WebSocketJSONStream from 'websocket-json-stream';
 import {BrowserState} from './server/state/browser_state';
+import * as keypress from 'keypress';
 // const ChatServer = require('./server/chat');
 // const BrowserState = require('./server/state/browser_state');
 // process.traceProcessWarnings = true;
@@ -117,11 +118,43 @@ expressApp.all('/', (req, res, next) => {
 			.pipe(res);
 	});
 });
-// process.stdin.setRawMode(true);
-process.stdin.on('data', (event) => {
-	const key:string = String(process.stdin.read());
-	console.log(key);
+
+keypress(process.stdin);
+
+process.stdin.on('keypress', (ch, key) => {
+	const {name, ctrl} = key;
+	if (ctrl && name === 'c') {
+		process.stdin.pause();
+		process.stdin.setRawMode(false);
+		process.exit();
+	} else if(name === 'd') {
+		browserState.print();
+	} else if(name === 'q') {
+		process.stdin.pause();
+		process.stdin.setRawMode(false);
+		process.exit();
+	}
 });
+process.on('exit', (code) => {
+	process.stdin.pause();
+	process.stdin.setRawMode(false);
+});
+process.stdin.setRawMode(true);
+process.stdin.resume();
+
+// const stdin = process.openStdin();
+// require('tty').setRawMode(true);
+// process.stdin.setRawMode(true);
+//
+// process.stdin.on('keypress', function (chunk, key) {
+// 	process.stdout.write('Get Chunk: ' + chunk + '\n');
+// 	if (key && key.ctrl && key.name == 'c') process.exit();
+// });
+// process.stdin.setRawMode(true);
+// process.stdin.on('readable', (event) => {
+// 	const key:string = String(process.stdin.read());
+// 	console.log(key);
+// });
 
 // var repl = require('repl'),
 // 	child_process = require('child_process'),

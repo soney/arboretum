@@ -15,22 +15,38 @@ export class DOMState extends EventEmitter {
     private inlineStyle:string = '';
     private children:Array<any> = [];
 	private updateValueInterval:NodeJS.Timer = null;
+	private childFrame:FrameState = null;
 
     constructor(private chrome:CRI.Chrome, private node:CRI.Node, private frame:FrameState, private parent:DOMState) {
 		super();
+		if(node.frameId) {
+			const frameRoot:CRI.Node = node.contentDocument;
+			const tab:TabState = this.getTab();
+			const frame:FrameState = tab.getFrame(node.frameId);
+
+			frame.setRoot(frameRoot);
+			frame.setDOMParent(this);
+
+			this.childFrame = frame;
+		}
+
 		this.getFullString().then((fullNodeValue:string) => {
 			this.setNodeValue(fullNodeValue);
+		}).catch((err) => {
+			if(err.code && err.code === -32000) {
+				log.error(`Could not find node ${this.getNodeId()}`)
+			}
 		});
-		log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
+		// log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     }
-    public destroy() {
+    public destroy():void {
 		this.removeValueListeners();
 		this.children.forEach((child:DOMState) => {
 			child.destroy();
 		});
 		this.emit('destroyed');
 		this.destroyed = true;
-		log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
+		// log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
     }
 	public getTab():TabState { return this.getFrame().getTab(); };
 	public getNodeId():CRI.NodeID { return this.node.nodeId; };
@@ -253,7 +269,7 @@ export class DOMState extends EventEmitter {
     	return frame.getURL();
     };
 
-	public stringifySelf():string {
+	private stringifySelf():string {
 		const MAX_TEXT_LENGTH:number = 50;
 		const type = this.getNodeType();
 		const id = this.getNodeId();
@@ -329,6 +345,60 @@ export class DOMState extends EventEmitter {
 		}
 		return rv;
 	};
+	public stringify(level:number=0):string {
+		let result:string = `${'    '.repeat(level)}${this.stringifySelf()}`;
+		if(this.childFrame) {
+			result += `(${this.childFrame.getFrameId()})`;
+		}
+		result += '\n';
+
+		this.children.forEach((child:DOMState) => {
+			result += child.stringify(level + 1);
+		});
+		return result;
+	}
+	public print(level:number=0):void {
+		console.log(this.stringify(level));
+	}
+	public getFrameStack() {
+		return this.frame.getFrameStack();
+	}
+	public querySelectorAll(selector:string):Promise<Array<CRI.NodeID>> {
+		return new Promise<Array<CRI.NodeID>>((resolve, reject) => {
+			this.chrome.DOM.querySelectorAll({
+				nodeId: this.getNodeId(),
+				selector: selector
+			}, (err, value) => {
+				if(err) { reject(value); }
+				else { resolve(value.nodeIds); }
+			})
+		});
+	}
+// 	proto.print = function(level) {
+// 		var str = '';
+// 		if(!level) { level = 0; }
+// 		for(var i = 0; i<level; i++) {
+// 			str += '  ';
+// 		}
+//         var node = this._getNode(),
+// 		type = node.nodeType,
+// 		id = node.nodeId;
+// 		str += this._stringifySelf();
+// 		var childFrame = this.getChildFrame();
+//
+// 		if(childFrame) {
+// 			str += ' ('+childFrame.getFrameId()+')';
+// 		}
+// 		console.log(str);
+// 		_.each(this.getChildren(), function(child) {
+// 			child.print(level+1);
+// 		});
+// 		/*if(childFrame) {
+// 			childFrame.print(level+1);
+// 		}*/
+//
+// 		return this;
+// 	};
 // 	proto._requestInlineStyle = function() {
 // 		var node = this._getNode(),
 // 			type = node.nodeType;

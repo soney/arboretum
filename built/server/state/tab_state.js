@@ -108,9 +108,26 @@ class TabState extends events_1.EventEmitter {
     getMainFrame() {
         return this.rootFrame;
     }
+    evaluate(expression, frameId = null) {
+        const frame = frameId ? this.getFrame(frameId) : this.getMainFrame();
+        const executionContext = frame.getExecutionContext();
+        return new Promise((resolve, reject) => {
+            this.chrome.Runtime.evaluate({
+                contextId: executionContext.id,
+                expression: expression
+            }, (err, result) => {
+                if (err) {
+                    reject(result);
+                }
+                else {
+                    resolve(result);
+                }
+            });
+        });
+    }
     createFrameState(info, parentFrame = null, childFrames = [], resources = []) {
         const { id, parentId } = info;
-        const frameState = new frame_state_1.FrameState(this.chrome, info, this, resources);
+        const frameState = new frame_state_1.FrameState(this.chrome, info, this, parentFrame, resources);
         this.frames.set(id, frameState);
         if (!parentId) {
             this.setMainFrame(frameState);
@@ -199,15 +216,20 @@ class TabState extends events_1.EventEmitter {
                 }
             });
         }
+        log.info(`Set main frame to ${frame.getFrameId()}`);
         this.rootFrame = frame;
         frame.markSetMainFrameExecuted(true);
         return this.getDocument().then((root) => {
             this.rootFrame.setRoot(root);
             this.emit('mainFrameChanged');
+        }).catch((err) => {
+            log.error(err);
+            throw (err);
         });
     }
     navigate(url) {
         const parsedURL = url_1.parse(url);
+        console.log(parsedURL);
         if (!parsedURL.protocol) {
             parsedURL.protocol = 'http';
         }
@@ -304,6 +326,10 @@ class TabState extends events_1.EventEmitter {
             frameState.destroy();
         }
     }
+    print() {
+        this.rootFrame.print();
+    }
+    ;
     destroy() {
         this.chrome.close();
         log.debug(`=== DESTROYED TAB STATE ${this.getTabId()} ====`);

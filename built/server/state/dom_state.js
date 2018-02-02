@@ -19,10 +19,23 @@ class DOMState extends events_1.EventEmitter {
         this.inlineStyle = '';
         this.children = [];
         this.updateValueInterval = null;
+        this.childFrame = null;
+        if (node.frameId) {
+            const frameRoot = node.contentDocument;
+            const tab = this.getTab();
+            const frame = tab.getFrame(node.frameId);
+            frame.setRoot(frameRoot);
+            frame.setDOMParent(this);
+            this.childFrame = frame;
+        }
         this.getFullString().then((fullNodeValue) => {
             this.setNodeValue(fullNodeValue);
+        }).catch((err) => {
+            if (err.code && err.code === -32000) {
+                log.error(`Could not find node ${this.getNodeId()}`);
+            }
         });
-        log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
+        // log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     }
     destroy() {
         this.removeValueListeners();
@@ -31,7 +44,7 @@ class DOMState extends events_1.EventEmitter {
         });
         this.emit('destroyed');
         this.destroyed = true;
-        log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
+        // log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
     }
     getTab() { return this.getFrame().getTab(); }
     ;
@@ -353,6 +366,38 @@ class DOMState extends events_1.EventEmitter {
         return rv;
     }
     ;
+    stringify(level = 0) {
+        let result = `${'    '.repeat(level)}${this.stringifySelf()}`;
+        if (this.childFrame) {
+            result += `(${this.childFrame.getFrameId()})`;
+        }
+        result += '\n';
+        this.children.forEach((child) => {
+            result += child.stringify(level + 1);
+        });
+        return result;
+    }
+    print(level = 0) {
+        console.log(this.stringify(level));
+    }
+    getFrameStack() {
+        return this.frame.getFrameStack();
+    }
+    querySelectorAll(selector) {
+        return new Promise((resolve, reject) => {
+            this.chrome.DOM.querySelectorAll({
+                nodeId: this.getNodeId(),
+                selector: selector
+            }, (err, value) => {
+                if (err) {
+                    reject(value);
+                }
+                else {
+                    resolve(value.nodeIds);
+                }
+            });
+        });
+    }
 }
 DOMState.attributesToIgnore = ['onload', 'onclick', 'onmouseover', 'onmouseout',
     'onmouseenter', 'onmouseleave', 'action', 'oncontextmenu', 'onfocus'];

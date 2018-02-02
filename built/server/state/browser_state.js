@@ -134,6 +134,11 @@ class BrowserState extends events_1.EventEmitter {
     getTab(id) {
         return this.tabs.get(id);
     }
+    print() {
+        this.tabs.forEach((tabState) => {
+            tabState.print();
+        });
+    }
 }
 exports.BrowserState = BrowserState;
 ;

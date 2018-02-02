@@ -240,10 +240,18 @@ declare namespace CRI {
     interface GetOuterHTMLResult {
         outerHTML:string
     }
+    interface QuerySelectorAllOptions {
+        nodeId:NodeID,
+        selector:string
+    }
+    interface QuerySelectorAllResult {
+        nodeIds:Array<NodeID>
+    }
     interface DOM {
         getDocument:(params:GetDocumentOptions, callback:(err:any, value:GetDocumentResult)=>void) => void
         requestChildNodes:(params:RequestChildNodesOptions, callback:(err:any, value:RequestChildNodesResult)=>void) => void
         getOuterHTML:(params:GetOuterHTMLOptions, callback:(err:any, value:GetOuterHTMLResult)=>void) => void
+        querySelectorAll:(params:QuerySelectorAllOptions, callback:(err:any, value:QuerySelectorAllResult)=>void) => void
     }
     interface FrameResourceTree {
         frameTree:FrameTree
@@ -296,10 +304,26 @@ declare namespace CRI {
         distributedNodes?:Array<BackendNode>,
         isSVG?:boolean
     }
+    interface EvaluateParameters {
+        expression:string,
+        objectGroup?:string,
+        includeCommandLineAPI?:boolean,
+        silent?:boolean,
+        contextId:ExecutionContextID,
+        returnByValue?:boolean,
+        generatePreview?:boolean,
+        userGesture?:boolean,
+        awaitPromise?:boolean
+    }
+    interface EvaluateResult {
+        result:RemoteObject,
+        exceptionDetails:ExceptionDetails
+    }
     interface Runtime {
         enable:()=>void,
         disable:()=>void,
         executionContextCreated:(callback:(event:ExecutionContextCreatedEvent)=>void) => void,
+        evaluate:(params:EvaluateParameters, callback:(err:any, result:EvaluateResult)=>void) => void,
     }
     interface Initiator {
         type:string,
