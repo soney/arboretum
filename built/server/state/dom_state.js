@@ -35,7 +35,7 @@ class DOMState extends events_1.EventEmitter {
                 log.error(`Could not find node ${this.getNodeId()}`);
             }
         });
-        // log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
+        log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     }
     destroy() {
         this.removeValueListeners();
@@ -44,7 +44,7 @@ class DOMState extends events_1.EventEmitter {
         });
         this.emit('destroyed');
         this.destroyed = true;
-        // log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
+        log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
     }
     getTab() { return this.getFrame().getTab(); }
     ;
