@@ -17,9 +17,7 @@ class Arboretum {
         this.sidebar = new Sidebar();
 
         this.listen();
-        let testPath = __dirname.split(path.sep).concat(['..', '..', 'test', 'simple.html'])
-        this.tabs.createNew(`file://${__dirname.split(path.sep).join('/')}`);
-        // this.tabs.createNew('file:///Users/soney/code/arboretum/test/simple.html', true);
+        this.tabs.createNew(`file://${path.resolve('test/index.html')}`, true);
     }
 
     listen() {

@@ -80,34 +80,6 @@ class BrowserState extends events_1.EventEmitter {
         }
     }
     ;
-    // private refreshTabs() {
-    // 	return this._getTabs().then(_.bind(function(tabs) {
-    // 		var existingTabs = _.keys(this._tabs),
-    // 			wasClosed = {};
-    //
-    // 		_.each(existingTabs, function(tab) {
-    // 			wasClosed[tab] = tab;
-    // 		});
-    // 		_.each(tabs, function(tabInfo) {
-    // 			var id = tabInfo.id;
-    // 			if(wasClosed[id]) {
-    // 				wasClosed[id] = false;
-    // 				var storedTabInfo = this._tabs[id].tabInfo;
-    // 				if(tabInfo.title !== storedTabInfo.title || tabInfo.url !== storedTabInfo.url) {
-    // 					_.extend(storedTabInfo, tabInfo);
-    // 					this.emit('tabUpdated', {
-    // 						id: id
-    // 					});
-    // 				}
-    // 			} else {
-    // 				this._initializeTab(tabInfo);
-    // 			}
-    // 		}, this);
-    // 		_.each(wasClosed, function(tabId) {
-    // 			this._destroyTab({id: tabId});
-    // 		}, this);
-    // 	}, this));
-    // }
     tabIsInspectable(tab) {
         return tab.type === 'page' && tab.title !== 'arboretumInternal' && tab.url !== 'http://localhost:3000/o' && tab.url !== 'http://localhost:3000' && tab.url.indexOf('chrome-devtools://') !== 0 && tab.url.indexOf(projectFileURLPath) !== 0;
     }
@@ -126,6 +98,12 @@ class BrowserState extends events_1.EventEmitter {
             throw (err);
         });
     }
+    printTabSummaries() {
+        this.tabs.forEach((tabState) => {
+            tabState.printSummary();
+        });
+    }
+    ;
     requestResource(url, frameID, tabID) {
         const tabState = this.tabs.get(tabID);
         return tabState.requestResource(url, frameID);
@@ -134,11 +112,13 @@ class BrowserState extends events_1.EventEmitter {
     getTab(id) {
         return this.tabs.get(id);
     }
+    ;
     print() {
         this.tabs.forEach((tabState) => {
             tabState.print();
         });
     }
+    ;
 }
 exports.BrowserState = BrowserState;
 ;

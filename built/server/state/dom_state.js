@@ -6,6 +6,7 @@ const css_parser_1 = require("../css_parser");
 const events_1 = require("events");
 const node_code_1 = require("../../utils/node_code");
 const url_transform_1 = require("../url_transform");
+const _ = require("underscore");
 const log = logging_1.getColoredLogger('magenta');
 class DOMState extends events_1.EventEmitter {
     constructor(chrome, node, frame, parent) {
@@ -21,11 +22,11 @@ class DOMState extends events_1.EventEmitter {
         this.updateValueInterval = null;
         this.childFrame = null;
         if (node.frameId) {
-            const frameRoot = node.contentDocument;
+            // const frameRoot: CRI.Node = node.contentDocument;
             const tab = this.getTab();
             const frame = tab.getFrame(node.frameId);
-            frame.setRoot(frameRoot);
-            frame.setDOMParent(this);
+            // frame.setRoot(frameRoot);
+            // frame.setDOMParent(this);
             this.childFrame = frame;
         }
         this.getFullString().then((fullNodeValue) => {
@@ -346,11 +347,8 @@ class DOMState extends events_1.EventEmitter {
             const [attributeName, attributeValue] = [attributes[i], attributes[i + 1]];
             let newValue = attributeValue;
             if (this.shouldIncludeAttribute(attributeName)) {
-                newValue = '';
-            }
-            else {
-                if (tagTransform) {
-                    const attributeTransofrm = tagTransform(attributeName.toLowerCase());
+                if (_.has(tagTransform, attributeName.toLowerCase())) {
+                    const attributeTransofrm = tagTransform[attributeName.toLowerCase()];
                     const url = this.getBaseURL();
                     if (url) {
                         newValue = attributeTransofrm.transform(attributeValue, url, this, shadow);
@@ -359,6 +357,9 @@ class DOMState extends events_1.EventEmitter {
                         log.debug('No base URL');
                     }
                 }
+            }
+            else {
+                newValue = '';
             }
             rv.set(attributeName, newValue);
             i += 2;

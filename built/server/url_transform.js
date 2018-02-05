@@ -112,7 +112,7 @@ function transformURL(url, baseURL, node, shadow) {
     const relativeURL = URL.format({
         pathname: 'r',
         query: {
-            u: shadow.getUserId(),
+            // u: shadow.getUserId(),
             t: node.getTabId(),
             f: node.getFrameId(),
             l: absoluteURL

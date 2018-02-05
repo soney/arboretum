@@ -1,45 +1,45 @@
 import * as cri from 'chrome-remote-interface';
-import {FrameState} from './frame_state';
-import {getColoredLogger, level, setLevel} from '../../utils/logging';
+import { FrameState } from './frame_state';
+import { getColoredLogger, level, setLevel } from '../../utils/logging';
 import * as _ from 'underscore';
-import {EventEmitter} from 'events';
-import {parse, format} from 'url';
+import { EventEmitter } from 'events';
+import { parse, format } from 'url';
 
 const log = getColoredLogger('yellow');
 interface PendingFrameEvent {
-    frameId:CRI.FrameID,
-    event:any,
-    type:string
+    frameId: CRI.FrameID,
+    event: any,
+    type: string
 };
 
 export class TabState extends EventEmitter {
-    private tabID:CRI.TabID;
-    private rootFrame:FrameState;
-    private frames:Map<CRI.FrameID, FrameState> = new Map<CRI.FrameID, FrameState>();
-    private pendingFrameEvents:Map<CRI.FrameID, Array<PendingFrameEvent>> = new Map<CRI.FrameID, Array<PendingFrameEvent>>();
-    private chrome:CRI.Chrome;
-    private chromePromise:Promise<CRI.Chrome>;
-    constructor(private info:CRI.TabInfo) {
+    private tabID: CRI.TabID;
+    private rootFrame: FrameState;
+    private frames: Map<CRI.FrameID, FrameState> = new Map<CRI.FrameID, FrameState>();
+    private pendingFrameEvents: Map<CRI.FrameID, Array<PendingFrameEvent>> = new Map<CRI.FrameID, Array<PendingFrameEvent>>();
+    private chrome: CRI.Chrome;
+    private chromePromise: Promise<CRI.Chrome>;
+    constructor(private info: CRI.TabInfo) {
         super();
         const chromeEventEmitter = cri({
             chooseTab: this.info
         });
         this.chromePromise = new Promise<CRI.Chrome>((resolve, reject) => {
-            chromeEventEmitter.once('connect', (chrome:CRI.Chrome) => {
+            chromeEventEmitter.once('connect', (chrome: CRI.Chrome) => {
                 this.chrome = chrome;
                 resolve(chrome);
             });
         }).catch((err) => {
             log.error(err);
-            throw(err);
+            throw (err);
         });
 
         this.chromePromise.then(() => {
             //TODO: Convert getResourceTree call to getFrameTree when supported
-            this.getResourceTree().then((tree:CRI.FrameResourceTree) => {
-                const {frameTree} = tree;
-                const {frame, childFrames, resources} = frameTree;
-    			this.createFrameState(frame, null, childFrames, resources);
+            this.getResourceTree().then((tree: CRI.FrameResourceTree) => {
+                const { frameTree } = tree;
+                const { frame, childFrames, resources } = frameTree;
+                this.createFrameState(frame, null, childFrames, resources);
             });
             this.addFrameListeners();
             this.addDOMListeners();
@@ -47,42 +47,42 @@ export class TabState extends EventEmitter {
             this.addExecutionContextListeners();
         }).catch((err) => {
             log.error(err);
-            throw(err);
+            throw (err);
         });
-    	log.debug(`=== CREATED TAB STATE ${this.getTabId()} ====`);
+        log.debug(`=== CREATED TAB STATE ${this.getTabId()} ====`);
     };
-    public getMainFrame():FrameState {
+    public getRootFrame(): FrameState {
         return this.rootFrame;
     }
-    public evaluate(expression:string, frameId:CRI.FrameID=null):Promise<CRI.EvaluateResult> {
-        const frame:FrameState = frameId ? this.getFrame(frameId) : this.getMainFrame();
-        const executionContext:CRI.ExecutionContextDescription = frame.getExecutionContext();
+    public evaluate(expression: string, frameId: CRI.FrameID = null): Promise<CRI.EvaluateResult> {
+        const frame: FrameState = frameId ? this.getFrame(frameId) : this.getRootFrame();
+        const executionContext: CRI.ExecutionContextDescription = frame.getExecutionContext();
 
         return new Promise<CRI.EvaluateResult>((resolve, reject) => {
             this.chrome.Runtime.evaluate({
-                contextId:executionContext.id,
+                contextId: executionContext.id,
                 expression: expression
             }, (err, result) => {
-                if(err) { reject(result); }
+                if (err) { reject(result); }
                 else { resolve(result); }
             });
         });
     }
-    private createFrameState(info:CRI.Frame, parentFrame:FrameState=null, childFrames:Array<CRI.FrameTree>=[], resources:Array<CRI.FrameResource>=[]):FrameState {
-        const {id, parentId} = info;
-        const frameState:FrameState = new FrameState(this.chrome, info, this, parentFrame, resources);
+    private createFrameState(info: CRI.Frame, parentFrame: FrameState = null, childFrames: Array<CRI.FrameTree> = [], resources: Array<CRI.FrameResource> = []): FrameState {
+        const { id, parentId } = info;
+        const frameState: FrameState = new FrameState(this.chrome, info, this, parentFrame, resources);
         this.frames.set(id, frameState);
-        if(!parentId) {
-            this.setMainFrame(frameState);
+        if (!parentId) {
+            this.setRootFrame(frameState);
         }
         this.updateFrameOnEvents(frameState);
         childFrames.forEach((childFrame) => {
-            const {frame, childFrames, resources} = childFrame;
+            const { frame, childFrames, resources } = childFrame;
             this.createFrameState(frame, frameState, childFrames, resources);
         });
         return frameState;
     }
-    public getTabId():string { return this.info.id; }
+    public getTabId(): string { return this.info.id; }
     private addFrameListeners() {
         this.chrome.Page.enable();
         this.chrome.Page.frameAttached(this.onFrameAttached);
@@ -104,56 +104,51 @@ export class TabState extends EventEmitter {
         'setChildNodes', 'childNodeCountUpdated',
         'inlineStyleInvalidated', 'documentUpdated'
     ];
-	private addDOMListeners():void {
-        this.getDocument().then((root:CRI.Node) => {
-            TabState.DOMEventTypes.forEach((eventType:string) => {
-                this.forwardEventToFrames(eventType);
-            });
-            this.requestChildNodes(root.nodeId);
-		}).catch((err) => {
-            log.error(err);
-            throw(err);
+    private addDOMListeners(): void {
+        TabState.DOMEventTypes.forEach((eventType: string) => {
+            this.forwardEventToFrames(eventType);
         });
-	};
-    private forwardEventToFrames(eventType:string, namespace:string='DOM'):void {
-        this.chrome.on(`${namespace}.${eventType}`, (event:any) => {
-            const frameArray:Array<FrameState> = Array.from(this.frames.values());
-            const eventResultPromise:Array<Promise<boolean>> = frameArray.map((frameState:FrameState) => {
+    };
+    private forwardEventToFrames(eventType: string, namespace: string = 'DOM'): void {
+        this.chrome.on(`${namespace}.${eventType}`, (event: any) => {
+            const frameArray: Array<FrameState> = Array.from(this.frames.values());
+            log.info(eventType);
+            const eventResultPromise: Array<Promise<boolean>> = frameArray.map((frameState: FrameState) => {
                 return frameState.handleFrameEvent(event, eventType);
             });
         });
     }
-	public requestChildNodes(nodeId:CRI.NodeID, depth:number=-1):Promise<CRI.RequestChildNodesResult> {
+    public requestChildNodes(nodeId: CRI.NodeID, depth: number = -1): Promise<CRI.RequestChildNodesResult> {
         return new Promise<CRI.RequestChildNodesResult>((resolve, reject) => {
-            this.chrome.DOM.requestChildNodes({nodeId, depth}, (err, val) => {
-                if(err) { reject(val); }
+            this.chrome.DOM.requestChildNodes({ nodeId, depth }, (err, val) => {
+                if (err) { reject(val); }
                 else { resolve(val); }
             });
         }).catch((err) => {
-            throw(err);
+            throw (err);
         });
-	};
-    public requestResource(url:string, frameId:CRI.FrameID):Promise<any> {
+    };
+    public requestResource(url: string, frameId: CRI.FrameID): Promise<any> {
         const frame = this.getFrame(frameId);
         return frame.requestResource(url);
     }
-    public getTitle():string { return this.info.title; }
-    public getURL():string { return this.info.url; }
-    private setTitle(title:string):void {
+    public getTitle(): string { return this.info.title; }
+    public getURL(): string { return this.info.url; }
+    private setTitle(title: string): void {
         this.info.title = title;
     }
-    private setURL(url:string):void {
+    private setURL(url: string): void {
         this.info.url = url;
     }
     public updateInfo(tabInfo) {
-		const {title, url} = tabInfo;
+        const { title, url } = tabInfo;
         this.setTitle(title);
         this.setURL(url);
     }
-    private setMainFrame(frame:FrameState) {
-        if(this.rootFrame) {
-            this.frames.forEach((frame:FrameState, id:CRI.FrameID) => {
-                if(id !== frame.getFrameId()) {
+    private setRootFrame(frame: FrameState) {
+        if (this.rootFrame) {
+            this.frames.forEach((frame: FrameState, id: CRI.FrameID) => {
+                if (id !== frame.getFrameId()) {
                     this.destroyFrame(id);
                 }
             });
@@ -161,73 +156,75 @@ export class TabState extends EventEmitter {
         log.info(`Set main frame to ${frame.getFrameId()}`);
         this.rootFrame = frame;
         frame.markSetMainFrameExecuted(true);
-        return this.getDocument().then((root:CRI.Node) => {
+        this.emit('mainFrameChanged');
+        /*
+        return this.getDocument().then((root: CRI.Node) => {
             this.rootFrame.setRoot(root);
             this.emit('mainFrameChanged');
         }).catch((err) => {
             log.error(err);
-            throw(err);
+            throw (err);
         });
+        */
     }
-    public navigate(url:string):Promise<CRI.FrameID> {
+    public navigate(url: string): Promise<CRI.FrameID> {
         const parsedURL = parse(url);
-        console.log(parsedURL);
-        if(!parsedURL.protocol) { parsedURL.protocol = 'http'; }
+        if (!parsedURL.protocol) { parsedURL.protocol = 'http'; }
         url = format(parsedURL);
         return new Promise<CRI.FrameID>((resolve, reject) => {
-            this.chrome.Page.navigate({ url }, (err, result:CRI.Page.NavigateResult) => {
-                if(err) { throw(err); }
+            this.chrome.Page.navigate({ url }, (err, result: CRI.Page.NavigateResult) => {
+                if (err) { throw (err); }
                 else { resolve(result.frameId); }
             })
         }).catch((err) => {
             log.error(err);
-            throw(err);
+            throw (err);
         });
     }
 
-	private updateFrameOnEvents(frameState:FrameState):void {
+    private updateFrameOnEvents(frameState: FrameState): void {
         const frameId = frameState.getFrameId();
         const pendingFrameEvents = this.pendingFrameEvents.get(frameId);
 
-		if(pendingFrameEvents) {
+        if (pendingFrameEvents) {
             const resourceTracker = frameState.resourceTracker;
             pendingFrameEvents.forEach((eventInfo) => {
-                const {type, event} = eventInfo;
-                if(type === 'responseReceived') {
+                const { type, event } = eventInfo;
+                if (type === 'responseReceived') {
                     resourceTracker.responseReceived(event);
-                } else if(type === 'requestWillBeSent') {
+                } else if (type === 'requestWillBeSent') {
                     resourceTracker.requestWillBeSent(event);
                 }
             });
             this.pendingFrameEvents.delete(frameId);
-		}
-	};
-    private onFrameAttached = (frameInfo:CRI.FrameAttachedEvent):void => {
-		const {frameId, parentFrameId} = frameInfo;
+        }
+    };
+    private onFrameAttached = (frameInfo: CRI.FrameAttachedEvent): void => {
+        const { frameId, parentFrameId } = frameInfo;
         this.createFrameState({
             id: frameId,
-            parentId:parentFrameId
+            parentId: parentFrameId
         });
-	};
-    private onFrameNavigated = (frameInfo:CRI.FrameNavigatedEvent):void => {
-        const {frame} = frameInfo;
-        const {id, url} = frame;
+    };
+    private onFrameNavigated = (frameInfo: CRI.FrameNavigatedEvent): void => {
+        const { frame } = frameInfo;
+        const { id, url } = frame;
 
-        let frameState:FrameState;
-        if(this.hasFrame(id)) {
+        let frameState: FrameState;
+        if (this.hasFrame(id)) {
             frameState = this.getFrame(id);
         } else {
             frameState = this.createFrameState(frame);
         }
         frameState.updateInfo(frame);
     }
-    private onFrameDetached = (frameInfo:CRI.FrameDetachedEvent):void => {
-        const {frameId} = frameInfo;
+    private onFrameDetached = (frameInfo: CRI.FrameDetachedEvent): void => {
+        const { frameId } = frameInfo;
         this.destroyFrame(frameId);
     };
-    private requestWillBeSent  = (event:CRI.RequestWillBeSentEvent):void => {
-        const {frameId} = event;
-        if(this.hasFrame(frameId)) {
+    private requestWillBeSent = (event: CRI.RequestWillBeSentEvent): void => {
+        const { frameId } = event;
+        if (this.hasFrame(frameId)) {
             const frame = this.getFrame(frameId);
             frame.requestWillBeSent(event);
         } else {
@@ -238,9 +235,9 @@ export class TabState extends EventEmitter {
             });
         }
     }
-    private responseReceived = (event:CRI.ResponseReceivedEvent):void => {
-        const {frameId} = event;
-        if(this.hasFrame(frameId)) {
+    private responseReceived = (event: CRI.ResponseReceivedEvent): void => {
+        const { frameId } = event;
+        if (this.hasFrame(frameId)) {
             this.getFrame(frameId).responseReceived(event);
         } else {
             this.addPendingFrameEvent({
@@ -250,28 +247,28 @@ export class TabState extends EventEmitter {
             });
         }
     }
-    private executionContextCreated = (event:CRI.ExecutionContextCreatedEvent):void => {
-        const {context} = event;
-        const {auxData} = context;
-        const {frameId} = auxData;
-        if(this.hasFrame(frameId)) {
+    private executionContextCreated = (event: CRI.ExecutionContextCreatedEvent): void => {
+        const { context } = event;
+        const { auxData } = context;
+        const { frameId } = auxData;
+        if (this.hasFrame(frameId)) {
             const frameState = this.getFrame(frameId);
             frameState.executionContextCreated(context);
         } else {
             log.error(`Could not find frame ${frameId} for execution context`);
         }
     };
-    private addPendingFrameEvent(eventInfo:PendingFrameEvent):void {
-        const {frameId} = eventInfo;
-        if(this.pendingFrameEvents.has(frameId)) {
+    private addPendingFrameEvent(eventInfo: PendingFrameEvent): void {
+        const { frameId } = eventInfo;
+        if (this.pendingFrameEvents.has(frameId)) {
             this.pendingFrameEvents.get(frameId).push(eventInfo);
         } else {
             this.pendingFrameEvents.set(frameId, [eventInfo])
         }
     }
-    public getFrame(id:CRI.FrameID):FrameState { return this.frames.get(id); }
-    private hasFrame(id:CRI.FrameID):boolean { return this.frames.has(id); }
-    private getFrameTree():Promise<CRI.FrameTree> {
+    public getFrame(id: CRI.FrameID): FrameState { return this.frames.get(id); }
+    private hasFrame(id: CRI.FrameID): boolean { return this.frames.has(id); }
+    private getFrameTree(): Promise<CRI.FrameTree> {
         throw new Error("Not supported yet")
         // return new Promise<CRI.FrameTree>((resolve, reject) => {
         //     this.chrome.Page.getFrameTree({}, (err, value:CRI.FrameTree) => {
@@ -283,41 +280,49 @@ export class TabState extends EventEmitter {
         // });
     }
 
-    private getResourceTree():Promise<CRI.FrameResourceTree> {
+    private getResourceTree(): Promise<CRI.FrameResourceTree> {
         return new Promise<CRI.FrameResourceTree>((resolve, reject) => {
-            this.chrome.Page.getResourceTree({}, (err, value:CRI.FrameResourceTree) => {
-                if(err) { reject(value); }
+            this.chrome.Page.getResourceTree({}, (err, value: CRI.FrameResourceTree) => {
+                if (err) { reject(value); }
                 else { resolve(value); }
             });
         }).catch((err) => {
             log.error(err);
-            throw(err);
+            throw (err);
         });
     };
-    public getDocument():Promise<CRI.Node> {
+    public getDocument(depth=-1): Promise<CRI.Node> {
         return new Promise<CRI.Node>((resolve, reject) => {
-            this.chrome.DOM.getDocument({}, (err, value) => {
-                if(err) { reject(value); }
+            this.chrome.DOM.getDocument({
+                depth
+            }, (err, value) => {
+                if (err) { reject(value); }
                 else { resolve(value.root); }
             });
         }).catch((err) => {
             log.error(err);
-            throw(err);
+            throw (err);
         });
     };
-    private destroyFrame(frameId:CRI.FrameID) {
-        if(this.hasFrame(frameId)) {
+    private destroyFrame(frameId: CRI.FrameID) {
+        if (this.hasFrame(frameId)) {
             const frameState = this.getFrame(frameId);
             frameState.destroy();
         }
     }
-    public print():void {
+    public print(): void {
         this.rootFrame.print();
     };
     public destroy() {
         this.chrome.close();
-		log.debug(`=== DESTROYED TAB STATE ${this.getTabId()} ====`);
+        log.debug(`=== DESTROYED TAB STATE ${this.getTabId()} ====`);
     };
+    public getTabTitle():string {
+        return this.info.title;
+    }
+    public printSummary():void {
+        console.log(`Tab ${this.getTabId()} (${this.getTabTitle()})`);
+    }
 }
 // var _ = require('underscore'),
 // 	util = require('util'),

@@ -1,15 +1,15 @@
 import * as cri from 'chrome-remote-interface';
 import * as _ from 'underscore'
 import * as fileUrl from 'file-url';
-import {join, resolve} from 'path';
-import {TabState} from './tab_state';
+import { join, resolve } from 'path';
+import { TabState } from './tab_state';
 import * as ShareDB from 'sharedb';
 import * as express from 'express';
 import * as http from 'http';
 import * as WebSocket from 'ws';
 import * as WebSocketJSONStream from 'websocket-json-stream';
-import {getColoredLogger, level, setLevel} from '../../utils/logging';
-import {EventEmitter} from 'events';
+import { getColoredLogger, level, setLevel } from '../../utils/logging';
+import { EventEmitter } from 'events';
 
 const log = getColoredLogger('red');
 
@@ -29,115 +29,92 @@ const log = getColoredLogger('red');
 // };
 //
 
-const projectFileURLPath:string = fileUrl(join(resolve(__dirname, '..', '..'), 'browser'));
+const projectFileURLPath: string = fileUrl(join(resolve(__dirname, '..', '..'), 'browser'));
 export class BrowserState extends EventEmitter {
-	private tabs:Map<CRI.TabID, TabState> = new Map<CRI.TabID, TabState>();
-	private options = { host: 'localhost', port: 9222 }
-	private intervalID:NodeJS.Timer;
-	constructor(private state:any, extraOptions?) {
-		super();
-		_.extend(this.options, extraOptions);
-		this.intervalID = setInterval(_.bind(this.refreshTabs, this), 2000);
-		log.debug('=== CREATED BROWSER ===');
-	}
-	private refreshTabs():void {
-		this.getTabs().then((tabInfos:Array<CRI.TabInfo>) => {
-			const existingTabs = new Set<CRI.TabID>(this.tabs.keys());
-			_.each(tabInfos, (tabInfo) => {
-				const {id} = tabInfo;
-				let tab:TabState;
-				if(existingTabs.has(id)) {
-					// log.trace(`Updating info for tab ${id}`);
-					tab = this.tabs.get(id);
-					existingTabs.delete(id);
-					tab.updateInfo(tabInfo);
-				} else {
-					log.trace(`Creating tab ${id}`);
-					tab = new TabState(tabInfo);
-					this.tabs.set(id, tab);
-					this.emit('tabCreated', {
-						id: id
-					});
-				}
-			});
+    private tabs: Map<CRI.TabID, TabState> = new Map<CRI.TabID, TabState>();
+    private options = { host: 'localhost', port: 9222 }
+    private intervalID: NodeJS.Timer;
+    constructor(private state: any, extraOptions?) {
+        super();
+        _.extend(this.options, extraOptions);
+        this.intervalID = setInterval(_.bind(this.refreshTabs, this), 2000);
+        log.debug('=== CREATED BROWSER ===');
+    }
+    private refreshTabs(): void {
+        this.getTabs().then((tabInfos: Array<CRI.TabInfo>) => {
+            const existingTabs = new Set<CRI.TabID>(this.tabs.keys());
+            _.each(tabInfos, (tabInfo) => {
+                const { id } = tabInfo;
+                let tab: TabState;
+                if (existingTabs.has(id)) {
+                    // log.trace(`Updating info for tab ${id}`);
+                    tab = this.tabs.get(id);
+                    existingTabs.delete(id);
+                    tab.updateInfo(tabInfo);
+                } else {
+                    log.trace(`Creating tab ${id}`);
+                    tab = new TabState(tabInfo);
+                    this.tabs.set(id, tab);
+                    this.emit('tabCreated', {
+                        id: id
+                    });
+                }
+            });
 
-			existingTabs.forEach((id:CRI.TabID) => {
-				log.trace(`Destroying tab ${id}`);
-				this.destroyTab(id);
-			});
-		}).catch((err) => {
-			log.error(err);
-			throw(err);
-		});
-	}
-	public destroy():void {
-		clearInterval(this.intervalID);
-		this.tabs.forEach((tabState:TabState, tabId:CRI.TabID) => {
-			tabState.destroy();
-		});
-	};
-	private destroyTab(id:CRI.TabID):void {
-		if(this.tabs.has(id)) {
-			const tab = this.getTab(id);
-			tab.destroy();
-			this.tabs.delete(id);
-			this.emit('tabDestroyed', {id});
-		}
-	};
-	// private refreshTabs() {
-	// 	return this._getTabs().then(_.bind(function(tabs) {
-	// 		var existingTabs = _.keys(this._tabs),
-	// 			wasClosed = {};
-    //
-	// 		_.each(existingTabs, function(tab) {
-	// 			wasClosed[tab] = tab;
-	// 		});
-	// 		_.each(tabs, function(tabInfo) {
-	// 			var id = tabInfo.id;
-	// 			if(wasClosed[id]) {
-	// 				wasClosed[id] = false;
-	// 				var storedTabInfo = this._tabs[id].tabInfo;
-	// 				if(tabInfo.title !== storedTabInfo.title || tabInfo.url !== storedTabInfo.url) {
-	// 					_.extend(storedTabInfo, tabInfo);
-	// 					this.emit('tabUpdated', {
-	// 						id: id
-	// 					});
-	// 				}
-	// 			} else {
-	// 				this._initializeTab(tabInfo);
-	// 			}
-	// 		}, this);
-	// 		_.each(wasClosed, function(tabId) {
-	// 			this._destroyTab({id: tabId});
-	// 		}, this);
-	// 	}, this));
-	// }
-	private tabIsInspectable(tab:any):boolean {
-		return tab.type === 'page' && tab.title!=='arboretumInternal' && tab.url !=='http://localhost:3000/o' && tab.url !=='http://localhost:3000' && tab.url.indexOf('chrome-devtools://') !== 0 && tab.url.indexOf(projectFileURLPath) !== 0;
-	}
-	private getTabs():Promise<Array<CRI.TabInfo>> {
-		return new Promise<Array<CRI.TabInfo>>((resolve, reject) => {
-			cri.listTabs(this.options, (err, tabs) => {
-				if(err) { reject(err); }
-				else { resolve(_.filter(tabs, (tab)=>this.tabIsInspectable(tab))); }
-			});
-		}).catch((err) => {
-			log.error(err);
-			throw(err);
-		});
-	}
-	public requestResource(url:string, frameID:CRI.FrameID, tabID:CRI.TabID):Promise<any> {
-		const tabState:TabState = this.tabs.get(tabID);
-		return tabState.requestResource(url, frameID);
-	};
-	private getTab(id:CRI.TabID):TabState {
-		return this.tabs.get(id);
-	}
-	public print():void {
-		this.tabs.forEach((tabState:TabState) => {
-			tabState.print();
-		});
-	}
+            existingTabs.forEach((id: CRI.TabID) => {
+                log.trace(`Destroying tab ${id}`);
+                this.destroyTab(id);
+            });
+        }).catch((err) => {
+            log.error(err);
+            throw (err);
+        });
+    }
+    public destroy(): void {
+        clearInterval(this.intervalID);
+        this.tabs.forEach((tabState: TabState, tabId: CRI.TabID) => {
+            tabState.destroy();
+        });
+    };
+    private destroyTab(id: CRI.TabID): void {
+        if (this.tabs.has(id)) {
+            const tab = this.getTab(id);
+            tab.destroy();
+            this.tabs.delete(id);
+            this.emit('tabDestroyed', { id });
+        }
+    };
+    private tabIsInspectable(tab: any): boolean {
+        return tab.type === 'page' && tab.title !== 'arboretumInternal' && tab.url !== 'http://localhost:3000/o' && tab.url !== 'http://localhost:3000' && tab.url.indexOf('chrome-devtools://') !== 0 && tab.url.indexOf(projectFileURLPath) !== 0;
+    }
+    private getTabs(): Promise<Array<CRI.TabInfo>> {
+        return new Promise<Array<CRI.TabInfo>>((resolve, reject) => {
+            cri.listTabs(this.options, (err, tabs) => {
+                if (err) { reject(err); }
+                else { resolve(_.filter(tabs, (tab) => this.tabIsInspectable(tab))); }
+            });
+        }).catch((err) => {
+            log.error(err);
+            throw (err);
+        });
+    }
+    public printTabSummaries():void {
+        this.tabs.forEach((tabState:TabState) => {
+            tabState.printSummary();
+        });
+    };
+    public requestResource(url: string, frameID: CRI.FrameID, tabID: CRI.TabID): Promise<any> {
+        const tabState: TabState = this.tabs.get(tabID);
+        return tabState.requestResource(url, frameID);
+    };
+    private getTab(id: CRI.TabID): TabState {
+        return this.tabs.get(id);
+    };
+    public print(): void {
+        this.tabs.forEach((tabState: TabState) => {
+            tabState.print();
+        });
+    };
 };
 
 // var BrowserState = function(options) {

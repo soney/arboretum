@@ -97,9 +97,11 @@ class FrameState {
     getFrameId() {
         return this.info.id;
     }
+    ;
     getRoot() {
         return this.root;
     }
+    ;
     setRoot(rootNode) {
         const oldRoot = this.getRoot();
         if (oldRoot) {
@@ -113,6 +115,7 @@ class FrameState {
             this.markRefreshingRoot(false);
         }
     }
+    ;
     setChildrenRecursive(parentState, children) {
         if (children) {
             parentState.setChildren(children.map((child) => {
@@ -121,6 +124,7 @@ class FrameState {
         }
         return parentState;
     }
+    ;
     getOrCreateDOMState(node, parent = null, previousNode = null) {
         const { nodeId } = node;
         if (this.hasDOMStateWithID(nodeId)) {
@@ -147,7 +151,7 @@ class FrameState {
     }
     refreshRoot() {
         this.markRefreshingRoot(true);
-        return this.tab.getDocument().then((root) => {
+        return this.tab.getDocument(-1).then((root) => {
             this.setRoot(root);
             return root;
         });

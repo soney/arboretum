@@ -129,6 +129,8 @@ process.stdin.on('keypress', (ch, key) => {
 		process.exit();
 	} else if(name === 'd') {
 		browserState.print();
+	} else if(name === 't') {
+		browserState.printTabSummaries();
 	} else if(name === 'q') {
 		process.stdin.pause();
 		process.stdin.setRawMode(false);

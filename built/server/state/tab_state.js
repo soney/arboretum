@@ -105,11 +105,11 @@ class TabState extends events_1.EventEmitter {
         log.debug(`=== CREATED TAB STATE ${this.getTabId()} ====`);
     }
     ;
-    getMainFrame() {
+    getRootFrame() {
         return this.rootFrame;
     }
     evaluate(expression, frameId = null) {
-        const frame = frameId ? this.getFrame(frameId) : this.getMainFrame();
+        const frame = frameId ? this.getFrame(frameId) : this.getRootFrame();
         const executionContext = frame.getExecutionContext();
         return new Promise((resolve, reject) => {
             this.chrome.Runtime.evaluate({
@@ -130,7 +130,7 @@ class TabState extends events_1.EventEmitter {
         const frameState = new frame_state_1.FrameState(this.chrome, info, this, parentFrame, resources);
         this.frames.set(id, frameState);
         if (!parentId) {
-            this.setMainFrame(frameState);
+            this.setRootFrame(frameState);
         }
         this.updateFrameOnEvents(frameState);
         childFrames.forEach((childFrame) => {
@@ -157,20 +157,15 @@ class TabState extends events_1.EventEmitter {
         this.chrome.Runtime.executionContextCreated(this.executionContextCreated);
     }
     addDOMListeners() {
-        this.getDocument().then((root) => {
-            TabState.DOMEventTypes.forEach((eventType) => {
-                this.forwardEventToFrames(eventType);
-            });
-            this.requestChildNodes(root.nodeId);
-        }).catch((err) => {
-            log.error(err);
-            throw (err);
+        TabState.DOMEventTypes.forEach((eventType) => {
+            this.forwardEventToFrames(eventType);
         });
     }
     ;
     forwardEventToFrames(eventType, namespace = 'DOM') {
         this.chrome.on(`${namespace}.${eventType}`, (event) => {
             const frameArray = Array.from(this.frames.values());
+            log.info(eventType);
             const eventResultPromise = frameArray.map((frameState) => {
                 return frameState.handleFrameEvent(event, eventType);
             });
@@ -208,7 +203,7 @@ class TabState extends events_1.EventEmitter {
         this.setTitle(title);
         this.setURL(url);
     }
-    setMainFrame(frame) {
+    setRootFrame(frame) {
         if (this.rootFrame) {
             this.frames.forEach((frame, id) => {
                 if (id !== frame.getFrameId()) {
@@ -219,17 +214,19 @@ class TabState extends events_1.EventEmitter {
         log.info(`Set main frame to ${frame.getFrameId()}`);
         this.rootFrame = frame;
         frame.markSetMainFrameExecuted(true);
-        return this.getDocument().then((root) => {
+        this.emit('mainFrameChanged');
+        /*
+        return this.getDocument().then((root: CRI.Node) => {
             this.rootFrame.setRoot(root);
             this.emit('mainFrameChanged');
         }).catch((err) => {
             log.error(err);
             throw (err);
         });
+        */
     }
     navigate(url) {
         const parsedURL = url_1.parse(url);
-        console.log(parsedURL);
         if (!parsedURL.protocol) {
             parsedURL.protocol = 'http';
         }
@@ -304,9 +301,11 @@ class TabState extends events_1.EventEmitter {
         });
     }
     ;
-    getDocument() {
+    getDocument(depth = -1) {
         return new Promise((resolve, reject) => {
-            this.chrome.DOM.getDocument({}, (err, value) => {
+            this.chrome.DOM.getDocument({
+                depth
+            }, (err, value) => {
                 if (err) {
                     reject(value);
                 }
@@ -335,6 +334,12 @@ class TabState extends events_1.EventEmitter {
         log.debug(`=== DESTROYED TAB STATE ${this.getTabId()} ====`);
     }
     ;
+    getTabTitle() {
+        return this.info.title;
+    }
+    printSummary() {
+        console.log(`Tab ${this.getTabId()} (${this.getTabTitle()})`);
+    }
 }
 TabState.DOMEventTypes = [
     'attributeRemoved', 'attributeModified', 'characterDataModified',
