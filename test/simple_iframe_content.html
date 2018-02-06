@@ -1,0 +1,14 @@
+<html>
+	<body>
+		<div id="message">hello world</div>
+		<a href="javascript:void(0)">Change message</a>
+	</body>
+	<script>
+		var links = document.getElementsByTagName('a'),
+			link  = links[0];
+		link.addEventListener('click', function() {
+			var message = document.getElementById('message');
+			message.innerText = 'goodbye cruel world';
+		});
+	</script>
+</html>
