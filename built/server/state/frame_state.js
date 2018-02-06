@@ -98,9 +98,7 @@ class FrameState {
         return this.info.id;
     }
     ;
-    getRoot() {
-        return this.root;
-    }
+    getRoot() { return this.root; }
     ;
     setRoot(rootNode) {
         const oldRoot = this.getRoot();
@@ -331,12 +329,22 @@ class FrameState {
     requestResource(url) {
         return this.resourceTracker.getResource(url);
     }
+    stringify(level = 0) {
+        const root = this.getRoot();
+        if (root) {
+            return root.stringify(level);
+        }
+        else {
+            return 'NOTHING';
+        }
+    }
     print(level = 0) {
-        this.getRoot().print(level);
+        console.log(this.stringify(level));
     }
     querySelectorAll(selector) {
-        if (this.root) {
-            return this.root.querySelectorAll(selector);
+        const root = this.getRoot();
+        if (root) {
+            return root.querySelectorAll(selector);
         }
         else {
             return new Promise(function (resolve, reject) {

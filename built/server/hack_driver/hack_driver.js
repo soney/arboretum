@@ -76,7 +76,7 @@ function getProperties(chrome, objectId, ownProperties) {
 }
 function getObjectProperty(chrome, objectId, property_name) {
     return callFunctionOn(chrome, objectId, {
-        functionDeclaration: '(function() { return this.' + property_name + ';})',
+        functionDeclaration: `(function() { return this.${property_name}; })`,
         arguments: []
     });
 }

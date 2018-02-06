@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const cri = require("chrome-remote-interface");
 const frame_state_1 = require("./frame_state");
 const logging_1 = require("../../utils/logging");
+const _ = require("underscore");
 const events_1 = require("events");
 const url_1 = require("url");
 const log = logging_1.getColoredLogger('yellow');
@@ -168,6 +169,13 @@ class TabState extends events_1.EventEmitter {
             log.info(eventType);
             const eventResultPromise = frameArray.map((frameState) => {
                 return frameState.handleFrameEvent(event, eventType);
+            });
+            Promise.all(eventResultPromise).then((results) => {
+                const handled = _.any(results);
+                if (!handled) {
+                    log.error(`${eventType} not handled by any frame`);
+                    console.log(event);
+                }
             });
         });
     }

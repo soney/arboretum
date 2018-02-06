@@ -17,7 +17,7 @@ class Arboretum {
         this.sidebar = new Sidebar();
 
         this.listen();
-        this.tabs.createNew(`file://${path.resolve('test/index.html')}`, true);
+        this.tabs.createNew(`file://${path.resolve('test/simple.html')}`, true);
     }
 
     listen() {

@@ -116,6 +116,13 @@ export class TabState extends EventEmitter {
             const eventResultPromise: Array<Promise<boolean>> = frameArray.map((frameState: FrameState) => {
                 return frameState.handleFrameEvent(event, eventType);
             });
+            Promise.all(eventResultPromise).then((results:Array<boolean>) => {
+                const handled = _.any(results);
+                if(!handled) {
+                    log.error(`${eventType} not handled by any frame`);
+                    console.log(event);
+                }
+            });
         });
     }
     public requestChildNodes(nodeId: CRI.NodeID, depth: number = -1): Promise<CRI.RequestChildNodesResult> {
@@ -145,7 +152,7 @@ export class TabState extends EventEmitter {
         this.setTitle(title);
         this.setURL(url);
     }
-    private setRootFrame(frame: FrameState) {
+    private setRootFrame(frame: FrameState):void {
         if (this.rootFrame) {
             this.frames.forEach((frame: FrameState, id: CRI.FrameID) => {
                 if (id !== frame.getFrameId()) {

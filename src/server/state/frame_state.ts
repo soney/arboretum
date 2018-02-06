@@ -99,9 +99,7 @@ export class FrameState {
     public getFrameId(): CRI.FrameID {
         return this.info.id;
     };
-    public getRoot(): DOMState {
-        return this.root;
-    };
+    public getRoot(): DOMState { return this.root; };
     public setRoot(rootNode: CRI.Node): void {
         const oldRoot: DOMState = this.getRoot();
         if (oldRoot) {
@@ -318,12 +316,21 @@ export class FrameState {
     public requestResource(url: string): Promise<any> {
         return this.resourceTracker.getResource(url);
     }
+    public stringify(level:number=0):string {
+        const root = this.getRoot();
+        if(root) {
+            return root.stringify(level);
+        } else {
+            return 'NOTHING';
+        }
+    }
     public print(level: number = 0): void {
-        this.getRoot().print(level);
+        console.log(this.stringify(level));
     }
     public querySelectorAll(selector: string): Promise<Array<CRI.NodeID>> {
-        if (this.root) {
-            return this.root.querySelectorAll(selector)
+        const root = this.getRoot();
+        if (root) {
+            return root.querySelectorAll(selector)
         } else {
             return new Promise(function(resolve, reject) {
                 reject(new Error('Could not find root'));

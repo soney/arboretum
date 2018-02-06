@@ -21,11 +21,13 @@ export class DOMState extends EventEmitter {
     constructor(private chrome: CRI.Chrome, private node: CRI.Node, private frame: FrameState, private parent: DOMState) {
         super();
         if (node.frameId) {
-            // const frameRoot: CRI.Node = node.contentDocument;
             const tab: TabState = this.getTab();
             const frame: FrameState = tab.getFrame(node.frameId);
 
-            // frame.setRoot(frameRoot);
+            // const frameRoot:CRI.Node = node.contentDocument;
+            // if(frameRoot) {
+            //     frame.setRoot(frameRoot);
+            // }
             // frame.setDOMParent(this);
 
             this.childFrame = frame;
@@ -38,6 +40,7 @@ export class DOMState extends EventEmitter {
                 log.error(`Could not find node ${this.getNodeId()}`)
             }
         });
+        console.log(this.node);
         log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     }
     public destroy(): void {
@@ -349,7 +352,8 @@ export class DOMState extends EventEmitter {
     public stringify(level: number = 0): string {
         let result: string = `${'    '.repeat(level)}${this.stringifySelf()}`;
         if (this.childFrame) {
-            result += `(${this.childFrame.getFrameId()})`;
+            result += `(${this.childFrame.getFrameId()})\n`;
+            // result += this.childFrame.stringify(level+1);
         }
         result += '\n';
 
@@ -357,9 +361,6 @@ export class DOMState extends EventEmitter {
             result += child.stringify(level + 1);
         });
         return result;
-    }
-    public print(level: number = 0): void {
-        console.log(this.stringify(level));
     }
     public getFrameStack() {
         return this.frame.getFrameStack();

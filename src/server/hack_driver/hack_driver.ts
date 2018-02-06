@@ -10,7 +10,7 @@ const GET_CANVAS_IMAGE:Promise<string> = readFile(join(__dirname, 'injectable_js
 const GET_UNIQUE_SELECTOR:Promise<string> = readFile(join(__dirname, 'injectable_js', 'get_unique_selector.js'));
 const FOCUS_ELEMENT:Promise<string> = readFile(join(__dirname, 'injectable_js', 'focus.js'));
 
-function readShallowObject(chrome, objectId) {
+function readShallowObject(chrome:CRI.Chrome, objectId:CRI.Runtime.RemoteObjectID) {
 	return getProperties(chrome, objectId, true).then(function(properties:any) {
 		var rv = {};
 		_.each(properties.result, function(prop:any) {
@@ -49,7 +49,7 @@ function callFNOnElement(chrome:CRI.Chrome, fn_promise:Promise<string>, nodeId:C
 	});
 }
 
-function releaseObject(chrome:CRI.Chrome, objectId) {
+function releaseObject(chrome:CRI.Chrome, objectId:CRI.Runtime.RemoteObjectID) {
 	return new Promise(function(resolve, reject) {
 		chrome.Runtime.releaseObject({
 			objectId: objectId
@@ -60,7 +60,7 @@ function releaseObject(chrome:CRI.Chrome, objectId) {
 	});
 }
 
-function getProperties(chrome:CRI.Chrome, objectId, ownProperties) {
+function getProperties(chrome:CRI.Chrome, objectId:CRI.Runtime.RemoteObjectID, ownProperties:boolean) {
 	return new Promise(function(resolve, reject) {
 		chrome.Runtime.getProperties({
 			objectId: objectId,
@@ -75,14 +75,14 @@ function getProperties(chrome:CRI.Chrome, objectId, ownProperties) {
 	});
 }
 
-function getObjectProperty(chrome:CRI.Chrome, objectId, property_name:string) {
+function getObjectProperty(chrome:CRI.Chrome, objectId:CRI.Runtime.RemoteObjectID, property_name:string) {
 	return callFunctionOn(chrome, objectId, {
-		functionDeclaration: '(function() { return this.' + property_name + ';})',
+		functionDeclaration: `(function() { return this.${property_name}; })`,
 		arguments: []
 	});
 }
 
-function evaluate(chrome, context, options) {
+function evaluate(chrome:CRI.Chrome, context, options) {
 	return new Promise(function(resolve, reject) {
 		chrome.Runtime.evaluate(_.extend({
 			contextId: context.id
@@ -98,7 +98,7 @@ function evaluate(chrome, context, options) {
 	});
 }
 
-function callFunctionOn(chrome, remoteObjectId, options) {
+function callFunctionOn(chrome:CRI.Chrome, remoteObjectId:CRI.Runtime.RemoteObjectID, options) {
 	return new Promise(function(resolve, reject) {
 		chrome.Runtime.callFunctionOn(_.extend({
 			objectId: remoteObjectId
@@ -112,7 +112,7 @@ function callFunctionOn(chrome, remoteObjectId, options) {
 	});
 }
 
-function requestNode(chrome, objectId):Promise<any> {
+function requestNode(chrome:CRI.Chrome, objectId):Promise<any> {
 	return new Promise(function(resolve, reject) {
 		chrome.DOM.requestNode({
 			objectId: objectId
@@ -126,7 +126,7 @@ function requestNode(chrome, objectId):Promise<any> {
 	});
 }
 
-function resolveNode(chrome, nodeId):Promise<any> {
+function resolveNode(chrome:CRI.Chrome, nodeId:CRI.NodeID):Promise<any> {
 	return new Promise(function(resolve, reject) {
 		chrome.DOM.resolveNode({
 			nodeId: nodeId
@@ -149,7 +149,7 @@ function readFile(filename:string):Promise<string> {
 	});
 }
 
-function typedArrayToArray(chrome, objectId):Promise<any> {
+function typedArrayToArray(chrome:CRI.Chrome, objectId):Promise<any> {
 	return callFunctionOn(chrome, objectId, {
 		functionDeclaration: '(function() { return Array.prototype.slice.call(this);})',
 		arguments: [],
@@ -158,29 +158,29 @@ function typedArrayToArray(chrome, objectId):Promise<any> {
 }
 
 
-export function mouseEvent(chrome, nodeId, eventType) {
+export function mouseEvent(chrome:CRI.Chrome, nodeId, eventType) {
 	return callFNOnElement(chrome, SIMULATE_MOUSE_EVENT, nodeId, [{value: eventType}]);
 };
-export function focus(chrome, nodeId) {
+export function focus(chrome:CRI.Chrome, nodeId) {
 	return callFNOnElement(chrome, FOCUS_ELEMENT, nodeId);
 };
-export function getElementValue(chrome, nodeId):Promise<string> {
+export function getElementValue(chrome:CRI.Chrome, nodeId):Promise<string> {
 	return callFNOnElement(chrome, GET_ELEMENT_VALUE, nodeId).then(function(rv) {
 		return rv.result.value;
 	});
 };
-export function setElementValue(chrome, nodeId, value:string) {
+export function setElementValue(chrome:CRI.Chrome, nodeId:CRI.NodeID, value:string) {
 	return callFNOnElement(chrome, SET_ELEMENT_VALUE, nodeId, [{value: value}]);
 };
-export function getNamespace(chrome, nodeId) {
+export function getNamespace(chrome:CRI.Chrome, nodeId:CRI.NodeID) {
 	return callFNOnElement(chrome, GET_NAMESPCE, nodeId);
 };
-export function getUniqueSelector(chrome, nodeId):Promise<string> {
+export function getUniqueSelector(chrome:CRI.Chrome, nodeId:CRI.NodeID):Promise<string> {
 	return callFNOnElement(chrome, GET_UNIQUE_SELECTOR, nodeId).then((rv) => {
 		return rv.result.value;
 	});
 };
-export function getCanvasImage(chrome, nodeId) {
+export function getCanvasImage(chrome:CRI.Chrome, nodeId:CRI.NodeID) {
 	return callFNOnElement(chrome, GET_CANVAS_IMAGE, nodeId).then(function(rv) {
 		var result = rv.result,
 			objectId = result.objectId;

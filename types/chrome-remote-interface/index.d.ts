@@ -11,14 +11,12 @@ declare namespace CRI {
     type NodeID = number;
     type ScriptID = string;
     type StyleSheetID = string;
-    type BackendNodeID = number;
     type ExecutionContextID = number;
     type TabID = string;
     type FrameID = string;
     type PseudoType = string;
     type RequestID = string;
     type InterceptionID = string;
-    type RemoteObjectID = string;
     type UnserializableValue = string;
     type ErrorReason = string;
     type MonotonicTime = number;
@@ -29,7 +27,7 @@ declare namespace CRI {
     interface BackendNode {
         nodeType:number,
         nodeName:string,
-        backendNodeId:BackendNodeID
+        backendNodeId:DOM.BackendNodeID
     }
     interface TabInfo {
         description:string,
@@ -53,11 +51,11 @@ declare namespace CRI {
         getProperties:(options:GetPropertiesOptions, callback:(err:any, result:ReleaseObjectResult)=>any) => void
     }
     interface ReleaseObjectOptions {
-        objectId:RemoteObjectID
+        objectId:Runtime.RemoteObjectID
     }
     interface ReleaseObjectResult {}
     interface GetPropertiesOptions {
-        objectId:RemoteObjectID,
+        objectId:Runtime.RemoteObjectID,
         ownProperties:boolean,
         accessorPropertiesOnly?:boolean,
         generatePreview?:boolean
@@ -69,18 +67,7 @@ declare namespace CRI {
     }
     interface PropertyDescriptor {
         name:string,
-        value:RemoteObject
-    }
-    interface RemoteObject {
-        type:string,
-        subtype:string,
-        className:string,
-        value:any,
-        unserializableValue:UnserializableValue,
-        description:string,
-        objectId:RemoteObjectID,
-        preview: ObjectPreview,
-        customPreview: CustomPreview
+        value:Runtime.RemoteObject
     }
     interface ObjectPreview {
         type:string,
@@ -100,9 +87,9 @@ declare namespace CRI {
     interface CustomPreview {
         header:string,
         hasBody:boolean,
-        formatterObjectId:RemoteObjectID,
-        bindRemoteObjectFunctionId:RemoteObjectID,
-        configObjectId:RemoteObjectID
+        formatterObjectId:Runtime.RemoteObjectID,
+        bindRemoteObjectFunctionId:Runtime.RemoteObjectID,
+        configObjectId:Runtime.RemoteObjectID
     }
     interface EntryPreview {
         key:ObjectPreview,
@@ -110,7 +97,7 @@ declare namespace CRI {
     }
     interface InternalPropertyDescriptor {
         name:string,
-        value:RemoteObject
+        value:Runtime.RemoteObject
     }
     interface ExceptionDetails {
         exceptionId:number,
@@ -120,7 +107,7 @@ declare namespace CRI {
         scriptId:ScriptID,
         url:string,
         stackTrace:StackTrace,
-        exception:RemoteObject,
+        exception:Runtime.RemoteObject,
         executionContextId:ExecutionContextID
     }
     interface GetPropertiesResult {}
@@ -234,8 +221,8 @@ declare namespace CRI {
     }
     interface GetOuterHTMLOptions {
         nodeId:NodeID,
-        backendNodeId?:BackendNodeID,
-        objectId?:Runtime.RemoteObjectId
+        backendNodeId?:DOM.BackendNodeID,
+        objectId?:Runtime.RemoteObjectID
     }
     interface GetOuterHTMLResult {
         outerHTML:string
@@ -247,11 +234,30 @@ declare namespace CRI {
     interface QuerySelectorAllResult {
         nodeIds:Array<NodeID>
     }
+    interface RequestNodeOptions {
+        objectId:Runtime.RemoteObjectID
+    }
+    interface RequestNodeResult {
+        nodeId:NodeID
+    }
+    interface ResolveNodeOptions {
+        nodeId:NodeID,
+        backendNodeId?:DOM.BackendNodeID,
+        objectGroup?:string
+    }
+    interface ResolveNodeResult {
+        object:Runtime.RemoteObject
+    }
+    namespace DOM {
+        type BackendNodeID = number;
+    }
     interface DOM {
         getDocument:(params:GetDocumentOptions, callback:(err:any, value:GetDocumentResult)=>void) => void
         requestChildNodes:(params:RequestChildNodesOptions, callback:(err:any, value:RequestChildNodesResult)=>void) => void
         getOuterHTML:(params:GetOuterHTMLOptions, callback:(err:any, value:GetOuterHTMLResult)=>void) => void
         querySelectorAll:(params:QuerySelectorAllOptions, callback:(err:any, value:QuerySelectorAllResult)=>void) => void
+        requestNode:(params:RequestNodeOptions, callback:(err:any, value:RequestNodeResult)=>void) => void
+        resolveNode:(params:ResolveNodeOptions, callback:(err:any, value:ResolveNodeResult)=>void) => void
     }
     interface FrameResourceTree {
         frameTree:FrameTree
@@ -266,7 +272,18 @@ declare namespace CRI {
         canceled:boolean
     }
     namespace Runtime {
-        type RemoteObjectId = string;
+        type RemoteObjectID = string;
+        interface RemoteObject {
+            type:string,
+            subtype:string,
+            className:string,
+            value:any,
+            unserializableValue:UnserializableValue,
+            description:string,
+            objectId:Runtime.RemoteObjectID,
+            preview: ObjectPreview,
+            customPreview: CustomPreview
+        }
     }
 
     interface FrameTree {
@@ -277,7 +294,7 @@ declare namespace CRI {
     interface Node {
         nodeId:NodeID,
         parentId:NodeID,
-        backendNodeId:BackendNodeID,
+        backendNodeId:DOM.BackendNodeID,
         nodeType:number,
         nodeName:string,
         localName:string,
@@ -315,8 +332,29 @@ declare namespace CRI {
         userGesture?:boolean,
         awaitPromise?:boolean
     }
+    interface CallArgument {
+        value:any,
+        unserializableValue:UnserializableValue,
+        objectId:Runtime.RemoteObjectID
+    }
     interface EvaluateResult {
-        result:RemoteObject,
+        result:Runtime.RemoteObject,
+        exceptionDetails:ExceptionDetails
+    }
+    interface CallFunctionOnArguments {
+        functionDeclaration:string,
+        objectId:Runtime.RemoteObjectID,
+        arguments:Array<CallArgument>,
+        silent?:boolean,
+        returnByValue?:boolean,
+        generatePreview?:boolean,
+        userGesture?:boolean,
+        awaitPromise?:boolean,
+        executionContextId:ExecutionContextID,
+        objectGroup?:string
+    }
+    interface CallFunctionOnResult {
+        result:Runtime.RemoteObject,
         exceptionDetails:ExceptionDetails
     }
     interface Runtime {
@@ -324,6 +362,7 @@ declare namespace CRI {
         disable:()=>void,
         executionContextCreated:(callback:(event:ExecutionContextCreatedEvent)=>void) => void,
         evaluate:(params:EvaluateParameters, callback:(err:any, result:EvaluateResult)=>void) => void,
+        callFunctionOn:(params:CallFunctionOnArguments, callback:(err:any, result:CallFunctionOnResult)=>void) => void,
     }
     interface Initiator {
         type:string,

@@ -22,10 +22,12 @@ class DOMState extends events_1.EventEmitter {
         this.updateValueInterval = null;
         this.childFrame = null;
         if (node.frameId) {
-            // const frameRoot: CRI.Node = node.contentDocument;
             const tab = this.getTab();
             const frame = tab.getFrame(node.frameId);
-            // frame.setRoot(frameRoot);
+            // const frameRoot:CRI.Node = node.contentDocument;
+            // if(frameRoot) {
+            //     frame.setRoot(frameRoot);
+            // }
             // frame.setDOMParent(this);
             this.childFrame = frame;
         }
@@ -36,6 +38,7 @@ class DOMState extends events_1.EventEmitter {
                 log.error(`Could not find node ${this.getNodeId()}`);
             }
         });
+        console.log(this.node);
         log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     }
     destroy() {
@@ -370,16 +373,14 @@ class DOMState extends events_1.EventEmitter {
     stringify(level = 0) {
         let result = `${'    '.repeat(level)}${this.stringifySelf()}`;
         if (this.childFrame) {
-            result += `(${this.childFrame.getFrameId()})`;
+            result += `(${this.childFrame.getFrameId()})\n`;
+            // result += this.childFrame.stringify(level+1);
         }
         result += '\n';
         this.children.forEach((child) => {
             result += child.stringify(level + 1);
         });
         return result;
-    }
-    print(level = 0) {
-        console.log(this.stringify(level));
     }
     getFrameStack() {
         return this.frame.getFrameStack();
