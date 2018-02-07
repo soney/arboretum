@@ -245,6 +245,9 @@ class TabState extends events_1.EventEmitter {
     }
     ;
     setDocument(root) {
+        if (this.domRoot) {
+            this.domRoot.destroy();
+        }
         this.domRoot = this.getOrCreateDOMState(root);
         this.setChildrenRecursive(this.domRoot, root.children);
     }
@@ -286,6 +289,7 @@ class TabState extends events_1.EventEmitter {
         this.frames.set(id, frameState);
         if (!parentId) {
             this.setRootFrame(frameState);
+            this.refreshRoot();
         }
         this.updateFrameOnEvents(frameState);
         childFrames.forEach((childFrame) => {

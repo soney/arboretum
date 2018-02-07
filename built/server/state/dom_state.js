@@ -21,21 +21,6 @@ class DOMState extends events_1.EventEmitter {
         this.inlineStyle = '';
         this.children = [];
         this.updateValueInterval = null;
-        if (this.childFrame) {
-            console.log("HAS CHILD FRAME");
-        }
-        // if (node.frameId) {
-        //     const tab: TabState = this.getTab();
-        //     const frame: FrameState = tab.getFrame(node.frameId);
-        //
-        //     const frameRoot:CRI.Node = node.contentDocument;
-        //     if(frameRoot) {
-        //         frame.setRoot(frameRoot);
-        //     }
-        //     frame.setDOMParent(this);
-        //
-        //     this.childFrame = frame;
-        // }
         this.getFullString().then((fullNodeValue) => {
             this.setNodeValue(fullNodeValue);
         }).catch((err) => {

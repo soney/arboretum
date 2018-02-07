@@ -76,6 +76,9 @@ export class TabState extends EventEmitter {
         return this.chrome;
     };
     private setDocument(root:CRI.Node):void {
+        if(this.domRoot) {
+            this.domRoot.destroy();
+        }
         this.domRoot = this.getOrCreateDOMState(root);
         this.setChildrenRecursive(this.domRoot, root.children);
     };
@@ -113,6 +116,7 @@ export class TabState extends EventEmitter {
         this.frames.set(id, frameState);
         if (!parentId) {
             this.setRootFrame(frameState);
+            this.refreshRoot();
         }
         this.updateFrameOnEvents(frameState);
         childFrames.forEach((childFrame) => {

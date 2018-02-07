@@ -20,21 +20,6 @@ export class DOMState extends EventEmitter {
 
     constructor(private node: CRI.Node, private tab:TabState, private contentDocument?:DOMState, private childFrame?:FrameState, private parent?:DOMState) {
         super();
-        if(this.childFrame) {
-            console.log("HAS CHILD FRAME");
-        }
-        // if (node.frameId) {
-        //     const tab: TabState = this.getTab();
-        //     const frame: FrameState = tab.getFrame(node.frameId);
-        //
-        //     const frameRoot:CRI.Node = node.contentDocument;
-        //     if(frameRoot) {
-        //         frame.setRoot(frameRoot);
-        //     }
-        //     frame.setDOMParent(this);
-        //
-        //     this.childFrame = frame;
-        // }
 
         this.getFullString().then((fullNodeValue: string) => {
             this.setNodeValue(fullNodeValue);
