@@ -117,24 +117,22 @@ class FrameState {
         return rv;
     }
     ;
-    setDOMRoot(node) {
-    }
+    setDOMRoot(domState) { this.root = domState; }
+    ;
+    hasRoot() { return !!this.getRoot(); }
+    ;
     requestResource(url) {
         return this.resourceTracker.getResource(url);
     }
     ;
-    stringify(level = 0) {
+    print(level = 0) {
         const root = this.getRoot();
         if (root) {
-            return root.stringify(level);
+            root.print(level);
         }
         else {
-            return 'NOTHING';
+            console.log('NOTHING');
         }
-    }
-    ;
-    print(level = 0) {
-        console.log(this.stringify(level));
     }
     ;
     querySelectorAll(selector) {

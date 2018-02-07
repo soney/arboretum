@@ -121,23 +121,19 @@ export class FrameState {
         return rv;
     };
 
-    public setDOMRoot(node) {
-
-    };
+    public setDOMRoot(domState:DOMState):void { this.root = domState; };
+    public hasRoot():boolean { return !!this.getRoot(); };
 
     public requestResource(url: string): Promise<any> {
         return this.resourceTracker.getResource(url);
     };
-    public stringify(level:number=0):string {
+    public print(level: number = 0): void {
         const root = this.getRoot();
         if(root) {
-            return root.stringify(level);
+            root.print(level);
         } else {
-            return 'NOTHING';
+            console.log('NOTHING');
         }
-    };
-    public print(level: number = 0): void {
-        console.log(this.stringify(level));
     };
     public querySelectorAll(selector: string): Promise<Array<CRI.NodeID>> {
         const root = this.getRoot();

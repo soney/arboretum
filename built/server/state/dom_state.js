@@ -9,16 +9,21 @@ const url_transform_1 = require("../url_transform");
 const _ = require("underscore");
 const log = logging_1.getColoredLogger('magenta');
 class DOMState extends events_1.EventEmitter {
-    constructor(node, tab, parent) {
+    constructor(node, tab, contentDocument, childFrame, parent) {
         super();
         this.node = node;
         this.tab = tab;
+        this.contentDocument = contentDocument;
+        this.childFrame = childFrame;
         this.parent = parent;
         this.destroyed = false;
         this.namespace = null;
         this.inlineStyle = '';
         this.children = [];
         this.updateValueInterval = null;
+        if (this.childFrame) {
+            console.log("HAS CHILD FRAME");
+        }
         // if (node.frameId) {
         //     const tab: TabState = this.getTab();
         //     const frame: FrameState = tab.getFrame(node.frameId);
@@ -234,7 +239,7 @@ class DOMState extends events_1.EventEmitter {
     }
     requestInlineStyle() {
         const nodeType = this.getNodeType();
-        if (nodeType === 1) {
+        if (nodeType === node_code_1.NodeCode.ELEMENT_NODE) {
             return new Promise((resolve, reject) => {
                 this.getChrome().CSS.getInlineStylesForNode({
                     nodeId: this.getNodeId()
@@ -392,21 +397,34 @@ class DOMState extends events_1.EventEmitter {
         return rv;
     }
     ;
-    stringify(level = 0) {
+    // public stringify(level: number = 0): string {
+    //     let result: string = `${'    '.repeat(level)}${this.stringifySelf()}`;
+    //     if (this.childFrame) {
+    //         result += `(${this.childFrame.getFrameId()})\n`;
+    //         if(this.childFrame.hasRoot() && this.getNodeType() !== NodeCode.DOCUMENT_NODE) {
+    //             result += this.childFrame.stringify(level+1);
+    //         }
+    //     }
+    //     result += '\n';
+    //
+    //     this.children.forEach((child: DOMState) => {
+    //         result += child.stringify(level + 1);
+    //     });
+    //     return result;
+    // };
+    print(level = 0) {
         let result = `${'    '.repeat(level)}${this.stringifySelf()}`;
         if (this.childFrame) {
             result += `(${this.childFrame.getFrameId()})\n`;
-            // result += this.childFrame.stringify(level+1);
         }
-        result += '\n';
+        console.log(result);
+        if (this.contentDocument) {
+            this.contentDocument.print(level + 1);
+        }
         this.children.forEach((child) => {
-            result += child.stringify(level + 1);
+            child.print(level + 1);
         });
-        return result;
-    }
-    ;
-    print(level = 0) {
-        console.log(this.stringify(level));
+        // return result;
     }
     ;
     getFrameStack() {

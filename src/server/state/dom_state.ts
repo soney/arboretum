@@ -1,4 +1,5 @@
 import { FrameState } from './frame_state';
+import { ShadowDOM } from '../../client/shadows/dom_shadow';
 import { getCanvasImage, getUniqueSelector, getElementValue } from '../hack_driver/hack_driver';
 import { getColoredLogger, level, setLevel } from '../../utils/logging';
 import { processCSSURLs } from '../css_parser';
@@ -16,10 +17,12 @@ export class DOMState extends EventEmitter {
     private inlineStyle: string = '';
     private children: Array<any> = [];
     private updateValueInterval: NodeJS.Timer = null;
-    private childFrame:FrameState;
 
-    constructor(private node: CRI.Node, private tab:TabState, private parent?:DOMState) {
+    constructor(private node: CRI.Node, private tab:TabState, private contentDocument?:DOMState, private childFrame?:FrameState, private parent?:DOMState) {
         super();
+        if(this.childFrame) {
+            console.log("HAS CHILD FRAME");
+        }
         // if (node.frameId) {
         //     const tab: TabState = this.getTab();
         //     const frame: FrameState = tab.getFrame(node.frameId);
@@ -216,7 +219,7 @@ export class DOMState extends EventEmitter {
     }
     private requestInlineStyle(): Promise<CRI.CSSStyle> {
         const nodeType = this.getNodeType();
-        if (nodeType === 1) {
+        if (nodeType === NodeCode.ELEMENT_NODE) {
             return new Promise<CRI.CSSStyle>((resolve, reject) => {
                 this.getChrome().CSS.getInlineStylesForNode({
                     nodeId: this.getNodeId()
@@ -338,7 +341,7 @@ export class DOMState extends EventEmitter {
         const lowercaseAttributeName = attributeName.toLowerCase();
         return DOMState.attributesToIgnore.indexOf(lowercaseAttributeName) < 0;
     };
-    private getAttributesMap(shadow?): Map<string, string> {
+    private getAttributesMap(shadow?:ShadowDOM): Map<string, string> {
         const tagName = this.getTagName();
         const tagTransform = urlTransform[tagName.toLowerCase()];
         const attributes = this.getNodeAttributes();
@@ -367,21 +370,35 @@ export class DOMState extends EventEmitter {
         }
         return rv;
     };
-    public stringify(level: number = 0): string {
+    // public stringify(level: number = 0): string {
+    //     let result: string = `${'    '.repeat(level)}${this.stringifySelf()}`;
+    //     if (this.childFrame) {
+    //         result += `(${this.childFrame.getFrameId()})\n`;
+    //         if(this.childFrame.hasRoot() && this.getNodeType() !== NodeCode.DOCUMENT_NODE) {
+    //             result += this.childFrame.stringify(level+1);
+    //         }
+    //     }
+    //     result += '\n';
+    //
+    //     this.children.forEach((child: DOMState) => {
+    //         result += child.stringify(level + 1);
+    //     });
+    //     return result;
+    // };
+    public print(level: number = 0): void {
         let result: string = `${'    '.repeat(level)}${this.stringifySelf()}`;
         if (this.childFrame) {
             result += `(${this.childFrame.getFrameId()})\n`;
-            // result += this.childFrame.stringify(level+1);
         }
-        result += '\n';
+        console.log(result);
+        if(this.contentDocument) {
+            this.contentDocument.print(level+1);
+        }
 
         this.children.forEach((child: DOMState) => {
-            result += child.stringify(level + 1);
+            child.print(level + 1);
         });
-        return result;
-    };
-    public print(level: number = 0): void {
-        console.log(this.stringify(level));
+        // return result;
     };
     public getFrameStack() {
         return this.getFrame().getFrameStack();
