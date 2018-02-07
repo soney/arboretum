@@ -1,62 +1,57 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const events_1 = require("events");
-const logging_1 = require("../../utils/logging");
-const frame_shadow_1 = require("./frame_shadow");
+import {EventEmitter} from 'events';
+import { getColoredLogger, level, setLevel } from '../../utils/logging';
+import { TabState } from '../../server/state/tab_state';
+import { FrameState } from '../../server/state/frame_state';
+import { ShadowFrame } from './frame_shadow';
+import { ShadowBrowser } from './browser_shadow';
 // var _ = require('underscore'),
 // 	util = require('util'),
 // 	EventEmitter = require('events'),
 // 	ShadowFrame = require('./frame_shadow').ShadowFrame;
 //
 // var log = require('../../utils/logging').getColoredLogger('yellow', 'bgBlack');
-const log = logging_1.getColoredLogger('red', 'bgBlack');
-class ShadowTab extends events_1.EventEmitter {
-    constructor(tabState, socket, browserShadow) {
+
+const log = getColoredLogger('red', 'bgBlack');
+
+export class ShadowTab extends EventEmitter {
+    private frames = new Map();
+    private shadowFrame:ShadowFrame;
+    constructor(private tabState:TabState, private socket, private browserShadow:ShadowBrowser) {
         super();
-        this.tabState = tabState;
-        this.socket = socket;
-        this.browserShadow = browserShadow;
-        this.frames = new Map();
-        this.mainFrameChanged = () => {
-            const tab = this.getTab();
-            const rootFrame = tab.getRootFrame();
-            this.setFrame(rootFrame.getFrameId());
-        };
-        log.debug(`::: CREATED TAB SHADOW ${this.getTab().getTabId()} :::`);
+    	log.debug(`::: CREATED TAB SHADOW ${this.getTab().getTabId()} :::`);
     }
-    getTab() {
+    private getTab():TabState {
         return this.tabState;
-    }
-    ;
-    getSocket() {
+    };
+    private getSocket() {
         return this.socket;
     }
-    getBrowserShadow() {
+    private getBrowserShadow():ShadowBrowser {
         return this.browserShadow;
     }
-    setFrame(frameId) {
+    private mainFrameChanged = ():void => {
+        const tab = this.getTab();
+        const rootFrame = tab.getRootFrame();
+        this.setFrame(rootFrame.getFrameId());
+    };
+    private setFrame(frameId:CRI.FrameID):void {
         const socket = this.getSocket();
-        if (this.shadowFrame) {
+        if(this.shadowFrame) {
             this.shadowFrame.destroy();
         }
         const frameState = this.getTab().getFrame(frameId);
-        this.shadowFrame = new frame_shadow_1.ShadowFrame(frameState, socket, this.getBrowserShadow());
+        this.shadowFrame = new ShadowFrame(frameState, socket, this.getBrowserShadow());
         log.debug(`Frame changed ${frameId}`);
         socket.emit('frameChanged');
-    }
-    ;
-    openURL(url) {
+    };
+    public openURL(url:string) {
         this.getTab().navigate(url);
-    }
-    ;
-    destroy() {
+    };
+    public destroy():void {
         const tabState = this.getTab();
         tabState.removeListener('mainFrameChanged', this.mainFrameChanged);
-    }
-    ;
-}
-exports.ShadowTab = ShadowTab;
-;
+    };
+};
 //
 // var ShadowTab = function(options) {
 // 	this.options = options;

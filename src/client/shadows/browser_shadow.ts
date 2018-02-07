@@ -1,8 +1,9 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const events_1 = require("events");
-const logging_1 = require("../../utils/logging");
-const log = logging_1.getColoredLogger('red', 'bgBlack');
+import { EventEmitter } from 'events';
+import { BrowserState } from '../../server/state/browser_state';
+import { getColoredLogger, level, setLevel } from '../../utils/logging';
+import { ShadowTab } from './tab_shadow';
+
+const log = getColoredLogger('red', 'bgBlack');
 // var _ = require('underscore'),
 // 	util = require('util'),
 // 	EventEmitter = require('events'),
@@ -10,48 +11,49 @@ const log = logging_1.getColoredLogger('red', 'bgBlack');
 // 	ShadowFrame = require('./frame_shadow').ShadowFrame,
 // 	ShadowOutput = require('./output_shadow').ShadowOutput,
 // 	ShadowDOM = require('./dom_shadow').ShadowDOM;
-class ShadowBrowser extends events_1.EventEmitter {
-    constructor(browserState) {
-        super();
-        this.browserState = browserState;
-        this.clients = new Map();
-        this.onAddTab = (event) => {
-            this.getBrowserState().addTab();
-        };
-        this.onCloseTab = (info) => {
-            this.getBrowserState().closeTab(info.tabId);
-        };
-        this.onFocusTab = (info, clientOptions) => {
-            this.setTab(info.tabId, clientOptions);
-        };
-        this.onOpenURL = (info) => {
-            var mainClient = this.getMainClient();
-            // var scriptRecorder = this.getScriptRecorder();
-            mainClient.openURL(info.url);
-            // scriptRecorder.onNavigate(info.url);
-        };
-    }
-    ;
-    getBrowserState() {
-        return this.browserState;
-    }
-    setTab(tabId, clientOptions) {
-        const browserState = this.getBrowserState();
-    }
-    setMainClient(client) {
-        this.mainClient = client;
-    }
-    getMainClient() {
-        return this.mainClient;
-    }
-    setClient(frameId, client) {
-        this.clients.set(frameId, client);
-    }
-    getClient(frameId) {
-        return this.clients.get(frameId);
-    }
+
+
+export class ShadowBrowser extends EventEmitter {
+	private clients:Map<CRI.FrameID, any> = new Map<CRI.FrameID, any>();
+	private mainClient;
+	constructor(private browserState:BrowserState) {
+		super();
+	};
+	private getBrowserState():BrowserState {
+		return this.browserState;
+	}
+	private onAddTab = (event):void => {
+		this.getBrowserState().addTab();
+	};
+	private onCloseTab = (info):void => {
+		this.getBrowserState().closeTab(info.tabId);
+	};
+	private onFocusTab = (info, clientOptions):void => {
+		this.setTab(info.tabId, clientOptions);
+	};
+	private onOpenURL = (info):void => {
+		var mainClient = this.getMainClient();
+		// var scriptRecorder = this.getScriptRecorder();
+		mainClient.openURL(info.url);
+		// scriptRecorder.onNavigate(info.url);
+	};
+	private setTab(tabId:CRI.TabID, clientOptions) {
+		const browserState = this.getBrowserState();
+	}
+	public setMainClient(client) {
+		this.mainClient = client;
+	}
+	private getMainClient() {
+		return this.mainClient;
+	}
+	public setClient(frameId:CRI.FrameID, client):void  {
+		this.clients.set(frameId, client);
+	}
+	public getClient(frameId:CRI.FrameID) {
+		return this.clients.get(frameId);
+	}
 }
-exports.ShadowBrowser = ShadowBrowser;
+
 // var ShadowBrowser = function(options) {
 // 	this.options = options;
 //

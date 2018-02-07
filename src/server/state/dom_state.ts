@@ -16,22 +16,22 @@ export class DOMState extends EventEmitter {
     private inlineStyle: string = '';
     private children: Array<any> = [];
     private updateValueInterval: NodeJS.Timer = null;
-    private childFrame: FrameState = null;
+    private childFrame:FrameState;
 
-    constructor(private chrome: CRI.Chrome, private node: CRI.Node, private frame: FrameState, private parent: DOMState) {
+    constructor(private node: CRI.Node, private tab:TabState, private parent?:DOMState) {
         super();
-        if (node.frameId) {
-            const tab: TabState = this.getTab();
-            const frame: FrameState = tab.getFrame(node.frameId);
-
-            // const frameRoot:CRI.Node = node.contentDocument;
-            // if(frameRoot) {
-            //     frame.setRoot(frameRoot);
-            // }
-            // frame.setDOMParent(this);
-
-            this.childFrame = frame;
-        }
+        // if (node.frameId) {
+        //     const tab: TabState = this.getTab();
+        //     const frame: FrameState = tab.getFrame(node.frameId);
+        //
+        //     const frameRoot:CRI.Node = node.contentDocument;
+        //     if(frameRoot) {
+        //         frame.setRoot(frameRoot);
+        //     }
+        //     frame.setDOMParent(this);
+        //
+        //     this.childFrame = frame;
+        // }
 
         this.getFullString().then((fullNodeValue: string) => {
             this.setNodeValue(fullNodeValue);
@@ -40,9 +40,26 @@ export class DOMState extends EventEmitter {
                 log.error(`Could not find node ${this.getNodeId()}`)
             }
         });
-        console.log(this.node);
         log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
-    }
+    };
+    public getChildFrame():FrameState {
+        return this.childFrame;
+    };
+    private getFrame():FrameState {
+        let domState:DOMState = this;
+        while(domState) {
+            const frame = domState.getChildFrame();
+            if(frame) {
+                return frame;
+            } else {
+                domState = domState.getParent();
+            }
+        }
+        return null;
+    };
+    public getFrameId():CRI.FrameID {
+        return this.getFrame().getFrameId();
+    };
     public destroy(): void {
         this.removeValueListeners();
         this.children.forEach((child: DOMState) => {
@@ -52,22 +69,23 @@ export class DOMState extends EventEmitter {
         this.destroyed = true;
         log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
     }
-    public getTab(): TabState { return this.getFrame().getTab(); };
+    public getTab(): TabState { return this.tab; };
     public getNodeId(): CRI.NodeID { return this.node.nodeId; };
     public getTagName(): string { return this.node.nodeName; };
     public getNodeAttributes(): Array<string> { return this.node.attributes; };
-    public getFrame(): FrameState { return this.frame; };
-    public getFrameId(): CRI.FrameID { return this.getFrame().getFrameId(); };
-    public getTabId(): CRI.TabID { return this.getFrame().getTabId(); };
+    // public getFrame(): FrameState { return this.frame; };
+    // public getFrameId(): CRI.FrameID { return this.getFrame().getFrameId(); };
+    public getTabId(): CRI.TabID { return this.getTab().getTabId(); };
     public getParent(): DOMState { return this.parent; };
     public setParent(parent: DOMState): void { this.parent = parent; }
     public getNodeType(): number { return this.node.nodeType; }
-    public getCanvasImage(): Promise<any> { return getCanvasImage(this.chrome, this.getNodeId()); };
+    private getChrome():CRI.Chrome { return this.getTab().getChrome(); };
+    public getCanvasImage(): Promise<any> { return getCanvasImage(this.getChrome(), this.getNodeId()); };
     public getUniqueSelector(): Promise<string> {
-        return getUniqueSelector(this.chrome, this.getNodeId());
+        return getUniqueSelector(this.getChrome(), this.getNodeId());
     };
     public getInputValue(): Promise<string> {
-        return getElementValue(this.chrome, this.getNodeId());
+        return getElementValue(this.getChrome(), this.getNodeId());
     };
     private getFullString(): Promise<string> {
         return new Promise<string>((resolve, reject) => {
@@ -75,7 +93,7 @@ export class DOMState extends EventEmitter {
             const nodeValue = this.getNodeValue();
 
             if (nodeType === NodeCode.TEXT_NODE && nodeValue && nodeValue.endsWith('…')) {
-                this.chrome.DOM.getOuterHTML({
+                this.getChrome().DOM.getOuterHTML({
                     nodeId: this.getNodeId()
                 }, (err, value) => {
                     if (err) {
@@ -200,7 +218,7 @@ export class DOMState extends EventEmitter {
         const nodeType = this.getNodeType();
         if (nodeType === 1) {
             return new Promise<CRI.CSSStyle>((resolve, reject) => {
-                this.chrome.CSS.getInlineStylesForNode({
+                this.getChrome().CSS.getInlineStylesForNode({
                     nodeId: this.getNodeId()
                 }, (err, data: CRI.GetInlineStylesResponse) => {
                     if (this.destroyed) {
@@ -361,13 +379,16 @@ export class DOMState extends EventEmitter {
             result += child.stringify(level + 1);
         });
         return result;
-    }
+    };
+    public print(level: number = 0): void {
+        console.log(this.stringify(level));
+    };
     public getFrameStack() {
-        return this.frame.getFrameStack();
-    }
+        return this.getFrame().getFrameStack();
+    };
     public querySelectorAll(selector: string): Promise<Array<CRI.NodeID>> {
         return new Promise<Array<CRI.NodeID>>((resolve, reject) => {
-            this.chrome.DOM.querySelectorAll({
+            this.getChrome().DOM.querySelectorAll({
                 nodeId: this.getNodeId(),
                 selector: selector
             }, (err, value) => {
@@ -375,7 +396,7 @@ export class DOMState extends EventEmitter {
                 else { resolve(value.nodeIds); }
             })
         });
-    }
+    };
     // 	proto.print = function(level) {
     // 		var str = '';
     // 		if(!level) { level = 0; }
@@ -976,8 +997,6 @@ export class DOMState extends EventEmitter {
 // 				text = text.substr(0, MAX_TEXT_LENGTH) + '...';
 // 			}
 // 			return '(' + id + ') text: ' + text;
-// 		} else if(type === NODE_CODE.DOCUMENT_TYPE_NODE) {
-// 			return '(' + id + ') <' + this.getNodeName() + '>';
 // 		} else if(type === NODE_CODE.ELEMENT_NODE) {
 // 			var text = '(' + id + ') <' + this.getNodeName();
 // 			var attributesMap = this.getAttributesMap();

@@ -2,7 +2,7 @@ import {EventEmitter} from 'events';
 import {ipcMain} from 'electron';
 import * as _ from 'underscore';
 
-class ChatServer extends EventEmitter {
+export class ChatServer extends EventEmitter {
     private title:string = '';
     private messages:Array<ChatMessage> = new Array<ChatMessage>();
     private participants:Array<ChatParticipant> = new Array<ChatParticipant>();

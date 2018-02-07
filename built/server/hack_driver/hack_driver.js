@@ -11,8 +11,8 @@ const GET_CANVAS_IMAGE = readFile(path_1.join(__dirname, 'injectable_js', 'get_c
 const GET_UNIQUE_SELECTOR = readFile(path_1.join(__dirname, 'injectable_js', 'get_unique_selector.js'));
 const FOCUS_ELEMENT = readFile(path_1.join(__dirname, 'injectable_js', 'focus.js'));
 function readShallowObject(chrome, objectId) {
-    return getProperties(chrome, objectId, true).then(function (properties) {
-        var rv = {};
+    return getProperties(chrome, objectId, true).then((properties) => {
+        const rv = {};
         _.each(properties.result, function (prop) {
             const { name, value } = prop;
             if (value && name !== '__proto__') {
@@ -23,13 +23,12 @@ function readShallowObject(chrome, objectId) {
     });
 }
 function callFNOnElement(chrome, fn_promise, nodeId, additional_args) {
-    var objectId;
-    var rv;
-    var resolvedNodePromise = resolveNode(chrome, nodeId);
+    let objectId, rv;
+    const resolvedNodePromise = resolveNode(chrome, nodeId);
     return Promise.all([resolvedNodePromise, fn_promise]).then(function (vals) {
         const [obj, fnText] = vals;
-        var objInfo = obj.object;
-        objectId = objInfo.objectId;
+        const { object } = obj;
+        objectId = object.objectId;
         return callFunctionOn(chrome, objectId, {
             functionDeclaration: `(${fnText})`,
             arguments: [{
@@ -92,8 +91,9 @@ function evaluate(chrome, context, options) {
                 resolve(result);
             }
         });
-    }).then(function (result) {
-        return result;
+    }).catch((err) => {
+        console.error(err);
+        throw err;
     });
 }
 function callFunctionOn(chrome, remoteObjectId, options) {
@@ -125,7 +125,7 @@ function requestNode(chrome, objectId) {
     });
 }
 function resolveNode(chrome, nodeId) {
-    return new Promise(function (resolve, reject) {
+    return new Promise((resolve, reject) => {
         chrome.DOM.resolveNode({
             nodeId: nodeId
         }, function (err, val) {
@@ -192,18 +192,19 @@ function getUniqueSelector(chrome, nodeId) {
 exports.getUniqueSelector = getUniqueSelector;
 ;
 function getCanvasImage(chrome, nodeId) {
-    return callFNOnElement(chrome, GET_CANVAS_IMAGE, nodeId).then(function (rv) {
-        var result = rv.result, objectId = result.objectId;
+    return callFNOnElement(chrome, GET_CANVAS_IMAGE, nodeId).then((rv) => {
+        const { result } = rv;
+        const { objectId } = result;
         return Promise.all([
             getObjectProperty(chrome, objectId, 'data'),
             getObjectProperty(chrome, objectId, 'width'),
             getObjectProperty(chrome, objectId, 'height'),
             objectId
         ]);
-    }).then(function (property_values) {
-        var dataObjectId = property_values[0]['result']['objectId'];
-        return Promise.all([typedArrayToArray(chrome, dataObjectId)].concat(_.rest(property_values, 1)).concat([dataObjectId]));
-    }).then(function (property_values) {
+    }).then((property_values) => {
+        var dataObjectId = property_values[0].result.objectId;
+        return Promise.all([typedArrayToArray(chrome, dataObjectId), property_values[1], property_values[2], property_values[3], dataObjectId]);
+    }).then((property_values) => {
         return Promise.all([{
                 data: property_values[0].result.value,
                 width: property_values[1].result.value,
@@ -212,9 +213,9 @@ function getCanvasImage(chrome, nodeId) {
             releaseObject(chrome, property_values[3]),
             releaseObject(chrome, property_values[4])
         ]);
-    }).then(function (values) {
+    }).then((values) => {
         return values[0];
-    }).catch(function (err) {
+    }).catch((err) => {
         console.error(err);
     });
 }

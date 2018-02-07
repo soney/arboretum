@@ -10,6 +10,7 @@ import * as WebSocket from 'ws';
 import * as WebSocketJSONStream from 'websocket-json-stream';
 import { getColoredLogger, level, setLevel } from '../../utils/logging';
 import { EventEmitter } from 'events';
+import { ipcMain } from 'electron';
 
 const log = getColoredLogger('red');
 
@@ -32,13 +33,17 @@ const log = getColoredLogger('red');
 const projectFileURLPath: string = fileUrl(join(resolve(__dirname, '..', '..'), 'browser'));
 export class BrowserState extends EventEmitter {
     private tabs: Map<CRI.TabID, TabState> = new Map<CRI.TabID, TabState>();
-    private options = { host: 'localhost', port: 9222 }
+    private options = { host: 'localhost', port: 9222 };
     private intervalID: NodeJS.Timer;
+    private sender;
     constructor(private state: any, extraOptions?) {
         super();
         _.extend(this.options, extraOptions);
         this.intervalID = setInterval(_.bind(this.refreshTabs, this), 2000);
         log.debug('=== CREATED BROWSER ===');
+        ipcMain.on('asynchronous-message', (event, arg) => {
+           this.sender = event.sender;
+        });
     }
     private refreshTabs(): void {
         this.getTabs().then((tabInfos: Array<CRI.TabInfo>) => {
@@ -114,6 +119,22 @@ export class BrowserState extends EventEmitter {
         this.tabs.forEach((tabState: TabState) => {
             tabState.print();
         });
+    };
+    public addTab():void {
+        this.sender.send('asynchronous-reply', 'remoteTab');
+    };
+    public closeTab(tabId:CRI.TabID):void {
+        this.sender.send('closeTab', tabId);
+    };
+    public openURL(url:string, tabId:CRI.TabID=this.getActiveTabId()):void {
+        const tabState = this.getTab(tabId);
+        tabState.navigate(url);
+    };
+    public getTabIds():Array<CRI.TabID> {
+        return Array.from(this.tabs.keys());
+    };
+    public getActiveTabId():CRI.TabID {
+        return this.getTabIds()[0];
     };
 };
 

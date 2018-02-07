@@ -1,19 +1,17 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const logging_1 = require("../../utils/logging");
-const log = logging_1.getColoredLogger('green', 'bgBlack');
-class ShadowFrame {
-    constructor(frameState, socket, BrowserShadow) {
-        this.frameState = frameState;
-        this.socket = socket;
-        this.BrowserShadow = BrowserShadow;
-    }
-    ;
-    destroy() {
-    }
-    ;
+import { ShadowBrowser } from './browser_shadow';
+import { FrameState } from '../../server/state/frame_state';
+
+import { getColoredLogger, level, setLevel } from '../../utils/logging';
+
+const log = getColoredLogger('green', 'bgBlack');
+export class ShadowFrame {
+	constructor(private frameState:FrameState, private socket, private BrowserShadow:ShadowBrowser) {
+
+    };
+    public destroy() {
+        
+    };
 }
-exports.ShadowFrame = ShadowFrame;
 // var _ = require('underscore'),
 // 	util = require('util'),
 // 	EventEmitter = require('events'),

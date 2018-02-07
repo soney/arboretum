@@ -7,6 +7,7 @@ const path_1 = require("path");
 const tab_state_1 = require("./tab_state");
 const logging_1 = require("../../utils/logging");
 const events_1 = require("events");
+const electron_1 = require("electron");
 const log = logging_1.getColoredLogger('red');
 // var cri = require('chrome-remote-interface'),
 // 	_ = require('underscore'),
@@ -33,6 +34,9 @@ class BrowserState extends events_1.EventEmitter {
         _.extend(this.options, extraOptions);
         this.intervalID = setInterval(_.bind(this.refreshTabs, this), 2000);
         log.debug('=== CREATED BROWSER ===');
+        electron_1.ipcMain.on('asynchronous-message', (event, arg) => {
+            this.sender = event.sender;
+        });
     }
     refreshTabs() {
         this.getTabs().then((tabInfos) => {
@@ -117,6 +121,27 @@ class BrowserState extends events_1.EventEmitter {
         this.tabs.forEach((tabState) => {
             tabState.print();
         });
+    }
+    ;
+    addTab() {
+        this.sender.send('asynchronous-reply', 'remoteTab');
+    }
+    ;
+    closeTab(tabId) {
+        this.sender.send('closeTab', tabId);
+    }
+    ;
+    openURL(url, tabId = this.getActiveTabId()) {
+        const tabState = this.getTab(tabId);
+        tabState.navigate(url);
+    }
+    ;
+    getTabIds() {
+        return Array.from(this.tabs.keys());
+    }
+    ;
+    getActiveTabId() {
+        return this.getTabIds()[0];
     }
     ;
 }

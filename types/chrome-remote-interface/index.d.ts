@@ -48,7 +48,7 @@ declare namespace CRI {
     interface Runtime {
         StackTrace:StackTrace
         releaseObject:(options:ReleaseObjectOptions, callback:(err:any, result:ReleaseObjectResult)=>any) => void
-        getProperties:(options:GetPropertiesOptions, callback:(err:any, result:ReleaseObjectResult)=>any) => void
+        getProperties:(options:GetPropertiesOptions, callback:(err:any, result:GetPropertiesResult)=>any) => void
     }
     interface ReleaseObjectOptions {
         objectId:Runtime.RemoteObjectID
@@ -248,6 +248,16 @@ declare namespace CRI {
     interface ResolveNodeResult {
         object:Runtime.RemoteObject
     }
+    interface DescribeNodeParams {
+        nodeId:NodeID,
+        backendNodeID?:DOM.BackendNodeID,
+        objectId?:Runtime.RemoteObjectID,
+        depth?:number,
+        pierce?:boolean
+    }
+    interface DescribeNodeResult {
+        node:Node
+    }
     namespace DOM {
         type BackendNodeID = number;
     }
@@ -258,6 +268,7 @@ declare namespace CRI {
         querySelectorAll:(params:QuerySelectorAllOptions, callback:(err:any, value:QuerySelectorAllResult)=>void) => void
         requestNode:(params:RequestNodeOptions, callback:(err:any, value:RequestNodeResult)=>void) => void
         resolveNode:(params:ResolveNodeOptions, callback:(err:any, value:ResolveNodeResult)=>void) => void
+        describeNode:(params:DescribeNodeParams, callback:(err:any, value:DescribeNodeResult)=>void) => void
     }
     interface FrameResourceTree {
         frameTree:FrameTree

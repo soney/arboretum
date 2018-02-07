@@ -1,31 +1,25 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const logging_1 = require("../../utils/logging");
-const log = logging_1.getColoredLogger('magenta', 'bgBlack');
-class DOMTreePlaceholder {
-    constructor(domState) {
-        this.domState = domState;
-    }
-    getNodeId() {
+//NO, this has nothing to do with *that* shadow dom
+import { DOMState } from '../../server/state/dom_state';
+import { getColoredLogger, level, setLevel } from '../../utils/logging';
+
+const log = getColoredLogger('magenta', 'bgBlack');
+
+export class DOMTreePlaceholder {
+    constructor(private domState:DOMState) { }
+    public getNodeId():CRI.NodeID {
         return this.domState.getNodeId();
-    }
-    ;
-    destroy() { }
-}
-exports.DOMTreePlaceholder = DOMTreePlaceholder;
-;
-class ShadowDOM {
-    constructor(domState) {
-        this.domState = domState;
-        log.debug(`::: CREATED DOM SHADOW ${this.getNodeId()} :::`);
-    }
-    ;
-    getNodeId() {
+    };
+    public destroy():void { }
+};
+
+export class ShadowDOM {
+    constructor(private domState:DOMState) {
+    	log.debug(`::: CREATED DOM SHADOW ${this.getNodeId()} :::`);
+    };
+    private getNodeId():CRI.NodeID {
         return this.domState.getNodeId();
-    }
-    ;
+    };
 }
-exports.ShadowDOM = ShadowDOM;
 // var _ = require('underscore'),
 // 	util = require('util'),
 // 	EventEmitter = require('events'),
@@ -399,6 +393,7 @@ exports.ShadowDOM = ShadowDOM;
 // 		this._name = tree.getNodeName();
 // 		this._value = tree.getNodeValue();
 //
+
 // 		this.$_childAdded = _.bind(this._childAdded, this);
 // 		this.$_childRemoved = _.bind(this._childRemoved, this);
 // 		this.$_childrenChanged = _.bind(this._childrenChanged, this);

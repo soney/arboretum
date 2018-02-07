@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const cri = require("chrome-remote-interface");
 const frame_state_1 = require("./frame_state");
+const dom_state_1 = require("./dom_state");
 const logging_1 = require("../../utils/logging");
 const _ = require("underscore");
 const events_1 = require("events");
@@ -14,6 +15,7 @@ class TabState extends events_1.EventEmitter {
         this.info = info;
         this.frames = new Map();
         this.pendingFrameEvents = new Map();
+        this.nodeMap = new Map();
         this.onFrameAttached = (frameInfo) => {
             const { frameId, parentFrameId } = frameInfo;
             this.createFrameState({
@@ -95,6 +97,7 @@ class TabState extends events_1.EventEmitter {
                 const { frame, childFrames, resources } = frameTree;
                 this.createFrameState(frame, null, childFrames, resources);
             });
+            this.refreshRoot();
             this.addFrameListeners();
             this.addDOMListeners();
             this.addNetworkListeners();
@@ -126,6 +129,47 @@ class TabState extends events_1.EventEmitter {
             });
         });
     }
+    ;
+    getChrome() {
+        return this.chrome;
+    }
+    ;
+    setDocument(root) {
+        this.domRoot = this.getOrCreateDOMState(root);
+        this.setChildrenRecursive(this.domRoot, root.children);
+    }
+    ;
+    getDOMStateWithID(nodeId) {
+        return this.nodeMap.get(nodeId);
+    }
+    ;
+    hasDOMStateWithID(nodeId) {
+        return this.nodeMap.has(nodeId);
+    }
+    getOrCreateDOMState(node, parent, previousNode) {
+        const { nodeId } = node;
+        if (this.hasDOMStateWithID(nodeId)) {
+            return this.getDOMStateWithID(nodeId);
+        }
+        else {
+            const domState = new dom_state_1.DOMState(node, this, parent);
+            domState.once('destroyed', () => {
+                this.removeDOMState(domState);
+            });
+            this.nodeMap.set(nodeId, domState);
+            if (parent) {
+                parent.insertChild(domState, previousNode);
+            }
+            return domState;
+        }
+    }
+    refreshRoot() {
+        return this.getDocument(-1, true).then((root) => {
+            this.setDocument(root);
+            return root;
+        });
+    }
+    ;
     createFrameState(info, parentFrame = null, childFrames = [], resources = []) {
         const { id, parentId } = info;
         const frameState = new frame_state_1.FrameState(this.chrome, info, this, parentFrame, resources);
@@ -158,27 +202,17 @@ class TabState extends events_1.EventEmitter {
         this.chrome.Runtime.executionContextCreated(this.executionContextCreated);
     }
     addDOMListeners() {
-        TabState.DOMEventTypes.forEach((eventType) => {
-            this.forwardEventToFrames(eventType);
-        });
+        this.chrome.on('DOM.attributeRemoved', this.doHandleAttributeRemoved);
+        this.chrome.on('DOM.attributeModified', this.doHandleAttributeModified);
+        this.chrome.on('DOM.characterDataModified', this.doHandleCharacterDataModified);
+        this.chrome.on('DOM.childNodeInserted', this.doHandleChildNodeInserted);
+        this.chrome.on('DOM.childNodeRemoved', this.doHandleChildNodeRemoved);
+        this.chrome.on('DOM.setChildNodes', this.doHandleSetChildNodes);
+        this.chrome.on('DOM.childNodeCountUpdated', this.doHandleChildNodeCountUpdated);
+        this.chrome.on('DOM.inlineStyleInvalidated', this.doHandleInlineStyleInvalidated);
+        this.chrome.on('DOM.documentUpdated', this.doHandleDocumentUpdated);
     }
     ;
-    forwardEventToFrames(eventType, namespace = 'DOM') {
-        this.chrome.on(`${namespace}.${eventType}`, (event) => {
-            const frameArray = Array.from(this.frames.values());
-            log.info(eventType);
-            const eventResultPromise = frameArray.map((frameState) => {
-                return frameState.handleFrameEvent(event, eventType);
-            });
-            Promise.all(eventResultPromise).then((results) => {
-                const handled = _.any(results);
-                if (!handled) {
-                    log.error(`${eventType} not handled by any frame`);
-                    console.log(event);
-                }
-            });
-        });
-    }
     requestChildNodes(nodeId, depth = -1) {
         return new Promise((resolve, reject) => {
             this.chrome.DOM.requestChildNodes({ nodeId, depth }, (err, val) => {
@@ -198,19 +232,43 @@ class TabState extends events_1.EventEmitter {
         const frame = this.getFrame(frameId);
         return frame.requestResource(url);
     }
+    ;
     getTitle() { return this.info.title; }
+    ;
     getURL() { return this.info.url; }
+    ;
     setTitle(title) {
         this.info.title = title;
     }
+    ;
     setURL(url) {
         this.info.url = url;
     }
+    ;
     updateInfo(tabInfo) {
         const { title, url } = tabInfo;
         this.setTitle(title);
         this.setURL(url);
     }
+    ;
+    describeNode(nodeId, depth = -1) {
+        return new Promise((resolve, reject) => {
+            this.chrome.DOM.describeNode({
+                nodeId, depth
+            }, (err, result) => {
+                if (err) {
+                    reject(result);
+                }
+                else {
+                    resolve(result.node);
+                }
+            });
+        }).catch((err) => {
+            console.error(err);
+            throw (err);
+        });
+    }
+    ;
     setRootFrame(frame) {
         if (this.rootFrame) {
             this.frames.forEach((frame, id) => {
@@ -309,10 +367,10 @@ class TabState extends events_1.EventEmitter {
         });
     }
     ;
-    getDocument(depth = -1) {
+    getDocument(depth = -1, pierce = false) {
         return new Promise((resolve, reject) => {
             this.chrome.DOM.getDocument({
-                depth
+                depth, pierce
             }, (err, value) => {
                 if (err) {
                     reject(value);
@@ -334,7 +392,12 @@ class TabState extends events_1.EventEmitter {
         }
     }
     print() {
-        this.rootFrame.print();
+        if (this.domRoot) {
+            this.domRoot.print();
+        }
+        else {
+            console.log(`No root frame for ${this.getTabId()}`);
+        }
     }
     ;
     destroy() {
@@ -345,8 +408,149 @@ class TabState extends events_1.EventEmitter {
     getTabTitle() {
         return this.info.title;
     }
+    ;
     printSummary() {
         console.log(`Tab ${this.getTabId()} (${this.getTabTitle()})`);
+    }
+    ;
+    setChildrenRecursive(parentState, children) {
+        if (children) {
+            parentState.setChildren(children.map((child) => {
+                const domState = this.getOrCreateDOMState(child, parentState);
+                const { children, contentDocument, frameId } = child;
+                let frame;
+                if (frameId) {
+                    frame = this.getFrame(frameId);
+                }
+                if (contentDocument) {
+                    console.log(contentDocument);
+                }
+                return this.setChildrenRecursive(domState, children);
+            }));
+        }
+        return parentState;
+    }
+    ;
+    removeDOMState(domState) {
+        const nodeId = domState.getNodeId();
+        if (this.hasDOMStateWithID(nodeId)) {
+            this.nodeMap.delete(nodeId);
+            // this.oldNodeMap.set(nodeId, true);
+        }
+    }
+    doHandleDocumentUpdated(event) {
+        return true;
+    }
+    ;
+    doHandleCharacterDataModified(event) {
+        const { nodeId } = event;
+        const domState = this.getDOMStateWithID(nodeId);
+        if (domState) {
+            log.debug(`Character Data Modified ${nodeId}`);
+            domState.setCharacterData(event.characterData);
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    doHandleSetChildNodes(event) {
+        const { parentId } = event;
+        const parent = this.getDOMStateWithID(parentId);
+        if (parent) {
+            const { nodes } = event;
+            log.debug(`Set child nodes ${parentId} -> [${nodes.map((node) => node.nodeId).join(', ')}]`);
+            this.setChildrenRecursive(parent, nodes);
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    ;
+    doHandleInlineStyleInvalidated(event) {
+        const { nodeIds } = event;
+        const updatedInlineStyles = nodeIds.map((nodeId) => {
+            const node = this.getDOMStateWithID(nodeId);
+            if (node) {
+                node.updateInlineStyle();
+                return true;
+            }
+            else {
+                return false;
+            }
+        });
+        return _.any(updatedInlineStyles);
+    }
+    ;
+    doHandleChildNodeCountUpdated(event) {
+        const { nodeId } = event;
+        const domState = this.getDOMStateWithID(nodeId);
+        if (domState) {
+            log.debug(`Child count updated for ${nodeId}`);
+            domState.childCountUpdated(event.childNodeCount);
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    doHandleChildNodeInserted(event) {
+        const { parentNodeId } = event;
+        const parentDomState = this.getDOMStateWithID(parentNodeId);
+        if (parentDomState) {
+            const { previousNodeId, node } = event;
+            const { nodeId } = node;
+            const previousDomState = previousNodeId > 0 ? this.getDOMStateWithID(previousNodeId) : null;
+            const domState = this.getOrCreateDOMState(node, parentDomState, previousDomState);
+            log.debug(`Child node inserted ${nodeId} (parent: ${parentNodeId} / previous: ${previousNodeId})`);
+            this.setChildrenRecursive(domState, node.children);
+            this.requestChildNodes(nodeId);
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    doHandleChildNodeRemoved(event) {
+        const { parentNodeId, nodeId } = event;
+        const domState = this.getDOMStateWithID(nodeId);
+        const parentDomState = this.getDOMStateWithID(parentNodeId);
+        if (domState && parentDomState) {
+            log.debug(`Child node removed ${nodeId} (parent: ${parentNodeId})`);
+            parentDomState.removeChild(domState);
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    ;
+    doHandleAttributeModified(event) {
+        const { nodeId } = event;
+        const domState = this.getDOMStateWithID(nodeId);
+        if (domState) {
+            const { name, value } = event;
+            log.debug(`Attribute modified ${name} to ${value}`);
+            domState.setAttribute(name, value);
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    doHandleAttributeRemoved(event) {
+        const { nodeId } = event;
+        const domState = this.getDOMStateWithID(nodeId);
+        if (domState) {
+            const { name } = event;
+            log.debug(`Attribute removed ${name}`);
+            domState.removeAttribute(name);
+            return true;
+        }
+        else {
+            return false;
+        }
     }
 }
 TabState.DOMEventTypes = [

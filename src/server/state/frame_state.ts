@@ -29,7 +29,6 @@ export class FrameState {
     constructor(private chrome, private info: CRI.Frame, private tab: TabState, private parentFrame: FrameState = null, resources: Array<CRI.FrameResource> = []) {
         this.eventManager = new EventManager(this.chrome, this);
         this.resourceTracker = new ResourceTracker(chrome, this, resources);
-        this.refreshRoot();
         log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
     };
     public getParentFrame(): FrameState {
@@ -44,12 +43,6 @@ export class FrameState {
     public markSetMainFrameExecuted(val: boolean): void {
         this.setMainFrameExecuted = val;
     };
-    private getDOMStateWithID(nodeId: CRI.NodeID): DOMState {
-        return this.nodeMap.get(nodeId);
-    };
-    private hasDOMStateWithID(nodeId: CRI.NodeID): boolean {
-        return this.nodeMap.has(nodeId);
-    }
     public getURL(): string {
         return this.info.url;
     };
@@ -100,186 +93,20 @@ export class FrameState {
         return this.info.id;
     };
     public getRoot(): DOMState { return this.root; };
-    public setRoot(rootNode: CRI.Node): void {
-        const oldRoot: DOMState = this.getRoot();
-        if (oldRoot) {
-            oldRoot.destroy();
-        }
-        if (rootNode) {
-            const rootState = this.getOrCreateDOMState(rootNode);
-            log.info(`Set root of frame ${this.getFrameId()} to ${rootState.getNodeId()}`)
-            this.root = rootState;
-            this.setChildrenRecursive(rootState, rootNode.children);
-            this.markRefreshingRoot(false);
-        }
-    };
-    private setChildrenRecursive(parentState: DOMState, children: Array<CRI.Node>): DOMState {
-        if (children) {
-            parentState.setChildren(children.map((child: CRI.Node) => {
-                return this.setChildrenRecursive(this.getOrCreateDOMState(child, parentState), child.children);
-            }));
-        }
-        return parentState;
-    };
-    private getOrCreateDOMState(node: CRI.Node, parent: DOMState = null, previousNode: DOMState = null): DOMState {
-        const { nodeId } = node;
-        if (this.hasDOMStateWithID(nodeId)) {
-            return this.getDOMStateWithID(nodeId);
-        } else {
-            const domState = new DOMState(this.chrome, node, this, parent);
-            domState.once('destroyed', () => {
-                this.removeDOMState(domState);
-            })
-            this.nodeMap.set(nodeId, domState);
-            if (parent) {
-                parent.insertChild(domState, previousNode);
-            }
-            return domState;
-        }
-    }
-    private removeDOMState(domState: DOMState): void {
-        const nodeId = domState.getNodeId();
-        if (this.hasDOMStateWithID(nodeId)) {
-            this.nodeMap.delete(nodeId);
-            this.oldNodeMap.set(nodeId, true);
-        }
-    }
-    private refreshRoot(): Promise<CRI.Node> {
-        this.markRefreshingRoot(true);
-        return this.tab.getDocument(-1).then((root: CRI.Node) => {
-            this.setRoot(root);
-            return root;
-        });
-    }
-    private doHandleDocumentUpdated(event: CRI.DocumentUpdatedEvent): boolean {
-        return true;
-    };
-    private doHandleCharacterDataModified(event: CRI.CharacterDataModifiedEvent): boolean {
-        const { nodeId } = event;
-        const domState = this.getDOMStateWithID(nodeId);
-        if (domState) {
-            log.debug(`Character Data Modified ${nodeId}`)
-            domState.setCharacterData(event.characterData);
-            return true;
-        } else {
-            return false;
-        }
-    }
-    private doHandleSetChildNodes(event: CRI.SetChildNodesEvent): boolean {
-        const { parentId } = event;
-        const parent = this.getDOMStateWithID(parentId);
-        if (parent) {
-            const { nodes } = event;
-            log.debug(`Set child nodes ${parentId} -> [${nodes.map((node) => node.nodeId).join(', ')}]`);
-            this.setChildrenRecursive(parent, nodes);
-            return true;
-        } else {
-            return false;
-        }
-    };
-    private doHandleInlineStyleInvalidated(event: CRI.InlineStyleInvalidatedEvent): boolean {
-        const { nodeIds } = event;
-        const updatedInlineStyles: Array<boolean> = nodeIds.map((nodeId) => {
-            const node = this.getDOMStateWithID(nodeId);
-            if (node) {
-                node.updateInlineStyle();
-                return true;
-            } else {
-                return false;
-            }
-        });
-        return _.any(updatedInlineStyles);
-    };
-    private doHandleChildNodeCountUpdated(event: CRI.ChildNodeCountUpdatedEvent): boolean {
-        const { nodeId } = event;
-        const domState = this.getDOMStateWithID(nodeId);
-        if (domState) {
-            log.debug(`Child count updated for ${nodeId}`);
-            domState.childCountUpdated(event.childNodeCount);
-            return true;
-        } else {
-            return false;
-        }
-    }
-    private doHandleChildNodeInserted(event: CRI.ChildNodeInsertedEvent): boolean {
-        const { parentNodeId } = event;
-        const parentDomState = this.getDOMStateWithID(parentNodeId);
-        if (parentDomState) {
-            const { previousNodeId, node } = event;
-            const { nodeId } = node;
-            const previousDomState: DOMState = previousNodeId > 0 ? this.getDOMStateWithID(previousNodeId) : null;
-            const domState = this.getOrCreateDOMState(node, parentDomState, previousDomState);
+    // public setRoot(rootNode: CRI.Node): void {
+    //     const oldRoot: DOMState = this.getRoot();
+    //     if (oldRoot) {
+    //         oldRoot.destroy();
+    //     }
+    //     if (rootNode) {
+    //         const rootState = this.getOrCreateDOMState(rootNode);
+    //         log.info(`Set root of frame ${this.getFrameId()} to ${rootState.getNodeId()}`)
+    //         this.root = rootState;
+    //         this.setChildrenRecursive(rootState, rootNode.children);
+    //         this.markRefreshingRoot(false);
+    //     }
+    // };
 
-            log.debug(`Child node inserted ${nodeId} (parent: ${parentNodeId} / previous: ${previousNodeId})`);
-            this.setChildrenRecursive(domState, node.children);
-            const tab = this.getTab();
-            tab.requestChildNodes(nodeId);
-            return true;
-        } else {
-            return false;
-        }
-    }
-    private doHandleChildNodeRemoved(event: CRI.ChildNodeRemovedEvent): boolean {
-        const { parentNodeId, nodeId } = event;
-        const domState = this.getDOMStateWithID(nodeId);
-        const parentDomState = this.getDOMStateWithID(parentNodeId);
-        if (domState && parentDomState) {
-            log.debug(`Child node removed ${nodeId} (parent: ${parentNodeId})`);
-            parentDomState.removeChild(domState);
-            return true;
-        } else {
-            return false;
-        }
-    };
-    private doHandleAttributeModified(event: CRI.AttributeModifiedEvent): boolean {
-        const { nodeId } = event;
-        const domState = this.getDOMStateWithID(nodeId);
-        if (domState) {
-            const { name, value } = event;
-            log.debug(`Attribute modified ${name} to ${value}`);
-            domState.setAttribute(name, value);
-            return true;
-        } else {
-            return false;
-        }
-    }
-    private doHandleAttributeRemoved(event: CRI.AttributeRemovedEvent): boolean {
-        const { nodeId } = event;
-        const domState = this.getDOMStateWithID(nodeId);
-        if (domState) {
-            const { name } = event;
-            log.debug(`Attribute removed ${name}`);
-            domState.removeAttribute(name);
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    private doHandleEvent(event: any, eventType: string): boolean {
-        switch (eventType) {
-            case 'documentUpdated':
-                return this.doHandleDocumentUpdated(event as CRI.DocumentUpdatedEvent);
-            case 'setChildNodes':
-                return this.doHandleSetChildNodes(event as CRI.SetChildNodesEvent);
-            case 'inlineStyleInvalidated':
-                return this.doHandleInlineStyleInvalidated(event as CRI.InlineStyleInvalidatedEvent);
-            case 'childNodeCountUpdated':
-                return this.doHandleChildNodeCountUpdated(event as CRI.ChildNodeCountUpdatedEvent);
-            case 'childNodeInserted':
-                return this.doHandleChildNodeInserted(event as CRI.ChildNodeInsertedEvent);
-            case 'childNodeRemoved':
-                return this.doHandleChildNodeRemoved(event as CRI.ChildNodeRemovedEvent);
-            case 'attributeModified':
-                return this.doHandleAttributeModified(event as CRI.AttributeModifiedEvent);
-            case 'attributeRemoved':
-                return this.doHandleAttributeRemoved(event as CRI.AttributeRemovedEvent);
-            case 'characterDataModified':
-                return this.doHandleCharacterDataModified(event as CRI.CharacterDataModifiedEvent);
-            default:
-                throw new Error(`Could not find event type ${eventType}`);
-        }
-    };
     public getExecutionContext(): CRI.ExecutionContextDescription {
         return this.executionContext;
     };
@@ -292,30 +119,15 @@ export class FrameState {
             frameState = frameState.getParentFrame();
         }
         return rv;
-    }
+    };
 
-    public handleFrameEvent(event: any, eventType: string): Promise<boolean> {
-        // if(this.isRefreshingRoot()) {
-        // 	const resolvablePromise = new ResolvablePromise<any>();
-        // 	log.debug(`(queue) ${eventType}`);
-        // 	this.queuedEvents.push({
-        // 		event: event,
-        // 		type: eventType,
-        // 		promise: resolvablePromise
-        // 	});
-        // 	return resolvablePromise.getPromise().then(() => {
-        // 		return this.doHandleEvent(event, eventType);
-        // 	}).catch((err) => {
-        // 		log.error(err);
-        // 		throw(err);
-        // 	});
-        // } else {
-        return Promise.resolve(this.doHandleEvent(event, eventType));
-        // }
-    }
+    public setDOMRoot(node) {
+
+    };
+
     public requestResource(url: string): Promise<any> {
         return this.resourceTracker.getResource(url);
-    }
+    };
     public stringify(level:number=0):string {
         const root = this.getRoot();
         if(root) {
@@ -323,10 +135,10 @@ export class FrameState {
         } else {
             return 'NOTHING';
         }
-    }
+    };
     public print(level: number = 0): void {
         console.log(this.stringify(level));
-    }
+    };
     public querySelectorAll(selector: string): Promise<Array<CRI.NodeID>> {
         const root = this.getRoot();
         if (root) {

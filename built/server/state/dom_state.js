@@ -9,28 +9,28 @@ const url_transform_1 = require("../url_transform");
 const _ = require("underscore");
 const log = logging_1.getColoredLogger('magenta');
 class DOMState extends events_1.EventEmitter {
-    constructor(chrome, node, frame, parent) {
+    constructor(node, tab, parent) {
         super();
-        this.chrome = chrome;
         this.node = node;
-        this.frame = frame;
+        this.tab = tab;
         this.parent = parent;
         this.destroyed = false;
         this.namespace = null;
         this.inlineStyle = '';
         this.children = [];
         this.updateValueInterval = null;
-        this.childFrame = null;
-        if (node.frameId) {
-            const tab = this.getTab();
-            const frame = tab.getFrame(node.frameId);
-            // const frameRoot:CRI.Node = node.contentDocument;
-            // if(frameRoot) {
-            //     frame.setRoot(frameRoot);
-            // }
-            // frame.setDOMParent(this);
-            this.childFrame = frame;
-        }
+        // if (node.frameId) {
+        //     const tab: TabState = this.getTab();
+        //     const frame: FrameState = tab.getFrame(node.frameId);
+        //
+        //     const frameRoot:CRI.Node = node.contentDocument;
+        //     if(frameRoot) {
+        //         frame.setRoot(frameRoot);
+        //     }
+        //     frame.setDOMParent(this);
+        //
+        //     this.childFrame = frame;
+        // }
         this.getFullString().then((fullNodeValue) => {
             this.setNodeValue(fullNodeValue);
         }).catch((err) => {
@@ -38,9 +38,31 @@ class DOMState extends events_1.EventEmitter {
                 log.error(`Could not find node ${this.getNodeId()}`);
             }
         });
-        console.log(this.node);
         log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     }
+    ;
+    getChildFrame() {
+        return this.childFrame;
+    }
+    ;
+    getFrame() {
+        let domState = this;
+        while (domState) {
+            const frame = domState.getChildFrame();
+            if (frame) {
+                return frame;
+            }
+            else {
+                domState = domState.getParent();
+            }
+        }
+        return null;
+    }
+    ;
+    getFrameId() {
+        return this.getFrame().getFrameId();
+    }
+    ;
     destroy() {
         this.removeValueListeners();
         this.children.forEach((child) => {
@@ -50,7 +72,7 @@ class DOMState extends events_1.EventEmitter {
         this.destroyed = true;
         log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
     }
-    getTab() { return this.getFrame().getTab(); }
+    getTab() { return this.tab; }
     ;
     getNodeId() { return this.node.nodeId; }
     ;
@@ -58,24 +80,24 @@ class DOMState extends events_1.EventEmitter {
     ;
     getNodeAttributes() { return this.node.attributes; }
     ;
-    getFrame() { return this.frame; }
-    ;
-    getFrameId() { return this.getFrame().getFrameId(); }
-    ;
-    getTabId() { return this.getFrame().getTabId(); }
+    // public getFrame(): FrameState { return this.frame; };
+    // public getFrameId(): CRI.FrameID { return this.getFrame().getFrameId(); };
+    getTabId() { return this.getTab().getTabId(); }
     ;
     getParent() { return this.parent; }
     ;
     setParent(parent) { this.parent = parent; }
     getNodeType() { return this.node.nodeType; }
-    getCanvasImage() { return hack_driver_1.getCanvasImage(this.chrome, this.getNodeId()); }
+    getChrome() { return this.getTab().getChrome(); }
+    ;
+    getCanvasImage() { return hack_driver_1.getCanvasImage(this.getChrome(), this.getNodeId()); }
     ;
     getUniqueSelector() {
-        return hack_driver_1.getUniqueSelector(this.chrome, this.getNodeId());
+        return hack_driver_1.getUniqueSelector(this.getChrome(), this.getNodeId());
     }
     ;
     getInputValue() {
-        return hack_driver_1.getElementValue(this.chrome, this.getNodeId());
+        return hack_driver_1.getElementValue(this.getChrome(), this.getNodeId());
     }
     ;
     getFullString() {
@@ -83,7 +105,7 @@ class DOMState extends events_1.EventEmitter {
             const nodeType = this.getNodeType();
             const nodeValue = this.getNodeValue();
             if (nodeType === node_code_1.NodeCode.TEXT_NODE && nodeValue && nodeValue.endsWith('…')) {
-                this.chrome.DOM.getOuterHTML({
+                this.getChrome().DOM.getOuterHTML({
                     nodeId: this.getNodeId()
                 }, (err, value) => {
                     if (err) {
@@ -214,7 +236,7 @@ class DOMState extends events_1.EventEmitter {
         const nodeType = this.getNodeType();
         if (nodeType === 1) {
             return new Promise((resolve, reject) => {
-                this.chrome.CSS.getInlineStylesForNode({
+                this.getChrome().CSS.getInlineStylesForNode({
                     nodeId: this.getNodeId()
                 }, (err, data) => {
                     if (this.destroyed) {
@@ -382,12 +404,18 @@ class DOMState extends events_1.EventEmitter {
         });
         return result;
     }
-    getFrameStack() {
-        return this.frame.getFrameStack();
+    ;
+    print(level = 0) {
+        console.log(this.stringify(level));
     }
+    ;
+    getFrameStack() {
+        return this.getFrame().getFrameStack();
+    }
+    ;
     querySelectorAll(selector) {
         return new Promise((resolve, reject) => {
-            this.chrome.DOM.querySelectorAll({
+            this.getChrome().DOM.querySelectorAll({
                 nodeId: this.getNodeId(),
                 selector: selector
             }, (err, value) => {
@@ -400,6 +428,7 @@ class DOMState extends events_1.EventEmitter {
             });
         });
     }
+    ;
 }
 DOMState.attributesToIgnore = ['onload', 'onclick', 'onmouseover', 'onmouseout',
     'onmouseenter', 'onmouseleave', 'action', 'oncontextmenu', 'onfocus'];
@@ -937,8 +966,6 @@ exports.DOMState = DOMState;
 // 				text = text.substr(0, MAX_TEXT_LENGTH) + '...';
 // 			}
 // 			return '(' + id + ') text: ' + text;
-// 		} else if(type === NODE_CODE.DOCUMENT_TYPE_NODE) {
-// 			return '(' + id + ') <' + this.getNodeName() + '>';
 // 		} else if(type === NODE_CODE.ELEMENT_NODE) {
 // 			var text = '(' + id + ') <' + this.getNodeName();
 // 			var attributesMap = this.getAttributesMap();

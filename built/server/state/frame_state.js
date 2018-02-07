@@ -1,10 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const dom_state_1 = require("./dom_state");
 const event_manager_1 = require("../event_manager");
 const resource_tracker_1 = require("../resource_tracker");
 const logging_1 = require("../../utils/logging");
-const _ = require("underscore");
 const log = logging_1.getColoredLogger('green');
 class FrameState {
     constructor(chrome, info, tab, parentFrame = null, resources = []) {
@@ -21,7 +19,6 @@ class FrameState {
         this.executionContext = null;
         this.eventManager = new event_manager_1.EventManager(this.chrome, this);
         this.resourceTracker = new resource_tracker_1.ResourceTracker(chrome, this, resources);
-        this.refreshRoot();
         log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
     }
     ;
@@ -38,13 +35,6 @@ class FrameState {
         this.setMainFrameExecuted = val;
     }
     ;
-    getDOMStateWithID(nodeId) {
-        return this.nodeMap.get(nodeId);
-    }
-    ;
-    hasDOMStateWithID(nodeId) {
-        return this.nodeMap.has(nodeId);
-    }
     getURL() {
         return this.info.url;
     }
@@ -100,200 +90,19 @@ class FrameState {
     ;
     getRoot() { return this.root; }
     ;
-    setRoot(rootNode) {
-        const oldRoot = this.getRoot();
-        if (oldRoot) {
-            oldRoot.destroy();
-        }
-        if (rootNode) {
-            const rootState = this.getOrCreateDOMState(rootNode);
-            log.info(`Set root of frame ${this.getFrameId()} to ${rootState.getNodeId()}`);
-            this.root = rootState;
-            this.setChildrenRecursive(rootState, rootNode.children);
-            this.markRefreshingRoot(false);
-        }
-    }
-    ;
-    setChildrenRecursive(parentState, children) {
-        if (children) {
-            parentState.setChildren(children.map((child) => {
-                return this.setChildrenRecursive(this.getOrCreateDOMState(child, parentState), child.children);
-            }));
-        }
-        return parentState;
-    }
-    ;
-    getOrCreateDOMState(node, parent = null, previousNode = null) {
-        const { nodeId } = node;
-        if (this.hasDOMStateWithID(nodeId)) {
-            return this.getDOMStateWithID(nodeId);
-        }
-        else {
-            const domState = new dom_state_1.DOMState(this.chrome, node, this, parent);
-            domState.once('destroyed', () => {
-                this.removeDOMState(domState);
-            });
-            this.nodeMap.set(nodeId, domState);
-            if (parent) {
-                parent.insertChild(domState, previousNode);
-            }
-            return domState;
-        }
-    }
-    removeDOMState(domState) {
-        const nodeId = domState.getNodeId();
-        if (this.hasDOMStateWithID(nodeId)) {
-            this.nodeMap.delete(nodeId);
-            this.oldNodeMap.set(nodeId, true);
-        }
-    }
-    refreshRoot() {
-        this.markRefreshingRoot(true);
-        return this.tab.getDocument(-1).then((root) => {
-            this.setRoot(root);
-            return root;
-        });
-    }
-    doHandleDocumentUpdated(event) {
-        return true;
-    }
-    ;
-    doHandleCharacterDataModified(event) {
-        const { nodeId } = event;
-        const domState = this.getDOMStateWithID(nodeId);
-        if (domState) {
-            log.debug(`Character Data Modified ${nodeId}`);
-            domState.setCharacterData(event.characterData);
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-    doHandleSetChildNodes(event) {
-        const { parentId } = event;
-        const parent = this.getDOMStateWithID(parentId);
-        if (parent) {
-            const { nodes } = event;
-            log.debug(`Set child nodes ${parentId} -> [${nodes.map((node) => node.nodeId).join(', ')}]`);
-            this.setChildrenRecursive(parent, nodes);
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-    ;
-    doHandleInlineStyleInvalidated(event) {
-        const { nodeIds } = event;
-        const updatedInlineStyles = nodeIds.map((nodeId) => {
-            const node = this.getDOMStateWithID(nodeId);
-            if (node) {
-                node.updateInlineStyle();
-                return true;
-            }
-            else {
-                return false;
-            }
-        });
-        return _.any(updatedInlineStyles);
-    }
-    ;
-    doHandleChildNodeCountUpdated(event) {
-        const { nodeId } = event;
-        const domState = this.getDOMStateWithID(nodeId);
-        if (domState) {
-            log.debug(`Child count updated for ${nodeId}`);
-            domState.childCountUpdated(event.childNodeCount);
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-    doHandleChildNodeInserted(event) {
-        const { parentNodeId } = event;
-        const parentDomState = this.getDOMStateWithID(parentNodeId);
-        if (parentDomState) {
-            const { previousNodeId, node } = event;
-            const { nodeId } = node;
-            const previousDomState = previousNodeId > 0 ? this.getDOMStateWithID(previousNodeId) : null;
-            const domState = this.getOrCreateDOMState(node, parentDomState, previousDomState);
-            log.debug(`Child node inserted ${nodeId} (parent: ${parentNodeId} / previous: ${previousNodeId})`);
-            this.setChildrenRecursive(domState, node.children);
-            const tab = this.getTab();
-            tab.requestChildNodes(nodeId);
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-    doHandleChildNodeRemoved(event) {
-        const { parentNodeId, nodeId } = event;
-        const domState = this.getDOMStateWithID(nodeId);
-        const parentDomState = this.getDOMStateWithID(parentNodeId);
-        if (domState && parentDomState) {
-            log.debug(`Child node removed ${nodeId} (parent: ${parentNodeId})`);
-            parentDomState.removeChild(domState);
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-    ;
-    doHandleAttributeModified(event) {
-        const { nodeId } = event;
-        const domState = this.getDOMStateWithID(nodeId);
-        if (domState) {
-            const { name, value } = event;
-            log.debug(`Attribute modified ${name} to ${value}`);
-            domState.setAttribute(name, value);
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-    doHandleAttributeRemoved(event) {
-        const { nodeId } = event;
-        const domState = this.getDOMStateWithID(nodeId);
-        if (domState) {
-            const { name } = event;
-            log.debug(`Attribute removed ${name}`);
-            domState.removeAttribute(name);
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-    doHandleEvent(event, eventType) {
-        switch (eventType) {
-            case 'documentUpdated':
-                return this.doHandleDocumentUpdated(event);
-            case 'setChildNodes':
-                return this.doHandleSetChildNodes(event);
-            case 'inlineStyleInvalidated':
-                return this.doHandleInlineStyleInvalidated(event);
-            case 'childNodeCountUpdated':
-                return this.doHandleChildNodeCountUpdated(event);
-            case 'childNodeInserted':
-                return this.doHandleChildNodeInserted(event);
-            case 'childNodeRemoved':
-                return this.doHandleChildNodeRemoved(event);
-            case 'attributeModified':
-                return this.doHandleAttributeModified(event);
-            case 'attributeRemoved':
-                return this.doHandleAttributeRemoved(event);
-            case 'characterDataModified':
-                return this.doHandleCharacterDataModified(event);
-            default:
-                throw new Error(`Could not find event type ${eventType}`);
-        }
-    }
-    ;
+    // public setRoot(rootNode: CRI.Node): void {
+    //     const oldRoot: DOMState = this.getRoot();
+    //     if (oldRoot) {
+    //         oldRoot.destroy();
+    //     }
+    //     if (rootNode) {
+    //         const rootState = this.getOrCreateDOMState(rootNode);
+    //         log.info(`Set root of frame ${this.getFrameId()} to ${rootState.getNodeId()}`)
+    //         this.root = rootState;
+    //         this.setChildrenRecursive(rootState, rootNode.children);
+    //         this.markRefreshingRoot(false);
+    //     }
+    // };
     getExecutionContext() {
         return this.executionContext;
     }
@@ -307,28 +116,13 @@ class FrameState {
         }
         return rv;
     }
-    handleFrameEvent(event, eventType) {
-        // if(this.isRefreshingRoot()) {
-        // 	const resolvablePromise = new ResolvablePromise<any>();
-        // 	log.debug(`(queue) ${eventType}`);
-        // 	this.queuedEvents.push({
-        // 		event: event,
-        // 		type: eventType,
-        // 		promise: resolvablePromise
-        // 	});
-        // 	return resolvablePromise.getPromise().then(() => {
-        // 		return this.doHandleEvent(event, eventType);
-        // 	}).catch((err) => {
-        // 		log.error(err);
-        // 		throw(err);
-        // 	});
-        // } else {
-        return Promise.resolve(this.doHandleEvent(event, eventType));
-        // }
+    ;
+    setDOMRoot(node) {
     }
     requestResource(url) {
         return this.resourceTracker.getResource(url);
     }
+    ;
     stringify(level = 0) {
         const root = this.getRoot();
         if (root) {
@@ -338,9 +132,11 @@ class FrameState {
             return 'NOTHING';
         }
     }
+    ;
     print(level = 0) {
         console.log(this.stringify(level));
     }
+    ;
     querySelectorAll(selector) {
         const root = this.getRoot();
         if (root) {

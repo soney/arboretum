@@ -161,6 +161,7 @@ class ChatServer extends events_1.EventEmitter {
         this.participants = [];
     }
 }
+exports.ChatServer = ChatServer;
 class ChatParticipant extends events_1.EventEmitter {
     constructor(server, handle, avatar) {
         super();
