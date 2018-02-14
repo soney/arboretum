@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const colors = require("colors/safe");
+const chalk_1 = require("chalk");
 const log = require("loglevel");
 var level;
 (function (level) {
@@ -14,7 +14,7 @@ var level;
 ;
 class ColoredLogger {
     constructor(...c) {
-        this.l = colors;
+        this.l = chalk_1.default;
         c.forEach((arg) => {
             this.l = this.l[arg];
         });

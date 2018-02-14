@@ -1,4 +1,4 @@
-import * as colors from 'colors/safe';
+import chalk from 'chalk';
 import * as _ from 'underscore';
 import * as log from 'loglevel';
 
@@ -7,7 +7,7 @@ export enum level { trace=0, debug, info, warn, error, silent};
 class ColoredLogger {
 	private l:(...s:string[]) => string;
 	constructor(...c:string[]) {
-		this.l = colors;
+		this.l = chalk;
 		c.forEach((arg) => {
 			this.l = this.l[arg];
 		});

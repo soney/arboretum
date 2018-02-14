@@ -1,4 +1,12 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const cri = require("chrome-remote-interface");
 const _ = require("underscore");
@@ -88,18 +96,20 @@ class BrowserState extends events_1.EventEmitter {
         return tab.type === 'page' && tab.title !== 'arboretumInternal' && tab.url !== 'http://localhost:3000/o' && tab.url !== 'http://localhost:3000' && tab.url.indexOf('chrome-devtools://') !== 0 && tab.url.indexOf(projectFileURLPath) !== 0;
     }
     getTabs() {
-        return new Promise((resolve, reject) => {
-            cri.listTabs(this.options, (err, tabs) => {
-                if (err) {
-                    reject(err);
-                }
-                else {
-                    resolve(_.filter(tabs, (tab) => this.tabIsInspectable(tab)));
-                }
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => {
+                cri.listTabs(this.options, (err, tabs) => {
+                    if (err) {
+                        reject(err);
+                    }
+                    else {
+                        resolve(_.filter(tabs, (tab) => this.tabIsInspectable(tab)));
+                    }
+                });
+            }).catch((err) => {
+                log.error(err);
+                throw (err);
             });
-        }).catch((err) => {
-            log.error(err);
-            throw (err);
         });
     }
     printTabSummaries() {
@@ -109,8 +119,10 @@ class BrowserState extends events_1.EventEmitter {
     }
     ;
     requestResource(url, frameID, tabID) {
-        const tabState = this.tabs.get(tabID);
-        return tabState.requestResource(url, frameID);
+        return __awaiter(this, void 0, void 0, function* () {
+            const tabState = this.tabs.get(tabID);
+            return tabState.requestResource(url, frameID);
+        });
     }
     ;
     getTab(id) {

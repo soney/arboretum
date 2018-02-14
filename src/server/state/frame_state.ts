@@ -135,12 +135,12 @@ export class FrameState {
             console.log('NOTHING');
         }
     };
-    public querySelectorAll(selector: string): Promise<Array<CRI.NodeID>> {
+    public async querySelectorAll(selector: string): Promise<Array<CRI.NodeID>> {
         const root = this.getRoot();
         if (root) {
             return root.querySelectorAll(selector)
         } else {
-            return new Promise(function(resolve, reject) {
+            return new Promise<Array<CRI.NodeID>>(function(resolve, reject) {
                 reject(new Error('Could not find root'));
             });
         }

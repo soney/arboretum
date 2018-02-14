@@ -28,7 +28,7 @@ export class DOMState extends EventEmitter {
                 log.error(`Could not find node ${this.getNodeId()}`)
             }
         });
-        log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
+        // log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     };
     public getChildFrame():FrameState {
         return this.childFrame;
@@ -55,7 +55,7 @@ export class DOMState extends EventEmitter {
         });
         this.emit('destroyed');
         this.destroyed = true;
-        log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
+        // log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
     }
     public getTab(): TabState { return this.tab; };
     public getNodeId(): CRI.NodeID { return this.node.nodeId; };
@@ -68,14 +68,14 @@ export class DOMState extends EventEmitter {
     public setParent(parent: DOMState): void { this.parent = parent; }
     public getNodeType(): number { return this.node.nodeType; }
     private getChrome():CRI.Chrome { return this.getTab().getChrome(); };
-    public getCanvasImage(): Promise<any> { return getCanvasImage(this.getChrome(), this.getNodeId()); };
-    public getUniqueSelector(): Promise<string> {
+    public async getCanvasImage(): Promise<any> { return getCanvasImage(this.getChrome(), this.getNodeId()); };
+    public async getUniqueSelector(): Promise<string> {
         return getUniqueSelector(this.getChrome(), this.getNodeId());
     };
-    public getInputValue(): Promise<string> {
+    public async getInputValue(): Promise<string> {
         return getElementValue(this.getChrome(), this.getNodeId());
     };
-    private getFullString(): Promise<string> {
+    private async getFullString(): Promise<string> {
         return new Promise<string>((resolve, reject) => {
             const nodeType = this.getNodeType();
             const nodeValue = this.getNodeValue();
@@ -109,16 +109,16 @@ export class DOMState extends EventEmitter {
         } else if (tagName === 'canvas') {
 
         }
-    }
+    };
     private removeValueListeners() {
         if (this.updateValueInterval) {
             clearInterval(this.updateValueInterval);
             this.updateValueInterval = null;
         }
-    }
-    public updateInlineStyle(): void {
+    };
+    public async updateInlineStyle():Promise<void> {
         const oldInlineStyle: string = this.inlineStyle;
-        this.requestInlineStyle().then((inlineStyle) => {
+        await this.requestInlineStyle().then((inlineStyle) => {
             this.inlineStyle = inlineStyle.cssText;
             if (this.inlineStyle !== oldInlineStyle) {
                 this.emit('inlineStyleChanged', {
@@ -138,21 +138,21 @@ export class DOMState extends EventEmitter {
         this.emit('childAdded', {
             child: childDomState,
             previousNode: previousDomState
-        })
-    }
+        });
+    };
 
     public setCharacterData(characterData: string): void {
         this.node.nodeValue = characterData;
         this.emit('nodeValueChanged', {
             value: this.getNodeValue()
-        })
-    }
+        });
+    };
     private setNodeValue(value: string): void {
         this.node.nodeValue = value;
-    }
+    };
     public getNodeValue(): string {
         return this.node.nodeValue;
-    }
+    };
     public removeChild(child: DOMState): boolean {
         const index = this.children.indexOf(child);
         if (index >= 0) {
@@ -163,7 +163,7 @@ export class DOMState extends EventEmitter {
         } else {
             return false;
         }
-    }
+    };
     public setAttribute(name: string, value: string): void {
         const node = this.node;
         const { attributes } = node;
@@ -183,7 +183,7 @@ export class DOMState extends EventEmitter {
             attributes.push(name, value);
         }
         this.notifyAttributeChange();
-    }
+    };
     public removeAttribute(name: string): boolean {
         const node = this.node;
         const { attributes } = node;
@@ -195,14 +195,14 @@ export class DOMState extends EventEmitter {
         } else {
             return false;
         }
-    }
+    };
     private notifyAttributeChange(): void {
         this.emit('attributesChanged');
-    }
+    };
     public childCountUpdated(count: number): void {
         this.getTab().requestChildNodes(this.getNodeId())
-    }
-    private requestInlineStyle(): Promise<CRI.CSSStyle> {
+    };
+    private async requestInlineStyle(): Promise<CRI.CSSStyle> {
         const nodeType = this.getNodeType();
         if (nodeType === NodeCode.ELEMENT_NODE) {
             return new Promise<CRI.CSSStyle>((resolve, reject) => {
@@ -226,7 +226,7 @@ export class DOMState extends EventEmitter {
                 log.error(err);
                 throw (err);
             });
-        }
+        };
 
         // 	return new Promise(_.bind(function(resolve, reject) {
         // 		chrome.CSS.getInlineStylesForNode({
@@ -272,7 +272,7 @@ export class DOMState extends EventEmitter {
             child.setParent(this);
         });
         this.emit('childrenChanged', { children })
-    }
+    };
 
     private getBaseURL(): string {
         const frame = this.getFrame();
@@ -319,7 +319,7 @@ export class DOMState extends EventEmitter {
     };
     private getInlineStyle(): string {
         return this.inlineStyle;
-    }
+    };
     private static attributesToIgnore: Array<string> = ['onload', 'onclick', 'onmouseover', 'onmouseout',
         'onmouseenter', 'onmouseleave', 'action', 'oncontextmenu', 'onfocus'];
     private shouldIncludeAttribute(attributeName: string): boolean {
@@ -388,7 +388,7 @@ export class DOMState extends EventEmitter {
     public getFrameStack() {
         return this.getFrame().getFrameStack();
     };
-    public querySelectorAll(selector: string): Promise<Array<CRI.NodeID>> {
+    public async querySelectorAll(selector: string): Promise<Array<CRI.NodeID>> {
         return new Promise<Array<CRI.NodeID>>((resolve, reject) => {
             this.getChrome().DOM.querySelectorAll({
                 nodeId: this.getNodeId(),

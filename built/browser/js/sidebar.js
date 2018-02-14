@@ -45,17 +45,18 @@ class Sidebar {
 
     startServer() {
         this.chat.enable();
-        this.populateShareURLs();
-        remote.getCurrentWindow().emit('startServer', _.bind(() => {
-            const {ipcRenderer} = require('electron');
-            ipcRenderer.send('asynchronous-message','test');
-            this.chat.connect();
-        }, this));
+        const {ipcRenderer} = require('electron');
+        ipcRenderer.send('asynchronous-message', 'startServer');
+        // this.populateShareURLs();
+        // remote.getCurrentWindow().emit('startServer', () => {
+        //     ipcRenderer.send('asynchronous-message','test');
+        //     this.chat.connect();
+        // });
     }
 
     stopServer() {
-        remote.getCurrentWindow().emit('stopServer', () => {
-        });
+        const {ipcRenderer} = require('electron');
+        ipcRenderer.send('asynchronous-message', 'stopServer');
         $('#share_url').val('').prop('disabled', true);
         $('#admin_url').val('').prop('disabled', true);
         this.chat.clear();

@@ -58,7 +58,7 @@ export class TabState extends EventEmitter {
     public getRootFrame(): FrameState {
         return this.rootFrame;
     }
-    public evaluate(expression: string, frameId: CRI.FrameID = null): Promise<CRI.EvaluateResult> {
+    public async evaluate(expression: string, frameId: CRI.FrameID = null): Promise<CRI.EvaluateResult> {
         const frame: FrameState = frameId ? this.getFrame(frameId) : this.getRootFrame();
         const executionContext: CRI.ExecutionContextDescription = frame.getExecutionContext();
 
@@ -104,7 +104,7 @@ export class TabState extends EventEmitter {
             return domState;
         }
     }
-    private refreshRoot(): Promise<CRI.Node> {
+    private async refreshRoot(): Promise<CRI.Node> {
         return this.getDocument(-1, true).then((root: CRI.Node) => {
             this.setDocument(root);
             return root;
@@ -152,7 +152,7 @@ export class TabState extends EventEmitter {
         this.chrome.on('DOM.inlineStyleInvalidated', this.doHandleInlineStyleInvalidated);
         this.chrome.on('DOM.documentUpdated', this.doHandleDocumentUpdated);
     };
-    public requestChildNodes(nodeId: CRI.NodeID, depth: number = 1, pierce=false): Promise<CRI.RequestChildNodesResult> {
+    public async requestChildNodes(nodeId: CRI.NodeID, depth: number = 1, pierce=false): Promise<CRI.RequestChildNodesResult> {
         return new Promise<CRI.RequestChildNodesResult>((resolve, reject) => {
             this.chrome.DOM.requestChildNodes({ nodeId, depth, pierce }, (err, val) => {
                 if (err) { reject(val); }
@@ -179,7 +179,7 @@ export class TabState extends EventEmitter {
         this.setTitle(title);
         this.setURL(url);
     };
-    private describeNode(nodeId:CRI.NodeID, depth:number=-1):Promise<CRI.Node> {
+    private async describeNode(nodeId:CRI.NodeID, depth:number=-1):Promise<CRI.Node> {
         return new Promise<CRI.Node>((resolve, reject) => {
             this.chrome.DOM.describeNode({
                 nodeId, depth
@@ -214,7 +214,7 @@ export class TabState extends EventEmitter {
         });
         */
     }
-    public navigate(url: string): Promise<CRI.FrameID> {
+    public async navigate(url: string): Promise<CRI.FrameID> {
         const parsedURL = parse(url);
         if (!parsedURL.protocol) { parsedURL.protocol = 'http'; }
         url = format(parsedURL);
@@ -315,7 +315,7 @@ export class TabState extends EventEmitter {
     }
     public getFrame(id: CRI.FrameID): FrameState { return this.frames.get(id); }
     private hasFrame(id: CRI.FrameID): boolean { return this.frames.has(id); }
-    private getFrameTree(): Promise<CRI.FrameTree> {
+    private async getFrameTree(): Promise<CRI.FrameTree> {
         throw new Error("Not supported yet")
         // return new Promise<CRI.FrameTree>((resolve, reject) => {
         //     this.chrome.Page.getFrameTree({}, (err, value:CRI.FrameTree) => {
@@ -327,7 +327,7 @@ export class TabState extends EventEmitter {
         // });
     }
 
-    private getResourceTree(): Promise<CRI.FrameResourceTree> {
+    private async getResourceTree(): Promise<CRI.FrameResourceTree> {
         return new Promise<CRI.FrameResourceTree>((resolve, reject) => {
             this.chrome.Page.getResourceTree({}, (err, value: CRI.FrameResourceTree) => {
                 if (err) { reject(value); }
@@ -338,7 +338,7 @@ export class TabState extends EventEmitter {
             throw (err);
         });
     };
-    public getDocument(depth=-1, pierce=false): Promise<CRI.Node> {
+    public async getDocument(depth=-1, pierce=false): Promise<CRI.Node> {
         return new Promise<CRI.Node>((resolve, reject) => {
             this.chrome.DOM.getDocument({
                 depth, pierce
@@ -429,7 +429,6 @@ export class TabState extends EventEmitter {
         }
     }
     private doHandleSetChildNodes = (event:CRI.SetChildNodesEvent):void => {
-        console.log("ABC");
         const { parentId } = event;
         const parent = this.getDOMStateWithID(parentId);
         if (parent) {

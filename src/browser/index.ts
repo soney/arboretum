@@ -17,7 +17,7 @@ interface ArbBrowserValue {
     options:ArbBrowserOptions
 }
 
-export default function(options:ArbBrowserOptions):Promise<ArbBrowserValue> {
+export default async function(options:ArbBrowserOptions):Promise<ArbBrowserValue> {
     options = _.extend({
         'remote-debugging-port': 9222,
         width: 800,

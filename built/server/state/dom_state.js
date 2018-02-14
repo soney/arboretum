@@ -1,4 +1,12 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const hack_driver_1 = require("../hack_driver/hack_driver");
 const logging_1 = require("../../utils/logging");
@@ -28,7 +36,7 @@ class DOMState extends events_1.EventEmitter {
                 log.error(`Could not find node ${this.getNodeId()}`);
             }
         });
-        log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
+        // log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     }
     ;
     getChildFrame() {
@@ -60,7 +68,7 @@ class DOMState extends events_1.EventEmitter {
         });
         this.emit('destroyed');
         this.destroyed = true;
-        log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
+        // log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
     }
     getTab() { return this.tab; }
     ;
@@ -80,38 +88,46 @@ class DOMState extends events_1.EventEmitter {
     getNodeType() { return this.node.nodeType; }
     getChrome() { return this.getTab().getChrome(); }
     ;
-    getCanvasImage() { return hack_driver_1.getCanvasImage(this.getChrome(), this.getNodeId()); }
+    getCanvasImage() {
+        return __awaiter(this, void 0, void 0, function* () { return hack_driver_1.getCanvasImage(this.getChrome(), this.getNodeId()); });
+    }
     ;
     getUniqueSelector() {
-        return hack_driver_1.getUniqueSelector(this.getChrome(), this.getNodeId());
+        return __awaiter(this, void 0, void 0, function* () {
+            return hack_driver_1.getUniqueSelector(this.getChrome(), this.getNodeId());
+        });
     }
     ;
     getInputValue() {
-        return hack_driver_1.getElementValue(this.getChrome(), this.getNodeId());
+        return __awaiter(this, void 0, void 0, function* () {
+            return hack_driver_1.getElementValue(this.getChrome(), this.getNodeId());
+        });
     }
     ;
     getFullString() {
-        return new Promise((resolve, reject) => {
-            const nodeType = this.getNodeType();
-            const nodeValue = this.getNodeValue();
-            if (nodeType === node_code_1.NodeCode.TEXT_NODE && nodeValue && nodeValue.endsWith('…')) {
-                this.getChrome().DOM.getOuterHTML({
-                    nodeId: this.getNodeId()
-                }, (err, value) => {
-                    if (err) {
-                        reject(value);
-                    }
-                    else {
-                        resolve(value.outerHTML);
-                    }
-                });
-            }
-            else {
-                resolve(nodeValue);
-            }
-        }).catch((err) => {
-            log.error(err);
-            throw (err);
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => {
+                const nodeType = this.getNodeType();
+                const nodeValue = this.getNodeValue();
+                if (nodeType === node_code_1.NodeCode.TEXT_NODE && nodeValue && nodeValue.endsWith('…')) {
+                    this.getChrome().DOM.getOuterHTML({
+                        nodeId: this.getNodeId()
+                    }, (err, value) => {
+                        if (err) {
+                            reject(value);
+                        }
+                        else {
+                            resolve(value.outerHTML);
+                        }
+                    });
+                }
+                else {
+                    resolve(nodeValue);
+                }
+            }).catch((err) => {
+                log.error(err);
+                throw (err);
+            });
         });
     }
     ;
@@ -127,21 +143,25 @@ class DOMState extends events_1.EventEmitter {
         else if (tagName === 'canvas') {
         }
     }
+    ;
     removeValueListeners() {
         if (this.updateValueInterval) {
             clearInterval(this.updateValueInterval);
             this.updateValueInterval = null;
         }
     }
+    ;
     updateInlineStyle() {
-        const oldInlineStyle = this.inlineStyle;
-        this.requestInlineStyle().then((inlineStyle) => {
-            this.inlineStyle = inlineStyle.cssText;
-            if (this.inlineStyle !== oldInlineStyle) {
-                this.emit('inlineStyleChanged', {
-                    inlineStyle: this.inlineStyle
-                });
-            }
+        return __awaiter(this, void 0, void 0, function* () {
+            const oldInlineStyle = this.inlineStyle;
+            yield this.requestInlineStyle().then((inlineStyle) => {
+                this.inlineStyle = inlineStyle.cssText;
+                if (this.inlineStyle !== oldInlineStyle) {
+                    this.emit('inlineStyleChanged', {
+                        inlineStyle: this.inlineStyle
+                    });
+                }
+            });
         });
     }
     ;
@@ -159,18 +179,22 @@ class DOMState extends events_1.EventEmitter {
             previousNode: previousDomState
         });
     }
+    ;
     setCharacterData(characterData) {
         this.node.nodeValue = characterData;
         this.emit('nodeValueChanged', {
             value: this.getNodeValue()
         });
     }
+    ;
     setNodeValue(value) {
         this.node.nodeValue = value;
     }
+    ;
     getNodeValue() {
         return this.node.nodeValue;
     }
+    ;
     removeChild(child) {
         const index = this.children.indexOf(child);
         if (index >= 0) {
@@ -183,6 +207,7 @@ class DOMState extends events_1.EventEmitter {
             return false;
         }
     }
+    ;
     setAttribute(name, value) {
         const node = this.node;
         const { attributes } = node;
@@ -203,6 +228,7 @@ class DOMState extends events_1.EventEmitter {
         }
         this.notifyAttributeChange();
     }
+    ;
     removeAttribute(name) {
         const node = this.node;
         const { attributes } = node;
@@ -216,71 +242,77 @@ class DOMState extends events_1.EventEmitter {
             return false;
         }
     }
+    ;
     notifyAttributeChange() {
         this.emit('attributesChanged');
     }
+    ;
     childCountUpdated(count) {
         this.getTab().requestChildNodes(this.getNodeId());
     }
+    ;
     requestInlineStyle() {
-        const nodeType = this.getNodeType();
-        if (nodeType === node_code_1.NodeCode.ELEMENT_NODE) {
-            return new Promise((resolve, reject) => {
-                this.getChrome().CSS.getInlineStylesForNode({
-                    nodeId: this.getNodeId()
-                }, (err, data) => {
-                    if (this.destroyed) {
-                        reject(new Error(`Node ${this.getNodeId()} was destroyed`));
-                    }
-                    else if (err) {
-                        reject(err);
-                    }
-                    else {
-                        const { inlineStyle } = data;
-                        if (inlineStyle.cssText) {
-                            const newCSSText = css_parser_1.processCSSURLs(inlineStyle.cssText, this.getBaseURL(), this.getFrameId(), this.getTabId());
-                            inlineStyle.cssText = newCSSText;
+        return __awaiter(this, void 0, void 0, function* () {
+            const nodeType = this.getNodeType();
+            if (nodeType === node_code_1.NodeCode.ELEMENT_NODE) {
+                return new Promise((resolve, reject) => {
+                    this.getChrome().CSS.getInlineStylesForNode({
+                        nodeId: this.getNodeId()
+                    }, (err, data) => {
+                        if (this.destroyed) {
+                            reject(new Error(`Node ${this.getNodeId()} was destroyed`));
                         }
-                        resolve(inlineStyle);
-                    }
+                        else if (err) {
+                            reject(err);
+                        }
+                        else {
+                            const { inlineStyle } = data;
+                            if (inlineStyle.cssText) {
+                                const newCSSText = css_parser_1.processCSSURLs(inlineStyle.cssText, this.getBaseURL(), this.getFrameId(), this.getTabId());
+                                inlineStyle.cssText = newCSSText;
+                            }
+                            resolve(inlineStyle);
+                        }
+                    });
+                }).catch((err) => {
+                    log.error(err);
+                    throw (err);
                 });
-            }).catch((err) => {
-                log.error(err);
-                throw (err);
-            });
-        }
-        // 	return new Promise(_.bind(function(resolve, reject) {
-        // 		chrome.CSS.getInlineStylesForNode({
-        // 			nodeId: id
-        // 		}, _.bind(function(err, value) {
-        // 			if(this._destroyed) {
-        // 				var myError = new Error('Node ' + id + ' was destroyed');
-        // 				myError.expected = true;
-        // 				reject(myError);
-        // 			} else if(err) {
-        // 				//reject(new Error('Could not find node ' + id));
-        // 			} else {
-        // 				resolve(value.inlineStyle);
-        // 			}
-        // 		}, this));
-        // 	}, this)).then(_.bind(function(is) {
-        // 		inlineStyle = is;
-        // 		if(inlineStyle.cssText) {
-        // 			return this._getBaseURL();
-        // 		}
-        // 	}, this)).then(_.bind(function(url) {
-        // 		if(inlineStyle.cssText) {
-        // 			inlineStyle.cssText = processCSSURLs(inlineStyle.cssText, url, this.getFrameId(), this.getTabId());
-        // 		}
-        // 		return inlineStyle;
-        // 	}, this));
-        // } else {
-        // 	return new Promise(function(resolve, reject) {
-        // 		resolve({
-        // 			cssText: ''
-        // 		});
-        // 	});
-        // }
+            }
+            ;
+            // 	return new Promise(_.bind(function(resolve, reject) {
+            // 		chrome.CSS.getInlineStylesForNode({
+            // 			nodeId: id
+            // 		}, _.bind(function(err, value) {
+            // 			if(this._destroyed) {
+            // 				var myError = new Error('Node ' + id + ' was destroyed');
+            // 				myError.expected = true;
+            // 				reject(myError);
+            // 			} else if(err) {
+            // 				//reject(new Error('Could not find node ' + id));
+            // 			} else {
+            // 				resolve(value.inlineStyle);
+            // 			}
+            // 		}, this));
+            // 	}, this)).then(_.bind(function(is) {
+            // 		inlineStyle = is;
+            // 		if(inlineStyle.cssText) {
+            // 			return this._getBaseURL();
+            // 		}
+            // 	}, this)).then(_.bind(function(url) {
+            // 		if(inlineStyle.cssText) {
+            // 			inlineStyle.cssText = processCSSURLs(inlineStyle.cssText, url, this.getFrameId(), this.getTabId());
+            // 		}
+            // 		return inlineStyle;
+            // 	}, this));
+            // } else {
+            // 	return new Promise(function(resolve, reject) {
+            // 		resolve({
+            // 			cssText: ''
+            // 		});
+            // 	});
+            // }
+        });
     }
     setChildren(children) {
         this.children.forEach((child) => {
@@ -294,6 +326,7 @@ class DOMState extends events_1.EventEmitter {
         });
         this.emit('childrenChanged', { children });
     }
+    ;
     getBaseURL() {
         const frame = this.getFrame();
         return frame.getURL();
@@ -346,6 +379,7 @@ class DOMState extends events_1.EventEmitter {
     getInlineStyle() {
         return this.inlineStyle;
     }
+    ;
     shouldIncludeAttribute(attributeName) {
         const lowercaseAttributeName = attributeName.toLowerCase();
         return DOMState.attributesToIgnore.indexOf(lowercaseAttributeName) < 0;
@@ -417,17 +451,19 @@ class DOMState extends events_1.EventEmitter {
     }
     ;
     querySelectorAll(selector) {
-        return new Promise((resolve, reject) => {
-            this.getChrome().DOM.querySelectorAll({
-                nodeId: this.getNodeId(),
-                selector: selector
-            }, (err, value) => {
-                if (err) {
-                    reject(value);
-                }
-                else {
-                    resolve(value.nodeIds);
-                }
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => {
+                this.getChrome().DOM.querySelectorAll({
+                    nodeId: this.getNodeId(),
+                    selector: selector
+                }, (err, value) => {
+                    if (err) {
+                        reject(value);
+                    }
+                    else {
+                        resolve(value.nodeIds);
+                    }
+                });
             });
         });
     }

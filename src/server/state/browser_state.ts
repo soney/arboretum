@@ -92,7 +92,7 @@ export class BrowserState extends EventEmitter {
     private tabIsInspectable(tab: any): boolean {
         return tab.type === 'page' && tab.title !== 'arboretumInternal' && tab.url !== 'http://localhost:3000/o' && tab.url !== 'http://localhost:3000' && tab.url.indexOf('chrome-devtools://') !== 0 && tab.url.indexOf(projectFileURLPath) !== 0;
     }
-    private getTabs(): Promise<Array<CRI.TabInfo>> {
+    private async getTabs(): Promise<Array<CRI.TabInfo>> {
         return new Promise<Array<CRI.TabInfo>>((resolve, reject) => {
             cri.listTabs(this.options, (err, tabs) => {
                 if (err) { reject(err); }
@@ -108,7 +108,7 @@ export class BrowserState extends EventEmitter {
             tabState.printSummary();
         });
     };
-    public requestResource(url: string, frameID: CRI.FrameID, tabID: CRI.TabID): Promise<any> {
+    public async requestResource(url: string, frameID: CRI.FrameID, tabID: CRI.TabID): Promise<any> {
         const tabState: TabState = this.tabs.get(tabID);
         return tabState.requestResource(url, frameID);
     };

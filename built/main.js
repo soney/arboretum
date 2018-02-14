@@ -1,4 +1,12 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
 const _ = require("underscore");
@@ -9,6 +17,8 @@ const path_1 = require("path");
 const express = require("express");
 const browser_state_1 = require("./server/state/browser_state");
 const keypress = require("keypress");
+const chalk_1 = require("chalk");
+const ip = require("ip");
 // const ChatServer = require('./server/chat');
 // const BrowserState = require('./server/state/browser_state');
 // process.traceProcessWarnings = true;
@@ -37,10 +47,17 @@ electron_1.app.on('window-all-closed', () => {
 electron_1.app.commandLine.appendSwitch('remote-debugging-port', `${RDB_PORT}`);
 function createBrowserWindow(extraOptions) {
     const options = _.extend({}, defaultBrowswerWindowOptions, extraOptions);
-    const newWindow = new electron_1.BrowserWindow(options);
+    let newWindow = new electron_1.BrowserWindow(options);
     newWindow.loadURL(`file://${__dirname}/browser/index.html`);
+    newWindow.on('closed', () => {
+        // Dereference the window object, usually you would store windows
+        // in an array if your app supports multi windows, this is the time
+        // when you should delete the corresponding element.
+        newWindow = null;
+    });
     return newWindow;
 }
+;
 electron_1.app.on('ready', () => {
     let wn = createBrowserWindow();
 });
@@ -49,46 +66,43 @@ const browserState = new browser_state_1.BrowserState({
 });
 const expressApp = express();
 const server = http_1.createServer(expressApp);
-expressApp.all('/', (req, res, next) => {
-    setClientOptions({
+expressApp.all('/', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
+    const contents = yield setClientOptions({
         userId: getUserID()
-    }).then(function (contents) {
-        res.send(contents);
     });
-})
+    res.send(contents);
+}))
     .use('/', express.static(path_1.join(__dirname, 'client_pages')))
-    .all('/f', function (req, res, next) {
+    .all('/f', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
     var frameId = req.query.i, tabId = req.query.t, userId = req.query.u, taskId = req.query.k;
-    setClientOptions({
+    const contents = yield setClientOptions({
         userId: userId,
         frameId: frameId,
         viewType: 'mirror'
-    }).then(function (contents) {
-        res.send(contents);
     });
-})
+    res.send(contents);
+}))
     .use('/f', express.static(path_1.join(__dirname, 'client_pages')))
-    .all('/a', function (req, res, next) {
-    setClientOptions({
+    .all('/a', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
+    const contents = yield setClientOptions({
         viewType: 'admin'
-    }).then(function (contents) {
-        res.send(contents);
     });
-})
+    res.send(contents);
+}))
     .use('/a', express.static(path_1.join(__dirname, 'client_pages')))
-    .all('/m', function (req, res, next) {
+    .all('/m', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
     var messageId = req.query.m;
-    setClientOptions({
+    const contents = yield setClientOptions({
         viewType: 'message',
         messageId: messageId
-    }).then(function (contents) {
-        res.send(contents);
     });
-})
+    res.send(contents);
+}))
     .use('/m', express.static(path_1.join(__dirname, 'client_pages')))
-    .all('/r', function (req, res, next) {
+    .all('/r', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
     var url = req.query.l, tabId = req.query.t, frameId = req.query.f;
-    browserState.requestResource(url, frameId, tabId).then(function (resourceInfo) {
+    try {
+        const resourceInfo = yield browserState.requestResource(url, frameId, tabId);
         var content = resourceInfo.content;
         res.set('Content-Type', resourceInfo.mimeType);
         if (resourceInfo.base64Encoded) {
@@ -98,11 +112,55 @@ expressApp.all('/', (req, res, next) => {
         else {
             res.send(content);
         }
-    }, function (err) {
+    }
+    catch (err) {
         req.pipe(req[req.method.toLowerCase().replace('del', 'delete')](url))
             .pipe(res);
+    }
+}));
+function getIPAddress() {
+    return ip.address();
+}
+;
+function startServer() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const port = yield new Promise((resolve, reject) => {
+            server.listen(() => {
+                const addy = server.address();
+                const { port } = addy;
+                resolve(port);
+            });
+        });
+        const address = getIPAddress();
+        console.log(address);
+        return `http://${address}:${port}`;
     });
+}
+;
+function stopServer() {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield new Promise((resolve, reject) => {
+            server.close(() => {
+                resolve();
+            });
+        });
+    });
+}
+;
+startServer().then((address) => {
+    console.log(chalk_1.default.bgWhite.bold.black(`Listening on ${address}`));
 });
+electron_1.ipcMain.on('asynchronous-message', (event, arg) => __awaiter(this, void 0, void 0, function* () {
+    if (arg === 'startServer') {
+        const address = yield startServer();
+        console.log(`Listening on ${address}`);
+        event.sender.send('asynchronous-reply', address);
+    }
+    else if (arg === 'stopServer') {
+        stopServer();
+    }
+    event.sender.send('asynchronous-reply');
+}));
 keypress(process.stdin);
 process.stdin.on('keypress', (ch, key) => {
     const { name, ctrl } = key;
@@ -258,24 +316,27 @@ process.stdin.resume();
 // 	chatServer.destroy();
 // 	return browserState.destroy();
 // }
-function processFile(filename, onContents) {
-    return new Promise(function (resolve, reject) {
-        fs_1.readFile(filename, {
-            encoding: 'utf8'
-        }, function (err, data) {
-            if (err) {
-                reject(err);
-            }
-            else {
-                resolve(data);
-            }
+function processFile(filename) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return new Promise(function (resolve, reject) {
+            fs_1.readFile(filename, {
+                encoding: 'utf8'
+            }, function (err, data) {
+                if (err) {
+                    reject(err);
+                }
+                else {
+                    resolve(data);
+                }
+            });
+        }).catch((err) => {
+            throw (err);
         });
-    }).catch((err) => {
-        throw (err);
     });
 }
 function setClientOptions(options) {
-    return processFile(path_1.join(__dirname, 'client_pages', 'index.html'), function (contents) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let contents = yield processFile(path_1.join(__dirname, 'client_pages', 'index.html'));
         _.each(options, function (val, key) {
             contents = contents.replace(key + ': false', key + ': "' + val + '"');
         });

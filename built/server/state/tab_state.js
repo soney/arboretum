@@ -1,4 +1,12 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const cri = require("chrome-remote-interface");
 const frame_state_1 = require("./frame_state");
@@ -93,7 +101,6 @@ class TabState extends events_1.EventEmitter {
             }
         };
         this.doHandleSetChildNodes = (event) => {
-            console.log("ABC");
             const { parentId } = event;
             const parent = this.getDOMStateWithID(parentId);
             if (parent) {
@@ -223,19 +230,21 @@ class TabState extends events_1.EventEmitter {
         return this.rootFrame;
     }
     evaluate(expression, frameId = null) {
-        const frame = frameId ? this.getFrame(frameId) : this.getRootFrame();
-        const executionContext = frame.getExecutionContext();
-        return new Promise((resolve, reject) => {
-            this.chrome.Runtime.evaluate({
-                contextId: executionContext.id,
-                expression: expression
-            }, (err, result) => {
-                if (err) {
-                    reject(result);
-                }
-                else {
-                    resolve(result);
-                }
+        return __awaiter(this, void 0, void 0, function* () {
+            const frame = frameId ? this.getFrame(frameId) : this.getRootFrame();
+            const executionContext = frame.getExecutionContext();
+            return new Promise((resolve, reject) => {
+                this.chrome.Runtime.evaluate({
+                    contextId: executionContext.id,
+                    expression: expression
+                }, (err, result) => {
+                    if (err) {
+                        reject(result);
+                    }
+                    else {
+                        resolve(result);
+                    }
+                });
             });
         });
     }
@@ -277,9 +286,11 @@ class TabState extends events_1.EventEmitter {
         }
     }
     refreshRoot() {
-        return this.getDocument(-1, true).then((root) => {
-            this.setDocument(root);
-            return root;
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.getDocument(-1, true).then((root) => {
+                this.setDocument(root);
+                return root;
+            });
         });
     }
     ;
@@ -329,17 +340,19 @@ class TabState extends events_1.EventEmitter {
     }
     ;
     requestChildNodes(nodeId, depth = 1, pierce = false) {
-        return new Promise((resolve, reject) => {
-            this.chrome.DOM.requestChildNodes({ nodeId, depth, pierce }, (err, val) => {
-                if (err) {
-                    reject(val);
-                }
-                else {
-                    resolve(val);
-                }
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => {
+                this.chrome.DOM.requestChildNodes({ nodeId, depth, pierce }, (err, val) => {
+                    if (err) {
+                        reject(val);
+                    }
+                    else {
+                        resolve(val);
+                    }
+                });
+            }).catch((err) => {
+                throw (err);
             });
-        }).catch((err) => {
-            throw (err);
         });
     }
     ;
@@ -367,20 +380,22 @@ class TabState extends events_1.EventEmitter {
     }
     ;
     describeNode(nodeId, depth = -1) {
-        return new Promise((resolve, reject) => {
-            this.chrome.DOM.describeNode({
-                nodeId, depth
-            }, (err, result) => {
-                if (err) {
-                    reject(result);
-                }
-                else {
-                    resolve(result.node);
-                }
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => {
+                this.chrome.DOM.describeNode({
+                    nodeId, depth
+                }, (err, result) => {
+                    if (err) {
+                        reject(result);
+                    }
+                    else {
+                        resolve(result.node);
+                    }
+                });
+            }).catch((err) => {
+                console.error(err);
+                throw (err);
             });
-        }).catch((err) => {
-            console.error(err);
-            throw (err);
         });
     }
     ;
@@ -407,23 +422,25 @@ class TabState extends events_1.EventEmitter {
         */
     }
     navigate(url) {
-        const parsedURL = url_1.parse(url);
-        if (!parsedURL.protocol) {
-            parsedURL.protocol = 'http';
-        }
-        url = url_1.format(parsedURL);
-        return new Promise((resolve, reject) => {
-            this.chrome.Page.navigate({ url }, (err, result) => {
-                if (err) {
-                    throw (err);
-                }
-                else {
-                    resolve(result.frameId);
-                }
+        return __awaiter(this, void 0, void 0, function* () {
+            const parsedURL = url_1.parse(url);
+            if (!parsedURL.protocol) {
+                parsedURL.protocol = 'http';
+            }
+            url = url_1.format(parsedURL);
+            return new Promise((resolve, reject) => {
+                this.chrome.Page.navigate({ url }, (err, result) => {
+                    if (err) {
+                        throw (err);
+                    }
+                    else {
+                        resolve(result.frameId);
+                    }
+                });
+            }).catch((err) => {
+                log.error(err);
+                throw (err);
             });
-        }).catch((err) => {
-            log.error(err);
-            throw (err);
         });
     }
     updateFrameOnEvents(frameState) {
@@ -456,47 +473,53 @@ class TabState extends events_1.EventEmitter {
     getFrame(id) { return this.frames.get(id); }
     hasFrame(id) { return this.frames.has(id); }
     getFrameTree() {
-        throw new Error("Not supported yet");
-        // return new Promise<CRI.FrameTree>((resolve, reject) => {
-        //     this.chrome.Page.getFrameTree({}, (err, value:CRI.FrameTree) => {
-        //         if(err) { reject(value); }
-        //         else { resolve(value); }
-        //     });
-        // }).catch((err) => {
-        //     throw(err);
-        // });
+        return __awaiter(this, void 0, void 0, function* () {
+            throw new Error("Not supported yet");
+            // return new Promise<CRI.FrameTree>((resolve, reject) => {
+            //     this.chrome.Page.getFrameTree({}, (err, value:CRI.FrameTree) => {
+            //         if(err) { reject(value); }
+            //         else { resolve(value); }
+            //     });
+            // }).catch((err) => {
+            //     throw(err);
+            // });
+        });
     }
     getResourceTree() {
-        return new Promise((resolve, reject) => {
-            this.chrome.Page.getResourceTree({}, (err, value) => {
-                if (err) {
-                    reject(value);
-                }
-                else {
-                    resolve(value);
-                }
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => {
+                this.chrome.Page.getResourceTree({}, (err, value) => {
+                    if (err) {
+                        reject(value);
+                    }
+                    else {
+                        resolve(value);
+                    }
+                });
+            }).catch((err) => {
+                log.error(err);
+                throw (err);
             });
-        }).catch((err) => {
-            log.error(err);
-            throw (err);
         });
     }
     ;
     getDocument(depth = -1, pierce = false) {
-        return new Promise((resolve, reject) => {
-            this.chrome.DOM.getDocument({
-                depth, pierce
-            }, (err, value) => {
-                if (err) {
-                    reject(value);
-                }
-                else {
-                    resolve(value.root);
-                }
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => {
+                this.chrome.DOM.getDocument({
+                    depth, pierce
+                }, (err, value) => {
+                    if (err) {
+                        reject(value);
+                    }
+                    else {
+                        resolve(value.root);
+                    }
+                });
+            }).catch((err) => {
+                log.error(err);
+                throw (err);
             });
-        }).catch((err) => {
-            log.error(err);
-            throw (err);
         });
     }
     ;
