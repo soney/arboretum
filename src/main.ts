@@ -19,7 +19,7 @@ import * as opn from 'opn';
 
 const state = { chat: {}, browser: {} };
 
-const OPEN_MIRROR: boolean = true;
+const OPEN_MIRROR: boolean = false;
 const RDB_PORT: number = 9222;
 const HTTP_PORT: number = 3000;
 const isMac: boolean = /^dar/.test(platform());
@@ -74,7 +74,7 @@ expressApp.all('/', async (req, res, next) => {
     });
     res.send(contents);
 })
-    .use('/', express.static(join(__dirname, 'client_pages')))
+    .use('/', express.static(join(__dirname, 'client')))
     .all('/f', async (req, res, next) => {
         var frameId = req.query.i,
             tabId = req.query.t,
@@ -88,14 +88,14 @@ expressApp.all('/', async (req, res, next) => {
         });
         res.send(contents);
     })
-    .use('/f', express.static(join(__dirname, 'client_pages')))
+    .use('/f', express.static(join(__dirname, 'client')))
     .all('/a', async (req, res, next) => {
         const contents: string = await setClientOptions({
             viewType: 'admin'
         });
         res.send(contents);
     })
-    .use('/a', express.static(join(__dirname, 'client_pages')))
+    .use('/a', express.static(join(__dirname, 'client')))
     .all('/m', async (req, res, next) => {
         var messageId = req.query.m;
 
@@ -105,7 +105,7 @@ expressApp.all('/', async (req, res, next) => {
         });
         res.send(contents);
     })
-    .use('/m', express.static(join(__dirname, 'client_pages')))
+    .use('/m', express.static(join(__dirname, 'client')))
     .all('/r', async (req, res, next) => {
         var url = req.query.l,
             tabId = req.query.t,
@@ -339,7 +339,7 @@ async function processFile(filename: string): Promise<string> {
     });
 }
 async function setClientOptions(options: {}): Promise<string> {
-    let contents: string = await processFile(join(__dirname, 'client_pages', 'index.html'));
+    let contents: string = await processFile(join(__dirname, 'client', 'index.html'));
     _.each(options, function(val, key) {
         contents = contents.replace(key + ': false', key + ': "' + val + '"');
     });

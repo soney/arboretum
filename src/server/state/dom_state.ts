@@ -1,5 +1,5 @@
 import { FrameState } from './frame_state';
-import { ShadowDOM } from '../../client/shadows/dom_shadow';
+import { ShadowDOM } from '../shadows/dom_shadow';
 import { getCanvasImage, getUniqueSelector, getElementValue } from '../hack_driver/hack_driver';
 import { getColoredLogger, level, setLevel } from '../../utils/logging';
 import { processCSSURLs } from '../css_parser';

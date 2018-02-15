@@ -24,7 +24,7 @@ const opn = require("opn");
 // const BrowserState = require('./server/state/browser_state');
 // process.traceProcessWarnings = true;
 const state = { chat: {}, browser: {} };
-const OPEN_MIRROR = true;
+const OPEN_MIRROR = false;
 const RDB_PORT = 9222;
 const HTTP_PORT = 3000;
 const isMac = /^dar/.test(os_1.platform());
@@ -74,7 +74,7 @@ expressApp.all('/', (req, res, next) => __awaiter(this, void 0, void 0, function
     });
     res.send(contents);
 }))
-    .use('/', express.static(path_1.join(__dirname, 'client_pages')))
+    .use('/', express.static(path_1.join(__dirname, 'client')))
     .all('/f', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
     var frameId = req.query.i, tabId = req.query.t, userId = req.query.u, taskId = req.query.k;
     const contents = yield setClientOptions({
@@ -84,14 +84,14 @@ expressApp.all('/', (req, res, next) => __awaiter(this, void 0, void 0, function
     });
     res.send(contents);
 }))
-    .use('/f', express.static(path_1.join(__dirname, 'client_pages')))
+    .use('/f', express.static(path_1.join(__dirname, 'client')))
     .all('/a', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
     const contents = yield setClientOptions({
         viewType: 'admin'
     });
     res.send(contents);
 }))
-    .use('/a', express.static(path_1.join(__dirname, 'client_pages')))
+    .use('/a', express.static(path_1.join(__dirname, 'client')))
     .all('/m', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
     var messageId = req.query.m;
     const contents = yield setClientOptions({
@@ -100,7 +100,7 @@ expressApp.all('/', (req, res, next) => __awaiter(this, void 0, void 0, function
     });
     res.send(contents);
 }))
-    .use('/m', express.static(path_1.join(__dirname, 'client_pages')))
+    .use('/m', express.static(path_1.join(__dirname, 'client')))
     .all('/r', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
     var url = req.query.l, tabId = req.query.t, frameId = req.query.f;
     try {
@@ -342,7 +342,7 @@ function processFile(filename) {
 }
 function setClientOptions(options) {
     return __awaiter(this, void 0, void 0, function* () {
-        let contents = yield processFile(path_1.join(__dirname, 'client_pages', 'index.html'));
+        let contents = yield processFile(path_1.join(__dirname, 'client', 'index.html'));
         _.each(options, function (val, key) {
             contents = contents.replace(key + ': false', key + ': "' + val + '"');
         });

@@ -3,10 +3,10 @@
   "description": "Proxy for Handing off Web Browsing Tasks",
   "version": "0.1.0",
   "scripts": {
-    "start": "node_modules/.bin/electron ./built/main.js",
-    "debug": "node_modules/.bin/electron --inspect-brk=5858 ./built/main.js",
-    "build": "node_modules/.bin/gulp",
-    "watch": "node_modules/.bin/gulp watch"
+    "start": "npx electron ./built/main.js",
+    "debug": "npx electron --inspect-brk=5858 ./built/main.js",
+    "build": "npx gulp",
+    "watch": "nps gulp watch"
   },
   "window": {
     "toolbar": true,
@@ -44,16 +44,23 @@
     "urijs": "~1.17",
     "webdriverio": "^4.9.11",
     "websocket-json-stream": "0.0.3",
+    "@types/jquery": "^3.3.0",
     "ws": "^4.0.0"
   },
   "devDependencies": {
+    "css-loader": "^0.28.9",
     "devtron": "^1.4.0",
     "electron-packager": "^8.7.2",
+    "file-loader": "^1.1.6",
     "gulp": "^3.9.1",
     "gulp-cli": "^2.0.0",
     "gulp-typescript": "^3.2.3",
     "gulp-watch": "^4.3.11",
+    "html-loader": "^0.5.5",
+    "less": "^3.0.1",
+    "less-loader": "^4.0.5",
     "opn": "^5.2.0",
+    "style-loader": "^0.20.1",
     "ts-loader": "^3.5.0",
     "typescript": "^2.6.2",
     "webpack": "^3.11.0",
