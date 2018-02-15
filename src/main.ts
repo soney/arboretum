@@ -1,26 +1,28 @@
-import {app, BrowserWindow, ipcMain} from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import * as _ from 'underscore';
-import {platform} from 'os';
-import {createServer, Server} from 'http';
-import {readFile} from 'fs';
-import {join} from 'path';
+import { platform } from 'os';
+import { createServer, Server } from 'http';
+import { readFile } from 'fs';
+import { join } from 'path';
 import * as express from 'express';
 import * as ShareDB from 'sharedb';
 import * as WebSocket from 'ws';
 import * as WebSocketJSONStream from 'websocket-json-stream';
-import {BrowserState} from './server/state/browser_state';
+import { BrowserState } from './server/state/browser_state';
 import * as keypress from 'keypress';
 import chalk from 'chalk';
 import * as ip from 'ip';
+import * as opn from 'opn';
 // const ChatServer = require('./server/chat');
 // const BrowserState = require('./server/state/browser_state');
 // process.traceProcessWarnings = true;
 
-const state = { chat:{}, browser: { }};
+const state = { chat: {}, browser: {} };
 
-const RDB_PORT:number = 9222;
-const HTTP_PORT:number = 3000;
-const isMac:boolean = /^dar/.test(platform());
+const OPEN_MIRROR: boolean = true;
+const RDB_PORT: number = 9222;
+const HTTP_PORT: number = 3000;
+const isMac: boolean = /^dar/.test(platform());
 const defaultBrowswerWindowOptions = {
     'remote-debugging-port': RDB_PORT,
     width: 800,
@@ -36,20 +38,20 @@ const defaultBrowswerWindowOptions = {
 app.on('window-all-closed', () => {
     // On OS X it is common for applications and their menu bar
     // to stay active until the user quits explicitly with Cmd + Q
-    if(!isMac) { app.quit(); }
+    if (!isMac) { app.quit(); }
 });
 app.commandLine.appendSwitch('remote-debugging-port', `${RDB_PORT}`);
 
-function createBrowserWindow(extraOptions?:{}):BrowserWindow {
+function createBrowserWindow(extraOptions?: {}): BrowserWindow {
     const options = _.extend({}, defaultBrowswerWindowOptions, extraOptions);
-    let newWindow:BrowserWindow = new BrowserWindow(options);
+    let newWindow: BrowserWindow = new BrowserWindow(options);
     newWindow.loadURL(`file://${__dirname}/browser/index.html`);
 
     newWindow.on('closed', () => {
         // Dereference the window object, usually you would store windows
         // in an array if your app supports multi windows, this is the time
         // when you should delete the corresponding element.
-		newWindow = null;
+        newWindow = null;
     });
 
 
@@ -57,135 +59,139 @@ function createBrowserWindow(extraOptions?:{}):BrowserWindow {
 };
 
 app.on('ready', () => {
-    let wn:BrowserWindow = createBrowserWindow();
+    let wn: BrowserWindow = createBrowserWindow();
 });
 
 const browserState = new BrowserState({
-	port: RDB_PORT
+    port: RDB_PORT
 });
 
 const expressApp = express();
-const server:Server = createServer(expressApp);
+const server: Server = createServer(expressApp);
 expressApp.all('/', async (req, res, next) => {
-	const contents:string = await setClientOptions({
-		userId: getUserID()
-	});
-	res.send(contents);
+    const contents: string = await setClientOptions({
+        userId: getUserID()
+    });
+    res.send(contents);
 })
-.use('/', express.static(join(__dirname, 'client_pages')))
-.all('/f', async (req, res, next) => {
-	var frameId = req.query.i,
-		tabId = req.query.t,
-		userId = req.query.u,
-		taskId = req.query.k;
+    .use('/', express.static(join(__dirname, 'client_pages')))
+    .all('/f', async (req, res, next) => {
+        var frameId = req.query.i,
+            tabId = req.query.t,
+            userId = req.query.u,
+            taskId = req.query.k;
 
-	const contents:string = await setClientOptions({
-		userId: userId,
-		frameId: frameId,
-		viewType: 'mirror'
-	});
-	res.send(contents);
-})
-.use('/f', express.static(join(__dirname, 'client_pages')))
-.all('/a', async(req, res, next) => {
-	const contents:string = await setClientOptions({
-		viewType: 'admin'
-	});
-	res.send(contents);
-})
-.use('/a', express.static(join(__dirname, 'client_pages')))
-.all('/m', async (req, res, next) => {
-	var messageId = req.query.m;
+        const contents: string = await setClientOptions({
+            userId: userId,
+            frameId: frameId,
+            viewType: 'mirror'
+        });
+        res.send(contents);
+    })
+    .use('/f', express.static(join(__dirname, 'client_pages')))
+    .all('/a', async (req, res, next) => {
+        const contents: string = await setClientOptions({
+            viewType: 'admin'
+        });
+        res.send(contents);
+    })
+    .use('/a', express.static(join(__dirname, 'client_pages')))
+    .all('/m', async (req, res, next) => {
+        var messageId = req.query.m;
 
-	const contents:string = await setClientOptions({
-		viewType: 'message',
-		messageId: messageId
-	});
-	res.send(contents);
-})
-.use('/m', express.static(join(__dirname, 'client_pages')))
-.all('/r', async (req, res, next) => {
-	var url = req.query.l,
-		tabId = req.query.t,
-		frameId = req.query.f;
+        const contents: string = await setClientOptions({
+            viewType: 'message',
+            messageId: messageId
+        });
+        res.send(contents);
+    })
+    .use('/m', express.static(join(__dirname, 'client_pages')))
+    .all('/r', async (req, res, next) => {
+        var url = req.query.l,
+            tabId = req.query.t,
+            frameId = req.query.f;
 
-	try {
-		const resourceInfo = await browserState.requestResource(url, frameId, tabId);
-		var content = resourceInfo.content;
-		res.set('Content-Type', resourceInfo.mimeType);
+        try {
+            const resourceInfo = await browserState.requestResource(url, frameId, tabId);
+            var content = resourceInfo.content;
+            res.set('Content-Type', resourceInfo.mimeType);
 
-		if(resourceInfo.base64Encoded) {
-			var bodyBuffer = new Buffer(content, 'base64');
-			res.send(bodyBuffer);
-		} else {
-			res.send(content);
-		}
-	} catch(err) {
-		req.pipe(req[req.method.toLowerCase().replace('del', 'delete')](url))
-			.pipe(res);
-	}
-});
+            if (resourceInfo.base64Encoded) {
+                var bodyBuffer = new Buffer(content, 'base64');
+                res.send(bodyBuffer);
+            } else {
+                res.send(content);
+            }
+        } catch (err) {
+            req.pipe(req[req.method.toLowerCase().replace('del', 'delete')](url))
+                .pipe(res);
+        }
+    });
 
-function getIPAddress():string {
-	return ip.address();
+function getIPAddress(): string {
+    return ip.address();
 };
 
-async function startServer():Promise<string> {
-	const port = await new Promise<number>((resolve, reject) => {
-		server.listen(() => {
-			const addy = server.address();
-			const {port} = addy;
-			resolve(port);
-		});
-	});
-	const address = getIPAddress();
-	console.log(address);
-	return `http://${address}:${port}`;
+async function startServer(): Promise<string> {
+    const port = await new Promise<number>((resolve, reject) => {
+        server.listen(() => {
+            const addy = server.address();
+            const { port } = addy;
+            resolve(port);
+        });
+    });
+    const address = getIPAddress();
+    return `http://${address}:${port}`;
 };
-async function stopServer():Promise<void> {
-	await new Promise<string>((resolve, reject) => {
-		server.close(() => {
-			resolve();
-		})
-	});
+async function stopServer(): Promise<void> {
+    await new Promise<string>((resolve, reject) => {
+        server.close(() => {
+            resolve();
+        })
+    });
 };
 
-startServer().then((address:string) => {
-	console.log(chalk.bgWhite.bold.black(`Listening on ${address}`));
-});
+if (OPEN_MIRROR) {
+    startServer().then((address: string) => {
+        console.log(chalk.bgWhite.bold.black(`Listening on ${address}`));
+        return opn(address, { app: 'google-chrome' }); // open browser
+    }).catch((err) => {
+        console.error(err);
+    });
+}
 
 ipcMain.on('asynchronous-message', async (event, arg) => {
-	if(arg === 'startServer') {
-		const address = await startServer();
-		console.log(`Listening on ${address}`);
-		event.sender.send('asynchronous-reply', address);
-	} else if(arg === 'stopServer') {
-		stopServer();
-	}
-	event.sender.send('asynchronous-reply');
+    if (arg === 'startServer') {
+        const address = await startServer();
+        console.log(`Listening on ${address}`);
+        event.sender.send('asynchronous-reply', address);
+    } else if (arg === 'stopServer') {
+        stopServer();
+    }
+    event.sender.send('asynchronous-reply');
 });
 
 keypress(process.stdin);
 
 process.stdin.on('keypress', (ch, key) => {
-	const {name, ctrl} = key;
-	if (ctrl && name === 'c') {
-		process.stdin.pause();
-		process.stdin.setRawMode(false);
-		process.exit();
-	} else if(name === 'd') {
-		browserState.print();
-	} else if(name === 't') {
-		browserState.printTabSummaries();
-	} else if(name === 'q') {
-		process.stdin.pause();
-		process.stdin.setRawMode(false);
-		process.exit();
-	}
+    const { name, ctrl } = key;
+    if (ctrl && name === 'c') {
+        process.stdin.pause();
+        process.stdin.setRawMode(false);
+        process.exit();
+    } else if (name === 'd') {
+        browserState.print();
+    } else if (name === 't') {
+        browserState.printTabSummaries();
+    } else if (name === 'q') {
+        process.stdin.pause();
+        process.stdin.setRawMode(false);
+        process.exit();
+    }
 });
 process.on('exit', (code) => {
-	process.stdin.pause();
-	process.stdin.setRawMode(false);
+    process.stdin.pause();
+    process.stdin.setRawMode(false);
 });
 process.stdin.setRawMode(true);
 process.stdin.resume();
@@ -320,25 +326,25 @@ process.stdin.resume();
 // 	chatServer.destroy();
 // 	return browserState.destroy();
 // }
-async function processFile(filename:string):Promise<string> {
-	return new Promise<string>(function(resolve, reject) {
-		readFile(filename, {
-			encoding: 'utf8'
-		}, function(err, data) {
-			if(err) { reject(err); }
-			else { resolve(data); }
-		})
-	}).catch((err) => {
-        throw(err);
+async function processFile(filename: string): Promise<string> {
+    return new Promise<string>(function(resolve, reject) {
+        readFile(filename, {
+            encoding: 'utf8'
+        }, function(err, data) {
+            if (err) { reject(err); }
+            else { resolve(data); }
+        })
+    }).catch((err) => {
+        throw (err);
     });
 }
-async function setClientOptions(options:{}):Promise<string> {
-	let contents:string = await processFile(join(__dirname, 'client_pages', 'index.html'));
-	_.each(options, function(val, key) {
-		contents = contents.replace(key+': false', key+': "' + val + '"');
-	});
-	return contents;
+async function setClientOptions(options: {}): Promise<string> {
+    let contents: string = await processFile(join(__dirname, 'client_pages', 'index.html'));
+    _.each(options, function(val, key) {
+        contents = contents.replace(key + ': false', key + ': "' + val + '"');
+    });
+    return contents;
 }
-function getUserID():number {
-	return Math.round(100*Math.random());
+function getUserID(): number {
+    return Math.round(100 * Math.random());
 };

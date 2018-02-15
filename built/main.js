@@ -19,10 +19,12 @@ const browser_state_1 = require("./server/state/browser_state");
 const keypress = require("keypress");
 const chalk_1 = require("chalk");
 const ip = require("ip");
+const opn = require("opn");
 // const ChatServer = require('./server/chat');
 // const BrowserState = require('./server/state/browser_state');
 // process.traceProcessWarnings = true;
 const state = { chat: {}, browser: {} };
+const OPEN_MIRROR = true;
 const RDB_PORT = 9222;
 const HTTP_PORT = 3000;
 const isMac = /^dar/.test(os_1.platform());
@@ -132,7 +134,6 @@ function startServer() {
             });
         });
         const address = getIPAddress();
-        console.log(address);
         return `http://${address}:${port}`;
     });
 }
@@ -147,9 +148,14 @@ function stopServer() {
     });
 }
 ;
-startServer().then((address) => {
-    console.log(chalk_1.default.bgWhite.bold.black(`Listening on ${address}`));
-});
+if (OPEN_MIRROR) {
+    startServer().then((address) => {
+        console.log(chalk_1.default.bgWhite.bold.black(`Listening on ${address}`));
+        return opn(address, { app: 'google-chrome' }); // open browser
+    }).catch((err) => {
+        console.error(err);
+    });
+}
 electron_1.ipcMain.on('asynchronous-message', (event, arg) => __awaiter(this, void 0, void 0, function* () {
     if (arg === 'startServer') {
         const address = yield startServer();
