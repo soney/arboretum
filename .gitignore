@@ -40,3 +40,5 @@ Thumbs.db
 node_modules/
 Arboretum-*
 *.swp
+
+credentials.json

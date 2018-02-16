@@ -6,9 +6,10 @@ import {Tabs} from './ts/tabs';
 // require('jquery-ui');
 // var path = require('path');
 
-class Arboretum {
+export class Arboretum {
     private browserWindow:BrowserWindow;
-    private tabs:Tabs = new Tabs();
+    private tabs:Tabs = new Tabs(this);
+    private urlBar:URLBar = new URLBar(this);
     constructor() {
         this.browserWindow = remote.getCurrentWindow();
 
@@ -19,7 +20,12 @@ class Arboretum {
 
         this.listen();
         this.tabs.createNew(`file://${path.resolve('test/simple.html')}`, true);
-    }
+    };
+    public loadURL(url:string):void {
+        this.tabs.active.webView[0].loadURL(formattedURL);
+    };
+    public goBack():void {
+    };
 
     listen() {
         const {ipcRenderer} = require('electron');

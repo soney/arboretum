@@ -1,7 +1,6 @@
 import * as $ from 'jquery';
-import {Tab} from './tab';
-
-export type TabID = string;
+import {Tab, TabID} from './tab';
+import {Arboretum} from '../browser_main';
 
 export class Tabs {
     private activeTab:Tab;

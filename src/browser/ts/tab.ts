@@ -1,6 +1,8 @@
-"use strict";
+import {EventEmitter} from 'events';
 
-var EventEmitter = require('events').EventEmitter;
+export type TabID = number;
+
+
 var cri = require('chrome-remote-interface');
 
 var NavStatus = {
@@ -11,18 +13,19 @@ var NavStatus = {
     FAIL: 'FAIL'
 };
 
-var tabNum = 0;
-
 class Tab extends EventEmitter {
+    private static tabNum:number = 0;
+    private tabID:TabID;
+    private titleEl:JQuery<HTMLElement> = $('<span />', {text: 'New Tab', class: 'tab-title'});
+    private iconEl:JQuery<HTMLElement> = $('<span />', {class: 'tab-icon'});
+    private closeButtonEl:JQuery<HTMLElement> =  $('<span />', {class:'icon icon-cancel icon-close-tab'});
+    private webViewEl:JQuery<HTMLElement>;
     constructor(URL) {
-        tabNum++;
         super();
-        let emit = _.bind(this.emit, this);
-        let title = $('<span />', {text: 'New Tab', class: 'tab-title'});
-        let icon = $('<span />', {class: 'tab-icon'});
-        this.closeButton = $('<span />', {class:'icon icon-cancel icon-close-tab'});
-        // this.closeIcon = $('<i />', {class: 'fa fa-close'}).appendTo(this.closeButton);
-        let webView = $('<webview />', {src: 'http://www.umich.edu/',id:'wv'+tabNum});
+        Tab.tabNum++;
+        this.tabID = Tab.tabNum;
+        this.webViewEl = $('<webview />', {src: 'http://www.umich.edu/',id:`wv${this.tabID}`});
+
         let thisTab = this;
         let expecting = false;
         let lastStatus = null;

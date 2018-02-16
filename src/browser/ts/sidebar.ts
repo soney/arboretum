@@ -1,8 +1,8 @@
-"use strict";
+import {Arboretum} from '../browser_main';
 
 const API_KEY = 'FN0FXKCHSRapKomlD7JeF4AJQGNZPKf12Tvv9ebA';
-class Sidebar {
-    constructor() {
+export class Sidebar {
+    constructor(private arboretum:Arboretum) {
         $('.sidebar .toggle').toggles({
             clicker: $('.switch_label'),
             width: 50

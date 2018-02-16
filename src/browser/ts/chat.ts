@@ -1,34 +1,42 @@
-class Chat {
-    get COMMANDS() {
-        return [{
+import {ipcRenderer} from 'electron';
+import {Arboretum} from '../browser_main';
+
+export interface ChatCommand {
+    name:string,
+    description:string,
+    args?:Array<string>,
+    action?:()=>void
+};
+
+export class Chat {
+    private COMMANDS:Array<ChatCommand> = [{
             name: 'clear',
             description: 'Clear the chat window',
-            action: _.bind(this.clear, this)
+            // action: this.clear
         }, {
             name: 'title',
             description: 'Set the title of the task (use ampersands before variable names, like *&var*)',
             args: ['description'],
-            action: _.bind(this.notifySetTitle, this)
+            // action: this.notifySetTitle
         }, {
             name: 'help',
             description: 'Print out this message',
-            action: _.bind(this.printCommandHelp, this)
+            // action: this.printCommandHelp
         }, {
             name: 'set',
             description: 'Set a variable value',
             args: ['var', 'val'],
-            action: _.bind(this.notifySetVar, this)
+            // action: this.notifySetVar
         }, {
             name: 'name',
             args: ['name'],
             description: 'Set your chat handle',
-            action: _.bind(this.setName, this)
+            // action: this.setName
         }];
-    }
+    };
 
-    sendIPCMessage() {
-        const {ipcRenderer} = require('electron');
-        return ipcRenderer.send.apply(ipcRenderer, arguments);
+    private sendIPCMessage(message:string):void {
+        // return ipcRenderer.send.apply(ipcRenderer, arguments);
     }
     onIPCMessage(message_type, responder, context) {
         const {ipcRenderer} = require('electron');
