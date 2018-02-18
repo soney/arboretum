@@ -9,7 +9,7 @@ export class Tabs {
     private tabsRowEl:JQuery<HTMLElement> = $('#tabsBar');
     private tabs:Map<TabID, Tab> = new Map<TabID, Tab>();
 
-    constructor() {
+    constructor(private arboretum:Arboretum) {
         this.addTabEl.on('click', () => {
             this.createNew('', true);
             // this.resize();

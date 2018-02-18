@@ -1,3 +1,4 @@
+import * as $ from 'jquery';
 $.widget('arboretum.chat', {
 	options: {
 		socket: false,

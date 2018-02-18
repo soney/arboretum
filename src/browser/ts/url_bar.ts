@@ -24,16 +24,18 @@ export class URLBar {
             $(this).select();
         });
         this.backButtonEl.on('click', (event) => {
-            this.arboretum.goBack();
-            arboretum.tabs.active.webView[0].goBack();
+            this.arboretum.goBackPressed();
+            // arboretum.tabs.active.webView[0].goBack();
         });
 
         this.forwardButtonEl.on('click', (event) => {
-            arboretum.tabs.active.webView[0].goForward();
+            this.arboretum.goForwardPressed();
+            // arboretum.tabs.active.webView[0].goForward();
         });
 
         this.refreshStopButtonEl.on('click', (event) => {
-            arboretum.tabs.active.webView[0].reload();
+            this.arboretum.refreshOrStopPressed();
+            // arboretum.tabs.active.webView[0].reload();
         });
 
         this.requestButtonEl.on('click', (event) => {

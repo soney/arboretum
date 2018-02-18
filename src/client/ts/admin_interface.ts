@@ -1,3 +1,4 @@
+import * as $ from 'jquery';
 $.widget('arboretum.admin_interface', {
 	options: {
         socket: false,
@@ -115,8 +116,8 @@ $.widget('arboretum.admin_interface', {
         }
     }
 });
-function getScript(src) {
-	return new Promise(function(resolve, reject) {
+function getScript(src:string):Promise<void> {
+	return new Promise<void>(function(resolve, reject) {
 		$.getScript(src, function () {
 			resolve();
 		});

@@ -1,3 +1,4 @@
+import * as $ from 'jquery';
 $.widget('arboretum.tree_node_placeholder', {
 	options: {
 		id: false,

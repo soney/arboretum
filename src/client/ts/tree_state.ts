@@ -1,3 +1,4 @@
+import * as $ from 'jquery';
 $.widget('arboretum.tree_state', {
 	options: {
 		taskId: false,

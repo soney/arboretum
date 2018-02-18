@@ -1,31 +1,37 @@
 import {Arboretum} from '../browser_main';
+import {Chat} from './chat';
+import * as Clipboard from 'clipboard';
+// import * as _toggles from 'jquery-toggles';
+import 'jquery-toggles';
+
 
 const API_KEY = 'FN0FXKCHSRapKomlD7JeF4AJQGNZPKf12Tvv9ebA';
 export class Sidebar {
+    private chat:Chat;
     constructor(private arboretum:Arboretum) {
+        this.chat = new Chat(this.arboretum);
         $('.sidebar .toggle').toggles({
             clicker: $('.switch_label'),
             width: 50
-        }).on('toggle', _.bind(function(event, isActive) {
+        }).on('toggle', (event, isActive) => {
             if (isActive) {
                 this.startServer();
             } else {
                 this.stopServer();
             }
-        }, this));
+        });
 
-        $('#mturk_post').on('click', _.bind(function() {
+        $('#mturk_post').on('click', () => {
             this.postToMTurk();
-        }, this));
+        });
 
         new Clipboard('#admin_copy');
         new Clipboard('#share_copy');
-        $('.copy_area input').on('click', function(event) {
+        $('.copy_area input').on('click', (event) => {
             const target = $(event.target);
             target.select();
         });
 
-        this.chat = new Chat();
         this.chat.disable();
 
         // this.startServer();
@@ -54,8 +60,7 @@ export class Sidebar {
         // });
     }
 
-    stopServer() {
-        const {ipcRenderer} = require('electron');
+    private stopServer():void {
         ipcRenderer.send('asynchronous-message', 'stopServer');
         $('#share_url').val('').prop('disabled', true);
         $('#admin_url').val('').prop('disabled', true);
@@ -74,7 +79,7 @@ export class Sidebar {
         }, this));
     }
 
-    getMyShortcut(path) {
+    private async getMyShortcut(address:string, path:string):Promise<string> {
         const url = require('url');
         return Sidebar.getIPAddress().then(function(ip) {
             var myLink = url.format({
@@ -94,31 +99,23 @@ export class Sidebar {
         });
     }
 
-    static getShortcut(url) {
-        return $.ajax({
-            method: 'PUT',
-            url: 'https://api.arbor.site',
-            contentType: 'application/json',
-            headers: {
-                'x-api-key': API_KEY
-            },
-            data: JSON.stringify({
-                target: url
-            })
+    private static async getShortcut(url:string):Promise<string> {
+        return new Promise<string>((resolve, reject) => {
+            $.ajax({
+                method: 'PUT',
+                url: 'https://api.arbor.site',
+                contentType: 'application/json',
+                headers: {
+                    'x-api-key': API_KEY
+                },
+                data: JSON.stringify({
+                    target: url
+                })
+            }).done((data) => {
+                resolve(data);
+            }).fail((err) => {
+                reject(err);
+            });
         });
-    }
-
-    static getIPAddress() {
-        // const dns = require('dns');
-        // const os = require('os');
-        const ip = require("ip");
-        return new Promise(function(resolve, reject) {
-            resolve(ip.address('en0'));
-        });
-        // return new Promise(function(resolve, reject) {
-            // dns.lookup(os.hostname(), function(err, add, fam) {
-                // resolve(add);
-            // })
-        // });
     }
 }

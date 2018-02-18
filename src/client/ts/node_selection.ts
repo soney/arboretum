@@ -1,3 +1,4 @@
+import * as $ from 'jquery';
 $.widget('arboretum.node_selection', {
 	options: {
 		socket: false,
