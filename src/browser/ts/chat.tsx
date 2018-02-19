@@ -352,9 +352,15 @@ export class ArboretumChat extends React.Component<ArboretumChatProps, Arboretum
         if(keyCode === ENTER_KEY && !(ctrlKey || altKey || metaKey || shiftKey)) {
             event.preventDefault();
             const {chatText} = this.state;
-            if(this.props.onSendMessage) { this.props.onSendMessage(chatText); }
-            this.setState({chatText:''});
+            if(chatText !== '') {
+                if(this.props.onSendMessage) { this.props.onSendMessage(chatText); }
+                this.setState({chatText:''});
+            }
         }
+    };
+
+    private onTextareaChange = (event:React.ChangeEvent<HTMLTextAreaElement>):void => {
+        this.setState({ chatText:event.target.value });
     };
 
     public render():React.ReactNode {
@@ -363,7 +369,7 @@ export class ArboretumChat extends React.Component<ArboretumChatProps, Arboretum
             <div id="chat-participants"></div>
             <ul id="chat-lines"></ul>
             <form id="chat-form">
-                <textarea id="chat-box" className="form-control" placeholder="Send a message" onKeyDown={this.chatKeyDown} value={this.state.chatText}></textarea>
+                <textarea id="chat-box" className="form-control" placeholder="Send a message" onChange={this.onTextareaChange} onKeyDown={this.chatKeyDown} value={this.state.chatText}></textarea>
             </form>
         </div>;
     };

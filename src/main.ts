@@ -70,11 +70,11 @@ const browserState = null;
 const expressApp = express();
 const server: Server = createServer(expressApp);
 expressApp.all('/', async (req, res, next) => {
-    const contents: string = await setClientOptions({
-        userId: getUserID()
-    });
-    res.send(contents);
-})
+        const contents: string = await setClientOptions({
+            userId: getUserID()
+        });
+        res.send(contents);
+    })
     .use('/', express.static(join(__dirname, 'client')))
     .all('/f', async (req, res, next) => {
         var frameId = req.query.i,
@@ -133,7 +133,7 @@ function getIPAddress(): string {
     return ip.address();
 };
 
-async function startServer(): Promise<string> {
+async function startServer(): Promise<{host:string,port:number}> {
     const port = await new Promise<number>((resolve, reject) => {
         server.listen(() => {
             const addy = server.address();
@@ -141,8 +141,8 @@ async function startServer(): Promise<string> {
             resolve(port);
         });
     });
-    const address = getIPAddress();
-    return `http://${address}:${port}`;
+    const host = getIPAddress();
+    return({ host, port })
 };
 async function stopServer(): Promise<void> {
     await new Promise<string>((resolve, reject) => {
@@ -153,9 +153,9 @@ async function stopServer(): Promise<void> {
 };
 
 if (OPEN_MIRROR) {
-    startServer().then((address: string) => {
-        console.log(chalk.bgWhite.bold.black(`Listening on ${address}`));
-        return opn(address, { app: 'google-chrome' }); // open browser
+    startServer().then((info) => {
+        console.log(chalk.bgWhite.bold.black(`Listening at ${info.host} port ${info.port} `));
+        // return opn(address, { app: 'google-chrome' }); // open browser
     }).catch((err) => {
         console.error(err);
     });
@@ -163,9 +163,9 @@ if (OPEN_MIRROR) {
 
 ipcMain.on('asynchronous-message', async (event, arg) => {
     if (arg === 'startServer') {
-        const address = await startServer();
-        console.log(`Listening on ${address}`);
-        event.sender.send('asynchronous-reply', address);
+        const info = await startServer();
+        event.sender.send('asynchronous-reply', info);
+        console.log(chalk.bgWhite.bold.black(`Listening at ${info.host} port ${info.port}`));
     } else if (arg === 'stopServer') {
         stopServer();
     }

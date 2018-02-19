@@ -52,7 +52,11 @@ export type BrowserTabID = number;
 
 type ArboretumTabsProps = {
     urls:Array<string>,
-    onSelectTab:(selectedTab:ArboretumTab) => void
+    onSelectTab:(selectedTab:ArboretumTab) => void,
+    onSelectedTabLoadingChanged:(isLoading:boolean) => void,
+    onSelectedTabCanGoBackChanged:(canGoBack:boolean) => void,
+    onSelectedTabCanGoForwardChanged:(canGoForward:boolean) => void,
+    onSelectedTabURLChanged:(url:string) => void
 };
 type ArboretumTabsState = {
     selectedTab:ArboretumTab,
@@ -77,6 +81,7 @@ export class ArboretumTabs extends React.Component<ArboretumTabsProps, Arboretum
     };
 
     private addTab = ():void => {
+        console.log('abc');
         const tabs = this.state.tabs.map((tab) => {
             return _.extend(tab, {selected: false});
         }).concat([{
@@ -123,9 +128,30 @@ export class ArboretumTabs extends React.Component<ArboretumTabsProps, Arboretum
         }
     };
 
+    private tabIsLoadingChanged = (tab:ArboretumTab, isLoading:boolean):void => {
+        if(tab === this.state.selectedTab) {
+            if(this.props.onSelectedTabLoadingChanged) { this.props.onSelectedTabLoadingChanged(isLoading); }
+        }
+    };
+    private tabCanGoBackChanged = (tab:ArboretumTab, canGoBack:boolean):void => {
+        if(tab === this.state.selectedTab) {
+            if(this.props.onSelectedTabCanGoBackChanged) { this.props.onSelectedTabCanGoBackChanged(canGoBack); }
+        }
+    };
+    private tabCanGoForwardChanged = (tab:ArboretumTab, canGoForward:boolean):void => {
+        if(tab === this.state.selectedTab) {
+            if(this.props.onSelectedTabCanGoForwardChanged) { this.props.onSelectedTabCanGoForwardChanged(canGoForward); }
+        }
+    };
+    private tabURLChanged = (tab:ArboretumTab, url:string):void => {
+        if(tab === this.state.selectedTab) {
+            if(this.props.onSelectedTabURLChanged) { this.props.onSelectedTabURLChanged(url); }
+        }
+    };
+
     public render():React.ReactNode {
         const tabs = this.state.tabs.map((info, index) =>
-                        <ArboretumTab ref={this.tabRef} selected={info.selected} key={info.id} tabID={info.id} startURL={info.url} onSelect={this.selectTab} onClose={this.closeTab} />);
+                        <ArboretumTab ref={this.tabRef} selected={info.selected} key={info.id} tabID={info.id} startURL={info.url} onSelect={this.selectTab} onClose={this.closeTab} urlChanged={this.tabURLChanged} isLoadingChanged={this.tabIsLoadingChanged} canGoBackChanged={this.tabCanGoBackChanged} canGoForwardChanged={this.tabCanGoForwardChanged} />);
         return <div id="tabsBar" className="tab-group">
                     <div id='buttonSpacer' className="tab-item tab-item-fixed"> </div>
                     {tabs}

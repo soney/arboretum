@@ -128,20 +128,22 @@ const ENTER_KEY:number = 13;
 
 export interface SetServerActiveValue {
     shareURL:string,
-    activeURL:string
+    adminURL:string
 };
 
 type ArboretumSidebarProps = {
     isVisible:boolean,
     serverActive:boolean,
     setServerActive?:(active:boolean)=>Promise<SetServerActiveValue>,
-    onSendMessage?:(message:string)=>void
+    onSendMessage?:(message:string)=>void,
+    onPostTask?:(sandbox:boolean)=>void
 };
 type ArboretumSidebarState = {
     isVisible:boolean,
     serverActive:boolean,
     shareURL:string,
-    activeURL:string
+    adminURL:string,
+    sandbox:boolean
 };
 
 export class ArboretumSidebar extends React.Component<ArboretumSidebarProps, ArboretumSidebarState> {
@@ -151,7 +153,8 @@ export class ArboretumSidebar extends React.Component<ArboretumSidebarProps, Arb
             isVisible:this.props.isVisible,
             serverActive:this.props.serverActive,
             shareURL:'',
-            activeURL:''
+            adminURL:'',
+            sandbox:true
         };
     };
     public setVisible(isVisible:boolean):void {
@@ -162,15 +165,31 @@ export class ArboretumSidebar extends React.Component<ArboretumSidebarProps, Arb
         if(this.props.setServerActive) {
             const shareURLs = await this.props.setServerActive(serverActive);
             if(serverActive) {
-                const {shareURL, activeURL} = shareURLs;
-                this.setState({shareURL, activeURL});
+                const {shareURL, adminURL} = shareURLs;
+                this.setState({shareURL, adminURL});
             } else {
-                this.setState({shareURL:'', activeURL:''});
+                this.setState({shareURL:'', adminURL:''});
             }
         }
     };
     private sendMessage = (message:string):void => {
         if(this.props.onSendMessage) { this.props.onSendMessage(message); }
+    };
+    private postToMTurk = ():void => {
+        if(this.props.onPostTask) { this.props.onPostTask(this.state.sandbox); }
+    };
+    private onSandboxChange = (event:React.ChangeEvent<HTMLInputElement>) => {
+        this.setState({sandbox: event.target.checked});
+    };
+    private adminURLRef = (el:HTMLInputElement):void => {
+        if(el) {
+            new Clipboard(el);
+        }
+    };
+    private shareURLRef = (el:HTMLInputElement):void => {
+        if(el) {
+            new Clipboard(el);
+        }
     };
 
     public render():React.ReactNode {
@@ -198,17 +217,17 @@ export class ArboretumSidebar extends React.Component<ArboretumSidebarProps, Arb
                             <Switch height={24} width={48} onChange={this.handleServerSwitchChange} checked={this.state.serverActive} />
                         </td>
                         <td className="copy_area">
-                            <input id="share_url" value="" data-disabled="true"/>
+                            <input ref={this.shareURLRef} value={this.state.shareURL} id="share_url" data-disabled="true"/>
                             <span ref={(el) => (el)} data-clipboard-target="#share_url" id="share_copy" className="icon icon-clipboard"></span>
                         </td>
                         <td className="copy_area">
-                            <input id="admin_url" value="" data-disabled="true"/>
-                            <span ref={(el) => (el)} data-clipboard-target="#admin_url" id="admin_copy" className="icon icon-clipboard"></span>
+                            <input ref={this.adminURLRef} value={this.state.adminURL} id="admin_url" data-disabled="true"/>
+                            <span data-clipboard-target="#admin_url" id="admin_copy" className="icon icon-clipboard"></span>
                         </td>
                         <td>
-                            <button id="mturk_post" className='btn btn-default'><span className="icon icon-upload-cloud"></span>&nbsp;Post</button>
+                            <button onClick={this.postToMTurk} id="mturk_post" className='btn btn-default'><span className="icon icon-upload-cloud"></span>&nbsp;Post</button>
                             <br />
-                            <label><input type="checkbox" name="sandbox" value="sandbox" id="sandbox" data-checked="checked"/> Sandbox</label>
+                            <label><input type="checkbox" name="sandbox" value="sandbox" id="sandbox" checked={this.state.sandbox} onChange={this.onSandboxChange}/> Sandbox</label>
                         </td>
                     </tr>
                 </tbody>

@@ -14,6 +14,7 @@ type ArboretumState = {
 };
 
 export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
+    private navBar:ArboretumNavigationBar;
     constructor(props) {
         super(props);
         this.state = {
@@ -51,30 +52,105 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
     };
     private setSelectedTab = (selectedTab:ArboretumTab):void => {
         this.setState({ selectedTab });
+        this.updateNavBarState();
+    };
+    private navBarRef = (el:ArboretumNavigationBar):void => {
+        this.navBar = el;
+        this.updateNavBarState();
+    };
+    private updateNavBarState():void {
+        const {selectedTab} = this.state;
+        if(selectedTab && this.navBar) {
+            const {canGoBack, canGoForward, isLoading, loadedURL} = selectedTab.state;
+            this.navBar.setState({canGoBack, canGoForward, isLoading});
+            if(!this.navBar.state.urlBarFocused) {
+                this.navBar.setState({urlText:loadedURL});
+            }
+        }
     };
     private async setServerActive(active:boolean):Promise<SetServerActiveValue> {
         if(active) {
             ipcRenderer.send('asynchronous-message', 'startServer');
+            return new Promise<SetServerActiveValue>((resolve, reject) => {
+                ipcRenderer.once('asynchronous-reply', (event:Electron.IpcMessageEvent, address:string) => {
+                    resolve({
+                        shareURL:'google.com',
+                        adminURL:'yahoo.com'
+                    });
+                });
+            });
         } else {
+            ipcRenderer.send('asynchronous-message', 'stopServer');
             return Promise.resolve({
                 shareURL:'',
-                activeURL:''
+                adminURL:''
             });
         }
     };
     private sendMessage(message:string):void {
         console.log('send message', message);
     };
+    private postTask(sandbox:boolean):void {
+        console.log('post task', sandbox);
+    };
+    private selectedTabURLChanged = (url:string):void => { this.updateNavBarState(); };
+    private selectedTabLoadingChanged = (isLoading:boolean):void => { this.updateNavBarState(); };
+    private selectedTabCanGoBackChanged = (canGoBack:boolean):void => { this.updateNavBarState(); };
+    private onSelectedTabCanGoForwardChanged = (canGoForward:boolean):void => { this.updateNavBarState(); };
+    private async getShortcut(address:string, path:string):Promise<string> {
+        return new Promise<string>((resolve, reject) => {
+
+        });
+    };
+    // private async getMyShortcut(address:string, path:string):Promise<string> {
+    //     const url = require('url');
+    //     return Sidebar.getIPAddress().then(function(ip) {
+    //         var myLink = url.format({
+    //             protocol: 'http',
+    //             hostname: ip,
+    //             port: 3000,
+    //             pathname: path || '/'
+    //         });
+    //         return Sidebar.getShortcut(myLink)
+    //     }).then(function(result) {
+    //         const shortcut = result.shortcut;
+    //         return url.format({
+    //             protocol: 'http',
+    //             hostname: 'arbor.site',
+    //             pathname: shortcut
+    //         });
+    //     });
+    // }
+    //
+    // private static async getShortcut(url:string):Promise<string> {
+    //     return new Promise<string>((resolve, reject) => {
+    //         $.ajax({
+    //             method: 'PUT',
+    //             url: 'https://api.arbor.site',
+    //             contentType: 'application/json',
+    //             headers: {
+    //                 'x-api-key': API_KEY
+    //             },
+    //             data: JSON.stringify({
+    //                 target: url
+    //             })
+    //         }).done((data) => {
+    //             resolve(data);
+    //         }).fail((err) => {
+    //             reject(err);
+    //         });
+    //     });
+    // }
 
     public render():React.ReactNode {
         return <div className="window">
             <header className="toolbar toolbar-header">
-                <ArboretumTabs onSelectTab={this.setSelectedTab} urls={['http://www.umich.edu/']} />
-                <ArboretumNavigationBar onBack={this.goBack} onForward={this.goForward} onReload={this.reload} onToggleSidebar={this.toggleSidebar} onNavigate={this.navigate} />
+                <ArboretumTabs onSelectTab={this.setSelectedTab} onSelectedTabURLChanged={this.selectedTabURLChanged} onSelectedTabLoadingChanged={this.selectedTabLoadingChanged} onSelectedTabCanGoBackChanged={this.selectedTabCanGoBackChanged} onSelectedTabCanGoForwardChanged={this.onSelectedTabCanGoForwardChanged} urls={['http://www.umich.edu/']} />
+                <ArboretumNavigationBar ref={this.navBarRef} onBack={this.goBack} onForward={this.goForward} onReload={this.reload} onToggleSidebar={this.toggleSidebar} onNavigate={this.navigate} />
             </header>
             <div className="window-content">
                 <div className="pane-group">
-                    <ArboretumSidebar onSendMessage={this.sendMessage} setServerActive={this.setServerActive} isVisible={this.state.showingSidebar} serverActive={this.state.serverActive} />
+                    <ArboretumSidebar onSendMessage={this.sendMessage} setServerActive={this.setServerActive} isVisible={this.state.showingSidebar} serverActive={this.state.serverActive} onPostTask={this.postTask}/>
                     <div id="browser-pane" className="pane">
                         <div id="content">{this.state.selectedTab ? this.state.selectedTab.webViewEl : null}</div>
                     </div>

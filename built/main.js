@@ -15,11 +15,9 @@ const http_1 = require("http");
 const fs_1 = require("fs");
 const path_1 = require("path");
 const express = require("express");
-const browser_state_1 = require("./server/state/browser_state");
 const keypress = require("keypress");
 const chalk_1 = require("chalk");
 const ip = require("ip");
-const opn = require("opn");
 // const ChatServer = require('./server/chat');
 // const BrowserState = require('./server/state/browser_state');
 // process.traceProcessWarnings = true;
@@ -63,9 +61,10 @@ function createBrowserWindow(extraOptions) {
 electron_1.app.on('ready', () => {
     let wn = createBrowserWindow();
 });
-const browserState = new browser_state_1.BrowserState({
-    port: RDB_PORT
-});
+const browserState = null;
+// const browserState = new BrowserState({
+//     port: RDB_PORT
+// });
 const expressApp = express();
 const server = http_1.createServer(expressApp);
 expressApp.all('/', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
@@ -133,8 +132,8 @@ function startServer() {
                 resolve(port);
             });
         });
-        const address = getIPAddress();
-        return `http://${address}:${port}`;
+        const host = getIPAddress();
+        return ({ host, port });
     });
 }
 ;
@@ -149,18 +148,18 @@ function stopServer() {
 }
 ;
 if (OPEN_MIRROR) {
-    startServer().then((address) => {
-        console.log(chalk_1.default.bgWhite.bold.black(`Listening on ${address}`));
-        return opn(address, { app: 'google-chrome' }); // open browser
+    startServer().then((info) => {
+        console.log(chalk_1.default.bgWhite.bold.black(`Listening at ${info.host} port ${info.port} `));
+        // return opn(address, { app: 'google-chrome' }); // open browser
     }).catch((err) => {
         console.error(err);
     });
 }
 electron_1.ipcMain.on('asynchronous-message', (event, arg) => __awaiter(this, void 0, void 0, function* () {
     if (arg === 'startServer') {
-        const address = yield startServer();
-        console.log(`Listening on ${address}`);
-        event.sender.send('asynchronous-reply', address);
+        const info = yield startServer();
+        event.sender.send('asynchronous-reply', info);
+        console.log(chalk_1.default.bgWhite.bold.black(`Listening at ${info.host} port ${info.port}`));
     }
     else if (arg === 'stopServer') {
         stopServer();

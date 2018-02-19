@@ -167,13 +167,20 @@ type ArboretumTabProps = {
     onSelect:(tab:ArboretumTab) => void,
     onClose:(tab:ArboretumTab) => void,
     tabID:BrowserTabID,
-    selected:boolean
+    selected:boolean,
+    canGoBackChanged?:(tab:ArboretumTab, canGoBack:boolean) => void,
+    canGoForwardChanged?:(tab:ArboretumTab, canGoForward:boolean) => void,
+    isLoadingChanged?:(tab:ArboretumTab, isLoading:boolean) => void,
+    urlChanged?:(tab:ArboretumTab, url:string) => void
 };
 type ArboretumTabState = {
     title:string,
     selected:boolean,
     loadedURL:string,
-    favIconURL:string
+    favIconURL:string,
+    canGoBack:boolean,
+    canGoForward:boolean,
+    isLoading:boolean
 };
 
 export class ArboretumTab extends React.Component<ArboretumTabProps, ArboretumTabState> {
@@ -185,7 +192,10 @@ export class ArboretumTab extends React.Component<ArboretumTabProps, ArboretumTa
             title:this.props.startURL,
             selected:this.props.selected,
             loadedURL:this.props.startURL,
-            favIconURL:null
+            favIconURL:null,
+            canGoBack:false,
+            canGoForward:false,
+            isLoading:false
         };
         this.webViewEl = <webview ref={this.webViewRef} src={this.props.startURL}/>;
     };
@@ -193,22 +203,31 @@ export class ArboretumTab extends React.Component<ArboretumTabProps, ArboretumTa
     private webViewRef = (el:Electron.WebviewTag):void => {
         if(el) {
             this.webView = el;
-            this.webView.addEventListener('page-title-updated', (event) => {
+            this.webView.addEventListener('page-title-updated', (event:Electron.PageTitleUpdatedEvent) => {
                 const {title} = event;
                 this.setState({title});
             });
-            this.webView.addEventListener('load-commit', (event) => {
+            this.webView.addEventListener('load-commit', (event:Electron.LoadCommitEvent) => {
                 const {isMainFrame, url} = event;
 
                 if(isMainFrame) {
                     const loadedURL = url;
+                    if(this.props.urlChanged) { this.props.urlChanged(this, url); }
                     this.setState({loadedURL});
                 }
             });
-            this.webView.addEventListener('page-favicon-updated', (event) => {
+            this.webView.addEventListener('page-favicon-updated', (event:Electron.PageFaviconUpdatedEvent) => {
                 const {favicons} = event;
                 const favIconURL = favicons[0];
                 this.setState({favIconURL});
+            });
+            this.webView.addEventListener('did-start-loading', (event) => {
+                this.setState({isLoading:true});
+                if(this.props.isLoadingChanged) { this.props.isLoadingChanged(this, true); }
+            });
+            this.webView.addEventListener('did-stop-loading', (event) => {
+                this.setState({isLoading:false});
+                if(this.props.isLoadingChanged) { this.props.isLoadingChanged(this, false); }
             });
         }
     };

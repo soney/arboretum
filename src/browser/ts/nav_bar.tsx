@@ -6,18 +6,26 @@ type ArboretumNavigationBarProps = {
     onBack:()=>void,
     onForward:()=>void,
     onReload:()=>void,
-    onToggleSidebar:()=>void
+    onToggleSidebar:()=>void,
     onNavigate:(url:string)=>void
 };
 type ArboretumNavigationBarState = {
-    urlText:string
+    urlText:string,
+    canGoBack:boolean,
+    canGoForward:boolean,
+    isLoading:boolean,
+    urlBarFocused:boolean
 };
 
 export class ArboretumNavigationBar extends React.Component<ArboretumNavigationBarProps, ArboretumNavigationBarState> {
     constructor(props) {
         super(props);
         this.state = {
-            urlText:''
+            urlText:'',
+            canGoBack:false,
+            canGoForward:false,
+            isLoading:false,
+            urlBarFocused:false
         };
     };
 
@@ -49,19 +57,26 @@ export class ArboretumNavigationBar extends React.Component<ArboretumNavigationB
         }
     };
 
+    private onURLBarFocus = (event:React.FocusEvent<HTMLInputElement>):void => {
+        this.setState({urlBarFocused: true});
+    };
+    private onURLBarBlur = (event:React.FocusEvent<HTMLInputElement>):void => {
+        this.setState({urlBarFocused: false});
+    };
+
     public render():React.ReactNode {
         return <div id="navBar">
                     <div className="toolbar-actions">
                         <div className="btn-group">
-                            <button onClick={this.backClicked} className = 'btn btn-default btn-mini' id='back'><span className='icon icon-left-open-big'></span></button>
-                            <button onClick={this.forwardClicked} className = 'btn btn-default btn-mini' id='forward'><span className='icon icon-right-open-big'></span></button>
+                            <button disabled={!this.state.canGoBack} onClick={this.backClicked} className = 'btn btn-default btn-mini' id='back'><span className='icon icon-left-open-big'></span></button>
+                            <button disabled={!this.state.canGoForward} onClick={this.forwardClicked} className = 'btn btn-default btn-mini' id='forward'><span className='icon icon-right-open-big'></span></button>
                         </div>
                         <div className="btn-group">
-                            <button onClick={this.reloadClicked} className = 'btn btn-default btn-mini' id='reload'><span className='icon icon-ccw'></span></button>
+                            <button onClick={this.reloadClicked} className = 'btn btn-default btn-mini' id='reload'><span className={`icon ${this.state.isLoading ? 'icon-cancel' : 'icon-ccw'}`}></span></button>
                             <button onClick={this.toggleSidebarClicked} className = 'btn btn-default btn-mini' id='task'><span className='icon icon-publish'></span></button>
                         </div>
                     </div>
-                    <input value={this.state.urlText} onChange={this.handleURLChange} onKeyDown={this.urlKeyDown} id='url' type="text" placeholder="Enter URL or Term to Search" />
+                    <input value={this.state.urlText} onChange={this.handleURLChange} onKeyDown={this.urlKeyDown} onFocus={this.onURLBarFocus} onBlur={this.onURLBarBlur} id='url' type="text" placeholder="Enter URL or Term to Search" />
                 </div>;
     };
 };
