@@ -3,13 +3,14 @@ import * as ReactDOM from 'react-dom';
 import {ArboretumNavigationBar} from './ts/nav_bar';
 import {ArboretumTabs} from './ts/tabs';
 import {ArboretumTab} from './ts/tab';
-import {ArboretumSidebar} from './ts/sidebar';
+import {ArboretumSidebar, SetServerActiveValue} from './ts/sidebar';
 import {ipcRenderer, remote, BrowserWindow} from 'electron';
 
 type ArboretumProps = {};
 type ArboretumState = {
     selectedTab:ArboretumTab,
-    showingSidebar:boolean
+    showingSidebar:boolean,
+    serverActive:boolean
 };
 
 export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
@@ -17,7 +18,8 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
         super(props);
         this.state = {
             selectedTab:null,
-            showingSidebar:false
+            showingSidebar:false,
+            serverActive:false
         };
     };
 
@@ -50,6 +52,16 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
     private setSelectedTab = (selectedTab:ArboretumTab):void => {
         this.setState({ selectedTab });
     };
+    private async setServerActive(active:boolean):Promise<SetServerActiveValue> {
+        if(active) {
+            ipcRenderer.send('asynchronous-message', 'startServer');
+        } else {
+            return Promise.resolve({
+                shareURL:'',
+                activeURL:''
+            });
+        }
+    };
 
     public render():React.ReactNode {
         return <div className="window">
@@ -59,7 +71,7 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
             </header>
             <div className="window-content">
                 <div className="pane-group">
-                    <ArboretumSidebar />
+                    <ArboretumSidebar setServerActive={this.setServerActive} isVisible={this.state.showingSidebar} serverActive={this.state.serverActive} />
                     <div id="browser-pane" className="pane">
                         <div id="content">{this.state.selectedTab ? this.state.selectedTab.webViewEl : null}</div>
                     </div>

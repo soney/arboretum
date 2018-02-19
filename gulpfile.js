@@ -2,12 +2,11 @@ const fs = require('fs');
 const path = require('path');
 const gulp = require('gulp');
 const ts = require('gulp-typescript');
-const tsProject = ts.createProject("tsconfig.json");
 const webpack = require('webpack-stream');
 const _ = require('underscore');
 
-const {outDir} = tsProject.options;
-const {sourceRoot} = tsProject.config.compilerOptions;
+const serverTSProject = ts.createProject("tsconfig.json");
+
 const webpackCommonConfig = {
     module: {
         rules: [{
@@ -129,8 +128,9 @@ gulp.task('server-resources', function() {
         .pipe(gulp.dest(path.join(__dirname, 'built', 'server')));
 });
 gulp.task('server-ts', function() {
-    return tsProject.src()
-        .pipe(tsProject())
+    const {outDir} = tsProject.options;
+    return serverTSProject.src()
+        .pipe(serverTSProject())
         .js.pipe(gulp.dest(outDir));
 });
 gulp.task('server', ['server-ts', 'server-resources']);

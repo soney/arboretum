@@ -62,9 +62,10 @@ app.on('ready', () => {
     let wn: BrowserWindow = createBrowserWindow();
 });
 
-const browserState = new BrowserState({
-    port: RDB_PORT
-});
+const browserState = null;
+// const browserState = new BrowserState({
+//     port: RDB_PORT
+// });
 
 const expressApp = express();
 const server: Server = createServer(expressApp);

@@ -4,10 +4,12 @@ table#server-controls {
 table#server-controls .nav-group-title {
     padding: 0px;
 }
+table#server-controls thead td {
+    text-align: center;
+}
 table#server-controls td {
     padding-left: 5px;
     padding-right: 0px;
-    text-align: center;
     margin: auto;
     vertical-align: top;
 }
