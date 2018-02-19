@@ -263,7 +263,7 @@ export class DOMState extends EventEmitter {
     }
     public setChildren(children: Array<DOMState>): void {
         this.children.forEach((child: DOMState) => {
-            if (!children.includes(child)) {
+            if (children.indexOf(child) < 0) {
                 child.destroy();
             }
         });

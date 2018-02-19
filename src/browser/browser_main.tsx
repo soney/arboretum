@@ -1,15 +1,78 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
+import {ArboretumNavigationBar} from './ts/nav_bar';
+import {ArboretumTabs} from './ts/tabs';
+import {ArboretumTab} from './ts/tab';
+import {ArboretumSidebar} from './ts/sidebar';
+import {ipcRenderer, remote, BrowserWindow} from 'electron';
 
-export class Arboretum extends React.Component {
+type ArboretumProps = {};
+type ArboretumState = {
+    selectedTab:ArboretumTab,
+    showingSidebar:boolean
+};
+
+export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
     constructor(props) {
         super(props);
+        this.state = {
+            selectedTab:null,
+            showingSidebar:false
+        };
+    };
+
+    private goBack = ():void => {
+        const {selectedTab} = this.state;
+        if(selectedTab) {
+            selectedTab.goBack();
+        }
+    };
+    private goForward = ():void => {
+        const {selectedTab} = this.state;
+        if(selectedTab) {
+            selectedTab.goForward();
+        }
+    };
+    private reload = ():void => {
+        const {selectedTab} = this.state;
+        if(selectedTab) {
+            selectedTab.reload();
+        }
+    };
+    private toggleSidebar = ():void => {
+    };
+    private navigate = (url:string):void => {
+        const {selectedTab} = this.state;
+        if(selectedTab) {
+            selectedTab.navigate(url);
+        }
+    };
+    private setSelectedTab = (selectedTab:ArboretumTab):void => {
+        this.setState({ selectedTab });
     };
 
     public render():React.ReactNode {
-        return <h1>Hello</h1>;
+        return <div className="window">
+            <header className="toolbar toolbar-header">
+                <ArboretumTabs onSelectTab={this.setSelectedTab} urls={['http://www.umich.edu/']} />
+                <ArboretumNavigationBar onBack={this.goBack} onForward={this.goForward} onReload={this.reload} onToggleSidebar={this.toggleSidebar} onNavigate={this.navigate} />
+            </header>
+            <div className="window-content">
+                <div className="pane-group">
+                    <ArboretumSidebar />
+                    <div id="browser-pane" className="pane">
+                        <div id="content">{this.state.selectedTab ? this.state.selectedTab.webViewEl : null}</div>
+                    </div>
+                </div>
+            </div>
+        </div>;
     };
 };
+
+ReactDOM.render(
+    <Arboretum />,
+    document.getElementById('arboretum_main')
+);
 
 // import * as path from 'path';
 // import {ipcRenderer, remote, BrowserWindow} from 'electron';

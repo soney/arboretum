@@ -316,7 +316,7 @@ class DOMState extends events_1.EventEmitter {
     }
     setChildren(children) {
         this.children.forEach((child) => {
-            if (!children.includes(child)) {
+            if (children.indexOf(child) < 0) {
                 child.destroy();
             }
         });
