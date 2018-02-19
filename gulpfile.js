@@ -128,7 +128,7 @@ gulp.task('server-resources', function() {
         .pipe(gulp.dest(path.join(__dirname, 'built', 'server')));
 });
 gulp.task('server-ts', function() {
-    const {outDir} = tsProject.options;
+    const {outDir} = serverTSProject.options;
     return serverTSProject.src()
         .pipe(serverTSProject())
         .js.pipe(gulp.dest(outDir));

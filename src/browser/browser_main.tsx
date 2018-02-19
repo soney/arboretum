@@ -62,6 +62,9 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
             });
         }
     };
+    private sendMessage(message:string):void {
+        console.log('send message', message);
+    };
 
     public render():React.ReactNode {
         return <div className="window">
@@ -71,7 +74,7 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
             </header>
             <div className="window-content">
                 <div className="pane-group">
-                    <ArboretumSidebar setServerActive={this.setServerActive} isVisible={this.state.showingSidebar} serverActive={this.state.serverActive} />
+                    <ArboretumSidebar onSendMessage={this.sendMessage} setServerActive={this.setServerActive} isVisible={this.state.showingSidebar} serverActive={this.state.serverActive} />
                     <div id="browser-pane" className="pane">
                         <div id="content">{this.state.selectedTab ? this.state.selectedTab.webViewEl : null}</div>
                     </div>

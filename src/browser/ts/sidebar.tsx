@@ -134,7 +134,8 @@ export interface SetServerActiveValue {
 type ArboretumSidebarProps = {
     isVisible:boolean,
     serverActive:boolean,
-    setServerActive?:(active:boolean)=>Promise<SetServerActiveValue>
+    setServerActive?:(active:boolean)=>Promise<SetServerActiveValue>,
+    onSendMessage?:(message:string)=>void
 };
 type ArboretumSidebarState = {
     isVisible:boolean,
@@ -167,6 +168,9 @@ export class ArboretumSidebar extends React.Component<ArboretumSidebarProps, Arb
                 this.setState({shareURL:'', activeURL:''});
             }
         }
+    };
+    private sendMessage = (message:string):void => {
+        if(this.props.onSendMessage) { this.props.onSendMessage(message); }
     };
 
     public render():React.ReactNode {
@@ -209,7 +213,7 @@ export class ArboretumSidebar extends React.Component<ArboretumSidebarProps, Arb
                     </tr>
                 </tbody>
             </table>
-            <ArboretumChat />
+            <ArboretumChat onSendMessage={this.sendMessage} />
         </div>;
     };
     // populateShareURLs() {
