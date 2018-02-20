@@ -35,6 +35,7 @@ export class BrowserState extends EventEmitter {
     private tabs: Map<CRI.TabID, TabState> = new Map<CRI.TabID, TabState>();
     private options = { host: 'localhost', port: 9222 };
     private intervalID: NodeJS.Timer;
+    private share:ShareDB = new ShareDB();
     private sender;
     constructor(private state: any, extraOptions?) {
         super();

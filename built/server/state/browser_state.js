@@ -13,6 +13,7 @@ const _ = require("underscore");
 const fileUrl = require("file-url");
 const path_1 = require("path");
 const tab_state_1 = require("./tab_state");
+const ShareDB = require("sharedb");
 const logging_1 = require("../../utils/logging");
 const events_1 = require("events");
 const electron_1 = require("electron");
@@ -39,6 +40,7 @@ class BrowserState extends events_1.EventEmitter {
         this.state = state;
         this.tabs = new Map();
         this.options = { host: 'localhost', port: 9222 };
+        this.share = new ShareDB();
         _.extend(this.options, extraOptions);
         this.intervalID = setInterval(_.bind(this.refreshTabs, this), 2000);
         log.debug('=== CREATED BROWSER ===');

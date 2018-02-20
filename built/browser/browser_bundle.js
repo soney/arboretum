@@ -1830,12 +1830,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(0);
 const ReactDOM = __webpack_require__(7);
 const nav_bar_1 = __webpack_require__(8);
-const tabs_1 = __webpack_require__(9);
-const sidebar_1 = __webpack_require__(11);
+const tab_1 = __webpack_require__(9);
+const sidebar_1 = __webpack_require__(10);
 const electron_1 = __webpack_require__(21);
+const url = __webpack_require__(22);
+const _ = __webpack_require__(4);
 class Arboretum extends React.Component {
     constructor(props) {
         super(props);
+        this.tabCounter = 0;
+        this.tabs = new Map();
         this.goBack = () => {
             const { selectedTab } = this.state;
             if (selectedTab) {
@@ -1862,23 +1866,136 @@ class Arboretum extends React.Component {
                 selectedTab.navigate(url);
             }
         };
-        this.setSelectedTab = (selectedTab) => {
-            this.setState({ selectedTab });
-            this.updateNavBarState();
-        };
         this.navBarRef = (el) => {
             this.navBar = el;
             this.updateNavBarState();
         };
+        this.setServerActive = (active) => __awaiter(this, void 0, void 0, function* () {
+            if (active) {
+                const { hostname, port } = yield this.sendIPCMessage('startServer');
+                const fullShareURL = url.format({ protocol: 'http', hostname, port });
+                const fullAdminURL = url.format({ protocol: 'http', hostname, port, pathname: '/admin' });
+                const [shareURL, adminURL] = yield Promise.all([
+                    this.getShortcut(fullShareURL), this.getShortcut(fullAdminURL)
+                ]);
+                return { shareURL, adminURL };
+            }
+            else {
+                yield this.sendIPCMessage('stopServer');
+                return {
+                    shareURL: '',
+                    adminURL: ''
+                };
+            }
+        });
         this.selectedTabURLChanged = (url) => { this.updateNavBarState(); };
         this.selectedTabLoadingChanged = (isLoading) => { this.updateNavBarState(); };
         this.selectedTabCanGoBackChanged = (canGoBack) => { this.updateNavBarState(); };
-        this.onSelectedTabCanGoForwardChanged = (canGoForward) => { this.updateNavBarState(); };
+        this.selectedTabCanGoForwardChanged = (canGoForward) => { this.updateNavBarState(); };
+        this.selectedTabPageTitleChanged = (title) => {
+            if (!title) {
+                title = 'Arboretum';
+            }
+            document.title = title;
+        };
+        this.addTab = () => {
+            const tabs = this.state.tabs.map((tab) => {
+                return _.extend(tab, { selected: false });
+            }).concat([{
+                    id: this.tabCounter++,
+                    url: 'http://www.cmu.edu/',
+                    selected: false
+                }]);
+            this.setState({ tabs }, () => {
+                this.updateWebViews();
+            });
+        };
+        this.selectTab = (selectedTab) => {
+            if (selectedTab !== this.state.selectedTab) {
+                this.tabs.forEach((t) => {
+                    const isSelected = t === selectedTab;
+                    t.markSelected(isSelected);
+                    if (t.webView) {
+                        t.webView.setAttribute('class', isSelected ? '' : 'hidden');
+                    }
+                });
+                const activeWebViewEl = selectedTab ? selectedTab.webViewEl : null;
+                this.setState({ selectedTab, activeWebViewEl }, () => {
+                    this.updateNavBarState();
+                    if (this.state.selectedTab) {
+                        this.selectedTabPageTitleChanged(selectedTab.state.title);
+                    }
+                });
+            }
+        };
+        this.closeTab = (tab) => {
+            let selectedTab = this.state.selectedTab;
+            if (tab === this.state.selectedTab) {
+                const tabIndex = this.state.tabs.map((t) => t.id).indexOf(tab.props.tabID);
+                if (this.state.tabs.length === 1) {
+                    selectedTab = null;
+                }
+                else if (tabIndex === this.state.tabs.length - 1) {
+                    selectedTab = this.tabs.get(this.state.tabs[tabIndex - 1].id);
+                }
+                else {
+                    selectedTab = this.tabs.get(this.state.tabs[tabIndex + 1].id);
+                }
+            }
+            this.tabs.delete(tab.props.tabID);
+            const tabs = this.state.tabs.filter((tabInfo) => tabInfo.id !== tab.props.tabID);
+            this.setState({ tabs }, () => {
+                this.selectTab(selectedTab);
+                this.updateWebViews();
+            });
+        };
+        this.tabRef = (el) => {
+            if (el) {
+                this.tabs.set(el.props.tabID, el);
+                this.selectTab(el);
+                this.updateWebViews();
+            }
+        };
+        this.tabIsLoadingChanged = (tab, isLoading) => {
+            if (tab === this.state.selectedTab) {
+                this.selectedTabLoadingChanged(isLoading);
+            }
+        };
+        this.tabCanGoBackChanged = (tab, canGoBack) => {
+            if (tab === this.state.selectedTab) {
+                this.selectedTabCanGoBackChanged(canGoBack);
+            }
+        };
+        this.tabCanGoForwardChanged = (tab, canGoForward) => {
+            if (tab === this.state.selectedTab) {
+                this.selectedTabCanGoBackChanged(canGoForward);
+            }
+        };
+        this.tabURLChanged = (tab, url) => {
+            if (tab === this.state.selectedTab) {
+                this.selectedTabURLChanged(url);
+            }
+        };
+        this.pageTitleChanged = (tab, title) => {
+            if (tab === this.state.selectedTab) {
+                this.selectedTabPageTitleChanged(title);
+            }
+        };
         this.state = {
+            tabs: this.props.urls.map((url, index) => {
+                return {
+                    selected: index === 0,
+                    id: this.tabCounter++,
+                    url: url
+                };
+            }),
+            webViews: [],
             selectedTab: null,
             showingSidebar: false,
-            serverActive: false
+            serverActive: false,
+            activeWebViewEl: null
         };
+        this.updateWebViews();
     }
     ;
     updateNavBarState() {
@@ -1892,26 +2009,21 @@ class Arboretum extends React.Component {
         }
     }
     ;
-    setServerActive(active) {
+    sendIPCMessage(message) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (active) {
-                electron_1.ipcRenderer.send('asynchronous-message', 'startServer');
-                return new Promise((resolve, reject) => {
-                    electron_1.ipcRenderer.once('asynchronous-reply', (event, address) => {
-                        resolve({
-                            shareURL: 'google.com',
-                            adminURL: 'yahoo.com'
-                        });
-                    });
+            electron_1.ipcRenderer.send('asynchronous-message', message);
+            const reply = yield new Promise((resolve, reject) => {
+                electron_1.ipcRenderer.once('asynchronous-reply', (event, data) => {
+                    resolve(data);
                 });
-            }
-            else {
-                electron_1.ipcRenderer.send('asynchronous-message', 'stopServer');
-                return Promise.resolve({
-                    shareURL: '',
-                    adminURL: ''
-                });
-            }
+            });
+            return reply;
+        });
+    }
+    ;
+    getShortcut(url) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return url;
         });
     }
     ;
@@ -1923,154 +2035,41 @@ class Arboretum extends React.Component {
         console.log('post task', sandbox);
     }
     ;
-    getShortcut(address, path) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return new Promise((resolve, reject) => {
-            });
+    updateWebViews() {
+        const webViews = this.state.tabs.map((tab) => {
+            const { id } = tab;
+            if (this.tabs.has(id)) {
+                const arboretumTab = this.tabs.get(id);
+                return arboretumTab.webViewEl;
+            }
+            else {
+                return null;
+            }
         });
+        this.setState({ webViews });
     }
     ;
-    // private async getMyShortcut(address:string, path:string):Promise<string> {
-    //     const url = require('url');
-    //     return Sidebar.getIPAddress().then(function(ip) {
-    //         var myLink = url.format({
-    //             protocol: 'http',
-    //             hostname: ip,
-    //             port: 3000,
-    //             pathname: path || '/'
-    //         });
-    //         return Sidebar.getShortcut(myLink)
-    //     }).then(function(result) {
-    //         const shortcut = result.shortcut;
-    //         return url.format({
-    //             protocol: 'http',
-    //             hostname: 'arbor.site',
-    //             pathname: shortcut
-    //         });
-    //     });
-    // }
-    //
-    // private static async getShortcut(url:string):Promise<string> {
-    //     return new Promise<string>((resolve, reject) => {
-    //         $.ajax({
-    //             method: 'PUT',
-    //             url: 'https://api.arbor.site',
-    //             contentType: 'application/json',
-    //             headers: {
-    //                 'x-api-key': API_KEY
-    //             },
-    //             data: JSON.stringify({
-    //                 target: url
-    //             })
-    //         }).done((data) => {
-    //             resolve(data);
-    //         }).fail((err) => {
-    //             reject(err);
-    //         });
-    //     });
-    // }
     render() {
+        const tabs = this.state.tabs.map((info, index) => React.createElement(tab_1.ArboretumTab, { ref: this.tabRef, selected: info.selected, key: info.id, tabID: info.id, startURL: info.url, onSelect: this.selectTab, onClose: this.closeTab, pageTitleChanged: this.pageTitleChanged, urlChanged: this.tabURLChanged, isLoadingChanged: this.tabIsLoadingChanged, canGoBackChanged: this.tabCanGoBackChanged, canGoForwardChanged: this.tabCanGoForwardChanged }));
         return React.createElement("div", { className: "window" },
             React.createElement("header", { className: "toolbar toolbar-header" },
-                React.createElement(tabs_1.ArboretumTabs, { onSelectTab: this.setSelectedTab, onSelectedTabURLChanged: this.selectedTabURLChanged, onSelectedTabLoadingChanged: this.selectedTabLoadingChanged, onSelectedTabCanGoBackChanged: this.selectedTabCanGoBackChanged, onSelectedTabCanGoForwardChanged: this.onSelectedTabCanGoForwardChanged, urls: ['http://www.umich.edu/'] }),
+                React.createElement("div", { id: "tabsBar", className: "tab-group" },
+                    React.createElement("div", { id: 'buttonSpacer', className: "tab-item tab-item-fixed" }, " "),
+                    tabs,
+                    React.createElement("div", { onClick: this.addTab, className: "tab-item tab-item-fixed", id: 'addTab' },
+                        React.createElement("span", { className: "icon icon-plus" }))),
                 React.createElement(nav_bar_1.ArboretumNavigationBar, { ref: this.navBarRef, onBack: this.goBack, onForward: this.goForward, onReload: this.reload, onToggleSidebar: this.toggleSidebar, onNavigate: this.navigate })),
             React.createElement("div", { className: "window-content" },
                 React.createElement("div", { className: "pane-group" },
                     React.createElement(sidebar_1.ArboretumSidebar, { onSendMessage: this.sendMessage, setServerActive: this.setServerActive, isVisible: this.state.showingSidebar, serverActive: this.state.serverActive, onPostTask: this.postTask }),
                     React.createElement("div", { id: "browser-pane", className: "pane" },
-                        React.createElement("div", { id: "content" }, this.state.selectedTab ? this.state.selectedTab.webViewEl : null)))));
+                        React.createElement("div", { id: "content" }, this.state.webViews)))));
     }
     ;
 }
 exports.Arboretum = Arboretum;
 ;
-ReactDOM.render(React.createElement(Arboretum, null), document.getElementById('arboretum_main'));
-// import * as path from 'path';
-// import {ipcRenderer, remote, BrowserWindow} from 'electron';
-// import {Tabs} from './ts/tabs';
-// import {URLBar} from './ts/url_bar';
-// import {Sidebar} from './ts/sidebar';
-// var $ = require('jquery'),
-//     _ = require('underscore');
-// require('jquery-ui');
-// var path = require('path');
-// export class Arboretum {
-// private browserWindow:BrowserWindow;
-// private tabs:Tabs = new Tabs(this);
-// private urlBar:URLBar = new URLBar(this);
-// private sidebar:Sidebar = new Sidebar(this);
-// constructor() {
-//     this.browserWindow = remote.getCurrentWindow();
-//     this.listen();
-//     this.tabs.createNew(`file://${path.resolve('test/simple.html')}`, true);
-// };
-// public loadURL(url:string):void {
-//     this.tabs.active.webView[0].loadURL(formattedURL);
-// };
-// public goBack():void {
-// };
-//
-// listen() {
-//     const {ipcRenderer} = require('electron');
-//     ipcRenderer.send('asynchronous-message','test');
-//     $(window).on('keydown', (e) => {
-//         if(e.which === 82 && (e.ctrlKey || e.metaKey)) { // CTRL + ALT + R
-//             if(e.altKey){
-//               location.reload();
-//             }
-//             else{
-//               e.preventDefault();
-//               window.arboretum.urlBar.refreshStop.click();
-//             }
-//         } else if((e.which === 73 && e.ctrlKey && e.shiftKey) || e.which === 123) { // F12 OR CTRL + SHIFT + I
-//             var activeTab = this.tabs.active;
-//             // if(activeTab) {
-//             //     if(activeTab.WebView.isDevToolsOpened()) {
-//             //         activeTab.WebView.closeDevTools();
-//             //     } else {
-//             //         activeTab.WebView.openDevTools();
-//             //     }
-//             // }
-//         } else if(e.which === 76 && (e.ctrlKey || e.metaKey)) {
-//             window.arboretum.urlBar.urlInput.focus();
-//         } else if((e.which === 9 && (e.ctrlKey || e.metaKey)) ||( e.which === 9)) {
-//             e.preventDefault();
-//             let tabs = window.arboretum.tabs.tabs;
-//             let selectedKey = window.arboretum.tabs.active.TabId;
-//             let Keys = Object.keys(tabs);
-//             let i = Keys.indexOf(selectedKey.toString());
-//             i++;
-//             if(i+1 > Keys.length)
-//                i = 0;
-//             window.arboretum.tabs.select(tabs[Keys[i]]);
-//         } else if(e.which === 78 && (e.ctrlKey || e.metaKey)) {
-//            e.preventDefault();
-//            const {ipcRenderer} = require('electron');
-//            console.log(ipcRenderer);
-//            ipcRenderer.send('New-Window','test');
-//         }
-//
-//     });
-//     ipcRenderer.on('asynchronous-reply',function(arg) {
-//        window.arboretum.tabs.createNew('',true);
-//     });
-//     ipcRenderer.on('TabRefId',function(event,arg) {
-//        var keys = Object.keys(window.arboretum.tabs.tabs).map(Number);
-//        var maxKey = Math.max.apply(Math,keys);
-//        window.arboretum.tabs.tabs[maxKey].RefId = arg;
-//     });
-//     ipcRenderer.on('closeTab',function(event,arg) {
-//       var theKey = _.find(Object.keys(window.arboretum.tabs.tabs),function(key) {
-//          return window.arboretum.tabs.tabs[key].RefId == arg;
-//       });
-//       window.arboretum.tabs.tabs[theKey].closeButton.click();
-//     });
-// }
-// }
-//
-// $(function() {
-//      new Arboretum();
-// });
+ReactDOM.render(React.createElement(Arboretum, { urls: ['http://www.umich.edu/'] }), document.getElementById('arboretum_main'));
 
 
 /***/ }),
@@ -2212,165 +2211,6 @@ exports.ArboretumNavigationBar = ArboretumNavigationBar;
 
 /***/ }),
 /* 9 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-// import * as $ from 'jquery';
-// import {Tab, TabID} from './tab';
-// import {Arboretum} from '../browser_main';
-//
-// export class Tabs {
-//     private activeTab:Tab;
-//     private rootEl:JQuery<HTMLElement> = $('#content');
-//     private addTabEl:JQuery<HTMLElement> = $('#addTab');
-//     private tabsRowEl:JQuery<HTMLElement> = $('#tabsBar');
-//     private tabs:Map<TabID, Tab> = new Map<TabID, Tab>();
-//
-//     constructor(private arboretum:Arboretum) {
-//         this.addTabEl.on('click', () => {
-//             this.createNew('', true);
-//             // this.resize();
-//         });
-//     }
-//     private createNew(url:string, isSelected:boolean=true):Tab {
-//         const theTab = new Tab(url);
-//         this.tabs.set(theTab.TabId, theTab);
-//         if(isSelected) {
-//             this.select(theTab);
-//         }
-//         return theTab;
-//     }
-//
-//     public select(tab:Tab):void {
-//         if(this.activeTab) {
-//             this.activeTab.webView.removeClass('show');
-//             this.activeTab.content.addClass('unselected');
-//             this.activeTab.tab.removeClass('active')
-//                            .addClass('not-active');
-//         }
-//         //arboretum.taskBar.tabs.selected = this.tabs.indexOf(tab);
-//         this.activeTab = tab;
-//         this.activeTab.webView.addClass('show');
-//         this.activeTab.tab.addClass('active')
-//                         .removeClass('not-active');
-//         this.activeTab.content.removeClass('unselected');
-//         document.title = $(this.activeTab[0]).children('.tab-title').text();
-//     }
-//
-// }
-Object.defineProperty(exports, "__esModule", { value: true });
-const React = __webpack_require__(0);
-const tab_1 = __webpack_require__(10);
-const _ = __webpack_require__(4);
-class ArboretumTabs extends React.Component {
-    constructor(props) {
-        super(props);
-        this.tabCounter = 0;
-        this.tabs = new Map();
-        this.addTab = () => {
-            console.log('abc');
-            const tabs = this.state.tabs.map((tab) => {
-                return _.extend(tab, { selected: false });
-            }).concat([{
-                    id: this.tabCounter++,
-                    url: 'http://www.umich.edu/',
-                    selected: false
-                }]);
-            this.setState({ tabs });
-        };
-        this.selectTab = (selectedTab) => {
-            if (selectedTab !== this.state.selectedTab) {
-                this.tabs.forEach((t) => {
-                    t.markSelected(t === selectedTab);
-                });
-                this.setState({ selectedTab });
-                if (this.props.onSelectTab) {
-                    this.props.onSelectTab(selectedTab);
-                }
-            }
-        };
-        this.closeTab = (tab) => {
-            let selectedTab = this.state.selectedTab;
-            if (tab === this.state.selectedTab) {
-                const tabIndex = this.state.tabs.map((t) => t.id).indexOf(tab.props.tabID);
-                if (this.state.tabs.length === 1) {
-                    selectedTab = null;
-                }
-                else if (tabIndex === this.state.tabs.length - 1) {
-                    selectedTab = this.tabs.get(this.state.tabs[tabIndex - 1].id);
-                }
-                else {
-                    selectedTab = this.tabs.get(this.state.tabs[tabIndex + 1].id);
-                }
-            }
-            this.tabs.delete(tab.props.tabID);
-            const tabs = this.state.tabs.filter((tabInfo) => tabInfo.id !== tab.props.tabID);
-            this.setState({ tabs });
-            this.selectTab(selectedTab);
-        };
-        this.tabRef = (el) => {
-            if (el) {
-                this.tabs.set(el.props.tabID, el);
-                this.selectTab(el);
-            }
-        };
-        this.tabIsLoadingChanged = (tab, isLoading) => {
-            if (tab === this.state.selectedTab) {
-                if (this.props.onSelectedTabLoadingChanged) {
-                    this.props.onSelectedTabLoadingChanged(isLoading);
-                }
-            }
-        };
-        this.tabCanGoBackChanged = (tab, canGoBack) => {
-            if (tab === this.state.selectedTab) {
-                if (this.props.onSelectedTabCanGoBackChanged) {
-                    this.props.onSelectedTabCanGoBackChanged(canGoBack);
-                }
-            }
-        };
-        this.tabCanGoForwardChanged = (tab, canGoForward) => {
-            if (tab === this.state.selectedTab) {
-                if (this.props.onSelectedTabCanGoForwardChanged) {
-                    this.props.onSelectedTabCanGoForwardChanged(canGoForward);
-                }
-            }
-        };
-        this.tabURLChanged = (tab, url) => {
-            if (tab === this.state.selectedTab) {
-                if (this.props.onSelectedTabURLChanged) {
-                    this.props.onSelectedTabURLChanged(url);
-                }
-            }
-        };
-        this.state = {
-            selectedTab: null,
-            tabs: this.props.urls.map((url, index) => {
-                return {
-                    selected: index === 0,
-                    id: this.tabCounter++,
-                    url: url
-                };
-            })
-        };
-    }
-    ;
-    render() {
-        const tabs = this.state.tabs.map((info, index) => React.createElement(tab_1.ArboretumTab, { ref: this.tabRef, selected: info.selected, key: info.id, tabID: info.id, startURL: info.url, onSelect: this.selectTab, onClose: this.closeTab, urlChanged: this.tabURLChanged, isLoadingChanged: this.tabIsLoadingChanged, canGoBackChanged: this.tabCanGoBackChanged, canGoForwardChanged: this.tabCanGoForwardChanged }));
-        return React.createElement("div", { id: "tabsBar", className: "tab-group" },
-            React.createElement("div", { id: 'buttonSpacer', className: "tab-item tab-item-fixed" }, " "),
-            tabs,
-            React.createElement("div", { onClick: this.addTab, className: "tab-item tab-item-fixed", id: 'addTab' },
-                React.createElement("span", { className: "icon icon-plus" })));
-    }
-    ;
-}
-exports.ArboretumTabs = ArboretumTabs;
-;
-
-
-/***/ }),
-/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2546,6 +2386,9 @@ class ArboretumTab extends React.Component {
                 this.webView.addEventListener('page-title-updated', (event) => {
                     const { title } = event;
                     this.setState({ title });
+                    if (this.props.pageTitleChanged) {
+                        this.props.pageTitleChanged(this, title);
+                    }
                 });
                 this.webView.addEventListener('load-commit', (event) => {
                     const { isMainFrame, url } = event;
@@ -2596,7 +2439,7 @@ class ArboretumTab extends React.Component {
             canGoForward: false,
             isLoading: false
         };
-        this.webViewEl = React.createElement("webview", { ref: this.webViewRef, src: this.props.startURL });
+        this.webViewEl = React.createElement("webview", { id: `${this.props.tabID}`, key: this.props.tabID, ref: this.webViewRef, src: this.props.startURL });
     }
     ;
     markSelected(selected = true) {
@@ -2651,7 +2494,7 @@ exports.ArboretumTab = ArboretumTab;
 
 
 /***/ }),
-/* 11 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2787,8 +2630,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 //     }
 // }
 const React = __webpack_require__(0);
-const chat_1 = __webpack_require__(12);
-const Clipboard = __webpack_require__(22);
+const chat_1 = __webpack_require__(11);
+const Clipboard = __webpack_require__(12);
 const react_switch_1 = __webpack_require__(13);
 const ENTER_KEY = 13;
 ;
@@ -2884,7 +2727,7 @@ exports.ArboretumSidebar = ArboretumSidebar;
 
 
 /***/ }),
-/* 12 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -3260,6 +3103,12 @@ class ArboretumChat extends React.Component {
 exports.ArboretumChat = ArboretumChat;
 ;
 
+
+/***/ }),
+/* 12 */
+/***/ (function(module, exports) {
+
+module.exports = require("clipboard");
 
 /***/ }),
 /* 13 */
@@ -4590,7 +4439,7 @@ module.exports = require("electron");
 /* 22 */
 /***/ (function(module, exports) {
 
-module.exports = require("clipboard");
+module.exports = require("url");
 
 /***/ })
 /******/ ]);

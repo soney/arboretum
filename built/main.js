@@ -15,6 +15,7 @@ const http_1 = require("http");
 const fs_1 = require("fs");
 const path_1 = require("path");
 const express = require("express");
+const browser_state_1 = require("./server/state/browser_state");
 const keypress = require("keypress");
 const chalk_1 = require("chalk");
 const ip = require("ip");
@@ -34,7 +35,7 @@ const defaultBrowswerWindowOptions = {
     minWidth: 350,
     minHeight: 250,
     titleBarStyle: 'hidden',
-    frame: false,
+    // frame: false,            // removes default frame
     title: 'Arboretum',
 };
 electron_1.app.on('window-all-closed', () => {
@@ -61,10 +62,10 @@ function createBrowserWindow(extraOptions) {
 electron_1.app.on('ready', () => {
     let wn = createBrowserWindow();
 });
-const browserState = null;
-// const browserState = new BrowserState({
-//     port: RDB_PORT
-// });
+// const browserState = null;
+const browserState = new browser_state_1.BrowserState({
+    port: RDB_PORT
+});
 const expressApp = express();
 const server = http_1.createServer(expressApp);
 expressApp.all('/', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
@@ -132,8 +133,8 @@ function startServer() {
                 resolve(port);
             });
         });
-        const host = getIPAddress();
-        return ({ host, port });
+        const hostname = getIPAddress();
+        return ({ hostname, port });
     });
 }
 ;
@@ -149,7 +150,7 @@ function stopServer() {
 ;
 if (OPEN_MIRROR) {
     startServer().then((info) => {
-        console.log(chalk_1.default.bgWhite.bold.black(`Listening at ${info.host} port ${info.port} `));
+        console.log(chalk_1.default.bgWhite.bold.black(`Listening at ${info.hostname} port ${info.port} `));
         // return opn(address, { app: 'google-chrome' }); // open browser
     }).catch((err) => {
         console.error(err);
@@ -159,12 +160,15 @@ electron_1.ipcMain.on('asynchronous-message', (event, arg) => __awaiter(this, vo
     if (arg === 'startServer') {
         const info = yield startServer();
         event.sender.send('asynchronous-reply', info);
-        console.log(chalk_1.default.bgWhite.bold.black(`Listening at ${info.host} port ${info.port}`));
+        console.log(chalk_1.default.bgWhite.bold.black(`Listening at ${info.hostname} port ${info.port}`));
     }
     else if (arg === 'stopServer') {
-        stopServer();
+        yield stopServer();
+        event.sender.send('asynchronous-reply', 'ok');
     }
-    event.sender.send('asynchronous-reply');
+    else {
+        event.sender.send('asynchronous-reply', 'not recognized');
+    }
 }));
 keypress(process.stdin);
 process.stdin.on('keypress', (ch, key) => {
