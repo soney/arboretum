@@ -1,5 +1,5 @@
 import {SDB, SDBDoc} from './sharedb_wrapper';
-import {EventEmitter} from 'typed-event-emitter';
+import {EventEmitter} from './typed_event_emitter';
 
 export enum TypingStatus { IDLE, ACTIVE, IDLE_TYPED };
 
@@ -12,10 +12,10 @@ export interface User {
 };
 export interface Message {
     sender:User,
-    timestamp:number
+    timestamp:number,
+    content?:string
 };
 export interface TextMessage extends Message{
-    content:string
 };
 
 export interface ChatDoc {
@@ -75,13 +75,12 @@ export class ArboretumChat extends EventEmitter {
                     message:li
                 });
             }
-            console.log(op);
         });
     };
     public getMe():User {
         return this.meUser;
     };
-    public async addUser(displayName:string, isMe:boolean, present=true):Promise<User> {
+    public async addUser(displayName:string, isMe:boolean=true, present=true):Promise<User> {
         const id:UserID = ArboretumChat.userCounter++;
         const user:User = {id, displayName, present, typing:TypingStatus.IDLE};
         await this.initialized;
@@ -91,7 +90,7 @@ export class ArboretumChat extends EventEmitter {
         if(isMe) { this.meUser = user; }
         return user;
     };
-    public async addTextMessage(sender:User, content:string):Promise<void> {
+    public async addTextMessage(content:string, sender:User=this.getMe()):Promise<void> {
         await this.initialized;
 
         const timestamp:number = (new Date()).getTime()
@@ -123,5 +122,20 @@ export class ArboretumChat extends EventEmitter {
         const userIndex:number = await this.getUserIndex(user);
         const oldValue = data.users[userIndex].typing;
         await this.doc.submitOp([{p:['users', userIndex, 'typing'], od:oldValue, oi:typingStatus}]);
+    };
+    public async getMessages():Promise<Array<Message>> {
+        await this.initialized;
+        const data:ChatDoc = this.doc.getData();
+        return data.messages;
+    };
+    public async getUsers(onlyPresent:boolean = true):Promise<Array<User>> {
+        await this.initialized;
+        const data:ChatDoc = this.doc.getData();
+        const {users} = data;
+        if(onlyPresent) {
+            return users.filter((u) => u.present);
+        } else {
+            return users;
+        }
     };
 };

@@ -1,7 +1,8 @@
 import * as React from 'react';
-import {ArboretumChat} from './chat';
+import {ArboretumChatBox} from './chat';
 import * as Clipboard from 'clipboard';
 import Switch from 'react-switch';
+import {SDB, SDBDoc} from '../../utils/sharedb_wrapper';
 
 const ENTER_KEY:number = 13;
 
@@ -26,6 +27,7 @@ type ArboretumSidebarState = {
 };
 
 export class ArboretumSidebar extends React.Component<ArboretumSidebarProps, ArboretumSidebarState> {
+    private chatbox:ArboretumChatBox;
     constructor(props) {
         super(props);
         this.state = {
@@ -70,6 +72,15 @@ export class ArboretumSidebar extends React.Component<ArboretumSidebarProps, Arb
             new Clipboard(el);
         }
     };
+    private chatBoxRef = (chatbox:ArboretumChatBox):void => {
+        this.chatbox = chatbox;
+    };
+
+    public setSDB(sdb:SDB) {
+        if(this.chatbox) {
+            this.chatbox.setSDB(sdb);
+        }
+    };
 
     public render():React.ReactNode {
         return <div className='sidebar'>
@@ -111,7 +122,7 @@ export class ArboretumSidebar extends React.Component<ArboretumSidebarProps, Arb
                     </tr>
                 </tbody>
             </table>
-            <ArboretumChat onSendMessage={this.sendMessage} />
+            <ArboretumChatBox ref={this.chatBoxRef} onSendMessage={this.sendMessage} />
         </div>;
     };
     // populateShareURLs() {

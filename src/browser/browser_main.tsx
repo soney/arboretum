@@ -6,6 +6,8 @@ import {ArboretumSidebar, SetServerActiveValue} from './ts/sidebar';
 import {ipcRenderer, remote, BrowserWindow} from 'electron';
 import * as url from 'url';
 import * as _ from 'underscore';
+import {SDB, SDBDoc} from '../utils/sharedb_wrapper';
+import {ArboretumChat} from '../utils/chat_doc';
 
 export type BrowserTabID = number;
 
@@ -23,8 +25,11 @@ type ArboretumState = {
 
 export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
     private navBar:ArboretumNavigationBar;
+    private sidebar:ArboretumSidebar;
     private tabCounter:number = 0;
     private tabs:Map<BrowserTabID, ArboretumTab> = new Map<BrowserTabID, ArboretumTab>();
+    private socket:WebSocket;
+    private sdb:SDB;
     constructor(props) {
         super(props);
         this.state = {
@@ -90,12 +95,23 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
             const {hostname, port} = await this.sendIPCMessage('startServer');
             const fullShareURL = url.format({ protocol:'http', hostname, port });
             const fullAdminURL = url.format({ protocol:'http', hostname, port, pathname:'/admin' });
+            const wsAddress = url.format({ protocol:'ws', hostname, port });
+            this.socket = new WebSocket(wsAddress);
+            this.sdb = new SDB(true, this.socket);
 
             const [shareURL, adminURL] = await Promise.all([
                 this.getShortcut(fullShareURL), this.getShortcut(fullAdminURL)
             ]);
             return {shareURL, adminURL};
         } else {
+            if(this.sdb) {
+                await this.sdb.close();
+                this.sdb = null;
+            }
+            if(this.socket) {
+                this.socket.close();
+                this.socket = null;
+            }
             await this.sendIPCMessage('stopServer');
             return {
                 shareURL:'',
@@ -211,6 +227,9 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
     private pageTitleChanged = (tab:ArboretumTab, title:string):void => {
         if(tab === this.state.selectedTab) { this.selectedTabPageTitleChanged(title); }
     };
+    private sidebarRef = (sidebar:ArboretumSidebar):void => {
+        this.sidebar = sidebar;
+    };
 
     public render():React.ReactNode {
         const tabs = this.state.tabs.map((info, index) =>
@@ -228,7 +247,7 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
             </header>
             <div className="window-content">
                 <div className="pane-group">
-                    <ArboretumSidebar onSendMessage={this.sendMessage} setServerActive={this.setServerActive} isVisible={this.state.showingSidebar} serverActive={this.state.serverActive} onPostTask={this.postTask}/>
+                    <ArboretumSidebar ref={this.sidebarRef} onSendMessage={this.sendMessage} setServerActive={this.setServerActive} isVisible={this.state.showingSidebar} serverActive={this.state.serverActive} onPostTask={this.postTask}/>
                     <div id="browser-pane" className="pane">
                         <div id="content">{this.state.webViews}</div>
                     </div>

@@ -13984,6 +13984,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const typed_event_emitter_1 = __webpack_require__(68);
 var TypingStatus;
 (function (TypingStatus) {
     TypingStatus[TypingStatus["IDLE"] = 0] = "IDLE";
@@ -13995,9 +13996,18 @@ var TypingStatus;
 ;
 ;
 ;
-class ArboretumChat {
+;
+;
+;
+;
+class ArboretumChat extends typed_event_emitter_1.EventEmitter {
     constructor(sdb) {
+        super();
         this.sdb = sdb;
+        this.userJoined = this.registerEvent();
+        this.userNotPresent = this.registerEvent();
+        this.userTypingStatusChanged = this.registerEvent();
+        this.messageAdded = this.registerEvent();
         this.doc = this.sdb.get('arboretum', 'chat');
         this.initialized = this.initializeDoc();
         this.initialized.catch((err) => {
@@ -14012,7 +14022,20 @@ class ArboretumChat {
                 messages: []
             });
             this.doc.subscribe((op, source, data) => {
-                console.log(op);
+                const opInfo = op[0];
+                const { p, li } = opInfo;
+                if (p[0] === 'users') {
+                    if (p.length === 2 && li) {
+                        this.emit(this.userJoined, {
+                            user: li
+                        });
+                    }
+                }
+                else if (p[0] === 'messages') {
+                    this.emit(this.messageAdded, {
+                        message: li
+                    });
+                }
             });
         });
     }
@@ -14021,7 +14044,7 @@ class ArboretumChat {
         return this.meUser;
     }
     ;
-    addUser(displayName, isMe, present = true) {
+    addUser(displayName, isMe = true, present = true) {
         return __awaiter(this, void 0, void 0, function* () {
             const id = ArboretumChat.userCounter++;
             const user = { id, displayName, present, typing: TypingStatus.IDLE };
@@ -14035,7 +14058,7 @@ class ArboretumChat {
         });
     }
     ;
-    addTextMessage(sender, content) {
+    addTextMessage(content, sender = this.getMe()) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.initialized;
             const timestamp = (new Date()).getTime();
@@ -14079,10 +14102,132 @@ class ArboretumChat {
         });
     }
     ;
+    getMessages() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.initialized;
+            const data = this.doc.getData();
+            return data.messages;
+        });
+    }
+    ;
+    getUsers(onlyPresent = true) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.initialized;
+            const data = this.doc.getData();
+            const { users } = data;
+            if (onlyPresent) {
+                return users.filter((u) => u.present);
+            }
+            else {
+                return users;
+            }
+        });
+    }
+    ;
 }
 ArboretumChat.userCounter = 1;
 exports.ArboretumChat = ArboretumChat;
 ;
+
+
+/***/ }),
+/* 68 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/******************************************************************************
+ * The MIT License (MIT)                                                      *
+ *                                                                            *
+ * Copyright (c) 2016 Simon "Tenry" Burchert                                  *
+ *                                                                            *
+ * Permission is hereby granted, free of charge, to any person obtaining a    *
+ * copy of this software and associated documentation files (the "Software"), *
+ * to deal in the Software without restriction, including without limitation  *
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,   *
+ * and/or sell copies of the Software, and to permit persons to whom the      *
+ * Software is furnished to do so, subject to the following conditions:       *
+ *                                                                            *
+ * The above copyright notice and this permission notice shall be included in *
+ * all copies or substantial portions of the Software.                        *
+ *                                                                            *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR *
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,   *
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL    *
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER *
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING    *
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER        *
+ * EALINGS IN THE SOFTWARE.                                                   *
+ ******************************************************************************/
+Object.defineProperty(exports, "__esModule", { value: true });
+class EventEmitter {
+    constructor() {
+        this.eventListeners = new Map();
+    }
+    on(event, listener) {
+        if (!this.eventListeners.has(event)) {
+            this.eventListeners.set(event, [listener]);
+        }
+        else {
+            this.eventListeners.get(event).push(listener);
+        }
+        return new Listener(this, event, listener);
+    }
+    addListener(event, listener) {
+        return this.on(event, listener);
+    }
+    removeListener() {
+        if (arguments.length == 0) {
+            this.eventListeners.clear();
+        }
+        else if (arguments.length == 1 && typeof arguments[0] == 'object') {
+            let id = arguments[0];
+            this.removeListener(id.event, id.listener);
+        }
+        else if (arguments.length >= 1) {
+            let event = arguments[0];
+            let listener = arguments[1];
+            if (this.eventListeners.has(event)) {
+                var listeners = this.eventListeners.get(event);
+                var idx;
+                while (!listener || (idx = listeners.indexOf(listener)) != -1) {
+                    listeners.splice(idx, 1);
+                }
+            }
+        }
+    }
+    /**
+     * Emit event. Calls all bound listeners with args.
+     */
+    emit(event, ...args) {
+        if (this.eventListeners.has(event)) {
+            for (var listener of this.eventListeners.get(event)) {
+                listener(...args);
+            }
+        }
+    }
+    /**
+     * @typeparam T The event handler signature.
+     */
+    registerEvent() {
+        let eventBinder = (handler) => {
+            return this.addListener(eventBinder, handler);
+        };
+        return eventBinder;
+    }
+}
+exports.EventEmitter = EventEmitter;
+class Listener {
+    constructor(owner, event, listener) {
+        this.owner = owner;
+        this.event = event;
+        this.listener = listener;
+    }
+    unbind() {
+        this.owner.removeListener(this);
+    }
+}
+exports.Listener = Listener;
 
 
 /***/ })
