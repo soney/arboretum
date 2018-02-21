@@ -15,10 +15,13 @@ const http_1 = require("http");
 const fs_1 = require("fs");
 const path_1 = require("path");
 const express = require("express");
+const WebSocket = require("ws");
+const WebSocketJSONStream = require("websocket-json-stream");
 const browser_state_1 = require("./server/state/browser_state");
 const keypress = require("keypress");
 const chalk_1 = require("chalk");
 const ip = require("ip");
+const opn = require("opn");
 // const ChatServer = require('./server/chat');
 // const BrowserState = require('./server/state/browser_state');
 // process.traceProcessWarnings = true;
@@ -68,6 +71,11 @@ const browserState = new browser_state_1.BrowserState({
 });
 const expressApp = express();
 const server = http_1.createServer(expressApp);
+const wss = new WebSocket.Server({ server });
+wss.on('connection', (ws, req) => {
+    const stream = new WebSocketJSONStream(ws);
+    browserState.shareDBListen(stream);
+});
 expressApp.all('/', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
     const contents = yield setClientOptions({
         userId: getUserID()
@@ -134,6 +142,9 @@ function startServer() {
             });
         });
         const hostname = getIPAddress();
+        if (OPEN_MIRROR) {
+            opn(`http://${hostname}:${port}`, { app: 'google-chrome' }); // open browser
+        }
         return ({ hostname, port });
     });
 }

@@ -127,12 +127,14 @@ export class DOMState extends EventEmitter {
             }
         });
     };
-    public insertChild(childDomState: DOMState, previousDomState: DOMState = null): void {
+    public insertChild(childDomState: DOMState, previousDomState: DOMState = null, node:CRI.Node): void {
         if (previousDomState) {
             const index = this.children.indexOf(previousDomState);
             this.children.splice(index + 1, 0, childDomState);
+            this.node.children.splice(index + 1, 0, node);
         } else {
             this.children.unshift(childDomState);
+            this.node.children.unshift(node);
         }
         childDomState.setParent(this);
         this.emit('childAdded', {
@@ -156,6 +158,7 @@ export class DOMState extends EventEmitter {
     public removeChild(child: DOMState): boolean {
         const index = this.children.indexOf(child);
         if (index >= 0) {
+            this.node.children.splice(index, 1);
             this.children.splice(index, 1);
             this.emit('childRemoved', { child })
             child.destroy();

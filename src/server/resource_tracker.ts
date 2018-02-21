@@ -83,6 +83,6 @@ export class ResourceTracker {
 			throw(err);
 		});
 	}
-	private getFrameId():string { return this.frame.getFrameId(); }
-	private getTabId():string { return this.frame.getTabId(); }
+	private getFrameId():CRI.FrameID { return this.frame.getFrameId(); }
+	private getTabId():CRI.TabID { return this.frame.getTabId(); }
 }

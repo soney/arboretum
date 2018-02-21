@@ -280,7 +280,7 @@ class TabState extends events_1.EventEmitter {
             });
             this.nodeMap.set(nodeId, domState);
             if (parent) {
-                parent.insertChild(domState, previousNode);
+                parent.insertChild(domState, previousNode, node);
             }
             return domState;
         }

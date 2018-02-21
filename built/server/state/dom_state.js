@@ -165,13 +165,15 @@ class DOMState extends events_1.EventEmitter {
         });
     }
     ;
-    insertChild(childDomState, previousDomState = null) {
+    insertChild(childDomState, previousDomState = null, node) {
         if (previousDomState) {
             const index = this.children.indexOf(previousDomState);
             this.children.splice(index + 1, 0, childDomState);
+            this.node.children.splice(index + 1, 0, node);
         }
         else {
             this.children.unshift(childDomState);
+            this.node.children.unshift(node);
         }
         childDomState.setParent(this);
         this.emit('childAdded', {
@@ -198,6 +200,7 @@ class DOMState extends events_1.EventEmitter {
     removeChild(child) {
         const index = this.children.indexOf(child);
         if (index >= 0) {
+            this.node.children.splice(index, 1);
             this.children.splice(index, 1);
             this.emit('childRemoved', { child });
             child.destroy();

@@ -13,10 +13,11 @@ const _ = require("underscore");
 const fileUrl = require("file-url");
 const path_1 = require("path");
 const tab_state_1 = require("./tab_state");
-const ShareDB = require("sharedb");
 const logging_1 = require("../../utils/logging");
 const events_1 = require("events");
 const electron_1 = require("electron");
+const sharedb_wrapper_1 = require("../../utils/sharedb_wrapper");
+const chat_doc_1 = require("../../utils/chat_doc");
 const log = logging_1.getColoredLogger('red');
 // var cri = require('chrome-remote-interface'),
 // 	_ = require('underscore'),
@@ -40,14 +41,20 @@ class BrowserState extends events_1.EventEmitter {
         this.state = state;
         this.tabs = new Map();
         this.options = { host: 'localhost', port: 9222 };
-        this.share = new ShareDB();
         _.extend(this.options, extraOptions);
+        this.sdb = new sharedb_wrapper_1.SDB(false);
+        this.chat = new chat_doc_1.ArboretumChat(this.sdb);
         this.intervalID = setInterval(_.bind(this.refreshTabs, this), 2000);
         log.debug('=== CREATED BROWSER ===');
         electron_1.ipcMain.on('asynchronous-message', (event, arg) => {
             this.sender = event.sender;
         });
     }
+    ;
+    shareDBListen(ws) {
+        this.sdb.listen(ws);
+    }
+    ;
     refreshTabs() {
         this.getTabs().then((tabInfos) => {
             const existingTabs = new Set(this.tabs.keys());
@@ -79,9 +86,12 @@ class BrowserState extends events_1.EventEmitter {
         });
     }
     destroy() {
-        clearInterval(this.intervalID);
-        this.tabs.forEach((tabState, tabId) => {
-            tabState.destroy();
+        return __awaiter(this, void 0, void 0, function* () {
+            clearInterval(this.intervalID);
+            this.tabs.forEach((tabState, tabId) => {
+                tabState.destroy();
+            });
+            yield this.sdb.close();
         });
     }
     ;

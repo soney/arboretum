@@ -54,7 +54,6 @@ function createBrowserWindow(extraOptions?: {}): BrowserWindow {
         newWindow = null;
     });
 
-
     return newWindow;
 };
 
@@ -68,7 +67,12 @@ const browserState = new BrowserState({
 });
 
 const expressApp = express();
-const server: Server = createServer(expressApp);
+const server:Server = createServer(expressApp);
+const wss = new WebSocket.Server({server});
+wss.on('connection', (ws:WebSocket, req) => {
+    const stream = new WebSocketJSONStream(ws);
+    browserState.shareDBListen(stream);
+});
 expressApp.all('/', async (req, res, next) => {
         const contents: string = await setClientOptions({
             userId: getUserID()
@@ -142,7 +146,10 @@ async function startServer(): Promise<{hostname:string,port:number}> {
         });
     });
     const hostname = getIPAddress();
-    return({ hostname, port })
+    if (OPEN_MIRROR) {
+        opn(`http://${hostname}:${port}`, { app: 'google-chrome' }); // open browser
+    }
+    return({ hostname, port });
 };
 async function stopServer(): Promise<void> {
     await new Promise<string>((resolve, reject) => {

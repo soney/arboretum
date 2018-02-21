@@ -17,11 +17,11 @@ class ColoredLogger {
 			return this.l(x);
 		});
 	};
-	public trace(...a:any[]):void { console.log(...this.colorize(...a)); };
-	public debug(...a:any[]):void { console.log(...this.colorize(...a)); };
-	public info(...a:any[]):void { console.log(...this.colorize(...a)); };
-	public warn(...a:any[]):void { console.log(...this.colorize(...a)); };
-	public error(...a:any[]):void { console.log(...this.colorize(...a)); };
+	public trace(...a:any[]):void  { console.log(...this.colorize(...a)); };
+	public debug(...a:any[]):void  { console.log(...this.colorize(...a)); };
+	public info(...a:any[]):void   { console.log(...this.colorize(...a)); };
+	public warn(...a:any[]):void   { console.log(...this.colorize(...a)); };
+	public error(...a:any[]):void  { console.log(...this.colorize(...a)); };
 	public silent(...a:any[]):void { console.log(...this.colorize(...a)); };
 };
 

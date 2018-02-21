@@ -99,7 +99,7 @@ export class TabState extends EventEmitter {
             })
             this.nodeMap.set(nodeId, domState);
             if (parent) {
-                parent.insertChild(domState, previousNode);
+                parent.insertChild(domState, previousNode, node);
             }
             return domState;
         }

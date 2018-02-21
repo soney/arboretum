@@ -3,14 +3,16 @@ import * as _ from 'underscore'
 import * as fileUrl from 'file-url';
 import { join, resolve } from 'path';
 import { TabState } from './tab_state';
-import * as ShareDB from 'sharedb';
 import * as express from 'express';
 import * as http from 'http';
 import * as WebSocket from 'ws';
 import * as WebSocketJSONStream from 'websocket-json-stream';
+import * as stream from 'stream';
 import { getColoredLogger, level, setLevel } from '../../utils/logging';
 import { EventEmitter } from 'events';
 import { ipcMain } from 'electron';
+import {SDB, SDBDoc} from '../../utils/sharedb_wrapper';
+import {ArboretumChat} from '../../utils/chat_doc';
 
 const log = getColoredLogger('red');
 
@@ -35,17 +37,23 @@ export class BrowserState extends EventEmitter {
     private tabs: Map<CRI.TabID, TabState> = new Map<CRI.TabID, TabState>();
     private options = { host: 'localhost', port: 9222 };
     private intervalID: NodeJS.Timer;
-    private share:ShareDB = new ShareDB();
     private sender;
+    private sdb:SDB;
+    private chat:ArboretumChat;
     constructor(private state: any, extraOptions?) {
         super();
         _.extend(this.options, extraOptions);
+        this.sdb = new SDB(false);
+        this.chat = new ArboretumChat(this.sdb);
         this.intervalID = setInterval(_.bind(this.refreshTabs, this), 2000);
         log.debug('=== CREATED BROWSER ===');
         ipcMain.on('asynchronous-message', (event, arg) => {
            this.sender = event.sender;
         });
-    }
+    };
+    public shareDBListen(ws:stream.Duplex):void {
+        this.sdb.listen(ws);
+    };
     private refreshTabs(): void {
         this.getTabs().then((tabInfos: Array<CRI.TabInfo>) => {
             const existingTabs = new Set<CRI.TabID>(this.tabs.keys());
@@ -76,11 +84,12 @@ export class BrowserState extends EventEmitter {
             throw (err);
         });
     }
-    public destroy(): void {
+    public async destroy():Promise<void> {
         clearInterval(this.intervalID);
         this.tabs.forEach((tabState: TabState, tabId: CRI.TabID) => {
             tabState.destroy();
         });
+        await this.sdb.close();
     };
     private destroyTab(id: CRI.TabID): void {
         if (this.tabs.has(id)) {
