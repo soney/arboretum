@@ -351,6 +351,7 @@ class TabState extends events_1.EventEmitter {
                     }
                 });
             }).catch((err) => {
+                log.error(err);
                 throw (err);
             });
         });

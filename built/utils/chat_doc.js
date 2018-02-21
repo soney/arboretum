@@ -8,6 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const typed_event_emitter_1 = require("./typed_event_emitter");
 var TypingStatus;
 (function (TypingStatus) {
     TypingStatus[TypingStatus["IDLE"] = 0] = "IDLE";
@@ -19,9 +20,20 @@ var TypingStatus;
 ;
 ;
 ;
-class ArboretumChat {
+;
+;
+;
+;
+;
+class ArboretumChat extends typed_event_emitter_1.EventEmitter {
     constructor(sdb) {
+        super();
         this.sdb = sdb;
+        this.userJoined = this.registerEvent();
+        this.userNotPresent = this.registerEvent();
+        this.userTypingStatusChanged = this.registerEvent();
+        this.messageAdded = this.registerEvent();
+        this.ready = this.registerEvent();
         this.doc = this.sdb.get('arboretum', 'chat');
         this.initialized = this.initializeDoc();
         this.initialized.catch((err) => {
@@ -36,7 +48,25 @@ class ArboretumChat {
                 messages: []
             });
             this.doc.subscribe((op, source, data) => {
-                console.log(op);
+                if (op) {
+                    const opInfo = op[0];
+                    const { p, li } = opInfo;
+                    if (p[0] === 'users') {
+                        if (p.length === 2 && li) {
+                            this.emit(this.userJoined, {
+                                user: li
+                            });
+                        }
+                    }
+                    else if (p[0] === 'messages') {
+                        this.emit(this.messageAdded, {
+                            message: li
+                        });
+                    }
+                }
+                else {
+                    this.emit(this.ready);
+                }
             });
         });
     }
@@ -45,7 +75,7 @@ class ArboretumChat {
         return this.meUser;
     }
     ;
-    addUser(displayName, isMe, present = true) {
+    addUser(displayName, isMe = true, present = true) {
         return __awaiter(this, void 0, void 0, function* () {
             const id = ArboretumChat.userCounter++;
             const user = { id, displayName, present, typing: TypingStatus.IDLE };
@@ -59,13 +89,14 @@ class ArboretumChat {
         });
     }
     ;
-    addTextMessage(sender, content) {
+    addTextMessage(content, sender = this.getMe()) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.initialized;
             const timestamp = (new Date()).getTime();
             const data = this.doc.getData();
             const message = { sender, timestamp, content };
             yield this.doc.submitOp([{ p: ['messages', data.messages.length], li: message }]);
+            console.log('submitted');
         });
     }
     ;
@@ -100,6 +131,28 @@ class ArboretumChat {
             const userIndex = yield this.getUserIndex(user);
             const oldValue = data.users[userIndex].typing;
             yield this.doc.submitOp([{ p: ['users', userIndex, 'typing'], od: oldValue, oi: typingStatus }]);
+        });
+    }
+    ;
+    getMessages() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.initialized;
+            const data = this.doc.getData();
+            return data.messages;
+        });
+    }
+    ;
+    getUsers(onlyPresent = true) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.initialized;
+            const data = this.doc.getData();
+            const { users } = data;
+            if (onlyPresent) {
+                return users.filter((u) => u.present);
+            }
+            else {
+                return users;
+            }
         });
     }
     ;

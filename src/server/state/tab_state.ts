@@ -159,6 +159,7 @@ export class TabState extends EventEmitter {
                 else { resolve(val); }
             });
         }).catch((err) => {
+            log.error(err);
             throw (err);
         });
     };

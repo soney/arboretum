@@ -25,16 +25,19 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
             users:[]
         };
     };
-    public setSDB(sdb:SDB) {
-        this.sdb = sdb;
-        if(sdb) {
-            this.chat = new ArboretumChat(sdb);
-            this.chat.addUser('Admin');
+    public setChat(chat:ArboretumChat) {
+        this.chat = chat;
+        if(this.chat) {
             this.chat.messageAdded(this.updateMessagesState);
             this.chat.userJoined(this.updateUsersState);
-        } else {
-            this.chat = null;
+            this.chat.ready(() => {
+                this.updateMessagesState();
+                this.updateUsersState();
+            });
         }
+    };
+    public setSDB(sdb:SDB) {
+        this.sdb = sdb;
     };
     private updateMessagesState = async ():Promise<void> => {
         const messages = await this.chat.getMessages();
@@ -52,9 +55,6 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
             const {chatText} = this.state;
             if(chatText !== '') {
                 if(this.props.onSendMessage) { this.props.onSendMessage(chatText); }
-                if(this.chat) {
-                    this.chat.addTextMessage(chatText);
-                }
                 this.setState({chatText:''});
             }
         }
@@ -65,15 +65,15 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
     };
 
     public render():React.ReactNode {
-        const messages = this.state.messages.map((m) => {
-            return <li>{m.content}</li>;
+        const messages = this.state.messages.map((m:Message) => {
+            return <li className='chat-line'><span className='from'>{m.sender.displayName}</span><span className='message'>{m.content}</span></li>;
         });
         let meUserID;
         if(this.chat) {
             const meUser = this.chat.getMe();
-            meUserID = meUser.id;
-        } else {
-            meUserID = null;
+            if(meUser) {
+                meUserID = meUser.id;
+            }
         }
         const users = this.state.users.map((u) => {
             const isMe = u.id === meUserID;

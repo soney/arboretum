@@ -30,6 +30,7 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
     private tabs:Map<BrowserTabID, ArboretumTab> = new Map<BrowserTabID, ArboretumTab>();
     private socket:WebSocket;
     private sdb:SDB;
+    private chat:ArboretumChat;
     constructor(props) {
         super(props);
         this.state = {
@@ -98,12 +99,25 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
             const wsAddress = url.format({ protocol:'ws', hostname, port });
             this.socket = new WebSocket(wsAddress);
             this.sdb = new SDB(true, this.socket);
+            this.chat = new ArboretumChat(this.sdb);
+            console.log(this.chat);
+
+            if(this.sidebar) {
+                this.sidebar.setSDB(this.sdb);
+                this.sidebar.setChat(this.chat);
+            }
+
+            this.chat.addUser('Admin');
 
             const [shareURL, adminURL] = await Promise.all([
                 this.getShortcut(fullShareURL), this.getShortcut(fullAdminURL)
             ]);
             return {shareURL, adminURL};
         } else {
+            if(this.sidebar) {
+                this.sidebar.setSDB(null);
+                this.sidebar.setChat(null);
+            }
             if(this.sdb) {
                 await this.sdb.close();
                 this.sdb = null;
@@ -111,6 +125,9 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
             if(this.socket) {
                 this.socket.close();
                 this.socket = null;
+            }
+            if(this.chat) {
+                this.chat = null;
             }
             await this.sendIPCMessage('stopServer');
             return {
@@ -122,8 +139,10 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
     private async getShortcut(url:string):Promise<string> {
         return url;
     };
-    private sendMessage(message:string):void {
-        console.log('send message', message);
+    private sendMessage = (message:string):void => {
+        if(this.chat) {
+            this.chat.addTextMessage(message);
+        }
     };
     private postTask(sandbox:boolean):void {
         console.log('post task', sandbox);

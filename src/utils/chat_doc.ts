@@ -38,6 +38,7 @@ export interface MessageAddedEvent {
     message:Message,
     after:Message
 };
+export interface ReadyEvent { };
 
 export class ArboretumChat extends EventEmitter {
     private static userCounter:number = 1;
@@ -48,6 +49,7 @@ export class ArboretumChat extends EventEmitter {
     public userNotPresent = this.registerEvent<(UserNotPresentEvent)=>void>();
     public userTypingStatusChanged = this.registerEvent<(UserTypingStatusChangedEvent)=>void>();
     public messageAdded = this.registerEvent<(MessageAddedEvent)=>void>();
+    public ready = this.registerEvent<(ReadyEvent)=>void>();
     constructor(private sdb:SDB) {
         super();
         this.doc = this.sdb.get<ChatDoc>('arboretum', 'chat');
@@ -62,18 +64,22 @@ export class ArboretumChat extends EventEmitter {
             messages: []
         });
         this.doc.subscribe((op, source, data) => {
-            const opInfo = op[0];
-            const {p, li} = opInfo;
-            if(p[0] === 'users') {
-                if(p.length === 2 && li) { // user added
-                    this.emit(this.userJoined, {
-                        user:li
+            if(op) {
+                const opInfo = op[0];
+                const {p, li} = opInfo;
+                if(p[0] === 'users') {
+                    if(p.length === 2 && li) { // user added
+                        this.emit(this.userJoined, {
+                            user:li
+                        });
+                    }
+                } else if(p[0] === 'messages') {
+                    this.emit(this.messageAdded, {
+                        message:li
                     });
                 }
-            } else if(p[0] === 'messages') {
-                this.emit(this.messageAdded, {
-                    message:li
-                });
+            } else {
+                this.emit(this.ready);
             }
         });
     };

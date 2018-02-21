@@ -3,6 +3,7 @@ import {ArboretumChatBox} from './chat';
 import * as Clipboard from 'clipboard';
 import Switch from 'react-switch';
 import {SDB, SDBDoc} from '../../utils/sharedb_wrapper';
+import {ArboretumChat, Message, User} from '../../utils/chat_doc';
 
 const ENTER_KEY:number = 13;
 
@@ -76,9 +77,14 @@ export class ArboretumSidebar extends React.Component<ArboretumSidebarProps, Arb
         this.chatbox = chatbox;
     };
 
-    public setSDB(sdb:SDB) {
+    public setSDB(sdb:SDB):void {
         if(this.chatbox) {
             this.chatbox.setSDB(sdb);
+        }
+    };
+    public setChat(chat:ArboretumChat):void {
+        if(this.chatbox) {
+            this.chatbox.setChat(chat);
         }
     };
 

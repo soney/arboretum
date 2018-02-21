@@ -14000,6 +14000,7 @@ var TypingStatus;
 ;
 ;
 ;
+;
 class ArboretumChat extends typed_event_emitter_1.EventEmitter {
     constructor(sdb) {
         super();
@@ -14008,6 +14009,7 @@ class ArboretumChat extends typed_event_emitter_1.EventEmitter {
         this.userNotPresent = this.registerEvent();
         this.userTypingStatusChanged = this.registerEvent();
         this.messageAdded = this.registerEvent();
+        this.ready = this.registerEvent();
         this.doc = this.sdb.get('arboretum', 'chat');
         this.initialized = this.initializeDoc();
         this.initialized.catch((err) => {
@@ -14022,19 +14024,24 @@ class ArboretumChat extends typed_event_emitter_1.EventEmitter {
                 messages: []
             });
             this.doc.subscribe((op, source, data) => {
-                const opInfo = op[0];
-                const { p, li } = opInfo;
-                if (p[0] === 'users') {
-                    if (p.length === 2 && li) {
-                        this.emit(this.userJoined, {
-                            user: li
+                if (op) {
+                    const opInfo = op[0];
+                    const { p, li } = opInfo;
+                    if (p[0] === 'users') {
+                        if (p.length === 2 && li) {
+                            this.emit(this.userJoined, {
+                                user: li
+                            });
+                        }
+                    }
+                    else if (p[0] === 'messages') {
+                        this.emit(this.messageAdded, {
+                            message: li
                         });
                     }
                 }
-                else if (p[0] === 'messages') {
-                    this.emit(this.messageAdded, {
-                        message: li
-                    });
+                else {
+                    this.emit(this.ready);
                 }
             });
         });

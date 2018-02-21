@@ -73,7 +73,7 @@ module.exports = React;
 /* 1 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var makeError = __webpack_require__(49);
+var makeError = __webpack_require__(47);
 
 function ShareDBError(code, message) {
   ShareDBError.super.call(this, message);
@@ -120,7 +120,7 @@ exports.hasKeys = function(object) {
 /* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var EventEmitter = __webpack_require__(48).EventEmitter;
+var EventEmitter = __webpack_require__(46).EventEmitter;
 
 exports.EventEmitter = EventEmitter;
 exports.mixin = mixin;
@@ -3663,7 +3663,7 @@ function callEach(callbacks, err) {
 // into a separate module that json0 can depend on).
 
 module.exports = {
-  type: __webpack_require__(50)
+  type: __webpack_require__(48)
 };
 
 
@@ -5232,7 +5232,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
 /* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var hat = __webpack_require__(54);
+var hat = __webpack_require__(52);
 var util = __webpack_require__(3);
 var types = __webpack_require__(2);
 
@@ -6166,7 +6166,7 @@ MemoryPubSub.prototype._publish = function(channels, data, callback) {
 /* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var OpStream = __webpack_require__(55);
+var OpStream = __webpack_require__(53);
 var ShareDBError = __webpack_require__(1);
 var util = __webpack_require__(3);
 
@@ -6307,8 +6307,8 @@ module.exports = require("stream");
 /* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var arraydiff = __webpack_require__(56);
-var deepEquals = __webpack_require__(57);
+var arraydiff = __webpack_require__(54);
+var deepEquals = __webpack_require__(55);
 var ShareDBError = __webpack_require__(1);
 var util = __webpack_require__(3);
 
@@ -6880,10 +6880,11 @@ const ReactDOM = __webpack_require__(28);
 const nav_bar_1 = __webpack_require__(29);
 const tab_1 = __webpack_require__(30);
 const sidebar_1 = __webpack_require__(31);
-const electron_1 = __webpack_require__(44);
-const url = __webpack_require__(45);
+const electron_1 = __webpack_require__(42);
+const url = __webpack_require__(43);
 const _ = __webpack_require__(10);
-const sharedb_wrapper_1 = __webpack_require__(46);
+const sharedb_wrapper_1 = __webpack_require__(44);
+const chat_doc_1 = __webpack_require__(57);
 class Arboretum extends React.Component {
     constructor(props) {
         super(props);
@@ -6927,12 +6928,23 @@ class Arboretum extends React.Component {
                 const wsAddress = url.format({ protocol: 'ws', hostname, port });
                 this.socket = new WebSocket(wsAddress);
                 this.sdb = new sharedb_wrapper_1.SDB(true, this.socket);
+                this.chat = new chat_doc_1.ArboretumChat(this.sdb);
+                console.log(this.chat);
+                if (this.sidebar) {
+                    this.sidebar.setSDB(this.sdb);
+                    this.sidebar.setChat(this.chat);
+                }
+                this.chat.addUser('Admin');
                 const [shareURL, adminURL] = yield Promise.all([
                     this.getShortcut(fullShareURL), this.getShortcut(fullAdminURL)
                 ]);
                 return { shareURL, adminURL };
             }
             else {
+                if (this.sidebar) {
+                    this.sidebar.setSDB(null);
+                    this.sidebar.setChat(null);
+                }
                 if (this.sdb) {
                     yield this.sdb.close();
                     this.sdb = null;
@@ -6941,6 +6953,9 @@ class Arboretum extends React.Component {
                     this.socket.close();
                     this.socket = null;
                 }
+                if (this.chat) {
+                    this.chat = null;
+                }
                 yield this.sendIPCMessage('stopServer');
                 return {
                     shareURL: '',
@@ -6948,6 +6963,11 @@ class Arboretum extends React.Component {
                 };
             }
         });
+        this.sendMessage = (message) => {
+            if (this.chat) {
+                this.chat.addTextMessage(message);
+            }
+        };
         this.selectedTabURLChanged = (url) => { this.updateNavBarState(); };
         this.selectedTabLoadingChanged = (isLoading) => { this.updateNavBarState(); };
         this.selectedTabCanGoBackChanged = (canGoBack) => { this.updateNavBarState(); };
@@ -7088,10 +7108,6 @@ class Arboretum extends React.Component {
         return __awaiter(this, void 0, void 0, function* () {
             return url;
         });
-    }
-    ;
-    sendMessage(message) {
-        console.log('send message', message);
     }
     ;
     postTask(sandbox) {
@@ -7350,8 +7366,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(0);
 const chat_1 = __webpack_require__(32);
-const Clipboard = __webpack_require__(35);
-const react_switch_1 = __webpack_require__(36);
+const Clipboard = __webpack_require__(33);
+const react_switch_1 = __webpack_require__(34);
 const ENTER_KEY = 13;
 ;
 class ArboretumSidebar extends React.Component {
@@ -7415,6 +7431,12 @@ class ArboretumSidebar extends React.Component {
         }
     }
     ;
+    setChat(chat) {
+        if (this.chatbox) {
+            this.chatbox.setChat(chat);
+        }
+    }
+    ;
     render() {
         return React.createElement("div", { className: 'sidebar' },
             React.createElement("table", { id: "server-controls" },
@@ -7470,7 +7492,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(0);
-const chat_doc_1 = __webpack_require__(33);
 const ENTER_KEY = 13;
 class ArboretumChatBox extends React.Component {
     constructor(props) {
@@ -7492,9 +7513,6 @@ class ArboretumChatBox extends React.Component {
                     if (this.props.onSendMessage) {
                         this.props.onSendMessage(chatText);
                     }
-                    if (this.chat) {
-                        this.chat.addTextMessage(chatText);
-                    }
                     this.setState({ chatText: '' });
                 }
             }
@@ -7509,30 +7527,34 @@ class ArboretumChatBox extends React.Component {
         };
     }
     ;
-    setSDB(sdb) {
-        this.sdb = sdb;
-        if (sdb) {
-            this.chat = new chat_doc_1.ArboretumChat(sdb);
-            this.chat.addUser('Admin');
+    setChat(chat) {
+        this.chat = chat;
+        if (this.chat) {
             this.chat.messageAdded(this.updateMessagesState);
             this.chat.userJoined(this.updateUsersState);
+            this.chat.ready(() => {
+                this.updateMessagesState();
+                this.updateUsersState();
+            });
         }
-        else {
-            this.chat = null;
-        }
+    }
+    ;
+    setSDB(sdb) {
+        this.sdb = sdb;
     }
     ;
     render() {
         const messages = this.state.messages.map((m) => {
-            return React.createElement("li", null, m.content);
+            return React.createElement("li", { className: 'chat-line' },
+                React.createElement("span", { className: 'from' }, m.sender.displayName),
+                React.createElement("span", { className: 'message' }, m.content));
         });
         let meUserID;
         if (this.chat) {
             const meUser = this.chat.getMe();
-            meUserID = meUser.id;
-        }
-        else {
-            meUserID = null;
+            if (meUser) {
+                meUserID = meUser.id;
+            }
         }
         const users = this.state.users.map((u) => {
             const isMe = u.id === meUserID;
@@ -7555,273 +7577,12 @@ exports.ArboretumChatBox = ArboretumChatBox;
 
 /***/ }),
 /* 33 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const typed_event_emitter_1 = __webpack_require__(34);
-var TypingStatus;
-(function (TypingStatus) {
-    TypingStatus[TypingStatus["IDLE"] = 0] = "IDLE";
-    TypingStatus[TypingStatus["ACTIVE"] = 1] = "ACTIVE";
-    TypingStatus[TypingStatus["IDLE_TYPED"] = 2] = "IDLE_TYPED";
-})(TypingStatus = exports.TypingStatus || (exports.TypingStatus = {}));
-;
-;
-;
-;
-;
-;
-;
-;
-;
-class ArboretumChat extends typed_event_emitter_1.EventEmitter {
-    constructor(sdb) {
-        super();
-        this.sdb = sdb;
-        this.userJoined = this.registerEvent();
-        this.userNotPresent = this.registerEvent();
-        this.userTypingStatusChanged = this.registerEvent();
-        this.messageAdded = this.registerEvent();
-        this.doc = this.sdb.get('arboretum', 'chat');
-        this.initialized = this.initializeDoc();
-        this.initialized.catch((err) => {
-            console.error(err);
-        });
-    }
-    ;
-    initializeDoc() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.doc.createIfEmpty({
-                users: [],
-                messages: []
-            });
-            this.doc.subscribe((op, source, data) => {
-                const opInfo = op[0];
-                const { p, li } = opInfo;
-                if (p[0] === 'users') {
-                    if (p.length === 2 && li) {
-                        this.emit(this.userJoined, {
-                            user: li
-                        });
-                    }
-                }
-                else if (p[0] === 'messages') {
-                    this.emit(this.messageAdded, {
-                        message: li
-                    });
-                }
-            });
-        });
-    }
-    ;
-    getMe() {
-        return this.meUser;
-    }
-    ;
-    addUser(displayName, isMe = true, present = true) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const id = ArboretumChat.userCounter++;
-            const user = { id, displayName, present, typing: TypingStatus.IDLE };
-            yield this.initialized;
-            const data = this.doc.getData();
-            yield this.doc.submitOp([{ p: ['users', data.users.length], li: user }]);
-            if (isMe) {
-                this.meUser = user;
-            }
-            return user;
-        });
-    }
-    ;
-    addTextMessage(content, sender = this.getMe()) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.initialized;
-            const timestamp = (new Date()).getTime();
-            const data = this.doc.getData();
-            const message = { sender, timestamp, content };
-            yield this.doc.submitOp([{ p: ['messages', data.messages.length], li: message }]);
-        });
-    }
-    ;
-    getUserIndex(user) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.initialized;
-            const data = this.doc.getData();
-            for (let i = 0; i < data.users.length; i++) {
-                const u = data.users[i];
-                if (user.id === u.id) {
-                    return i;
-                }
-            }
-            return -1;
-        });
-    }
-    ;
-    markUserNotPresent(user) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.initialized;
-            const data = this.doc.getData();
-            const userIndex = yield this.getUserIndex(user);
-            const oldValue = data.users[userIndex].present;
-            yield this.doc.submitOp([{ p: ['users', userIndex, 'present'], od: oldValue, oi: false }]);
-        });
-    }
-    ;
-    setUserTypingStatus(user, typingStatus) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.initialized;
-            const data = this.doc.getData();
-            const userIndex = yield this.getUserIndex(user);
-            const oldValue = data.users[userIndex].typing;
-            yield this.doc.submitOp([{ p: ['users', userIndex, 'typing'], od: oldValue, oi: typingStatus }]);
-        });
-    }
-    ;
-    getMessages() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.initialized;
-            const data = this.doc.getData();
-            return data.messages;
-        });
-    }
-    ;
-    getUsers(onlyPresent = true) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.initialized;
-            const data = this.doc.getData();
-            const { users } = data;
-            if (onlyPresent) {
-                return users.filter((u) => u.present);
-            }
-            else {
-                return users;
-            }
-        });
-    }
-    ;
-}
-ArboretumChat.userCounter = 1;
-exports.ArboretumChat = ArboretumChat;
-;
-
-
-/***/ }),
-/* 34 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-/******************************************************************************
- * The MIT License (MIT)                                                      *
- *                                                                            *
- * Copyright (c) 2016 Simon "Tenry" Burchert                                  *
- *                                                                            *
- * Permission is hereby granted, free of charge, to any person obtaining a    *
- * copy of this software and associated documentation files (the "Software"), *
- * to deal in the Software without restriction, including without limitation  *
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,   *
- * and/or sell copies of the Software, and to permit persons to whom the      *
- * Software is furnished to do so, subject to the following conditions:       *
- *                                                                            *
- * The above copyright notice and this permission notice shall be included in *
- * all copies or substantial portions of the Software.                        *
- *                                                                            *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR *
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,   *
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL    *
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER *
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING    *
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER        *
- * EALINGS IN THE SOFTWARE.                                                   *
- ******************************************************************************/
-Object.defineProperty(exports, "__esModule", { value: true });
-class EventEmitter {
-    constructor() {
-        this.eventListeners = new Map();
-    }
-    on(event, listener) {
-        if (!this.eventListeners.has(event)) {
-            this.eventListeners.set(event, [listener]);
-        }
-        else {
-            this.eventListeners.get(event).push(listener);
-        }
-        return new Listener(this, event, listener);
-    }
-    addListener(event, listener) {
-        return this.on(event, listener);
-    }
-    removeListener() {
-        if (arguments.length == 0) {
-            this.eventListeners.clear();
-        }
-        else if (arguments.length == 1 && typeof arguments[0] == 'object') {
-            let id = arguments[0];
-            this.removeListener(id.event, id.listener);
-        }
-        else if (arguments.length >= 1) {
-            let event = arguments[0];
-            let listener = arguments[1];
-            if (this.eventListeners.has(event)) {
-                var listeners = this.eventListeners.get(event);
-                var idx;
-                while (!listener || (idx = listeners.indexOf(listener)) != -1) {
-                    listeners.splice(idx, 1);
-                }
-            }
-        }
-    }
-    /**
-     * Emit event. Calls all bound listeners with args.
-     */
-    emit(event, ...args) {
-        if (this.eventListeners.has(event)) {
-            for (var listener of this.eventListeners.get(event)) {
-                listener(...args);
-            }
-        }
-    }
-    /**
-     * @typeparam T The event handler signature.
-     */
-    registerEvent() {
-        let eventBinder = (handler) => {
-            return this.addListener(eventBinder, handler);
-        };
-        return eventBinder;
-    }
-}
-exports.EventEmitter = EventEmitter;
-class Listener {
-    constructor(owner, event, listener) {
-        this.owner = owner;
-        this.event = event;
-        this.listener = listener;
-    }
-    unbind() {
-        this.owner.removeListener(this);
-    }
-}
-exports.Listener = Listener;
-
-
-/***/ }),
-/* 35 */
 /***/ (function(module, exports) {
 
 module.exports = require("clipboard");
 
 /***/ }),
-/* 36 */
+/* 34 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7837,13 +7598,13 @@ var _react = __webpack_require__(0);
 
 var _react2 = _interopRequireDefault(_react);
 
-var _propTypes = __webpack_require__(37);
+var _propTypes = __webpack_require__(35);
 
 var _propTypes2 = _interopRequireDefault(_propTypes);
 
-var _icons = __webpack_require__(42);
+var _icons = __webpack_require__(40);
 
-var _getBackgroundColor = __webpack_require__(43);
+var _getBackgroundColor = __webpack_require__(41);
 
 var _getBackgroundColor2 = _interopRequireDefault(_getBackgroundColor);
 
@@ -8206,7 +7967,7 @@ Switch.defaultProps = {
 exports.default = Switch;
 
 /***/ }),
-/* 37 */
+/* 35 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /**
@@ -8231,16 +7992,16 @@ if (process.env.NODE_ENV !== 'production') {
   // By explicitly using `prop-types` you are opting into new development behavior.
   // http://fb.me/prop-types-in-prod
   var throwOnDirectAccess = true;
-  module.exports = __webpack_require__(38)(isValidElement, throwOnDirectAccess);
+  module.exports = __webpack_require__(36)(isValidElement, throwOnDirectAccess);
 } else {
   // By explicitly using `prop-types` you are opting into new production behavior.
   // http://fb.me/prop-types-in-prod
-  module.exports = __webpack_require__(41)();
+  module.exports = __webpack_require__(39)();
 }
 
 
 /***/ }),
-/* 38 */
+/* 36 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8256,10 +8017,10 @@ if (process.env.NODE_ENV !== 'production') {
 var emptyFunction = __webpack_require__(5);
 var invariant = __webpack_require__(6);
 var warning = __webpack_require__(11);
-var assign = __webpack_require__(39);
+var assign = __webpack_require__(37);
 
 var ReactPropTypesSecret = __webpack_require__(7);
-var checkPropTypes = __webpack_require__(40);
+var checkPropTypes = __webpack_require__(38);
 
 module.exports = function(isValidElement, throwOnDirectAccess) {
   /* global Symbol */
@@ -8789,7 +8550,7 @@ module.exports = function(isValidElement, throwOnDirectAccess) {
 
 
 /***/ }),
-/* 39 */
+/* 37 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8886,7 +8647,7 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 
 
 /***/ }),
-/* 40 */
+/* 38 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8952,7 +8713,7 @@ module.exports = checkPropTypes;
 
 
 /***/ }),
-/* 41 */
+/* 39 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9017,7 +8778,7 @@ module.exports = function() {
 
 
 /***/ }),
-/* 42 */
+/* 40 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9089,7 +8850,7 @@ var checkedIcon = exports.checkedIcon = _react2.default.createElement(
 );
 
 /***/ }),
-/* 43 */
+/* 41 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9140,19 +8901,19 @@ function getBackgroundColor(pos, checkedPos, uncheckedPos, offColor, onColor) {
 }
 
 /***/ }),
-/* 44 */
+/* 42 */
 /***/ (function(module, exports) {
 
 module.exports = require("electron");
 
 /***/ }),
-/* 45 */
+/* 43 */
 /***/ (function(module, exports) {
 
 module.exports = require("url");
 
 /***/ }),
-/* 46 */
+/* 44 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9166,8 +8927,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const ShareDBClient = __webpack_require__(47);
-const ShareDB = __webpack_require__(52);
+const ShareDBClient = __webpack_require__(45);
+const ShareDB = __webpack_require__(50);
 class SDB {
     constructor(client, connection) {
         this.docs = new Map();
@@ -9325,7 +9086,7 @@ exports.SDBDoc = SDBDoc;
 
 
 /***/ }),
-/* 47 */
+/* 45 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports.Connection = __webpack_require__(12);
@@ -9336,13 +9097,13 @@ exports.types = __webpack_require__(2);
 
 
 /***/ }),
-/* 48 */
+/* 46 */
 /***/ (function(module, exports) {
 
 module.exports = require("events");
 
 /***/ }),
-/* 49 */
+/* 47 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9491,7 +9252,7 @@ exports.BaseError = BaseError
 
 
 /***/ }),
-/* 50 */
+/* 48 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /*
@@ -10154,7 +9915,7 @@ __webpack_require__(15)(json, json.transformComponent, json.checkValidOp, json.a
 /**
  * Register a subtype for string operations, using the text0 type.
  */
-var text = __webpack_require__(51);
+var text = __webpack_require__(49);
 
 json.registerSubtype(text);
 module.exports = json;
@@ -10162,7 +9923,7 @@ module.exports = json;
 
 
 /***/ }),
-/* 51 */
+/* 49 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // DEPRECATED!
@@ -10424,10 +10185,10 @@ __webpack_require__(15)(text, transformComponent, checkValidOp, append);
 
 
 /***/ }),
-/* 52 */
+/* 50 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var Backend = __webpack_require__(53);
+var Backend = __webpack_require__(51);
 module.exports = Backend;
 
 Backend.Agent = __webpack_require__(18);
@@ -10445,7 +10206,7 @@ Backend.types = __webpack_require__(2);
 
 
 /***/ }),
-/* 53 */
+/* 51 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var async = __webpack_require__(17);
@@ -10457,7 +10218,7 @@ var MemoryPubSub = __webpack_require__(21);
 var ot = __webpack_require__(8);
 var projections = __webpack_require__(9);
 var QueryEmitter = __webpack_require__(25);
-var StreamSocket = __webpack_require__(58);
+var StreamSocket = __webpack_require__(56);
 var SubmitRequest = __webpack_require__(26);
 
 function Backend(options) {
@@ -10975,7 +10736,7 @@ function pluckIds(snapshots) {
 
 
 /***/ }),
-/* 54 */
+/* 52 */
 /***/ (function(module, exports) {
 
 var hat = module.exports = function (bits, base) {
@@ -11043,7 +10804,7 @@ hat.rack = function (bits, base, expandBy) {
 
 
 /***/ }),
-/* 55 */
+/* 53 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var inherits = __webpack_require__(23).inherits;
@@ -11108,7 +10869,7 @@ OpStream.prototype.destroy = function() {
 
 
 /***/ }),
-/* 56 */
+/* 54 */
 /***/ (function(module, exports) {
 
 module.exports = arrayDiff;
@@ -11295,7 +11056,7 @@ function arrayDiff(before, after, equalFn) {
 
 
 /***/ }),
-/* 57 */
+/* 55 */
 /***/ (function(module, exports) {
 
 var pSlice = Array.prototype.slice;
@@ -11403,7 +11164,7 @@ function objEquiv(a, b) {
 
 
 /***/ }),
-/* 58 */
+/* 56 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var Duplex = __webpack_require__(24).Duplex;
@@ -11468,6 +11229,274 @@ ServerStream.prototype._write = function(chunk, encoding, callback) {
     callback();
   });
 };
+
+
+/***/ }),
+/* 57 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const typed_event_emitter_1 = __webpack_require__(58);
+var TypingStatus;
+(function (TypingStatus) {
+    TypingStatus[TypingStatus["IDLE"] = 0] = "IDLE";
+    TypingStatus[TypingStatus["ACTIVE"] = 1] = "ACTIVE";
+    TypingStatus[TypingStatus["IDLE_TYPED"] = 2] = "IDLE_TYPED";
+})(TypingStatus = exports.TypingStatus || (exports.TypingStatus = {}));
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+class ArboretumChat extends typed_event_emitter_1.EventEmitter {
+    constructor(sdb) {
+        super();
+        this.sdb = sdb;
+        this.userJoined = this.registerEvent();
+        this.userNotPresent = this.registerEvent();
+        this.userTypingStatusChanged = this.registerEvent();
+        this.messageAdded = this.registerEvent();
+        this.ready = this.registerEvent();
+        this.doc = this.sdb.get('arboretum', 'chat');
+        this.initialized = this.initializeDoc();
+        this.initialized.catch((err) => {
+            console.error(err);
+        });
+    }
+    ;
+    initializeDoc() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.doc.createIfEmpty({
+                users: [],
+                messages: []
+            });
+            this.doc.subscribe((op, source, data) => {
+                if (op) {
+                    const opInfo = op[0];
+                    const { p, li } = opInfo;
+                    if (p[0] === 'users') {
+                        if (p.length === 2 && li) {
+                            this.emit(this.userJoined, {
+                                user: li
+                            });
+                        }
+                    }
+                    else if (p[0] === 'messages') {
+                        this.emit(this.messageAdded, {
+                            message: li
+                        });
+                    }
+                }
+                else {
+                    this.emit(this.ready);
+                }
+            });
+        });
+    }
+    ;
+    getMe() {
+        return this.meUser;
+    }
+    ;
+    addUser(displayName, isMe = true, present = true) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const id = ArboretumChat.userCounter++;
+            const user = { id, displayName, present, typing: TypingStatus.IDLE };
+            yield this.initialized;
+            const data = this.doc.getData();
+            yield this.doc.submitOp([{ p: ['users', data.users.length], li: user }]);
+            if (isMe) {
+                this.meUser = user;
+            }
+            return user;
+        });
+    }
+    ;
+    addTextMessage(content, sender = this.getMe()) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.initialized;
+            const timestamp = (new Date()).getTime();
+            const data = this.doc.getData();
+            const message = { sender, timestamp, content };
+            yield this.doc.submitOp([{ p: ['messages', data.messages.length], li: message }]);
+        });
+    }
+    ;
+    getUserIndex(user) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.initialized;
+            const data = this.doc.getData();
+            for (let i = 0; i < data.users.length; i++) {
+                const u = data.users[i];
+                if (user.id === u.id) {
+                    return i;
+                }
+            }
+            return -1;
+        });
+    }
+    ;
+    markUserNotPresent(user) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.initialized;
+            const data = this.doc.getData();
+            const userIndex = yield this.getUserIndex(user);
+            const oldValue = data.users[userIndex].present;
+            yield this.doc.submitOp([{ p: ['users', userIndex, 'present'], od: oldValue, oi: false }]);
+        });
+    }
+    ;
+    setUserTypingStatus(user, typingStatus) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.initialized;
+            const data = this.doc.getData();
+            const userIndex = yield this.getUserIndex(user);
+            const oldValue = data.users[userIndex].typing;
+            yield this.doc.submitOp([{ p: ['users', userIndex, 'typing'], od: oldValue, oi: typingStatus }]);
+        });
+    }
+    ;
+    getMessages() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.initialized;
+            const data = this.doc.getData();
+            return data.messages;
+        });
+    }
+    ;
+    getUsers(onlyPresent = true) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.initialized;
+            const data = this.doc.getData();
+            const { users } = data;
+            if (onlyPresent) {
+                return users.filter((u) => u.present);
+            }
+            else {
+                return users;
+            }
+        });
+    }
+    ;
+}
+ArboretumChat.userCounter = 1;
+exports.ArboretumChat = ArboretumChat;
+;
+
+
+/***/ }),
+/* 58 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/******************************************************************************
+ * The MIT License (MIT)                                                      *
+ *                                                                            *
+ * Copyright (c) 2016 Simon "Tenry" Burchert                                  *
+ *                                                                            *
+ * Permission is hereby granted, free of charge, to any person obtaining a    *
+ * copy of this software and associated documentation files (the "Software"), *
+ * to deal in the Software without restriction, including without limitation  *
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,   *
+ * and/or sell copies of the Software, and to permit persons to whom the      *
+ * Software is furnished to do so, subject to the following conditions:       *
+ *                                                                            *
+ * The above copyright notice and this permission notice shall be included in *
+ * all copies or substantial portions of the Software.                        *
+ *                                                                            *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR *
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,   *
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL    *
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER *
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING    *
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER        *
+ * EALINGS IN THE SOFTWARE.                                                   *
+ ******************************************************************************/
+Object.defineProperty(exports, "__esModule", { value: true });
+class EventEmitter {
+    constructor() {
+        this.eventListeners = new Map();
+    }
+    on(event, listener) {
+        if (!this.eventListeners.has(event)) {
+            this.eventListeners.set(event, [listener]);
+        }
+        else {
+            this.eventListeners.get(event).push(listener);
+        }
+        return new Listener(this, event, listener);
+    }
+    addListener(event, listener) {
+        return this.on(event, listener);
+    }
+    removeListener() {
+        if (arguments.length == 0) {
+            this.eventListeners.clear();
+        }
+        else if (arguments.length == 1 && typeof arguments[0] == 'object') {
+            let id = arguments[0];
+            this.removeListener(id.event, id.listener);
+        }
+        else if (arguments.length >= 1) {
+            let event = arguments[0];
+            let listener = arguments[1];
+            if (this.eventListeners.has(event)) {
+                var listeners = this.eventListeners.get(event);
+                var idx;
+                while (!listener || (idx = listeners.indexOf(listener)) != -1) {
+                    listeners.splice(idx, 1);
+                }
+            }
+        }
+    }
+    /**
+     * Emit event. Calls all bound listeners with args.
+     */
+    emit(event, ...args) {
+        if (this.eventListeners.has(event)) {
+            for (var listener of this.eventListeners.get(event)) {
+                listener(...args);
+            }
+        }
+    }
+    /**
+     * @typeparam T The event handler signature.
+     */
+    registerEvent() {
+        let eventBinder = (handler) => {
+            return this.addListener(eventBinder, handler);
+        };
+        return eventBinder;
+    }
+}
+exports.EventEmitter = EventEmitter;
+class Listener {
+    constructor(owner, event, listener) {
+        this.owner = owner;
+        this.event = event;
+        this.listener = listener;
+    }
+    unbind() {
+        this.owner.removeListener(this);
+    }
+}
+exports.Listener = Listener;
 
 
 /***/ })
