@@ -33,6 +33,11 @@ class FrameState {
     getParentFrame() {
         return this.parentFrame;
     }
+    ;
+    getShareDBPath() {
+        return [this.getFrameId()];
+    }
+    ;
     setDOMParent(parent) {
         this.domParent = parent;
     }

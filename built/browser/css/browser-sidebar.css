@@ -20,12 +20,18 @@ table#server-controls tr:active {
     /* background-color: #116cd6; */
 }
 table#server-controls #control_content td {
-    padding-bottom: 10px;
+    padding-bottom: 0px;
 }
 
 table#server-controls label {
     margin-bottom: 0px;
     padding-bottom: 0px;
+}
+
+.sidebar .chat {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 
@@ -76,6 +82,24 @@ table#server-controls label {
     border-bottom: 1px solid #EEE;
     white-space: pre-line;
     /*order: 1;*/
+}
+
+#chat-participants {
+    padding-left: 10px;
+    padding-right: 10px;
+    margin-top: 2px;
+    padding-top: 2px;
+    margin-bottom: 2px;
+    padding-bottom: 2px;
+    border-bottom: 1px solid #CCC;
+    flex-shrink:0;
+}
+
+#chat-participants .participant {
+    font-weight: bold;
+}
+#chat-participants .participant.me {
+    text-decoration: overline;
 }
 
 .chat-line {

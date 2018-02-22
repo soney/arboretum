@@ -17,6 +17,7 @@ type ArboretumChatState = {
 export class ArboretumChatBox extends React.Component<ArboretumChatProps, ArboretumChatState> {
     private sdb:SDB;
     private chat:ArboretumChat;
+    private messagesEnd:HTMLLIElement;
     constructor(props) {
         super(props);
         this.state = {
@@ -64,6 +65,19 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
         this.setState({ chatText:event.target.value });
     };
 
+    //https://stackoverflow.com/questions/37620694/how-to-scroll-to-bottom-in-react
+    private scrollToBottom():void {
+        this.messagesEnd.scrollIntoView({ behavior: "smooth" });
+    };
+
+    public componentDidMount():void {
+        this.scrollToBottom();
+    };
+
+    public componentDidUpdate():void {
+        this.scrollToBottom();
+    };
+
     public render():React.ReactNode {
         const messages = this.state.messages.map((m:Message) => {
             const senderStyle = {color: m.sender.color};
@@ -79,13 +93,14 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
         const users = this.state.users.map((u) => {
             const isMe = u.id === meUserID;
             const style = {color: u.color};
-            return <span style={style}>{u.displayName}</span>;
+            return <span className={`participant ${isMe?'me':''}`} style={style}>{u.displayName}</span>;
         });
         return <div className='chat'>
             <h6 id="task_title"><span className="icon icon-chat"></span><span id='task-name'>Chat</span></h6>
             <div id="chat-participants">{users}</div>
             <ul id="chat-lines">
                 {messages}
+                <li style={{ float:"left", clear: "both" }} ref={(el) => { this.messagesEnd = el; }} />
             </ul>
             <form id="chat-form">
                 <textarea id="chat-box" className="form-control" placeholder="Send a message" onChange={this.onTextareaChange} onKeyDown={this.chatKeyDown} value={this.state.chatText}></textarea>

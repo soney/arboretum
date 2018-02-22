@@ -7543,6 +7543,19 @@ class ArboretumChatBox extends React.Component {
         this.sdb = sdb;
     }
     ;
+    //https://stackoverflow.com/questions/37620694/how-to-scroll-to-bottom-in-react
+    scrollToBottom() {
+        this.messagesEnd.scrollIntoView({ behavior: "smooth" });
+    }
+    ;
+    componentDidMount() {
+        this.scrollToBottom();
+    }
+    ;
+    componentDidUpdate() {
+        this.scrollToBottom();
+    }
+    ;
     render() {
         const messages = this.state.messages.map((m) => {
             const senderStyle = { color: m.sender.color };
@@ -7560,14 +7573,16 @@ class ArboretumChatBox extends React.Component {
         const users = this.state.users.map((u) => {
             const isMe = u.id === meUserID;
             const style = { color: u.color };
-            return React.createElement("span", { style: style }, u.displayName);
+            return React.createElement("span", { className: `participant ${isMe ? 'me' : ''}`, style: style }, u.displayName);
         });
         return React.createElement("div", { className: 'chat' },
             React.createElement("h6", { id: "task_title" },
                 React.createElement("span", { className: "icon icon-chat" }),
                 React.createElement("span", { id: 'task-name' }, "Chat")),
             React.createElement("div", { id: "chat-participants" }, users),
-            React.createElement("ul", { id: "chat-lines" }, messages),
+            React.createElement("ul", { id: "chat-lines" },
+                messages,
+                React.createElement("li", { style: { float: "left", clear: "both" }, ref: (el) => { this.messagesEnd = el; } })),
             React.createElement("form", { id: "chat-form" },
                 React.createElement("textarea", { id: "chat-box", className: "form-control", placeholder: "Send a message", onChange: this.onTextareaChange, onKeyDown: this.chatKeyDown, value: this.state.chatText })));
     }

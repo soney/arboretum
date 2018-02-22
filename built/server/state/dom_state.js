@@ -39,6 +39,21 @@ class DOMState extends events_1.EventEmitter {
         // log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     }
     ;
+    getShareDBPath() {
+        if (this.parent) {
+            const parentPath = this.parent.getShareDBPath();
+            const myIndex = this.parent.getChildIndex(this);
+            return parentPath.concat([myIndex]);
+        }
+        else {
+            return [];
+        }
+    }
+    ;
+    getChildIndex(child) {
+        return this.children.indexOf(child);
+    }
+    ;
     getChildFrame() {
         return this.childFrame;
     }

@@ -51,6 +51,9 @@ export class BrowserState extends EventEmitter {
            this.sender = event.sender;
         });
     };
+    public getShareDBPath():Array<string|number> {
+        return [];
+    };
     public shareDBListen(ws:stream.Duplex):void {
         this.sdb.listen(ws);
     };

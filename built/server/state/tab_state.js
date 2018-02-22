@@ -97,7 +97,8 @@ class TabState extends events_1.EventEmitter {
                 domState.setCharacterData(event.characterData);
             }
             else {
-                throw new Error(`Could not find ${nodeId}`);
+                console.error(`Could not find ${nodeId}`);
+                // throw new Error(`Could not find ${nodeId}`);
             }
         };
         this.doHandleSetChildNodes = (event) => {
@@ -109,7 +110,8 @@ class TabState extends events_1.EventEmitter {
                 this.setChildrenRecursive(parent, nodes);
             }
             else {
-                throw new Error(`Could not find ${parentId}`);
+                console.error(`Could not find ${parentId}`);
+                // throw new Error(`Could not find ${parentId}`);
             }
         };
         this.doHandleInlineStyleInvalidated = (event) => {
@@ -124,11 +126,12 @@ class TabState extends events_1.EventEmitter {
                     return false;
                 }
             });
-            if (_.every(updatedInlineStyles)) {
+            if (_.any(updatedInlineStyles)) {
                 log.debug(`Set inline styles`);
             }
             else {
-                throw new Error(`Could not find nodes for inlineStyleInvalidated`);
+                console.error(`Could not find nodes for inlineStyleInvalidated`);
+                // throw new Error(`Could not find nodes for inlineStyleInvalidated`);
             }
         };
         this.doHandleChildNodeCountUpdated = (event) => {
@@ -140,7 +143,7 @@ class TabState extends events_1.EventEmitter {
             }
             else {
                 log.error(`Could not find ${nodeId}`);
-                throw new Error(`Could not find ${nodeId}`);
+                // throw new Error(`Could not find ${nodeId}`);
             }
         };
         this.doHandleChildNodeInserted = (event) => {
@@ -156,7 +159,8 @@ class TabState extends events_1.EventEmitter {
                 this.requestChildNodes(nodeId, -1, true);
             }
             else {
-                throw new Error(`Could not find ${parentNodeId}`);
+                console.error(`Could not find ${parentNodeId}`);
+                // throw new Error(`Could not find ${parentNodeId}`);
             }
         };
         this.doHandleChildNodeRemoved = (event) => {
@@ -180,7 +184,8 @@ class TabState extends events_1.EventEmitter {
                 domState.setAttribute(name, value);
             }
             else {
-                throw new Error(`Could not find ${nodeId}`);
+                console.error(`Could not find ${nodeId}`);
+                // throw new Error(`Could not find ${nodeId}`);
             }
         };
         this.doHandleAttributeRemoved = (event) => {
@@ -192,7 +197,8 @@ class TabState extends events_1.EventEmitter {
                 domState.removeAttribute(name);
             }
             else {
-                throw new Error(`Could not find ${nodeId}`);
+                console.error(`Could not find ${nodeId}`);
+                // throw new Error(`Could not find ${nodeId}`);
             }
         };
         const chromeEventEmitter = cri({
@@ -224,6 +230,10 @@ class TabState extends events_1.EventEmitter {
             throw (err);
         });
         log.debug(`=== CREATED TAB STATE ${this.getTabId()} ====`);
+    }
+    ;
+    getShareDBPath() {
+        return [this.getTabId()];
     }
     ;
     getRootFrame() {

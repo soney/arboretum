@@ -51,6 +51,10 @@ class BrowserState extends events_1.EventEmitter {
         });
     }
     ;
+    getShareDBPath() {
+        return [];
+    }
+    ;
     shareDBListen(ws) {
         this.sdb.listen(ws);
     }

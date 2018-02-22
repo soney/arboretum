@@ -30,6 +30,18 @@ export class DOMState extends EventEmitter {
         });
         // log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     };
+    public getShareDBPath():Array<string|number> {
+        if(this.parent) {
+            const parentPath:Array<string|number> = this.parent.getShareDBPath();
+            const myIndex:number = this.parent.getChildIndex(this);
+            return parentPath.concat([myIndex]);
+        } else {
+            return [];
+        }
+    };
+    public getChildIndex(child:DOMState) {
+        return this.children.indexOf(child);
+    };
     public getChildFrame():FrameState {
         return this.childFrame;
     };

@@ -55,6 +55,9 @@ export class TabState extends EventEmitter {
         });
         log.debug(`=== CREATED TAB STATE ${this.getTabId()} ====`);
     };
+    public getShareDBPath():Array<string|number> {
+        return [this.getTabId()];
+    };
     public getRootFrame(): FrameState {
         return this.rootFrame;
     }
@@ -426,7 +429,8 @@ export class TabState extends EventEmitter {
             log.debug(`Character Data Modified ${nodeId}`)
             domState.setCharacterData(event.characterData);
         } else {
-            throw new Error(`Could not find ${nodeId}`);
+            console.error(`Could not find ${nodeId}`);
+            // throw new Error(`Could not find ${nodeId}`);
         }
     }
     private doHandleSetChildNodes = (event:CRI.SetChildNodesEvent):void => {
@@ -437,7 +441,8 @@ export class TabState extends EventEmitter {
             log.debug(`Set child nodes ${parentId} -> [${nodes.map((node) => node.nodeId).join(', ')}]`);
             this.setChildrenRecursive(parent, nodes);
         } else {
-            throw new Error(`Could not find ${parentId}`);
+            console.error(`Could not find ${parentId}`);
+            // throw new Error(`Could not find ${parentId}`);
         }
     };
     private doHandleInlineStyleInvalidated = (event:CRI.InlineStyleInvalidatedEvent):void => {
@@ -451,10 +456,11 @@ export class TabState extends EventEmitter {
                 return false;
             }
         });
-        if(_.every(updatedInlineStyles)) {
+        if(_.any(updatedInlineStyles)) {
             log.debug(`Set inline styles`);
         } else {
-            throw new Error(`Could not find nodes for inlineStyleInvalidated`);
+            console.error(`Could not find nodes for inlineStyleInvalidated`);
+            // throw new Error(`Could not find nodes for inlineStyleInvalidated`);
         }
     };
     private doHandleChildNodeCountUpdated = (event:CRI.ChildNodeCountUpdatedEvent):void => {
@@ -465,7 +471,7 @@ export class TabState extends EventEmitter {
             domState.childCountUpdated(event.childNodeCount);
         } else {
             log.error(`Could not find ${nodeId}`);
-            throw new Error(`Could not find ${nodeId}`);
+            // throw new Error(`Could not find ${nodeId}`);
         }
     }
     private doHandleChildNodeInserted = (event:CRI.ChildNodeInsertedEvent):void => {
@@ -481,7 +487,8 @@ export class TabState extends EventEmitter {
             this.setChildrenRecursive(domState, node.children);
             this.requestChildNodes(nodeId, -1, true);
         } else {
-            throw new Error(`Could not find ${parentNodeId}`);
+            console.error(`Could not find ${parentNodeId}`);
+            // throw new Error(`Could not find ${parentNodeId}`);
         }
     }
     private doHandleChildNodeRemoved = (event:CRI.ChildNodeRemovedEvent):void => {
@@ -503,7 +510,8 @@ export class TabState extends EventEmitter {
             log.debug(`Attribute modified ${name} to ${value}`);
             domState.setAttribute(name, value);
         } else {
-            throw new Error(`Could not find ${nodeId}`);
+            console.error(`Could not find ${nodeId}`);
+            // throw new Error(`Could not find ${nodeId}`);
         }
     }
     private doHandleAttributeRemoved = (event:CRI.AttributeRemovedEvent):void => {
@@ -514,7 +522,8 @@ export class TabState extends EventEmitter {
             log.debug(`Attribute removed ${name}`);
             domState.removeAttribute(name);
         } else {
-            throw new Error(`Could not find ${nodeId}`);
+            console.error(`Could not find ${nodeId}`);
+            // throw new Error(`Could not find ${nodeId}`);
         }
     }
 }
