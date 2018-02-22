@@ -9,6 +9,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const typed_event_emitter_1 = require("./typed_event_emitter");
+const _ = require("underscore");
+exports.userColors = [
+    ['#A80000', '#B05E0D', '#C19C00', '#107C10', '#038387', '#004E8C', '#5C126B']
+];
 var TypingStatus;
 (function (TypingStatus) {
     TypingStatus[TypingStatus["IDLE"] = 0] = "IDLE";
@@ -45,7 +49,8 @@ class ArboretumChat extends typed_event_emitter_1.EventEmitter {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.doc.createIfEmpty({
                 users: [],
-                messages: []
+                messages: [],
+                colors: _.shuffle(_.sample(exports.userColors))
             });
             this.doc.subscribe((op, source, data) => {
                 if (op) {
@@ -75,10 +80,21 @@ class ArboretumChat extends typed_event_emitter_1.EventEmitter {
         return this.meUser;
     }
     ;
+    getColor(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.initialized;
+            const data = this.doc.getData();
+            const { colors } = data;
+            const index = id % colors.length;
+            return data.colors[index];
+        });
+    }
+    ;
     addUser(displayName, isMe = true, present = true) {
         return __awaiter(this, void 0, void 0, function* () {
             const id = ArboretumChat.userCounter++;
-            const user = { id, displayName, present, typing: TypingStatus.IDLE };
+            const color = yield this.getColor(id);
+            const user = { id, color, displayName, present, typing: TypingStatus.IDLE };
             yield this.initialized;
             const data = this.doc.getData();
             yield this.doc.submitOp([{ p: ['users', data.users.length], li: user }]);
@@ -96,7 +112,6 @@ class ArboretumChat extends typed_event_emitter_1.EventEmitter {
             const data = this.doc.getData();
             const message = { sender, timestamp, content };
             yield this.doc.submitOp([{ p: ['messages', data.messages.length], li: message }]);
-            console.log('submitted');
         });
     }
     ;

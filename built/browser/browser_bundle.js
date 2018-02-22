@@ -136,405 +136,6 @@ function mixin(Constructor) {
 /* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
-
-
-/**
- * Copyright (c) 2013-present, Facebook, Inc.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- * 
- */
-
-function makeEmptyFunction(arg) {
-  return function () {
-    return arg;
-  };
-}
-
-/**
- * This function accepts and discards inputs; it has no side effects. This is
- * primarily useful idiomatically for overridable function endpoints which
- * always need to be callable, since JS lacks a null-call idiom ala Cocoa.
- */
-var emptyFunction = function emptyFunction() {};
-
-emptyFunction.thatReturns = makeEmptyFunction;
-emptyFunction.thatReturnsFalse = makeEmptyFunction(false);
-emptyFunction.thatReturnsTrue = makeEmptyFunction(true);
-emptyFunction.thatReturnsNull = makeEmptyFunction(null);
-emptyFunction.thatReturnsThis = function () {
-  return this;
-};
-emptyFunction.thatReturnsArgument = function (arg) {
-  return arg;
-};
-
-module.exports = emptyFunction;
-
-/***/ }),
-/* 6 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/**
- * Copyright (c) 2013-present, Facebook, Inc.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
-
-
-
-/**
- * Use invariant() to assert state which your program assumes to be true.
- *
- * Provide sprintf-style format (only %s is supported) and arguments
- * to provide information about what broke and what you were
- * expecting.
- *
- * The invariant message will be stripped in production, but the invariant
- * will remain to ensure logic does not differ in production.
- */
-
-var validateFormat = function validateFormat(format) {};
-
-if (process.env.NODE_ENV !== 'production') {
-  validateFormat = function validateFormat(format) {
-    if (format === undefined) {
-      throw new Error('invariant requires an error message argument');
-    }
-  };
-}
-
-function invariant(condition, format, a, b, c, d, e, f) {
-  validateFormat(format);
-
-  if (!condition) {
-    var error;
-    if (format === undefined) {
-      error = new Error('Minified exception occurred; use the non-minified dev environment ' + 'for the full error message and additional helpful warnings.');
-    } else {
-      var args = [a, b, c, d, e, f];
-      var argIndex = 0;
-      error = new Error(format.replace(/%s/g, function () {
-        return args[argIndex++];
-      }));
-      error.name = 'Invariant Violation';
-    }
-
-    error.framesToPop = 1; // we don't care about invariant's own frame
-    throw error;
-  }
-}
-
-module.exports = invariant;
-
-/***/ }),
-/* 7 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/**
- * Copyright (c) 2013-present, Facebook, Inc.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- */
-
-
-
-var ReactPropTypesSecret = 'SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED';
-
-module.exports = ReactPropTypesSecret;
-
-
-/***/ }),
-/* 8 */
-/***/ (function(module, exports, __webpack_require__) {
-
-// This contains the master OT functions for the database. They look like
-// ot-types style operational transform functions, but they're a bit different.
-// These functions understand versions and can deal with out of bound create &
-// delete operations.
-
-var types = __webpack_require__(2).map;
-
-// Returns an error string on failure. Rockin' it C style.
-exports.checkOp = function(op) {
-  if (op == null || typeof op !== 'object') {
-    return {code: 4004, message: 'Missing op'};
-  }
-
-  if (op.create != null) {
-    if (typeof op.create !== 'object') {
-      return {code: 4006, message: 'create data must be an object'};
-    }
-    var typeName = op.create.type;
-    if (typeof typeName !== 'string') {
-      return {code: 4007, message: 'Missing create type'};
-    }
-    var type = types[typeName];
-    if (type == null || typeof type !== 'object') {
-      return {code: 4008, message: 'Unknown type'};
-    }
-
-  } else if (op.del != null) {
-    if (op.del !== true) return {code: 4009, message: 'del value must be true'};
-
-  } else if (op.op == null) {
-    return {code: 4010, message: 'Missing op, create, or del'};
-  }
-
-  if (op.src != null && typeof op.src !== 'string') {
-    return {code: 4011, message: 'Invalid src'};
-  }
-  if (op.seq != null && typeof op.seq !== 'number') {
-    return {code: 4012, message: 'Invalid seq'};
-  }
-  if (
-    (op.src == null && op.seq != null) ||
-    (op.src != null && op.seq == null)
-  ) {
-    return {code: 4013, message: 'Both src and seq must be set together'};
-  }
-
-  if (op.m != null && typeof op.m !== 'object') {
-    return {code: 4014, message: 'op.m invalid'};
-  }
-};
-
-// Takes in a string (type name or URI) and returns the normalized name (uri)
-exports.normalizeType = function(typeName) {
-  return types[typeName] && types[typeName].uri;
-};
-
-// This is the super apply function that takes in snapshot data (including the
-// type) and edits it in-place. Returns an error or null for success.
-exports.apply = function(snapshot, op) {
-  if (typeof snapshot !== 'object') {
-    return {code: 5002, message: 'Missing snapshot'};
-  }
-  if (snapshot.v != null && op.v != null && snapshot.v !== op.v) {
-    return {code: 5003, message: 'Version mismatch'};
-  }
-
-  // Create operation
-  if (op.create) {
-    if (snapshot.type) return {code: 4016, message: 'Document already exists'};
-
-    // The document doesn't exist, although it might have once existed
-    var create = op.create;
-    var type = types[create.type];
-    if (!type) return {code: 4008, message: 'Unknown type'};
-
-    try {
-      snapshot.data = type.create(create.data);
-      snapshot.type = type.uri;
-      snapshot.v++;
-    } catch (err) {
-      return err;
-    }
-
-  // Delete operation
-  } else if (op.del) {
-    snapshot.data = undefined;
-    snapshot.type = null;
-    snapshot.v++;
-
-  // Edit operation
-  } else if (op.op) {
-    var err = applyOpEdit(snapshot, op.op);
-    if (err) return err;
-    snapshot.v++;
-
-  // No-op, and we don't have to do anything
-  } else {
-    snapshot.v++;
-  }
-};
-
-function applyOpEdit(snapshot, edit) {
-  if (!snapshot.type) return {code: 4015, message: 'Document does not exist'};
-
-  if (typeof edit !== 'object') return {code: 5004, message: 'Missing op'};
-  var type = types[snapshot.type];
-  if (!type) return {code: 4008, message: 'Unknown type'};
-
-  try {
-    snapshot.data = type.apply(snapshot.data, edit);
-  } catch (err) {
-    return err;
-  }
-}
-
-exports.transform = function(type, op, appliedOp) {
-  // There are 16 cases this function needs to deal with - which are all the
-  // combinations of create/delete/op/noop from both op and appliedOp
-  if (op.v != null && op.v !== appliedOp.v) {
-    return {code: 5006, message: 'Version mismatch'};
-  }
-
-  if (appliedOp.del) {
-    if (op.create || op.op) {
-      return {code: 4017, message: 'Document was deleted'};
-    }
-  } else if (
-    (appliedOp.create && (op.op || op.create || op.del)) ||
-    (appliedOp.op && op.create)
-  ) {
-    // If appliedOp.create is not true, appliedOp contains an op - which
-    // also means the document exists remotely.
-    return {code: 4018, message: 'Document was created remotely'};
-  } else if (appliedOp.op && op.op) {
-    // If we reach here, they both have a .op property.
-    if (!type) return {code: 5005, message: 'Document does not exist'};
-
-    if (typeof type === 'string') {
-      type = types[type];
-      if (!type) return {code: 4008, message: 'Unknown type'};
-    }
-
-    try {
-      op.op = type.transform(op.op, appliedOp.op, 'left');
-    } catch (err) {
-      return err;
-    }
-  }
-
-  if (op.v != null) op.v++;
-};
-
-
-/***/ }),
-/* 9 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var json0 = __webpack_require__(14).type;
-
-exports.projectSnapshot = projectSnapshot;
-exports.projectOp = projectOp;
-exports.isSnapshotAllowed = isSnapshotAllowed;
-exports.isOpAllowed = isOpAllowed;
-
-
-// Project a snapshot in place to only include specified fields
-function projectSnapshot(fields, snapshot) {
-  // Only json0 supported right now
-  if (snapshot.type && snapshot.type !== json0.uri) {
-    throw new Error(4023, 'Cannot project snapshots of type ' + snapshot.type);
-  }
-  snapshot.data = projectData(fields, snapshot.data);
-}
-
-function projectOp(fields, op) {
-  if (op.create) {
-    projectSnapshot(fields, op.create);
-  }
-  if (op.op) {
-    op.op = projectEdit(fields, op.op);
-  }
-}
-
-function projectEdit(fields, op) {
-  // So, we know the op is a JSON op
-  var result = [];
-
-  for (var i = 0; i < op.length; i++) {
-    var c = op[i];
-    var path = c.p;
-
-    if (path.length === 0) {
-      var newC = {p:[]};
-
-      if (c.od !== undefined || c.oi !== undefined) {
-        if (c.od !== undefined) {
-          newC.od = projectData(fields, c.od);
-        }
-        if (c.oi !== undefined) {
-          newC.oi = projectData(fields, c.oi);
-        }
-        result.push(newC);
-      }
-    } else {
-      // The path has a first element. Just check it against the fields.
-      if (fields[path[0]]) {
-        result.push(c);
-      }
-    }
-  }
-  return result;
-}
-
-function isOpAllowed(knownType, fields, op) {
-  if (op.create) {
-    return isSnapshotAllowed(fields, op.create);
-  }
-  if (op.op) {
-    if (knownType && knownType !== json0.uri) return false;
-    return isEditAllowed(fields, op.op);
-  }
-  // Noop and del are both ok.
-  return true;
-}
-
-// Basically, would the projected version of this data be the same as the original?
-function isSnapshotAllowed(fields, snapshot) {
-  if (snapshot.type && snapshot.type !== json0.uri) {
-    return false;
-  }
-  if (snapshot.data == null) {
-    return true;
-  }
-  // Data must be an object if not null
-  if (typeof snapshot.data !== 'object' || Array.isArray(snapshot.data)) {
-    return false;
-  }
-  for (var k in snapshot.data) {
-    if (!fields[k]) return false;
-  }
-  return true;
-}
-
-function isEditAllowed(fields, op) {
-  for (var i = 0; i < op.length; i++) {
-    var c = op[i];
-    if (c.p.length === 0) {
-      return false;
-    } else if (!fields[c.p[0]]) {
-      return false;
-    }
-  }
-  return true;
-}
-
-function projectData(fields, data) {
-  // Return back null or undefined
-  if (data == null) {
-    return data;
-  }
-  // If data is not an object, the projected version just looks like null.
-  if (typeof data !== 'object' || Array.isArray(data)) {
-    return null;
-  }
-  // Shallow copy of each field
-  var result = {};
-  for (var key in fields) {
-    if (data.hasOwnProperty(key)) {
-      result[key] = data[key];
-    }
-  }
-  return result;
-}
-
-
-/***/ }),
-/* 10 */
-/***/ (function(module, exports, __webpack_require__) {
-
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;//     Underscore.js 1.8.3
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -2087,6 +1688,405 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;//     Underscor
 
 
 /***/ }),
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+/**
+ * Copyright (c) 2013-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * 
+ */
+
+function makeEmptyFunction(arg) {
+  return function () {
+    return arg;
+  };
+}
+
+/**
+ * This function accepts and discards inputs; it has no side effects. This is
+ * primarily useful idiomatically for overridable function endpoints which
+ * always need to be callable, since JS lacks a null-call idiom ala Cocoa.
+ */
+var emptyFunction = function emptyFunction() {};
+
+emptyFunction.thatReturns = makeEmptyFunction;
+emptyFunction.thatReturnsFalse = makeEmptyFunction(false);
+emptyFunction.thatReturnsTrue = makeEmptyFunction(true);
+emptyFunction.thatReturnsNull = makeEmptyFunction(null);
+emptyFunction.thatReturnsThis = function () {
+  return this;
+};
+emptyFunction.thatReturnsArgument = function (arg) {
+  return arg;
+};
+
+module.exports = emptyFunction;
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/**
+ * Copyright (c) 2013-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ */
+
+
+
+/**
+ * Use invariant() to assert state which your program assumes to be true.
+ *
+ * Provide sprintf-style format (only %s is supported) and arguments
+ * to provide information about what broke and what you were
+ * expecting.
+ *
+ * The invariant message will be stripped in production, but the invariant
+ * will remain to ensure logic does not differ in production.
+ */
+
+var validateFormat = function validateFormat(format) {};
+
+if (process.env.NODE_ENV !== 'production') {
+  validateFormat = function validateFormat(format) {
+    if (format === undefined) {
+      throw new Error('invariant requires an error message argument');
+    }
+  };
+}
+
+function invariant(condition, format, a, b, c, d, e, f) {
+  validateFormat(format);
+
+  if (!condition) {
+    var error;
+    if (format === undefined) {
+      error = new Error('Minified exception occurred; use the non-minified dev environment ' + 'for the full error message and additional helpful warnings.');
+    } else {
+      var args = [a, b, c, d, e, f];
+      var argIndex = 0;
+      error = new Error(format.replace(/%s/g, function () {
+        return args[argIndex++];
+      }));
+      error.name = 'Invariant Violation';
+    }
+
+    error.framesToPop = 1; // we don't care about invariant's own frame
+    throw error;
+  }
+}
+
+module.exports = invariant;
+
+/***/ }),
+/* 8 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/**
+ * Copyright (c) 2013-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+
+
+var ReactPropTypesSecret = 'SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED';
+
+module.exports = ReactPropTypesSecret;
+
+
+/***/ }),
+/* 9 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// This contains the master OT functions for the database. They look like
+// ot-types style operational transform functions, but they're a bit different.
+// These functions understand versions and can deal with out of bound create &
+// delete operations.
+
+var types = __webpack_require__(2).map;
+
+// Returns an error string on failure. Rockin' it C style.
+exports.checkOp = function(op) {
+  if (op == null || typeof op !== 'object') {
+    return {code: 4004, message: 'Missing op'};
+  }
+
+  if (op.create != null) {
+    if (typeof op.create !== 'object') {
+      return {code: 4006, message: 'create data must be an object'};
+    }
+    var typeName = op.create.type;
+    if (typeof typeName !== 'string') {
+      return {code: 4007, message: 'Missing create type'};
+    }
+    var type = types[typeName];
+    if (type == null || typeof type !== 'object') {
+      return {code: 4008, message: 'Unknown type'};
+    }
+
+  } else if (op.del != null) {
+    if (op.del !== true) return {code: 4009, message: 'del value must be true'};
+
+  } else if (op.op == null) {
+    return {code: 4010, message: 'Missing op, create, or del'};
+  }
+
+  if (op.src != null && typeof op.src !== 'string') {
+    return {code: 4011, message: 'Invalid src'};
+  }
+  if (op.seq != null && typeof op.seq !== 'number') {
+    return {code: 4012, message: 'Invalid seq'};
+  }
+  if (
+    (op.src == null && op.seq != null) ||
+    (op.src != null && op.seq == null)
+  ) {
+    return {code: 4013, message: 'Both src and seq must be set together'};
+  }
+
+  if (op.m != null && typeof op.m !== 'object') {
+    return {code: 4014, message: 'op.m invalid'};
+  }
+};
+
+// Takes in a string (type name or URI) and returns the normalized name (uri)
+exports.normalizeType = function(typeName) {
+  return types[typeName] && types[typeName].uri;
+};
+
+// This is the super apply function that takes in snapshot data (including the
+// type) and edits it in-place. Returns an error or null for success.
+exports.apply = function(snapshot, op) {
+  if (typeof snapshot !== 'object') {
+    return {code: 5002, message: 'Missing snapshot'};
+  }
+  if (snapshot.v != null && op.v != null && snapshot.v !== op.v) {
+    return {code: 5003, message: 'Version mismatch'};
+  }
+
+  // Create operation
+  if (op.create) {
+    if (snapshot.type) return {code: 4016, message: 'Document already exists'};
+
+    // The document doesn't exist, although it might have once existed
+    var create = op.create;
+    var type = types[create.type];
+    if (!type) return {code: 4008, message: 'Unknown type'};
+
+    try {
+      snapshot.data = type.create(create.data);
+      snapshot.type = type.uri;
+      snapshot.v++;
+    } catch (err) {
+      return err;
+    }
+
+  // Delete operation
+  } else if (op.del) {
+    snapshot.data = undefined;
+    snapshot.type = null;
+    snapshot.v++;
+
+  // Edit operation
+  } else if (op.op) {
+    var err = applyOpEdit(snapshot, op.op);
+    if (err) return err;
+    snapshot.v++;
+
+  // No-op, and we don't have to do anything
+  } else {
+    snapshot.v++;
+  }
+};
+
+function applyOpEdit(snapshot, edit) {
+  if (!snapshot.type) return {code: 4015, message: 'Document does not exist'};
+
+  if (typeof edit !== 'object') return {code: 5004, message: 'Missing op'};
+  var type = types[snapshot.type];
+  if (!type) return {code: 4008, message: 'Unknown type'};
+
+  try {
+    snapshot.data = type.apply(snapshot.data, edit);
+  } catch (err) {
+    return err;
+  }
+}
+
+exports.transform = function(type, op, appliedOp) {
+  // There are 16 cases this function needs to deal with - which are all the
+  // combinations of create/delete/op/noop from both op and appliedOp
+  if (op.v != null && op.v !== appliedOp.v) {
+    return {code: 5006, message: 'Version mismatch'};
+  }
+
+  if (appliedOp.del) {
+    if (op.create || op.op) {
+      return {code: 4017, message: 'Document was deleted'};
+    }
+  } else if (
+    (appliedOp.create && (op.op || op.create || op.del)) ||
+    (appliedOp.op && op.create)
+  ) {
+    // If appliedOp.create is not true, appliedOp contains an op - which
+    // also means the document exists remotely.
+    return {code: 4018, message: 'Document was created remotely'};
+  } else if (appliedOp.op && op.op) {
+    // If we reach here, they both have a .op property.
+    if (!type) return {code: 5005, message: 'Document does not exist'};
+
+    if (typeof type === 'string') {
+      type = types[type];
+      if (!type) return {code: 4008, message: 'Unknown type'};
+    }
+
+    try {
+      op.op = type.transform(op.op, appliedOp.op, 'left');
+    } catch (err) {
+      return err;
+    }
+  }
+
+  if (op.v != null) op.v++;
+};
+
+
+/***/ }),
+/* 10 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var json0 = __webpack_require__(14).type;
+
+exports.projectSnapshot = projectSnapshot;
+exports.projectOp = projectOp;
+exports.isSnapshotAllowed = isSnapshotAllowed;
+exports.isOpAllowed = isOpAllowed;
+
+
+// Project a snapshot in place to only include specified fields
+function projectSnapshot(fields, snapshot) {
+  // Only json0 supported right now
+  if (snapshot.type && snapshot.type !== json0.uri) {
+    throw new Error(4023, 'Cannot project snapshots of type ' + snapshot.type);
+  }
+  snapshot.data = projectData(fields, snapshot.data);
+}
+
+function projectOp(fields, op) {
+  if (op.create) {
+    projectSnapshot(fields, op.create);
+  }
+  if (op.op) {
+    op.op = projectEdit(fields, op.op);
+  }
+}
+
+function projectEdit(fields, op) {
+  // So, we know the op is a JSON op
+  var result = [];
+
+  for (var i = 0; i < op.length; i++) {
+    var c = op[i];
+    var path = c.p;
+
+    if (path.length === 0) {
+      var newC = {p:[]};
+
+      if (c.od !== undefined || c.oi !== undefined) {
+        if (c.od !== undefined) {
+          newC.od = projectData(fields, c.od);
+        }
+        if (c.oi !== undefined) {
+          newC.oi = projectData(fields, c.oi);
+        }
+        result.push(newC);
+      }
+    } else {
+      // The path has a first element. Just check it against the fields.
+      if (fields[path[0]]) {
+        result.push(c);
+      }
+    }
+  }
+  return result;
+}
+
+function isOpAllowed(knownType, fields, op) {
+  if (op.create) {
+    return isSnapshotAllowed(fields, op.create);
+  }
+  if (op.op) {
+    if (knownType && knownType !== json0.uri) return false;
+    return isEditAllowed(fields, op.op);
+  }
+  // Noop and del are both ok.
+  return true;
+}
+
+// Basically, would the projected version of this data be the same as the original?
+function isSnapshotAllowed(fields, snapshot) {
+  if (snapshot.type && snapshot.type !== json0.uri) {
+    return false;
+  }
+  if (snapshot.data == null) {
+    return true;
+  }
+  // Data must be an object if not null
+  if (typeof snapshot.data !== 'object' || Array.isArray(snapshot.data)) {
+    return false;
+  }
+  for (var k in snapshot.data) {
+    if (!fields[k]) return false;
+  }
+  return true;
+}
+
+function isEditAllowed(fields, op) {
+  for (var i = 0; i < op.length; i++) {
+    var c = op[i];
+    if (c.p.length === 0) {
+      return false;
+    } else if (!fields[c.p[0]]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function projectData(fields, data) {
+  // Return back null or undefined
+  if (data == null) {
+    return data;
+  }
+  // If data is not an object, the projected version just looks like null.
+  if (typeof data !== 'object' || Array.isArray(data)) {
+    return null;
+  }
+  // Shallow copy of each field
+  var result = {};
+  for (var key in fields) {
+    if (data.hasOwnProperty(key)) {
+      result[key] = data[key];
+    }
+  }
+  return result;
+}
+
+
+/***/ }),
 /* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -2101,7 +2101,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;//     Underscor
 
 
 
-var emptyFunction = __webpack_require__(5);
+var emptyFunction = __webpack_require__(6);
 
 /**
  * Similar to invariant but only logs a warning if the condition is not met.
@@ -6610,8 +6610,8 @@ function mapDiff(idsDiff, snapshotMap) {
 /* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var ot = __webpack_require__(8);
-var projections = __webpack_require__(9);
+var ot = __webpack_require__(9);
+var projections = __webpack_require__(10);
 
 function SubmitRequest(backend, agent, index, id, op, options) {
   this.backend = backend;
@@ -6882,7 +6882,7 @@ const tab_1 = __webpack_require__(30);
 const sidebar_1 = __webpack_require__(31);
 const electron_1 = __webpack_require__(42);
 const url = __webpack_require__(43);
-const _ = __webpack_require__(10);
+const _ = __webpack_require__(5);
 const sharedb_wrapper_1 = __webpack_require__(44);
 const chat_doc_1 = __webpack_require__(57);
 class Arboretum extends React.Component {
@@ -7245,7 +7245,7 @@ exports.ArboretumNavigationBar = ArboretumNavigationBar;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(0);
-const _ = __webpack_require__(10);
+const _ = __webpack_require__(5);
 class ArboretumTab extends React.Component {
     constructor(props) {
         super(props);
@@ -7545,8 +7545,9 @@ class ArboretumChatBox extends React.Component {
     ;
     render() {
         const messages = this.state.messages.map((m) => {
+            const senderStyle = { color: m.sender.color };
             return React.createElement("li", { className: 'chat-line' },
-                React.createElement("span", { className: 'from' }, m.sender.displayName),
+                React.createElement("span", { style: senderStyle, className: 'from' }, m.sender.displayName),
                 React.createElement("span", { className: 'message' }, m.content));
         });
         let meUserID;
@@ -7558,7 +7559,8 @@ class ArboretumChatBox extends React.Component {
         }
         const users = this.state.users.map((u) => {
             const isMe = u.id === meUserID;
-            return React.createElement("span", null, u.displayName);
+            const style = { color: u.color };
+            return React.createElement("span", { style: style }, u.displayName);
         });
         return React.createElement("div", { className: 'chat' },
             React.createElement("h6", { id: "task_title" },
@@ -8014,12 +8016,12 @@ if (process.env.NODE_ENV !== 'production') {
 
 
 
-var emptyFunction = __webpack_require__(5);
-var invariant = __webpack_require__(6);
+var emptyFunction = __webpack_require__(6);
+var invariant = __webpack_require__(7);
 var warning = __webpack_require__(11);
 var assign = __webpack_require__(37);
 
-var ReactPropTypesSecret = __webpack_require__(7);
+var ReactPropTypesSecret = __webpack_require__(8);
 var checkPropTypes = __webpack_require__(38);
 
 module.exports = function(isValidElement, throwOnDirectAccess) {
@@ -8661,9 +8663,9 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 
 
 if (process.env.NODE_ENV !== 'production') {
-  var invariant = __webpack_require__(6);
+  var invariant = __webpack_require__(7);
   var warning = __webpack_require__(11);
-  var ReactPropTypesSecret = __webpack_require__(7);
+  var ReactPropTypesSecret = __webpack_require__(8);
   var loggedTypeFailures = {};
 }
 
@@ -8726,9 +8728,9 @@ module.exports = checkPropTypes;
 
 
 
-var emptyFunction = __webpack_require__(5);
-var invariant = __webpack_require__(6);
-var ReactPropTypesSecret = __webpack_require__(7);
+var emptyFunction = __webpack_require__(6);
+var invariant = __webpack_require__(7);
+var ReactPropTypesSecret = __webpack_require__(8);
 
 module.exports = function() {
   function shim(props, propName, componentName, location, propFullName, secret) {
@@ -10197,8 +10199,8 @@ Backend.DB = __webpack_require__(20);
 Backend.Error = __webpack_require__(1);
 Backend.MemoryDB = __webpack_require__(19);
 Backend.MemoryPubSub = __webpack_require__(21);
-Backend.ot = __webpack_require__(8);
-Backend.projections = __webpack_require__(9);
+Backend.ot = __webpack_require__(9);
+Backend.projections = __webpack_require__(10);
 Backend.PubSub = __webpack_require__(22);
 Backend.QueryEmitter = __webpack_require__(25);
 Backend.SubmitRequest = __webpack_require__(26);
@@ -10215,8 +10217,8 @@ var Connection = __webpack_require__(12);
 var emitter = __webpack_require__(4);
 var MemoryDB = __webpack_require__(19);
 var MemoryPubSub = __webpack_require__(21);
-var ot = __webpack_require__(8);
-var projections = __webpack_require__(9);
+var ot = __webpack_require__(9);
+var projections = __webpack_require__(10);
 var QueryEmitter = __webpack_require__(25);
 var StreamSocket = __webpack_require__(56);
 var SubmitRequest = __webpack_require__(26);
@@ -11247,6 +11249,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const typed_event_emitter_1 = __webpack_require__(58);
+const _ = __webpack_require__(5);
+exports.userColors = [
+    ['#A80000', '#B05E0D', '#C19C00', '#107C10', '#038387', '#004E8C', '#5C126B']
+];
 var TypingStatus;
 (function (TypingStatus) {
     TypingStatus[TypingStatus["IDLE"] = 0] = "IDLE";
@@ -11283,7 +11289,8 @@ class ArboretumChat extends typed_event_emitter_1.EventEmitter {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.doc.createIfEmpty({
                 users: [],
-                messages: []
+                messages: [],
+                colors: _.shuffle(_.sample(exports.userColors))
             });
             this.doc.subscribe((op, source, data) => {
                 if (op) {
@@ -11313,10 +11320,21 @@ class ArboretumChat extends typed_event_emitter_1.EventEmitter {
         return this.meUser;
     }
     ;
+    getColor(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.initialized;
+            const data = this.doc.getData();
+            const { colors } = data;
+            const index = id % colors.length;
+            return data.colors[index];
+        });
+    }
+    ;
     addUser(displayName, isMe = true, present = true) {
         return __awaiter(this, void 0, void 0, function* () {
             const id = ArboretumChat.userCounter++;
-            const user = { id, displayName, present, typing: TypingStatus.IDLE };
+            const color = yield this.getColor(id);
+            const user = { id, color, displayName, present, typing: TypingStatus.IDLE };
             yield this.initialized;
             const data = this.doc.getData();
             yield this.doc.submitOp([{ p: ['users', data.users.length], li: user }]);

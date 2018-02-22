@@ -20,7 +20,7 @@ table#server-controls tr:active {
     /* background-color: #116cd6; */
 }
 table#server-controls #control_content td {
-    padding-bottom: 10px;
+    padding-bottom: 0px;
 }
 
 table#server-controls label {

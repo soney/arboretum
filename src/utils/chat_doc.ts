@@ -1,6 +1,11 @@
 import {SDB, SDBDoc} from './sharedb_wrapper';
 import {EventEmitter} from './typed_event_emitter';
+import * as _ from 'underscore';
 
+export type Color = string;
+export const userColors:Array<Array<Color>> = [
+    ['#A80000', '#B05E0D', '#C19C00', '#107C10', '#038387', '#004E8C', '#5C126B' ]
+];
 export enum TypingStatus { IDLE, ACTIVE, IDLE_TYPED };
 
 export type UserID = number;
@@ -8,7 +13,8 @@ export interface User {
     id:UserID,
     displayName:string,
     present:boolean,
-    typing:TypingStatus
+    typing:TypingStatus,
+    color:Color
 };
 export interface Message {
     sender:User,
@@ -19,8 +25,9 @@ export interface TextMessage extends Message{
 };
 
 export interface ChatDoc {
-    users:Array<User>
-    messages:Array<Message>
+    users:Array<User>,
+    messages:Array<Message>,
+    colors:Array<Color>
 };
 
 export interface UserJoinedEvent {
@@ -61,7 +68,8 @@ export class ArboretumChat extends EventEmitter {
     private async initializeDoc():Promise<void> {
         await this.doc.createIfEmpty({
             users: [],
-            messages: []
+            messages: [],
+            colors: _.shuffle(_.sample(userColors))
         });
         this.doc.subscribe((op, source, data) => {
             if(op) {
@@ -86,9 +94,17 @@ export class ArboretumChat extends EventEmitter {
     public getMe():User {
         return this.meUser;
     };
+    private async getColor(id:UserID):Promise<Color> {
+        await this.initialized;
+        const data:ChatDoc = this.doc.getData();
+        const {colors} = data;
+        const index = id % colors.length;
+        return data.colors[index];
+    };
     public async addUser(displayName:string, isMe:boolean=true, present=true):Promise<User> {
         const id:UserID = ArboretumChat.userCounter++;
-        const user:User = {id, displayName, present, typing:TypingStatus.IDLE};
+        const color:Color = await this.getColor(id);
+        const user:User = {id, color, displayName, present, typing:TypingStatus.IDLE};
         await this.initialized;
 
         const data:ChatDoc = this.doc.getData();
