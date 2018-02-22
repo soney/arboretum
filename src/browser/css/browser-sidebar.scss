@@ -99,7 +99,7 @@ table#server-controls label {
     font-weight: bold;
 }
 #chat-participants .participant.me {
-    text-decoration: overline;
+    text-decoration: underline overline;
 }
 
 .chat-line {
