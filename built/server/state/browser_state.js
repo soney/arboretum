@@ -15,25 +15,9 @@ const path_1 = require("path");
 const tab_state_1 = require("./tab_state");
 const logging_1 = require("../../utils/logging");
 const events_1 = require("events");
-const electron_1 = require("electron");
 const sharedb_wrapper_1 = require("../../utils/sharedb_wrapper");
 const chat_doc_1 = require("../../utils/chat_doc");
 const log = logging_1.getColoredLogger('red');
-// var cri = require('chrome-remote-interface'),
-// 	_ = require('underscore'),
-// 	util = require('util'),
-// 	EventEmitter = require('events'),
-// 	TabState = require('./tab_state').TabState;
-// var log = require('../../utils/logging').getColoredLogger('red');
-// var fileUrl = require('file-url'),
-// 	path = require('path'),
-//     electron = require('electron'),
-//     ipcMain = electron.ipcMain;
-// var OPTION_DEFAULTS = {
-// 	host: 'localhost',
-// 	port: 9222
-// };
-//
 const projectFileURLPath = fileUrl(path_1.join(path_1.resolve(__dirname, '..', '..'), 'browser'));
 class BrowserState extends events_1.EventEmitter {
     constructor(state, extraOptions) {
@@ -42,12 +26,19 @@ class BrowserState extends events_1.EventEmitter {
         this.tabs = new Map();
         this.options = { host: 'localhost', port: 9222 };
         _.extend(this.options, extraOptions);
-        this.sdb = new sharedb_wrapper_1.SDB(false);
-        this.chat = new chat_doc_1.ArboretumChat(this.sdb);
-        this.intervalID = setInterval(_.bind(this.refreshTabs, this), 2000);
-        log.debug('=== CREATED BROWSER ===');
-        electron_1.ipcMain.on('asynchronous-message', (event, arg) => {
-            this.sender = event.sender;
+        this.initialize();
+    }
+    ;
+    initialize() {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.sdb = new sharedb_wrapper_1.SDB(false);
+            this.doc = this.sdb.get('arboretum', 'browser');
+            yield this.doc.createIfEmpty({
+                tabs: []
+            });
+            this.chat = new chat_doc_1.ArboretumChat(this.sdb);
+            this.intervalID = setInterval(_.bind(this.refreshTabs, this), 2000);
+            log.debug('=== CREATED BROWSER ===');
         });
     }
     ;
@@ -60,9 +51,10 @@ class BrowserState extends events_1.EventEmitter {
     }
     ;
     refreshTabs() {
-        this.getTabs().then((tabInfos) => {
+        return __awaiter(this, void 0, void 0, function* () {
+            const tabInfos = yield this.getTabs();
             const existingTabs = new Set(this.tabs.keys());
-            _.each(tabInfos, (tabInfo) => {
+            _.each(tabInfos, (tabInfo) => __awaiter(this, void 0, void 0, function* () {
                 const { id } = tabInfo;
                 let tab;
                 if (existingTabs.has(id)) {
@@ -73,20 +65,19 @@ class BrowserState extends events_1.EventEmitter {
                 }
                 else {
                     log.trace(`Creating tab ${id}`);
-                    tab = new tab_state_1.TabState(tabInfo);
+                    tab = new tab_state_1.TabState(tabInfo, this.sdb);
                     this.tabs.set(id, tab);
+                    yield tab.initialized;
+                    const shareDBOp = { p: ['tabs', id], oi: tab.getTabId() };
                     this.emit('tabCreated', {
                         id: id
                     });
                 }
-            });
+            }));
             existingTabs.forEach((id) => {
                 log.trace(`Destroying tab ${id}`);
                 this.destroyTab(id);
             });
-        }).catch((err) => {
-            log.error(err);
-            throw (err);
         });
     }
     destroy() {
@@ -149,14 +140,6 @@ class BrowserState extends events_1.EventEmitter {
         this.tabs.forEach((tabState) => {
             tabState.print();
         });
-    }
-    ;
-    addTab() {
-        this.sender.send('asynchronous-reply', 'remoteTab');
-    }
-    ;
-    closeTab(tabId) {
-        this.sender.send('closeTab', tabId);
     }
     ;
     openURL(url, tabId = this.getActiveTabId()) {

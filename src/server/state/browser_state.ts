@@ -13,6 +13,7 @@ import { EventEmitter } from 'events';
 import { ipcMain } from 'electron';
 import {SDB, SDBDoc} from '../../utils/sharedb_wrapper';
 import {ArboretumChat} from '../../utils/chat_doc';
+import * as ShareDB from 'sharedb';
 
 const log = getColoredLogger('red');
 
@@ -31,25 +32,32 @@ const log = getColoredLogger('red');
 // 	port: 9222
 // };
 //
+export interface BrowserDoc {
+    tabs: {k:CRI.TabID,v:CRI.TabID}
+}
 
 const projectFileURLPath: string = fileUrl(join(resolve(__dirname, '..', '..'), 'browser'));
 export class BrowserState extends EventEmitter {
     private tabs: Map<CRI.TabID, TabState> = new Map<CRI.TabID, TabState>();
     private options = { host: 'localhost', port: 9222 };
     private intervalID: NodeJS.Timer;
-    private sender;
     private sdb:SDB;
+    private doc:SDBDoc<BrowserDoc>;
     private chat:ArboretumChat;
     constructor(private state: any, extraOptions?) {
         super();
         _.extend(this.options, extraOptions);
+        this.initialize();
+    };
+    private async initialize():Promise<void> {
         this.sdb = new SDB(false);
+        this.doc = this.sdb.get('arboretum', 'browser');
+        await this.doc.createIfEmpty({
+            tabs: []
+        });
         this.chat = new ArboretumChat(this.sdb);
         this.intervalID = setInterval(_.bind(this.refreshTabs, this), 2000);
         log.debug('=== CREATED BROWSER ===');
-        ipcMain.on('asynchronous-message', (event, arg) => {
-           this.sender = event.sender;
-        });
     };
     public getShareDBPath():Array<string|number> {
         return [];
@@ -57,34 +65,35 @@ export class BrowserState extends EventEmitter {
     public shareDBListen(ws:stream.Duplex):void {
         this.sdb.listen(ws);
     };
-    private refreshTabs(): void {
-        this.getTabs().then((tabInfos: Array<CRI.TabInfo>) => {
-            const existingTabs = new Set<CRI.TabID>(this.tabs.keys());
-            _.each(tabInfos, (tabInfo) => {
-                const { id } = tabInfo;
-                let tab: TabState;
-                if (existingTabs.has(id)) {
-                    // log.trace(`Updating info for tab ${id}`);
-                    tab = this.tabs.get(id);
-                    existingTabs.delete(id);
-                    tab.updateInfo(tabInfo);
-                } else {
-                    log.trace(`Creating tab ${id}`);
-                    tab = new TabState(tabInfo);
-                    this.tabs.set(id, tab);
-                    this.emit('tabCreated', {
-                        id: id
-                    });
-                }
-            });
+    private async refreshTabs():Promise<void> {
+        const tabInfos:Array<CRI.TabInfo> = await this.getTabs();
+        const existingTabs = new Set<CRI.TabID>(this.tabs.keys());
+        _.each(tabInfos, async (tabInfo) => {
+            const { id } = tabInfo;
+            let tab: TabState;
+            if (existingTabs.has(id)) {
+                // log.trace(`Updating info for tab ${id}`);
+                tab = this.tabs.get(id);
+                existingTabs.delete(id);
+                tab.updateInfo(tabInfo);
+            } else {
+                log.trace(`Creating tab ${id}`);
+                tab = new TabState(tabInfo, this.sdb);
+                this.tabs.set(id, tab);
 
-            existingTabs.forEach((id: CRI.TabID) => {
-                log.trace(`Destroying tab ${id}`);
-                this.destroyTab(id);
-            });
-        }).catch((err) => {
-            log.error(err);
-            throw (err);
+                await tab.initialized;
+                const shareDBOp:ShareDB.ObjectInsertOp = {p: ['tabs', id], oi: id};
+
+                this.emit('tabCreated', {
+                    id: id
+                });
+            }
+        });
+
+        existingTabs.forEach((id: CRI.TabID) => {
+            log.trace(`Destroying tab ${id}`);
+            this.destroyTab(id);
+            const shareDBOp:ShareDB.ObjectDeleteOp = {p: ['tabs', id], od: id};
         });
     }
     public async destroy():Promise<void> {
@@ -132,12 +141,6 @@ export class BrowserState extends EventEmitter {
         this.tabs.forEach((tabState: TabState) => {
             tabState.print();
         });
-    };
-    public addTab():void {
-        this.sender.send('asynchronous-reply', 'remoteTab');
-    };
-    public closeTab(tabId:CRI.TabID):void {
-        this.sender.send('closeTab', tabId);
     };
     public openURL(url:string, tabId:CRI.TabID=this.getActiveTabId()):void {
         const tabState = this.getTab(tabId);

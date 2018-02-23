@@ -17,10 +17,12 @@ const events_1 = require("events");
 const url_1 = require("url");
 const log = logging_1.getColoredLogger('yellow');
 ;
+;
 class TabState extends events_1.EventEmitter {
-    constructor(info) {
+    constructor(info, sdb) {
         super();
         this.info = info;
+        this.sdb = sdb;
         this.frames = new Map();
         this.pendingFrameEvents = new Map();
         this.nodeMap = new Map();
@@ -201,36 +203,41 @@ class TabState extends events_1.EventEmitter {
                 // throw new Error(`Could not find ${nodeId}`);
             }
         };
-        const chromeEventEmitter = cri({
-            chooseTab: this.info
-        });
-        this.chromePromise = new Promise((resolve, reject) => {
-            chromeEventEmitter.once('connect', (chrome) => {
-                this.chrome = chrome;
-                resolve(chrome);
+        this.initialized = this.initialize();
+        log.debug(`=== CREATED TAB STATE ${this.getTabId()} ====`);
+    }
+    ;
+    initialize() {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.doc = yield this.sdb.get('tab', this.getTabId());
+            yield this.doc.createIfEmpty({});
+            const chromeEventEmitter = cri({
+                chooseTab: this.info
             });
-        }).catch((err) => {
-            log.error(err);
-            throw (err);
-        });
-        this.chromePromise.then(() => {
+            this.chromePromise = new Promise((resolve, reject) => {
+                chromeEventEmitter.once('connect', (chrome) => {
+                    this.chrome = chrome;
+                    resolve(chrome);
+                });
+            }).catch((err) => {
+                log.error(err);
+                throw (err);
+            });
+            yield this.chromePromise;
             //TODO: Convert getResourceTree call to getFrameTree when supported
-            this.getResourceTree().then((tree) => {
-                const { frameTree } = tree;
-                const { frame, childFrames, resources } = frameTree;
-                this.createFrameState(frame, null, childFrames, resources);
-            });
+            const resourceTree = yield this.getResourceTree();
+            const { frameTree } = resourceTree;
+            const { frame, childFrames, resources } = frameTree;
+            this.createFrameState(frame, null, childFrames, resources);
             this.refreshRoot();
             this.addFrameListeners();
             this.addDOMListeners();
             this.addNetworkListeners();
             this.addExecutionContextListeners();
-        }).catch((err) => {
-            log.error(err);
-            throw (err);
         });
-        log.debug(`=== CREATED TAB STATE ${this.getTabId()} ====`);
     }
+    ;
+    getShareDBDoc() { return this.doc; }
     ;
     getShareDBPath() {
         return [this.getTabId()];

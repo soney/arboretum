@@ -1,34 +1,29 @@
+@import "./browser-tabs";
+@import "./browser-sidebar";
+@import "./browser-navbar";
 html {
     height: 100%;
-}
 
-/*body {
-    margin: 0px;
-    overflow: hidden;
-    height: 100%;
-}*/
-.unselected {
-    display:none; !important
-}
-#content {
-    height: 100%;
-    overflow: hidden;
-}
+    .unselected {
+        display: none;
+    }
+    #content {
+        height: 100%;
+        overflow: hidden;
+    }
 
 
-.tab_content {
-    height: 100%;
-}
+    .tab_content {
+        height: 100%;
+    }
 
-webview {
-    display: inline-flex;
-    width: 100%;
-    height: 100%;
-}
-webview.hidden {
-    display: none;
-}
+    webview {
+        display: inline-flex;
+        width: 100%;
+        height: 100%;
 
-/*#header {
-    background: linear-gradient(to bottom, #eee, #ddd);
-}*/
+        &.hidden {
+            display:none;
+        }
+    }
+}

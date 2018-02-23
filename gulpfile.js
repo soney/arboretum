@@ -23,9 +23,15 @@ const webpackCommonConfig = {
            use: [{
                loader: "style-loader" // creates style nodes from JS strings
            }, {
-               loader: "css-loader" // translates CSS into CommonJS
+               loader: "css-loader", // translates CSS into CommonJS
+               options: {
+                   sourceMap: true
+               }
            }, {
-               loader: "sass-loader" // compiles Sass to CSS
+               loader: "sass-loader", // compiles Sass to CSS
+               options: {
+                   sourceMap: true
+               }
            }]
         }, {
             test: /\.(png|svg|jpg|gif|woff|woff2|eot|ttf|otf)$/,
@@ -43,7 +49,7 @@ const webpackCommonConfig = {
         }]
     },
     resolve: {
-        extensions: ['.tsx', '.ts', '.js', 'html', 'htm']
+        extensions: ['.tsx', '.ts', '.js', 'html', 'htm', 'scss', 'sass']
     },
     devtool: 'source-map',
     // When importing a module whose path matches one of the following, just
@@ -88,11 +94,11 @@ gulp.task('client-webpack-watch', function() {
                 .pipe(gulp.dest(clientWebpackConfig.output.path));
 });
 gulp.task('client-resources', function() {
-    return gulp.src(path.join(__dirname, 'src', 'client', '**/*.{html,htm,css,js,woff,ttf,png,scss,css,sass}'))
+    return gulp.src(path.join(__dirname, 'src', 'client', '**/*.{html,htm,css,js,woff,ttf,png}'))
         .pipe(gulp.dest(path.join(__dirname, 'built', 'client')));
 });
 gulp.task('client-resources-watch', function() {
-    return gulp.watch([path.join(__dirname, 'src', 'client', '**/*.{html,htm,css,js,woff,ttf,png,scss,css,sass}')], ['client-resources']);
+    return gulp.watch([path.join(__dirname, 'src', 'client', '**/*.{html,htm,css,js,woff,ttf,png}')], ['client-resources']);
 });
 gulp.task('client', ['client-webpack', 'client-resources']);
 gulp.task('client-watch', ['client-webpack-watch', 'client-resources-watch']);
@@ -113,11 +119,11 @@ gulp.task('browser-webpack-watch', function() {
                 .pipe(gulp.dest(browserWebpackConfig.output.path));
 });
 gulp.task('browser-resources', function() {
-    return gulp.src(path.join(__dirname, 'src', 'browser', '**/*.{html,htm,css,js,woff,ttf,png,scss,css,sass}'))
+    return gulp.src(path.join(__dirname, 'src', 'browser', '**/*.{html,htm,css,js,woff,ttf,png}'))
         .pipe(gulp.dest(path.join(__dirname, 'built', 'browser')));
 });
 gulp.task('browser-resources-watch', function() {
-    return gulp.watch([path.join(__dirname, 'src', 'browser', '**/*.{html,htm,css,js,woff,ttf,png,scss,css,sass}')], ['browser-resources']);
+    return gulp.watch([path.join(__dirname, 'src', 'browser', '**/*.{html,htm,css,js,woff,ttf,png}')], ['browser-resources']);
 });
 gulp.task('browser', ['browser-webpack', 'browser-resources']);
 gulp.task('browser-watch', ['browser-webpack-watch', 'browser-resources-watch']);
@@ -127,7 +133,7 @@ gulp.task('browser-watch', ['browser-webpack-watch', 'browser-resources-watch'])
 // ======
 
 gulp.task('server-resources', function() {
-    return gulp.src(path.join(__dirname, 'src', 'server', '**/*.{html,htm,css,js,woff,ttf,png,scss,css,sass}'))
+    return gulp.src(path.join(__dirname, 'src', 'server', '**/*.{html,htm,css,js,woff,ttf,png}'))
         .pipe(gulp.dest(path.join(__dirname, 'built', 'server')));
 });
 gulp.task('server-ts', function() {

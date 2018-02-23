@@ -12,6 +12,7 @@ const event_manager_1 = require("../event_manager");
 const resource_tracker_1 = require("../resource_tracker");
 const logging_1 = require("../../utils/logging");
 const log = logging_1.getColoredLogger('green');
+;
 class FrameState {
     constructor(chrome, info, tab, parentFrame = null, resources = []) {
         this.chrome = chrome;
@@ -29,6 +30,8 @@ class FrameState {
         this.resourceTracker = new resource_tracker_1.ResourceTracker(chrome, this, resources);
         log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
     }
+    ;
+    getShareDBDoc() { return this.tab.getShareDBDoc(); }
     ;
     getParentFrame() {
         return this.parentFrame;

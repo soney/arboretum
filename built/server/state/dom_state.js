@@ -16,6 +16,7 @@ const node_code_1 = require("../../utils/node_code");
 const url_transform_1 = require("../url_transform");
 const _ = require("underscore");
 const log = logging_1.getColoredLogger('magenta');
+;
 class DOMState extends events_1.EventEmitter {
     constructor(node, tab, contentDocument, childFrame, parent) {
         super();
@@ -29,6 +30,7 @@ class DOMState extends events_1.EventEmitter {
         this.inlineStyle = '';
         this.children = [];
         this.updateValueInterval = null;
+        this.shareDBNode = _.clone(node);
         this.getFullString().then((fullNodeValue) => {
             this.setNodeValue(fullNodeValue);
         }).catch((err) => {
@@ -39,6 +41,12 @@ class DOMState extends events_1.EventEmitter {
         // log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     }
     ;
+    getShareDBDoc() { return this.tab.getShareDBDoc(); }
+    ;
+    getShareDBNode() { return this.shareDBNode; }
+    ;
+    getNode() { return this.node; }
+    ;
     getShareDBPath() {
         if (this.parent) {
             const parentPath = this.parent.getShareDBPath();
@@ -48,6 +56,10 @@ class DOMState extends events_1.EventEmitter {
         else {
             return [];
         }
+    }
+    ;
+    p(...toAdd) {
+        return this.getShareDBPath().concat(...toAdd);
     }
     ;
     getChildIndex(child) {
@@ -185,10 +197,12 @@ class DOMState extends events_1.EventEmitter {
             const index = this.children.indexOf(previousDomState);
             this.children.splice(index + 1, 0, childDomState);
             this.node.children.splice(index + 1, 0, node);
+            const shareDBOp = { p: this.p('children', index + 1), li: childDomState.getShareDBNode() };
         }
         else {
             this.children.unshift(childDomState);
             this.node.children.unshift(node);
+            const shareDBOp = { p: this.p('children', 0), li: childDomState.getShareDBNode() };
         }
         childDomState.setParent(this);
         this.emit('childAdded', {
@@ -199,6 +213,8 @@ class DOMState extends events_1.EventEmitter {
     ;
     setCharacterData(characterData) {
         this.node.nodeValue = characterData;
+        const previousNodeValue = this.shareDBNode.nodeValue;
+        const shareDBOp = { p: this.p('nodeValue'), od: previousNodeValue, oi: characterData };
         this.emit('nodeValueChanged', {
             value: this.getNodeValue()
         });
@@ -206,6 +222,8 @@ class DOMState extends events_1.EventEmitter {
     ;
     setNodeValue(value) {
         this.node.nodeValue = value;
+        const previousNodeValue = this.shareDBNode.nodeValue;
+        const shareDBOp = { p: this.p('nodeValue'), od: previousNodeValue, oi: value };
     }
     ;
     getNodeValue() {
@@ -217,6 +235,8 @@ class DOMState extends events_1.EventEmitter {
         if (index >= 0) {
             this.node.children.splice(index, 1);
             this.children.splice(index, 1);
+            const oldValue = this.shareDBNode.children[index];
+            const shareDBOp = { p: this.p('nodeValue', index), ld: oldValue };
             this.emit('childRemoved', { child });
             child.destroy();
             return true;
@@ -237,12 +257,15 @@ class DOMState extends events_1.EventEmitter {
             const n = attributes[i];
             if (n === name) {
                 attributes[i + 1] = value;
+                const shareDBOp = { p: this.p('attributes', i + 1), li: value };
                 found = true;
                 break;
             }
         }
         if (!found) {
             attributes.push(name, value);
+            const index = this.shareDBNode.attributes.length;
+            const shareDBOps = [{ p: this.p('attributes', index), li: name }, { p: this.p('attributes', index + 1), li: value }];
         }
         this.notifyAttributeChange();
     }
@@ -253,6 +276,8 @@ class DOMState extends events_1.EventEmitter {
         const attributeIndex = attributes.indexOf(name);
         if (attributeIndex >= 0) {
             attributes.splice(attributeIndex, 2);
+            const oldValue = attributes[attributeIndex + 1];
+            const shareDBOps = [{ p: this.p('attributes', attributeIndex + 1), ld: oldValue }, { p: this.p('attributes', attributeIndex), ld: name }];
             this.notifyAttributeChange();
             return true;
         }
@@ -342,6 +367,14 @@ class DOMState extends events_1.EventEmitter {
         this.children.forEach((child) => {
             child.setParent(this);
         });
+        this.node.children = children.map((c) => c.getNode());
+        this.node.childNodeCount = this.node.children.length;
+        const previousChildren = this.shareDBNode.children;
+        const previousChildNodeCount = this.shareDBNode.childNodeCount;
+        const shareDBOps = [
+            { p: this.p('children'), od: previousChildren, oi: this.children.map((c) => c.getShareDBNode()) },
+            { p: this.p('children'), od: previousChildNodeCount, oi: this.node.children.length }
+        ];
         this.emit('childrenChanged', { children });
     }
     ;

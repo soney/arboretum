@@ -15,12 +15,6 @@ class ShadowBrowser extends events_1.EventEmitter {
         super();
         this.browserState = browserState;
         this.clients = new Map();
-        this.onAddTab = (event) => {
-            this.getBrowserState().addTab();
-        };
-        this.onCloseTab = (info) => {
-            this.getBrowserState().closeTab(info.tabId);
-        };
         this.onFocusTab = (info, clientOptions) => {
             this.setTab(info.tabId, clientOptions);
         };

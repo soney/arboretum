@@ -9,6 +9,8 @@ import * as _ from 'underscore';
 import {SDB, SDBDoc} from '../utils/sharedb_wrapper';
 import {ArboretumChat} from '../utils/chat_doc';
 
+require('./css/browser.scss');
+
 export type BrowserTabID = number;
 
 type ArboretumProps = {

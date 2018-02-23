@@ -22,12 +22,6 @@ export class ShadowBrowser extends EventEmitter {
 	private getBrowserState():BrowserState {
 		return this.browserState;
 	}
-	private onAddTab = (event):void => {
-		this.getBrowserState().addTab();
-	};
-	private onCloseTab = (info):void => {
-		this.getBrowserState().closeTab(info.tabId);
-	};
 	private onFocusTab = (info, clientOptions):void => {
 		this.setTab(info.tabId, clientOptions);
 	};

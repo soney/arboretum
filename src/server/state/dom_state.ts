@@ -1,15 +1,21 @@
 import { FrameState } from './frame_state';
+import { TabState, ShareDBTab } from './tab_state';
 import { ShadowDOM } from '../shadows/dom_shadow';
 import { getCanvasImage, getUniqueSelector, getElementValue } from '../hack_driver/hack_driver';
 import { getColoredLogger, level, setLevel } from '../../utils/logging';
 import { processCSSURLs } from '../css_parser';
 import { EventEmitter } from 'events';
-import { TabState } from './tab_state';
 import { NodeCode } from '../../utils/node_code';
 import { urlTransform } from '../url_transform';
+import {SDB, SDBDoc} from '../../utils/sharedb_wrapper';
 import * as _ from 'underscore';
+import * as ShareDB from 'sharedb';
 
 const log = getColoredLogger('magenta');
+
+export interface ShareDBDOMNode {
+
+};
 
 export class DOMState extends EventEmitter {
     private destroyed: boolean = false;
@@ -17,9 +23,11 @@ export class DOMState extends EventEmitter {
     private inlineStyle: string = '';
     private children: Array<any> = [];
     private updateValueInterval: NodeJS.Timer = null;
+    private shareDBNode:CRI.Node;
 
     constructor(private node: CRI.Node, private tab:TabState, private contentDocument?:DOMState, private childFrame?:FrameState, private parent?:DOMState) {
         super();
+        this.shareDBNode = _.clone(node);
 
         this.getFullString().then((fullNodeValue: string) => {
             this.setNodeValue(fullNodeValue);
@@ -30,6 +38,9 @@ export class DOMState extends EventEmitter {
         });
         // log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     };
+    public getShareDBDoc():SDBDoc<ShareDBTab> { return this.tab.getShareDBDoc(); };
+    public getShareDBNode():CRI.Node { return this.shareDBNode; };
+    public getNode():CRI.Node { return this.node; };
     public getShareDBPath():Array<string|number> {
         if(this.parent) {
             const parentPath:Array<string|number> = this.parent.getShareDBPath();
@@ -38,6 +49,9 @@ export class DOMState extends EventEmitter {
         } else {
             return [];
         }
+    };
+    private p(...toAdd:Array<string|number>):Array<string|number> {
+        return this.getShareDBPath().concat(...toAdd);
     };
     public getChildIndex(child:DOMState) {
         return this.children.indexOf(child);
@@ -144,9 +158,11 @@ export class DOMState extends EventEmitter {
             const index = this.children.indexOf(previousDomState);
             this.children.splice(index + 1, 0, childDomState);
             this.node.children.splice(index + 1, 0, node);
+            const shareDBOp:ShareDB.ListInsertOp = {p: this.p('children', index+1), li: childDomState.getShareDBNode()};
         } else {
             this.children.unshift(childDomState);
             this.node.children.unshift(node);
+            const shareDBOp:ShareDB.ListInsertOp = {p: this.p('children', 0), li: childDomState.getShareDBNode()};
         }
         childDomState.setParent(this);
         this.emit('childAdded', {
@@ -157,12 +173,16 @@ export class DOMState extends EventEmitter {
 
     public setCharacterData(characterData: string): void {
         this.node.nodeValue = characterData;
+        const previousNodeValue = this.shareDBNode.nodeValue;
+        const shareDBOp:ShareDB.ObjectReplaceOp = {p: this.p('nodeValue'), od: previousNodeValue, oi: characterData};
         this.emit('nodeValueChanged', {
             value: this.getNodeValue()
         });
     };
     private setNodeValue(value: string): void {
         this.node.nodeValue = value;
+        const previousNodeValue = this.shareDBNode.nodeValue;
+        const shareDBOp:ShareDB.ObjectReplaceOp = {p: this.p('nodeValue'), od: previousNodeValue, oi: value};
     };
     public getNodeValue(): string {
         return this.node.nodeValue;
@@ -172,6 +192,8 @@ export class DOMState extends EventEmitter {
         if (index >= 0) {
             this.node.children.splice(index, 1);
             this.children.splice(index, 1);
+            const oldValue = this.shareDBNode.children[index];
+            const shareDBOp:ShareDB.ListDeleteOp = {p: this.p('nodeValue', index), ld:oldValue};
             this.emit('childRemoved', { child })
             child.destroy();
             return true;
@@ -190,12 +212,15 @@ export class DOMState extends EventEmitter {
             const n = attributes[i];
             if (n === name) {
                 attributes[i + 1] = value;
+                const shareDBOp:ShareDB.ListInsertOp = {p: this.p('attributes', i+1), li: value};
                 found = true;
                 break;
             }
         }
         if (!found) {
             attributes.push(name, value);
+            const index = this.shareDBNode.attributes.length;
+            const shareDBOps:[ShareDB.ListInsertOp,ShareDB.ListInsertOp] = [{p: this.p('attributes', index), li: name}, {p: this.p('attributes', index+1), li: value}];
         }
         this.notifyAttributeChange();
     };
@@ -205,6 +230,8 @@ export class DOMState extends EventEmitter {
         const attributeIndex = attributes.indexOf(name);
         if (attributeIndex >= 0) {
             attributes.splice(attributeIndex, 2);
+            const oldValue = attributes[attributeIndex+1];
+            const shareDBOps:[ShareDB.ListDeleteOp,ShareDB.ListDeleteOp] = [{p: this.p('attributes', attributeIndex+1), ld: oldValue}, {p: this.p('attributes', attributeIndex), ld: name}];
             this.notifyAttributeChange();
             return true;
         } else {
@@ -286,6 +313,18 @@ export class DOMState extends EventEmitter {
         this.children.forEach((child) => {
             child.setParent(this);
         });
+
+        this.node.children = children.map((c) => c.getNode() );
+        this.node.childNodeCount = this.node.children.length;
+
+        const previousChildren = this.shareDBNode.children;
+        const previousChildNodeCount = this.shareDBNode.childNodeCount;
+
+        const shareDBOps:[ShareDB.ObjectReplaceOp, ShareDB.ObjectReplaceOp] = [
+            {p: this.p('children'), od: previousChildren, oi: this.children.map((c) => c.getShareDBNode())},
+            {p: this.p('children'), od: previousChildNodeCount, oi: this.node.children.length}];
+
+
         this.emit('childrenChanged', { children })
     };
 

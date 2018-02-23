@@ -6885,6 +6885,7 @@ const url = __webpack_require__(43);
 const _ = __webpack_require__(5);
 const sharedb_wrapper_1 = __webpack_require__(44);
 const chat_doc_1 = __webpack_require__(57);
+__webpack_require__(59);
 class Arboretum extends React.Component {
     constructor(props) {
         super(props);
@@ -11530,6 +11531,629 @@ class Listener {
     }
 }
 exports.Listener = Listener;
+
+
+/***/ }),
+/* 59 */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+var content = __webpack_require__(60);
+
+if(typeof content === 'string') content = [[module.i, content, '']];
+
+var transform;
+var insertInto;
+
+
+
+var options = {"hmr":true}
+
+options.transform = transform
+options.insertInto = undefined;
+
+var update = __webpack_require__(62)(content, options);
+
+if(content.locals) module.exports = content.locals;
+
+if(false) {
+	module.hot.accept("!!../../../node_modules/css-loader/index.js??ref--2-1!../../../node_modules/sass-loader/lib/loader.js??ref--2-2!./browser.scss", function() {
+		var newContent = require("!!../../../node_modules/css-loader/index.js??ref--2-1!../../../node_modules/sass-loader/lib/loader.js??ref--2-2!./browser.scss");
+
+		if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+
+		var locals = (function(a, b) {
+			var key, idx = 0;
+
+			for(key in a) {
+				if(!b || a[key] !== b[key]) return false;
+				idx++;
+			}
+
+			for(key in b) idx--;
+
+			return idx === 0;
+		}(content.locals, newContent.locals));
+
+		if(!locals) throw new Error('Aborting CSS HMR due to changed css-modules locals.');
+
+		update(newContent);
+	});
+
+	module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 60 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(61)(true);
+// imports
+
+
+// module
+exports.push([module.i, "#buttonSpacer {\n  width: 70px;\n  /*border-bottom: 1px solid #AAA;*/\n  /*background: linear-gradient(to bottom, #BBB 80%, #AAA);*/ }\n\n#tabsBar {\n  display: flex;\n  flex-direction: row;\n  font-size: 13px;\n  font-family: sans-serif;\n  margin: 0px;\n  /*padding: 0px 0px 0px 70px;*/\n  padding: 0px;\n  box-sizing: border-box;\n  -webkit-user-select: none;\n  -webkit-app-region: drag;\n  color: #777;\n  /*height: 23px;*/\n  box-sizing: border-box; }\n  #tabsBar #addTab {\n    display: inline-block;\n    margin: 0;\n    background: linear-gradient(to bottom, #BBB 80%, #AAA); }\n\n/*#tabsBar #addTab:hover {\n    color: #fff;\n    background: rgb(99, 190, 229);\n}\n\n#addTab i {\n    font-size: 12.5px\n}*/\n#tabs {\n  display: flex;\n  flex: 1;\n  padding: 0px;\n  margin: 0px;\n  overflow: hidden; }\n\n.tab {\n  flex: 1;\n  display: flex;\n  border-left: 1px solid #AAA;\n  /*border: 1px solid black;*/\n  list-style: none;\n  white-space: nowrap;\n  /*font-size: 3em;*/\n  border-bottom: 1px solid #aaa;\n  color: #BBB;\n  overflow: hidden;\n  text-overflow: ellipsis; }\n\n.tab:last-child {\n  border-right: 1px solid #AAA; }\n\n.tab.not-selected {\n  background: linear-gradient(to bottom, #BBB 80%, #AAA); }\n\n.tab.not-selected .closeTab {\n  color: #999; }\n\n.tab.selected {\n  /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n  border-bottom: none;\n  color: #777; }\n\n.tab .tab-img {\n  opacity: 0.4; }\n\n.tab.selected .tab-img {\n  opacity: 1.0;\n  flex: 2; }\n\n.tab-img {\n  height: 18px;\n  max-width: 28px;\n  margin: 2px;\n  margin-right: 2px;\n  display: none; }\n\n.tab-title {\n  /*flex: 1;*/\n  /*padding: 5px 0px 4px 3px;*/ }\n\n.closeTab {\n  /*float: right;*/\n  /*color: red;*/\n  /*text-shadow: 0 0 1px rgba(50, 1, 1, 1);*/\n  padding: 5px; }\n\n.closeTab i {\n  font-size: 12.5px; }\n\n.closeTab:hover {\n  background: #f57777;\n  color: #FFF; }\n\n.tab .tab-title {\n  /*font-size: 5em;*/\n  color: #777;\n  text-overflow: ellipsis;\n  overflow: hidden; }\n\n.tab.selected .tab-title {\n  color: #555; }\n\ntable#server-controls {\n  flex-shrink: 0; }\n  table#server-controls .nav-group-title {\n    padding: 0px; }\n  table#server-controls thead td {\n    text-align: center; }\n  table#server-controls td {\n    padding-left: 5px;\n    padding-right: 0px;\n    margin: auto;\n    vertical-align: top; }\n  table#server-controls tr:active {\n    color: inherit;\n    background-color: inherit;\n    /* color: #fff; */\n    /* background-color: #116cd6; */ }\n  table#server-controls #control_content td {\n    padding-bottom: 0px; }\n  table#server-controls label {\n    margin-bottom: 0px;\n    padding-bottom: 0px; }\n\n.sidebar {\n  width: 350px;\n  height: 100%;\n  display: flex;\n  flex-direction: column; }\n  .sidebar .chat {\n    flex-grow: 1;\n    display: flex;\n    flex-direction: column; }\n\n#chat-box {\n  resize: vertical;\n  flex-grow: 1; }\n\n#chat-form {\n  padding: 10px;\n  flex-shrink: 0; }\n  #chat-form .form-actions {\n    text-align: right; }\n\n.copy_area input {\n  background-color: #FAFAFA;\n  border: 1px solid #CCC;\n  padding: 2px;\n  font-size: 0.9em;\n  text-align: center;\n  width: 90px; }\n\n.copy_area .copy_area .icon {\n  cursor: pointer;\n  color: #AAA; }\n  .copy_area .copy_area .icon:hover {\n    color: #999; }\n\n.chat-avatar {\n  /*font-size: 2em;*/\n  cursor: default;\n  padding: 3px; }\n\n#chat-lines {\n  padding: 10px;\n  flex-grow: 2;\n  overflow-y: auto;\n  overflow-x: hidden;\n  word-wrap: break-word;\n  margin: 0px;\n  border-top: 1px solid #EEE;\n  border-bottom: 1px solid #EEE;\n  white-space: pre-line;\n  /*order: 1;*/ }\n  #chat-lines .from {\n    font-weight: bold;\n    color: navy; }\n  #chat-lines .from::after {\n    content: \": \"; }\n  #chat-lines li {\n    list-style-type: none; }\n  #chat-lines .chat-line {\n    list-style-type: none;\n    margin-top: 2px;\n    padding-top: 2px;\n    margin-bottom: 2px;\n    padding-bottom: 2px;\n    border-bottom: 1px solid #EEE;\n    color: #555; }\n    #chat-lines .chat-line.command {\n      color: #AAA; }\n    #chat-lines .chat-line .snippet {\n      border: 1px solid #AAA;\n      width: 100%; }\n\n#chat-participants {\n  padding-left: 10px;\n  padding-right: 10px;\n  margin-top: 2px;\n  padding-top: 2px;\n  margin-bottom: 2px;\n  padding-bottom: 2px;\n  border-bottom: 1px solid #CCC;\n  flex-shrink: 0; }\n  #chat-participants .participant {\n    font-weight: bold; }\n    #chat-participants .participant.me {\n      text-decoration: underline overline; }\n\n#task_title {\n  color: #999;\n  padding: 10px;\n  margin: 0px;\n  margin-top: 0px;\n  margin-bottom: 0px;\n  flex-shrink: 0; }\n\n#task-name {\n  padding-left: 5px; }\n\n#browser-pane {\n  border-left: none; }\n\n#navBar {\n  display: flex; }\n  #navBar input#url {\n    flex: 1;\n    /*margin: 4px 2px 3px 2px;*/\n    /*font-size: 12px;*/\n    /*padding: 0px 0px 0px 0px;*/\n    padding: 3px;\n    /*height: 100%;*/\n    /*height: 20px;*/\n    box-shadow: inset 0px 1px 2px rgba(0, 0, 0, 0.2);\n    border: 0px;\n    border-left: 1px solid #bbb;\n    border-top-left-radius: 3px;\n    border-bottom-left-radius: 3px;\n    color: #808080;\n    outline: 0;\n    background: #FFF;\n    /*font-weight: lighter;*/ }\n\nhtml {\n  height: 100%; }\n  html .unselected {\n    display: none; }\n  html #content {\n    height: 100%;\n    overflow: hidden; }\n  html .tab_content {\n    height: 100%; }\n  html webview {\n    display: inline-flex;\n    width: 100%;\n    height: 100%; }\n    html webview.hidden {\n      display: none; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/browser/css/src/browser/css/browser-tabs.scss","/home/soney/code/arboretum/src/browser/css/src/browser/css/browser-sidebar.scss","/home/soney/code/arboretum/src/browser/css/src/browser/css/browser-navbar.scss","/home/soney/code/arboretum/src/browser/css/src/browser/css/browser.scss"],"names":[],"mappings":"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","file":"browser.scss","sourcesContent":["#buttonSpacer {\n    width: 70px;\n    /*border-bottom: 1px solid #AAA;*/\n    /*background: linear-gradient(to bottom, #BBB 80%, #AAA);*/\n}\n\n#tabsBar {\n    display: flex;\n    flex-direction: row;\n    font-size: 13px;\n    font-family: sans-serif;\n    margin: 0px;\n    /*padding: 0px 0px 0px 70px;*/\n    padding: 0px;\n    box-sizing: border-box;\n    -webkit-user-select: none;\n    -webkit-app-region: drag;\n\n    color: #777;\n    /*height: 23px;*/\n    box-sizing: border-box;\n    #addTab {\n        display: inline-block;\n        margin: 0;\n        background: linear-gradient(to bottom, #BBB 80%, #AAA);\n    }\n}\n\n\n/*#tabsBar #addTab:hover {\n    color: #fff;\n    background: rgb(99, 190, 229);\n}\n\n#addTab i {\n    font-size: 12.5px\n}*/\n\n#tabs {\n    display: flex;\n    flex: 1;\n    padding: 0px;\n    margin: 0px;\n    overflow: hidden;\n}\n\n.tab {\n    flex: 1;\n    display: flex;\n    border-left: 1px solid #AAA;\n    /*border: 1px solid black;*/\n    list-style: none;\n    white-space: nowrap;\n    /*font-size: 3em;*/\n    border-bottom: 1px solid #aaa;\n    color: #BBB;\n    overflow: hidden;\n    text-overflow: ellipsis;\n}\n.tab:last-child {\n    border-right: 1px solid #AAA;\n}\n.tab.not-selected {\n    background: linear-gradient(to bottom, #BBB 80%, #AAA);\n}\n.tab.not-selected .closeTab {\n    color: #999;\n}\n.tab.selected {\n    /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n    border-bottom: none;\n    color: #777;\n}\n\n.tab .tab-img {\n    opacity: 0.4;\n}\n.tab.selected .tab-img {\n    opacity: 1.0;\n    flex: 2;\n}\n\n.tab-img {\n    height: 18px;\n    max-width: 28px;\n    margin: 2px;\n    margin-right: 2px;\n    display: none;\n}\n\n.tab-title {\n    /*flex: 1;*/\n    /*padding: 5px 0px 4px 3px;*/\n}\n\n.closeTab {\n    /*float: right;*/\n    /*color: red;*/\n    /*text-shadow: 0 0 1px rgba(50, 1, 1, 1);*/\n    padding: 5px;\n}\n\n.closeTab i {\n    font-size: 12.5px\n}\n\n.closeTab:hover {\n    background: rgb(245, 119, 119);\n    color: #FFF;\n}\n\n\n.tab .tab-title {\n    /*font-size: 5em;*/\n    color: #777;\n    text-overflow: ellipsis;\n    overflow: hidden;\n}\n.tab.selected .tab-title {\n    color: #555;\n}\n","table#server-controls {\n    flex-shrink: 0;\n    .nav-group-title {\n        padding: 0px;\n    }\n    thead td {\n        text-align: center;\n    }\n\n    td {\n        padding-left: 5px;\n        padding-right: 0px;\n        margin: auto;\n        vertical-align: top;\n    }\n    tr {\n        &:active {\n            color: inherit;\n            background-color: inherit;\n            /* color: #fff; */\n            /* background-color: #116cd6; */\n        }\n    }\n    #control_content td {\n        padding-bottom: 0px;\n    }\n    label {\n        margin-bottom: 0px;\n        padding-bottom: 0px;\n    }\n}\n\n\n.sidebar {\n    width: 350px;\n    height: 100%;\n    display: flex;\n    flex-direction: column;\n    .chat {\n        flex-grow: 1;\n        display: flex;\n        flex-direction: column;\n    }\n}\n\n\n#chat-box {\n    resize: vertical;\n    flex-grow: 1;\n}\n\n#chat-form {\n    padding: 10px;\n    flex-shrink: 0;\n    .form-actions {\n        text-align: right;\n    }\n}\n\n.copy_area {\n    input {\n        background-color: #FAFAFA;\n        border: 1px solid #CCC;\n        padding:2px;\n        font-size: 0.9em;\n        text-align: center;\n        width: 90px;\n    }\n    .copy_area .icon {\n        cursor: pointer;\n        color: #AAA;\n        &:hover {\n            color: #999;\n        }\n    }\n}\n\n.chat-avatar {\n    /*font-size: 2em;*/\n    cursor: default;\n    padding: 3px;\n}\n\n#chat-lines {\n    padding: 10px;\n    flex-grow: 2;\n    overflow-y: auto;\n    overflow-x: hidden;\n    word-wrap: break-word;\n    margin: 0px;\n    border-top: 1px solid #EEE;\n    border-bottom: 1px solid #EEE;\n    white-space: pre-line;\n    /*order: 1;*/\n    .from {\n        font-weight: bold;\n        color: navy;\n    }\n    .from::after {\n        content: \": \";\n    }\n    li {\n        list-style-type: none;\n    }\n    .chat-line {\n        list-style-type: none;\n        margin-top: 2px;\n        padding-top: 2px;\n        margin-bottom: 2px;\n        padding-bottom: 2px;\n        border-bottom: 1px solid #EEE;\n        color: #555;\n        &.command {\n            color: #AAA;\n        }\n        .snippet {\n            border: 1px solid #AAA;\n            width: 100%;\n        }\n    }\n}\n\n#chat-participants {\n    padding-left: 10px;\n    padding-right: 10px;\n    margin-top: 2px;\n    padding-top: 2px;\n    margin-bottom: 2px;\n    padding-bottom: 2px;\n    border-bottom: 1px solid #CCC;\n    flex-shrink:0;\n    .participant {\n        font-weight: bold;\n        &.me {\n            text-decoration: underline overline;\n        }\n    }\n}\n#task_title {\n    color: #999;\n    padding: 10px;\n    margin: 0px;\n    margin-top: 0px;\n    margin-bottom: 0px;\n    flex-shrink: 0;\n}\n\n#task-name {\n    padding-left: 5px;\n}\n\n#browser-pane {\n    border-left: none;\n}\n","#navBar {\n    display: flex;\n    input#url {\n        flex: 1;\n        /*margin: 4px 2px 3px 2px;*/\n        /*font-size: 12px;*/\n        /*padding: 0px 0px 0px 0px;*/\n        padding: 3px;\n        /*height: 100%;*/\n        /*height: 20px;*/\n        box-shadow: inset 0px 1px 2px rgba(0, 0, 0, 0.2);\n        border: 0px;\n        border-left: 1px solid #bbb;\n        border-top-left-radius: 3px;\n        border-bottom-left-radius: 3px;\n        color: #808080;\n        outline: 0;\n        background: #FFF;\n        /*font-weight: lighter;*/\n    }\n}\n","@import \"./browser-tabs\";\n@import \"./browser-sidebar\";\n@import \"./browser-navbar\";\nhtml {\n    height: 100%;\n\n    .unselected {\n        display: none;\n    }\n    #content {\n        height: 100%;\n        overflow: hidden;\n    }\n\n\n    .tab_content {\n        height: 100%;\n    }\n\n    webview {\n        display: inline-flex;\n        width: 100%;\n        height: 100%;\n\n        &.hidden {\n            display:none;\n        }\n    }\n}\n"],"sourceRoot":""}]);
+
+// exports
+
+
+/***/ }),
+/* 61 */
+/***/ (function(module, exports) {
+
+/*
+	MIT License http://www.opensource.org/licenses/mit-license.php
+	Author Tobias Koppers @sokra
+*/
+// css base code, injected by the css-loader
+module.exports = function(useSourceMap) {
+	var list = [];
+
+	// return the list of modules as css string
+	list.toString = function toString() {
+		return this.map(function (item) {
+			var content = cssWithMappingToString(item, useSourceMap);
+			if(item[2]) {
+				return "@media " + item[2] + "{" + content + "}";
+			} else {
+				return content;
+			}
+		}).join("");
+	};
+
+	// import a list of modules into the list
+	list.i = function(modules, mediaQuery) {
+		if(typeof modules === "string")
+			modules = [[null, modules, ""]];
+		var alreadyImportedModules = {};
+		for(var i = 0; i < this.length; i++) {
+			var id = this[i][0];
+			if(typeof id === "number")
+				alreadyImportedModules[id] = true;
+		}
+		for(i = 0; i < modules.length; i++) {
+			var item = modules[i];
+			// skip already imported module
+			// this implementation is not 100% perfect for weird media query combinations
+			//  when a module is imported multiple times with different media queries.
+			//  I hope this will never occur (Hey this way we have smaller bundles)
+			if(typeof item[0] !== "number" || !alreadyImportedModules[item[0]]) {
+				if(mediaQuery && !item[2]) {
+					item[2] = mediaQuery;
+				} else if(mediaQuery) {
+					item[2] = "(" + item[2] + ") and (" + mediaQuery + ")";
+				}
+				list.push(item);
+			}
+		}
+	};
+	return list;
+};
+
+function cssWithMappingToString(item, useSourceMap) {
+	var content = item[1] || '';
+	var cssMapping = item[3];
+	if (!cssMapping) {
+		return content;
+	}
+
+	if (useSourceMap && typeof btoa === 'function') {
+		var sourceMapping = toComment(cssMapping);
+		var sourceURLs = cssMapping.sources.map(function (source) {
+			return '/*# sourceURL=' + cssMapping.sourceRoot + source + ' */'
+		});
+
+		return [content].concat(sourceURLs).concat([sourceMapping]).join('\n');
+	}
+
+	return [content].join('\n');
+}
+
+// Adapted from convert-source-map (MIT)
+function toComment(sourceMap) {
+	// eslint-disable-next-line no-undef
+	var base64 = btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap))));
+	var data = 'sourceMappingURL=data:application/json;charset=utf-8;base64,' + base64;
+
+	return '/*# ' + data + ' */';
+}
+
+
+/***/ }),
+/* 62 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/*
+	MIT License http://www.opensource.org/licenses/mit-license.php
+	Author Tobias Koppers @sokra
+*/
+
+var stylesInDom = {};
+
+var	memoize = function (fn) {
+	var memo;
+
+	return function () {
+		if (typeof memo === "undefined") memo = fn.apply(this, arguments);
+		return memo;
+	};
+};
+
+var isOldIE = memoize(function () {
+	// Test for IE <= 9 as proposed by Browserhacks
+	// @see http://browserhacks.com/#hack-e71d8692f65334173fee715c222cb805
+	// Tests for existence of standard globals is to allow style-loader
+	// to operate correctly into non-standard environments
+	// @see https://github.com/webpack-contrib/style-loader/issues/177
+	return window && document && document.all && !window.atob;
+});
+
+var getTarget = function (target) {
+  return document.querySelector(target);
+};
+
+var getElement = (function (fn) {
+	var memo = {};
+
+	return function(target) {
+                // If passing function in options, then use it for resolve "head" element.
+                // Useful for Shadow Root style i.e
+                // {
+                //   insertInto: function () { return document.querySelector("#foo").shadowRoot }
+                // }
+                if (typeof target === 'function') {
+                        return target();
+                }
+                if (typeof memo[target] === "undefined") {
+			var styleTarget = getTarget.call(this, target);
+			// Special case to return head of iframe instead of iframe itself
+			if (window.HTMLIFrameElement && styleTarget instanceof window.HTMLIFrameElement) {
+				try {
+					// This will throw an exception if access to iframe is blocked
+					// due to cross-origin restrictions
+					styleTarget = styleTarget.contentDocument.head;
+				} catch(e) {
+					styleTarget = null;
+				}
+			}
+			memo[target] = styleTarget;
+		}
+		return memo[target]
+	};
+})();
+
+var singleton = null;
+var	singletonCounter = 0;
+var	stylesInsertedAtTop = [];
+
+var	fixUrls = __webpack_require__(63);
+
+module.exports = function(list, options) {
+	if (typeof DEBUG !== "undefined" && DEBUG) {
+		if (typeof document !== "object") throw new Error("The style-loader cannot be used in a non-browser environment");
+	}
+
+	options = options || {};
+
+	options.attrs = typeof options.attrs === "object" ? options.attrs : {};
+
+	// Force single-tag solution on IE6-9, which has a hard limit on the # of <style>
+	// tags it will allow on a page
+	if (!options.singleton && typeof options.singleton !== "boolean") options.singleton = isOldIE();
+
+	// By default, add <style> tags to the <head> element
+        if (!options.insertInto) options.insertInto = "head";
+
+	// By default, add <style> tags to the bottom of the target
+	if (!options.insertAt) options.insertAt = "bottom";
+
+	var styles = listToStyles(list, options);
+
+	addStylesToDom(styles, options);
+
+	return function update (newList) {
+		var mayRemove = [];
+
+		for (var i = 0; i < styles.length; i++) {
+			var item = styles[i];
+			var domStyle = stylesInDom[item.id];
+
+			domStyle.refs--;
+			mayRemove.push(domStyle);
+		}
+
+		if(newList) {
+			var newStyles = listToStyles(newList, options);
+			addStylesToDom(newStyles, options);
+		}
+
+		for (var i = 0; i < mayRemove.length; i++) {
+			var domStyle = mayRemove[i];
+
+			if(domStyle.refs === 0) {
+				for (var j = 0; j < domStyle.parts.length; j++) domStyle.parts[j]();
+
+				delete stylesInDom[domStyle.id];
+			}
+		}
+	};
+};
+
+function addStylesToDom (styles, options) {
+	for (var i = 0; i < styles.length; i++) {
+		var item = styles[i];
+		var domStyle = stylesInDom[item.id];
+
+		if(domStyle) {
+			domStyle.refs++;
+
+			for(var j = 0; j < domStyle.parts.length; j++) {
+				domStyle.parts[j](item.parts[j]);
+			}
+
+			for(; j < item.parts.length; j++) {
+				domStyle.parts.push(addStyle(item.parts[j], options));
+			}
+		} else {
+			var parts = [];
+
+			for(var j = 0; j < item.parts.length; j++) {
+				parts.push(addStyle(item.parts[j], options));
+			}
+
+			stylesInDom[item.id] = {id: item.id, refs: 1, parts: parts};
+		}
+	}
+}
+
+function listToStyles (list, options) {
+	var styles = [];
+	var newStyles = {};
+
+	for (var i = 0; i < list.length; i++) {
+		var item = list[i];
+		var id = options.base ? item[0] + options.base : item[0];
+		var css = item[1];
+		var media = item[2];
+		var sourceMap = item[3];
+		var part = {css: css, media: media, sourceMap: sourceMap};
+
+		if(!newStyles[id]) styles.push(newStyles[id] = {id: id, parts: [part]});
+		else newStyles[id].parts.push(part);
+	}
+
+	return styles;
+}
+
+function insertStyleElement (options, style) {
+	var target = getElement(options.insertInto)
+
+	if (!target) {
+		throw new Error("Couldn't find a style target. This probably means that the value for the 'insertInto' parameter is invalid.");
+	}
+
+	var lastStyleElementInsertedAtTop = stylesInsertedAtTop[stylesInsertedAtTop.length - 1];
+
+	if (options.insertAt === "top") {
+		if (!lastStyleElementInsertedAtTop) {
+			target.insertBefore(style, target.firstChild);
+		} else if (lastStyleElementInsertedAtTop.nextSibling) {
+			target.insertBefore(style, lastStyleElementInsertedAtTop.nextSibling);
+		} else {
+			target.appendChild(style);
+		}
+		stylesInsertedAtTop.push(style);
+	} else if (options.insertAt === "bottom") {
+		target.appendChild(style);
+	} else if (typeof options.insertAt === "object" && options.insertAt.before) {
+		var nextSibling = getElement(options.insertInto + " " + options.insertAt.before);
+		target.insertBefore(style, nextSibling);
+	} else {
+		throw new Error("[Style Loader]\n\n Invalid value for parameter 'insertAt' ('options.insertAt') found.\n Must be 'top', 'bottom', or Object.\n (https://github.com/webpack-contrib/style-loader#insertat)\n");
+	}
+}
+
+function removeStyleElement (style) {
+	if (style.parentNode === null) return false;
+	style.parentNode.removeChild(style);
+
+	var idx = stylesInsertedAtTop.indexOf(style);
+	if(idx >= 0) {
+		stylesInsertedAtTop.splice(idx, 1);
+	}
+}
+
+function createStyleElement (options) {
+	var style = document.createElement("style");
+
+	options.attrs.type = "text/css";
+
+	addAttrs(style, options.attrs);
+	insertStyleElement(options, style);
+
+	return style;
+}
+
+function createLinkElement (options) {
+	var link = document.createElement("link");
+
+	options.attrs.type = "text/css";
+	options.attrs.rel = "stylesheet";
+
+	addAttrs(link, options.attrs);
+	insertStyleElement(options, link);
+
+	return link;
+}
+
+function addAttrs (el, attrs) {
+	Object.keys(attrs).forEach(function (key) {
+		el.setAttribute(key, attrs[key]);
+	});
+}
+
+function addStyle (obj, options) {
+	var style, update, remove, result;
+
+	// If a transform function was defined, run it on the css
+	if (options.transform && obj.css) {
+	    result = options.transform(obj.css);
+
+	    if (result) {
+	    	// If transform returns a value, use that instead of the original css.
+	    	// This allows running runtime transformations on the css.
+	    	obj.css = result;
+	    } else {
+	    	// If the transform function returns a falsy value, don't add this css.
+	    	// This allows conditional loading of css
+	    	return function() {
+	    		// noop
+	    	};
+	    }
+	}
+
+	if (options.singleton) {
+		var styleIndex = singletonCounter++;
+
+		style = singleton || (singleton = createStyleElement(options));
+
+		update = applyToSingletonTag.bind(null, style, styleIndex, false);
+		remove = applyToSingletonTag.bind(null, style, styleIndex, true);
+
+	} else if (
+		obj.sourceMap &&
+		typeof URL === "function" &&
+		typeof URL.createObjectURL === "function" &&
+		typeof URL.revokeObjectURL === "function" &&
+		typeof Blob === "function" &&
+		typeof btoa === "function"
+	) {
+		style = createLinkElement(options);
+		update = updateLink.bind(null, style, options);
+		remove = function () {
+			removeStyleElement(style);
+
+			if(style.href) URL.revokeObjectURL(style.href);
+		};
+	} else {
+		style = createStyleElement(options);
+		update = applyToTag.bind(null, style);
+		remove = function () {
+			removeStyleElement(style);
+		};
+	}
+
+	update(obj);
+
+	return function updateStyle (newObj) {
+		if (newObj) {
+			if (
+				newObj.css === obj.css &&
+				newObj.media === obj.media &&
+				newObj.sourceMap === obj.sourceMap
+			) {
+				return;
+			}
+
+			update(obj = newObj);
+		} else {
+			remove();
+		}
+	};
+}
+
+var replaceText = (function () {
+	var textStore = [];
+
+	return function (index, replacement) {
+		textStore[index] = replacement;
+
+		return textStore.filter(Boolean).join('\n');
+	};
+})();
+
+function applyToSingletonTag (style, index, remove, obj) {
+	var css = remove ? "" : obj.css;
+
+	if (style.styleSheet) {
+		style.styleSheet.cssText = replaceText(index, css);
+	} else {
+		var cssNode = document.createTextNode(css);
+		var childNodes = style.childNodes;
+
+		if (childNodes[index]) style.removeChild(childNodes[index]);
+
+		if (childNodes.length) {
+			style.insertBefore(cssNode, childNodes[index]);
+		} else {
+			style.appendChild(cssNode);
+		}
+	}
+}
+
+function applyToTag (style, obj) {
+	var css = obj.css;
+	var media = obj.media;
+
+	if(media) {
+		style.setAttribute("media", media)
+	}
+
+	if(style.styleSheet) {
+		style.styleSheet.cssText = css;
+	} else {
+		while(style.firstChild) {
+			style.removeChild(style.firstChild);
+		}
+
+		style.appendChild(document.createTextNode(css));
+	}
+}
+
+function updateLink (link, options, obj) {
+	var css = obj.css;
+	var sourceMap = obj.sourceMap;
+
+	/*
+		If convertToAbsoluteUrls isn't defined, but sourcemaps are enabled
+		and there is no publicPath defined then lets turn convertToAbsoluteUrls
+		on by default.  Otherwise default to the convertToAbsoluteUrls option
+		directly
+	*/
+	var autoFixUrls = options.convertToAbsoluteUrls === undefined && sourceMap;
+
+	if (options.convertToAbsoluteUrls || autoFixUrls) {
+		css = fixUrls(css);
+	}
+
+	if (sourceMap) {
+		// http://stackoverflow.com/a/26603875
+		css += "\n/*# sourceMappingURL=data:application/json;base64," + btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))) + " */";
+	}
+
+	var blob = new Blob([css], { type: "text/css" });
+
+	var oldSrc = link.href;
+
+	link.href = URL.createObjectURL(blob);
+
+	if(oldSrc) URL.revokeObjectURL(oldSrc);
+}
+
+
+/***/ }),
+/* 63 */
+/***/ (function(module, exports) {
+
+
+/**
+ * When source maps are enabled, `style-loader` uses a link element with a data-uri to
+ * embed the css on the page. This breaks all relative urls because now they are relative to a
+ * bundle instead of the current page.
+ *
+ * One solution is to only use full urls, but that may be impossible.
+ *
+ * Instead, this function "fixes" the relative urls to be absolute according to the current page location.
+ *
+ * A rudimentary test suite is located at `test/fixUrls.js` and can be run via the `npm test` command.
+ *
+ */
+
+module.exports = function (css) {
+  // get current location
+  var location = typeof window !== "undefined" && window.location;
+
+  if (!location) {
+    throw new Error("fixUrls requires window.location");
+  }
+
+	// blank or null?
+	if (!css || typeof css !== "string") {
+	  return css;
+  }
+
+  var baseUrl = location.protocol + "//" + location.host;
+  var currentDir = baseUrl + location.pathname.replace(/\/[^\/]*$/, "/");
+
+	// convert each url(...)
+	/*
+	This regular expression is just a way to recursively match brackets within
+	a string.
+
+	 /url\s*\(  = Match on the word "url" with any whitespace after it and then a parens
+	   (  = Start a capturing group
+	     (?:  = Start a non-capturing group
+	         [^)(]  = Match anything that isn't a parentheses
+	         |  = OR
+	         \(  = Match a start parentheses
+	             (?:  = Start another non-capturing groups
+	                 [^)(]+  = Match anything that isn't a parentheses
+	                 |  = OR
+	                 \(  = Match a start parentheses
+	                     [^)(]*  = Match anything that isn't a parentheses
+	                 \)  = Match a end parentheses
+	             )  = End Group
+              *\) = Match anything and then a close parens
+          )  = Close non-capturing group
+          *  = Match anything
+       )  = Close capturing group
+	 \)  = Match a close parens
+
+	 /gi  = Get all matches, not the first.  Be case insensitive.
+	 */
+	var fixedCss = css.replace(/url\s*\(((?:[^)(]|\((?:[^)(]+|\([^)(]*\))*\))*)\)/gi, function(fullMatch, origUrl) {
+		// strip quotes (if they exist)
+		var unquotedOrigUrl = origUrl
+			.trim()
+			.replace(/^"(.*)"$/, function(o, $1){ return $1; })
+			.replace(/^'(.*)'$/, function(o, $1){ return $1; });
+
+		// already a full url? no change
+		if (/^(#|data:|http:\/\/|https:\/\/|file:\/\/\/)/i.test(unquotedOrigUrl)) {
+		  return fullMatch;
+		}
+
+		// convert the url to a full url
+		var newUrl;
+
+		if (unquotedOrigUrl.indexOf("//") === 0) {
+		  	//TODO: should we add protocol?
+			newUrl = unquotedOrigUrl;
+		} else if (unquotedOrigUrl.indexOf("/") === 0) {
+			// path should be relative to the base url
+			newUrl = baseUrl + unquotedOrigUrl; // already starts with '/'
+		} else {
+			// path should be relative to current directory
+			newUrl = currentDir + unquotedOrigUrl.replace(/^\.\//, ""); // Strip leading './'
+		}
+
+		// send back the fixed url(...)
+		return "url(" + JSON.stringify(newUrl) + ")";
+	});
+
+	// send back the fixed css
+	return fixedCss;
+};
 
 
 /***/ })

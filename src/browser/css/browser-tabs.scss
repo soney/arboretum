@@ -19,13 +19,13 @@
     color: #777;
     /*height: 23px;*/
     box-sizing: border-box;
+    #addTab {
+        display: inline-block;
+        margin: 0;
+        background: linear-gradient(to bottom, #BBB 80%, #AAA);
+    }
 }
 
-#tabsBar #addTab {
-    display: inline-block;
-    margin: 0;
-    background: linear-gradient(to bottom, #BBB 80%, #AAA);
-}
 
 /*#tabsBar #addTab:hover {
     color: #fff;

@@ -4,6 +4,7 @@ import { DOMState } from './dom_state';
 import { getColoredLogger, level, setLevel } from '../../utils/logging';
 import * as _ from 'underscore';
 import { EventEmitter } from 'events';
+import {SDB, SDBDoc} from '../../utils/sharedb_wrapper';
 import { parse, format } from 'url';
 
 const log = getColoredLogger('yellow');
@@ -11,6 +12,10 @@ interface PendingFrameEvent {
     frameId: CRI.FrameID,
     event: any,
     type: string
+};
+
+export interface ShareDBTab {
+
 };
 
 export class TabState extends EventEmitter {
@@ -22,8 +27,18 @@ export class TabState extends EventEmitter {
     private chromePromise: Promise<CRI.Chrome>;
     private domRoot:DOMState;
     private nodeMap: Map<CRI.NodeID, DOMState> = new Map<CRI.NodeID, DOMState>();
-    constructor(private info: CRI.TabInfo) {
+    private doc:SDBDoc<ShareDBTab>;
+    public initialized:Promise<void>
+    constructor(private info: CRI.TabInfo, private sdb:SDB) {
         super();
+        this.initialized = this.initialize();
+        log.debug(`=== CREATED TAB STATE ${this.getTabId()} ====`);
+    };
+    private async initialize():Promise<void> {
+        this.doc = await this.sdb.get('tab', this.getTabId());
+        await this.doc.createIfEmpty({
+        });
+
         const chromeEventEmitter = cri({
             chooseTab: this.info
         });
@@ -36,25 +51,19 @@ export class TabState extends EventEmitter {
             log.error(err);
             throw (err);
         });
-
-        this.chromePromise.then(() => {
-            //TODO: Convert getResourceTree call to getFrameTree when supported
-            this.getResourceTree().then((tree: CRI.FrameResourceTree) => {
-                const { frameTree } = tree;
-                const { frame, childFrames, resources } = frameTree;
-                this.createFrameState(frame, null, childFrames, resources);
-            });
-            this.refreshRoot();
-            this.addFrameListeners();
-            this.addDOMListeners();
-            this.addNetworkListeners();
-            this.addExecutionContextListeners();
-        }).catch((err) => {
-            log.error(err);
-            throw (err);
-        });
-        log.debug(`=== CREATED TAB STATE ${this.getTabId()} ====`);
+        await this.chromePromise;
+        //TODO: Convert getResourceTree call to getFrameTree when supported
+        const resourceTree:CRI.FrameResourceTree = await this.getResourceTree();
+        const { frameTree } = resourceTree;
+        const { frame, childFrames, resources } = frameTree;
+        this.createFrameState(frame, null, childFrames, resources);
+        this.refreshRoot();
+        this.addFrameListeners();
+        this.addDOMListeners();
+        this.addNetworkListeners();
+        this.addExecutionContextListeners();
     };
+    public getShareDBDoc():SDBDoc<ShareDBTab> { return this.doc; };
     public getShareDBPath():Array<string|number> {
         return [this.getTabId()];
     };
