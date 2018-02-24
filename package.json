@@ -49,7 +49,7 @@
     "sprintf-js": "^1.1.1",
     "srcset": "^1.0.0",
     "ssl-root-cas": "^1.2.4",
-    "underscore": "~1.8",
+    "underscore": "^1.8.3",
     "urijs": "~1.17",
     "webdriverio": "^4.9.11",
     "websocket-json-stream": "0.0.3",

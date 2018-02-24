@@ -30,7 +30,10 @@ class DOMState extends events_1.EventEmitter {
         this.inlineStyle = '';
         this.children = [];
         this.updateValueInterval = null;
-        this.shareDBNode = _.clone(node);
+        // this.shareDBNode = {
+        //     node: _.clone(node),
+        //     childFrame: this.childFrame ? this.childFrame.getShareDBFrame() : null
+        // };
         this.getFullString().then((fullNodeValue) => {
             this.setNodeValue(fullNodeValue);
         }).catch((err) => {
@@ -44,6 +47,12 @@ class DOMState extends events_1.EventEmitter {
     getShareDBDoc() { return this.tab.getShareDBDoc(); }
     ;
     getShareDBNode() { return this.shareDBNode; }
+    ;
+    submitOp(...ops) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.getShareDBDoc().submitOp(ops);
+        });
+    }
     ;
     getNode() { return this.node; }
     ;
@@ -197,12 +206,14 @@ class DOMState extends events_1.EventEmitter {
             const index = this.children.indexOf(previousDomState);
             this.children.splice(index + 1, 0, childDomState);
             this.node.children.splice(index + 1, 0, node);
-            const shareDBOp = { p: this.p('children', index + 1), li: childDomState.getShareDBNode() };
+            const shareDBOp = { p: this.p('node', 'children', index + 1), li: childDomState.getShareDBNode() };
+            this.submitOp(shareDBOp);
         }
         else {
             this.children.unshift(childDomState);
             this.node.children.unshift(node);
-            const shareDBOp = { p: this.p('children', 0), li: childDomState.getShareDBNode() };
+            const shareDBOp = { p: this.p('node', 'children', 0), li: childDomState.getShareDBNode() };
+            this.submitOp(shareDBOp);
         }
         childDomState.setParent(this);
         this.emit('childAdded', {
@@ -213,8 +224,9 @@ class DOMState extends events_1.EventEmitter {
     ;
     setCharacterData(characterData) {
         this.node.nodeValue = characterData;
-        const previousNodeValue = this.shareDBNode.nodeValue;
-        const shareDBOp = { p: this.p('nodeValue'), od: previousNodeValue, oi: characterData };
+        const previousNodeValue = this.shareDBNode.node.nodeValue;
+        const shareDBOp = { p: this.p('node', 'nodeValue'), od: previousNodeValue, oi: characterData };
+        this.submitOp(shareDBOp);
         this.emit('nodeValueChanged', {
             value: this.getNodeValue()
         });
@@ -222,8 +234,9 @@ class DOMState extends events_1.EventEmitter {
     ;
     setNodeValue(value) {
         this.node.nodeValue = value;
-        const previousNodeValue = this.shareDBNode.nodeValue;
-        const shareDBOp = { p: this.p('nodeValue'), od: previousNodeValue, oi: value };
+        const previousNodeValue = this.shareDBNode.node.nodeValue;
+        const shareDBOp = { p: this.p('node', 'nodeValue'), od: previousNodeValue, oi: value };
+        this.submitOp(shareDBOp);
     }
     ;
     getNodeValue() {
@@ -235,8 +248,9 @@ class DOMState extends events_1.EventEmitter {
         if (index >= 0) {
             this.node.children.splice(index, 1);
             this.children.splice(index, 1);
-            const oldValue = this.shareDBNode.children[index];
-            const shareDBOp = { p: this.p('nodeValue', index), ld: oldValue };
+            const oldValue = this.shareDBNode.node.children[index];
+            const shareDBOp = { p: this.p('node', 'nodeValue', index), ld: oldValue };
+            this.submitOp(shareDBOp);
             this.emit('childRemoved', { child });
             child.destroy();
             return true;
@@ -257,15 +271,17 @@ class DOMState extends events_1.EventEmitter {
             const n = attributes[i];
             if (n === name) {
                 attributes[i + 1] = value;
-                const shareDBOp = { p: this.p('attributes', i + 1), li: value };
+                const shareDBOp = { p: this.p('node', 'attributes', i + 1), li: value };
+                this.submitOp(shareDBOp);
                 found = true;
                 break;
             }
         }
         if (!found) {
             attributes.push(name, value);
-            const index = this.shareDBNode.attributes.length;
-            const shareDBOps = [{ p: this.p('attributes', index), li: name }, { p: this.p('attributes', index + 1), li: value }];
+            const index = this.shareDBNode.node.attributes.length;
+            const shareDBOps = [{ p: this.p('node', 'attributes', index), li: name }, { p: this.p('node', 'attributes', index + 1), li: value }];
+            this.submitOp(...shareDBOps);
         }
         this.notifyAttributeChange();
     }
@@ -277,7 +293,8 @@ class DOMState extends events_1.EventEmitter {
         if (attributeIndex >= 0) {
             attributes.splice(attributeIndex, 2);
             const oldValue = attributes[attributeIndex + 1];
-            const shareDBOps = [{ p: this.p('attributes', attributeIndex + 1), ld: oldValue }, { p: this.p('attributes', attributeIndex), ld: name }];
+            const shareDBOps = [{ p: this.p('node', 'attributes', attributeIndex + 1), ld: oldValue }, { p: this.p('node', 'attributes', attributeIndex), ld: name }];
+            this.submitOp(...shareDBOps);
             this.notifyAttributeChange();
             return true;
         }
@@ -323,38 +340,6 @@ class DOMState extends events_1.EventEmitter {
                 });
             }
             ;
-            // 	return new Promise(_.bind(function(resolve, reject) {
-            // 		chrome.CSS.getInlineStylesForNode({
-            // 			nodeId: id
-            // 		}, _.bind(function(err, value) {
-            // 			if(this._destroyed) {
-            // 				var myError = new Error('Node ' + id + ' was destroyed');
-            // 				myError.expected = true;
-            // 				reject(myError);
-            // 			} else if(err) {
-            // 				//reject(new Error('Could not find node ' + id));
-            // 			} else {
-            // 				resolve(value.inlineStyle);
-            // 			}
-            // 		}, this));
-            // 	}, this)).then(_.bind(function(is) {
-            // 		inlineStyle = is;
-            // 		if(inlineStyle.cssText) {
-            // 			return this._getBaseURL();
-            // 		}
-            // 	}, this)).then(_.bind(function(url) {
-            // 		if(inlineStyle.cssText) {
-            // 			inlineStyle.cssText = processCSSURLs(inlineStyle.cssText, url, this.getFrameId(), this.getTabId());
-            // 		}
-            // 		return inlineStyle;
-            // 	}, this));
-            // } else {
-            // 	return new Promise(function(resolve, reject) {
-            // 		resolve({
-            // 			cssText: ''
-            // 		});
-            // 	});
-            // }
         });
     }
     setChildren(children) {
@@ -369,12 +354,13 @@ class DOMState extends events_1.EventEmitter {
         });
         this.node.children = children.map((c) => c.getNode());
         this.node.childNodeCount = this.node.children.length;
-        const previousChildren = this.shareDBNode.children;
-        const previousChildNodeCount = this.shareDBNode.childNodeCount;
+        const previousChildren = this.shareDBNode.node.children;
+        const previousChildNodeCount = this.shareDBNode.node.childNodeCount;
         const shareDBOps = [
-            { p: this.p('children'), od: previousChildren, oi: this.children.map((c) => c.getShareDBNode()) },
-            { p: this.p('children'), od: previousChildNodeCount, oi: this.node.children.length }
+            { p: this.p('node', 'children'), od: previousChildren, oi: this.children.map((c) => c.getShareDBNode()) },
+            { p: this.p('node', 'children'), od: previousChildNodeCount, oi: this.node.children.length }
         ];
+        this.submitOp(...shareDBOps);
         this.emit('childrenChanged', { children });
     }
     ;
@@ -467,21 +453,6 @@ class DOMState extends events_1.EventEmitter {
         return rv;
     }
     ;
-    // public stringify(level: number = 0): string {
-    //     let result: string = `${'    '.repeat(level)}${this.stringifySelf()}`;
-    //     if (this.childFrame) {
-    //         result += `(${this.childFrame.getFrameId()})\n`;
-    //         if(this.childFrame.hasRoot() && this.getNodeType() !== NodeCode.DOCUMENT_NODE) {
-    //             result += this.childFrame.stringify(level+1);
-    //         }
-    //     }
-    //     result += '\n';
-    //
-    //     this.children.forEach((child: DOMState) => {
-    //         result += child.stringify(level + 1);
-    //     });
-    //     return result;
-    // };
     print(level = 0) {
         let result = `${'    '.repeat(level)}${this.stringifySelf()}`;
         if (this.childFrame) {
@@ -523,663 +494,3 @@ class DOMState extends events_1.EventEmitter {
 DOMState.attributesToIgnore = ['onload', 'onclick', 'onmouseover', 'onmouseout',
     'onmouseenter', 'onmouseleave', 'action', 'oncontextmenu', 'onfocus'];
 exports.DOMState = DOMState;
-// var _ = require('underscore'),
-// 	URL = require('url'),
-// 	util = require('util'),
-// 	EventEmitter = require('events'),
-// 	path = require('path'),
-// 	urlTransform = require('../url_transform').urlTransform,
-// 	driver = require('../hack_driver/hack_driver');
-// 	processCSSURLs = require('../css_parser').processCSSURLs,
-// 	NODE_CODE = require('../../utils/node_code'),
-// 	Deferred = require('../../utils/deferred');
-// var log = require('../../utils/logging').getColoredLogger('magenta');
-//
-// //var regdids = {};
-//
-// var DOMState = function(options) {
-// 	this.node = options.node;
-// 	this.chrome = options.chrome;
-// 	this.frame = options.frame;
-//
-// 	this._parent = options.parent;
-//
-// 	this._destroyed = false;
-// 	this._namespace = null;
-// 	this._inlineStyle = '';
-// 	this.children = [];
-// 	this._self_initialized = this.initialize().then(_.bind(function() {
-// 		//log.debug('DOM state ' + this.getId() + ' initialized');
-// 	}, this)).catch(function(err) {
-// 		if(!err.expected) {
-// 			log.error(err.message);
-// 		}
-// 	});
-// 	//if(regdids[this.getId()]) debugger;
-// 	//regdids[this.getId()] = true;
-//
-// 	//this._self_initialized._node = this.node;
-// 	//this._updateChildrenInitializedPromise();
-// 	//this._initialized = Promise.all([this._self_initialized, this._children_initialized]);
-// 	//log.debug('=== CREATED DOM STATE', this.getId(), ' ====');
-// };
-//
-// (function(My) {
-// 	util.inherits(My, EventEmitter);
-// 	var proto = My.prototype;
-//
-// 	proto.isInitialized = function() {
-// 		return this._self_initialized;
-// 	};
-// 	proto._addValueListeners = function() {
-// 		var tagName = this._getTagName().toLowerCase();
-// 		if(tagName === 'canvas') {
-// 			// this._updateValueInterval = setTimeout(_.bind(function() {
-// 			// 	this.getCanvasImage().then(_.bind(function(data) {
-// 			// 		this.emit('valueUpdated', 'canvas', data);
-// 			// 	}, this));
-// 			// }, this), 5000);
-// 		} else if(tagName === 'input' || tagName=='textarea') {
-// 			this._updateValueInterval = setInterval(_.bind(function() {
-// 				this.getInputValue().then(_.bind(function(data) {
-// 					this.emit('valueUpdated', 'input', data);
-// 				}, this));
-// 			}, this), 700);
-// 		}
-// 	};
-// 	proto._removeValueListeners = function() {
-// 		if(this._updateValueInterval) {
-// 			clearInterval(this._updateValueInterval);
-// 			delete this._updateValueInterval;
-// 		}
-// 	};
-// 	proto.getCanvasImage = function() {
-// 		return driver.getCanvasImage(this._getChrome(), this.getId());
-// 	};
-// 	proto.getUniqueSelector = function() {
-// 		return driver.getUniqueSelector(this._getChrome(), this.getId()).then(function(rv) {
-// 			return rv.result.value;
-// 		});
-// 	};
-// 	proto.getInputValue = function() {
-// 		return driver.getElementValue(this._getChrome(), this.getId());
-// 	};
-// 	/*
-//
-// 	proto._updateChildrenInitializedPromise = function() {
-// 		var initializedPromises = Promise.all(_.pluck(this.children, '_self_initialized'));
-// 		if(this.children.length > 0) {
-// 			log.debug('Update children_initialized ' + this.getId() + ' to wait for ' + this.children.length + ' children');
-// 		}
-// 		this._children_initialized = initializedPromises.then(_.bind(function() {
-// 			log.debug('Node ' + this.getId() + ' children initialized');
-// 		}, this)).catch(function(err) {
-// 			log.error(err);
-// 		});//Promise.race(initializedPromises, timeoutPromise);
-//
-// 		return this._children_initialized;
-// 	};
-// 	*/
-//
-// 	proto._getFrame = function() {
-// 		return this.frame;
-// 	};
-//
-// 	proto.getParent = function() {
-// 		return this._parent;
-// 	};
-// 	proto.setParent = function(parent) {
-// 		this._parent = parent;
-// 	};
-//
-// 	proto._initializeLongString = function() {
-// 		var node = this._getNode(),
-// 			nodeType = node.nodeType,
-// 			nodeValue = node.nodeValue;
-//
-// 		return new Promise(_.bind(function(resolve, reject) {
-// 			if(nodeType === NODE_CODE.TEXT_NODE && nodeValue && nodeValue.endsWith('…')) {
-// 				var chrome = this._getChrome();
-// 				chrome.DOM.getOuterHTML({
-// 					nodeId: this.getId()
-// 				}, _.bind(function(err, value) {
-// 					if(err) {
-// 						reject(value);
-// 					} else {
-// 						node.nodeValue = value.outerHTML;
-// 						resolve(node.nodeValue);
-// 					}
-// 				}, this));
-// 			} else {
-// 				resolve(nodeValue);
-// 			}
-// 		}, this));
-// 	}
-//
-// 	proto._getBaseURL = function() {
-// 		var frame = this._getFrame();
-// 		return frame.getURL();
-// 	};
-//
-// 	proto._getTagName = function() {
-// 		var node = this._getNode();
-// 		return node.nodeName;
-// 	};
-//
-// 	proto.getAttributesMap = function(shadow) {
-// 		var node = this._getNode(),
-// 			tagName = this._getTagName(),
-// 			tagTransform = urlTransform[tagName.toLowerCase()]
-// 			attributes = node.attributes,
-// 			rv = {};
-//
-// 		if(attributes) {
-// 			var len = attributes.length,
-// 				i = 0;
-// 			while(i < len) {
-// 				var name = attributes[i],
-// 					value = attributes[i+1],
-// 					newValue = value;
-//
-// 				if(shadow) {
-// 					var lcName = name.toLowerCase();
-// 					if(lcName === 'onload' || lcName === 'onclick' ||
-// 						lcName === 'onmouseover' || lcName === 'onmouseout' ||
-// 						lcName === 'onmouseenter' || lcName === 'onmouseleave' ||
-// 						lcName === 'action' || lcName === 'oncontextmenu' ||
-// 						lcName === 'onfocus') {
-// 						newValue = '';
-// 					} else {
-// 						if(tagTransform) {
-// 							var attributeTransform = tagTransform[lcName];
-// 							if(attributeTransform) {
-// 								var url = this._getBaseURL();
-// 								if(url) {
-// 									newValue = attributeTransform.transform(value, url, this, shadow);
-// 								} else {
-// 									log.debug('no base url');
-// 								}
-// 							}
-// 						}
-// 					}
-// 				}
-//
-// 				rv[name] = newValue;
-// 				i+=2;
-// 			}
-//
-// 			if(shadow) {
-// 				var childFrame = this.getChildFrame();
-// 				if(childFrame) {
-// 					rv.src = transformIFrameURL(childFrame, shadow);
-// 				}
-// 			}
-// 		}
-// 		return rv;
-// 	};
-//
-// 	proto.getNamespace = function() {
-// 		return this._namespace;
-// 	};
-//
-// 	proto.updateNamespace = function() {
-// 		var nodeType = this.getNodeType();
-// 		if(nodeType === NODE_CODE.ELEMENT_NODE) {
-// 			return driver.getNamespace(this._getChrome(), this.getId()).then(function(result) {
-// 				if(result.wasThrown) {
-// 					return null;
-// 				} else {
-// 					return result.result.value;
-// 				}
-// 			}).then(_.bind(function(namespace) {
-// 				return this._namespace = namespace;
-// 			}, this));
-// 		} else {
-// 			return false;
-// 		}
-// 	};
-//
-// 	proto.initialize = function() {
-// 		var inlineStylePromise = this._requestInlineStyle().then(_.bind(function(inlineStyle) {
-// 				this._inlineStyle = inlineStyle.cssText;
-// 			}, this)).catch(function(err) {
-// 				if(!err.expected) {
-// 					log.error(err);
-// 				}
-// 			});
-//
-// 		var node = this._getNode();
-//
-// 		if(node.frameId) {
-// 			var page = this._getPage();
-// 			var frameRoot = node.contentDocument;
-// 			var frame = page.getFrame(node.frameId);
-//
-// 			frame.setRoot(frameRoot);
-// 			frame.setDOMParent(this);
-//
-// 			this.childFrame = frame;
-// 		} else {
-// 			this.childFrame = false;
-// 		}
-//
-// 		this._addValueListeners();
-//
-// 		var longStringInitialization = this._initializeLongString(),
-// 			namespaceFetcher = this.updateNamespace();
-//
-// 		return Promise.all([inlineStylePromise, longStringInitialization, namespaceFetcher]);
-// 	};
-// 	proto.getChildFrame = function() {
-// 		return this.childFrame;
-// 	};
-// 	proto.destroy = function() {
-// 		this._removeValueListeners();
-// 		_.each(this.children, function(child) {
-// 			child.destroy();
-// 		});
-// 		this.emit('destroyed');
-// 		this._destroyed = true;
-// 		//log.debug('=== DESTROYED DOM STATE', this.getId(), ' ====');
-// 	};
-//
-// 	proto.getId = function() {
-// 		var node = this._getNode();
-// 		return node.nodeId;
-// 	};
-//
-// 	proto._setChildren = function(children) {
-// 		_.each(this.children, function(child) {
-// 			if(children.indexOf(child) < 0) {
-// 				child.destroy();
-// 			}
-// 		});
-//
-// 		this.children = children;
-// 		//this._updateChildrenInitializedPromise();
-//
-// 		_.each(this.children, function(child) {
-// 			child.setParent(this);
-// 		}, this);
-// 		this.emit('childrenChanged', {
-// 			children: children
-// 		});
-// 		return this;
-// 	};
-//
-// 	proto._getNode = function() {
-// 		return this.node;
-// 	};
-//
-// 	proto._removeChild = function(child) {
-// 		var index = _.indexOf(this.getChildren(), child);
-// 		if(index >= 0) {
-// 			this.children.splice(index, 1);
-// 			//this._updateChildrenInitializedPromise();
-// 			this.emit('childRemoved', {
-// 				child: child
-// 			});
-// 			child.destroy();
-// 		}
-// 		return this;
-// 	};
-//
-// 	proto._insertChild = function(child, previousNode) {
-// 		if(previousNode) {
-// 			var index = _.indexOf(this.children, previousNode);
-// 			this.children.splice(index+1, 0, child);
-// 		} else {
-// 			this.children.unshift(child);
-// 		}
-// 		child.setParent(this);
-//
-// 		//this._updateChildrenInitializedPromise();
-// 		this.emit('childAdded', {
-// 			child: child,
-// 			previousNode: previousNode
-// 		});
-// 	};
-//
-// 	proto._setAttribute = function(name, value) {
-// 		var node = this._getNode(),
-// 			attributes = node.attributes,
-// 			found = false;
-// 		if(!attributes) {
-// 			log.error('Could not set node attributes', node);
-// 			return;
-// 		}
-// 		for(var i = 0; i<attributes.length; i+=2) {
-// 			if(attributes[i] === name) {
-// 				attributes[i+1] = value;
-// 				found = true;
-// 				break;
-// 			}
-// 		}
-// 		if(!found) {
-// 			attributes.push(name, value);
-// 		}
-//
-// 		this._notifyAttributeChange();
-// 	};
-//
-// 	proto._removeAttribute = function(name) {
-// 		var tagName = this._getTagName().toLowerCase();
-//
-// 		var node = this._getNode();
-// 		var attributeIndex = _.indexOf(node.attributes, name);
-// 		if(attributeIndex >= 0) {
-// 			node.attributes.splice(attributeIndex, 2);
-// 			this._notifyAttributeChange();
-// 		}
-// 	};
-//
-// 	proto._notifyAttributeChange = function() {
-// 		this.emit('attributesChanged');
-// 	};
-//
-// 	proto.getAttributes = function() {
-// 		var node = this._getNode();
-// 		return node.attributes;
-// 	};
-//
-// 	proto._getChrome = function() {
-// 		return this.chrome;
-// 	};
-//
-// 	proto.getChildren = function() {
-// 		return this.children;
-// 	};
-// 	proto.getDeepChildren = function(rv) {
-// 		if(!rv) {
-// 			rv = [];
-// 		}
-//
-// 		rv.push.apply(rv, this.getChildren());
-// 		_.each(this.getChildren(), function(child) {
-// 			child.getDeepChildren(rv);
-// 		});
-//
-// 		return rv;
-// 	};
-//
-// 	proto.isCSSStyle = function() {
-// 		return this._getTagName().toLowerCase() === 'style';
-// 	};
-//
-// 	proto._setCharacterData = function(characterData) {
-// 		var node = this._getNode();
-// 		node.nodeValue = characterData;
-//
-// 		this.emit('nodeValueChanged', {
-// 			value: this.getNodeValue()
-// 		});
-// 	};
-//
-// 	proto.isPasswordInput = function() {
-// 		var node = this._getNode();
-// 		if(node) {
-// 			if(this._getTagName().toLowerCase() === 'input') {
-// 				var attributesMap = this.getAttributesMap();
-// 				return attributesMap['type'] == 'password';
-//
-// 			}
-// 		}
-// 		return false;
-// 	};
-//
-// 	proto.getNodeValue = function() {
-// 		var node = this._getNode(),
-// 			parent = this.getParent();
-// 		if(parent && parent.isCSSStyle()) {
-// 			return processCSSURLs(node.nodeValue, this._getBaseURL(), this.getFrameId(), this.getTabId());
-// 		} else {
-// 			return node.nodeValue;
-// 		}
-// 	};
-// 	proto.getNodeName = function() {
-// 		var node = this._getNode();
-// 		return node.nodeName;
-// 	};
-//
-// 	proto._childCountUpdated = function(count) {
-// 		var page = this._getPage();
-// 		page.requestChildNodes(this.getId(), -1);
-// 	};
-//
-// 	proto._getMatchedStyles = function() {
-// 		var id = this.getId(),
-// 			chrome = this._getChrome();
-//
-// 		return new Promise(function(resolve, reject) {
-// 			chrome.CSS.getMatchedStylesForNode({
-// 				nodeId: id
-// 			}, function(err, value) {
-// 				if(err) {
-// 					reject(value);
-// 				} else {
-// 					resolve(value);
-// 				}
-// 			});
-// 		});
-// 	};
-//
-// 	proto._getCSSAnimations = function() {
-// 		var id = this.getId(),
-// 			chrome = this._getChrome();
-//
-// 		return new Promise(function(resolve, reject) {
-// 			chrome.CSS.getCSSAnimationsForNode({
-// 				nodeId: id
-// 			}, function(err, value) {
-// 				if(err) {
-// 					reject(value);
-// 				} else {
-// 					resolve(value);
-// 				}
-// 			});
-// 		});
-// 	};
-//
-// 	proto.updateInlineStyle = function() {
-// 		var oldInlineStyle = this.getInlineStyle();
-// 		return this._requestInlineStyle().then(_.bind(function(inlineStyle) {
-// 			this._inlineStyle = inlineStyle.cssText;
-// 			if(inlineStyle !== oldInlineStyle) {
-// 				this.emit('inlineStyleChanged', {
-// 					inlineStyle: this._inlineStyle
-// 				});
-// 			}
-// 		}, this));
-// 	};
-//
-// 	proto.getNodeType = function() {
-// 		var node = this._getNode();
-// 		return node.nodeType;
-// 	};
-//
-// 	proto._requestInlineStyle = function() {
-// 		var node = this._getNode(),
-// 			type = node.nodeType;
-// 		if(type === 1) {
-// 			var id = this.getId(),
-// 				chrome = this._getChrome(),
-// 				inlineStyle;
-//
-// 			return new Promise(_.bind(function(resolve, reject) {
-// 				chrome.CSS.getInlineStylesForNode({
-// 					nodeId: id
-// 				}, _.bind(function(err, value) {
-// 					if(this._destroyed) {
-// 						var myError = new Error('Node ' + id + ' was destroyed');
-// 						myError.expected = true;
-// 						reject(myError);
-// 					} else if(err) {
-// 						//reject(new Error('Could not find node ' + id));
-// 					} else {
-// 						resolve(value.inlineStyle);
-// 					}
-// 				}, this));
-// 			}, this)).then(_.bind(function(is) {
-// 				inlineStyle = is;
-// 				if(inlineStyle.cssText) {
-// 					return this._getBaseURL();
-// 				}
-// 			}, this)).then(_.bind(function(url) {
-// 				if(inlineStyle.cssText) {
-// 					inlineStyle.cssText = processCSSURLs(inlineStyle.cssText, url, this.getFrameId(), this.getTabId());
-// 				}
-// 				return inlineStyle;
-// 			}, this));
-// 		} else {
-// 			return new Promise(function(resolve, reject) {
-// 				resolve({
-// 					cssText: ''
-// 				});
-// 			});
-// 		}
-// 	};
-//
-// 	proto.getInlineStyle = function() {
-// 		return this._inlineStyle;
-// 	};
-//
-// 	proto._stringifySelf = function() {
-// 		var MAX_TEXT_LENGTH = 50;
-// 		var node = this._getNode(),
-// 			type = this.getNodeType(),
-// 			id = this.getId();
-// 		if(type === NODE_CODE.DOCUMENT_NODE) {
-// 			return '(' + id + ') ' + this.getNodeName();
-// 		} else if(type === NODE_CODE.TEXT_NODE) {
-// 			var text = this.getNodeValue().replace(/(\n|\t)/gi, '');
-// 			if(text.length > MAX_TEXT_LENGTH) {
-// 				text = text.substr(0, MAX_TEXT_LENGTH) + '...';
-// 			}
-// 			return '(' + id + ') text: ' + text;
-// 		} else if(type === NODE_CODE.ELEMENT_NODE) {
-// 			var text = '(' + id + ') <' + this.getNodeName();
-// 			var attributesMap = this.getAttributesMap();
-// 			var style = this.getInlineStyle();
-// 			if(style) {
-// 				attributesMap.style = style;
-// 			}
-// 			_.each(attributesMap, function(val, name) {
-// 				text += ' ' + name +  ' = "' + val + '"';
-// 			});
-// 			//for(var i = 0; i<node.attributes.length; i+=2) {
-// 				//text += ' ' + node.attributes[i] +  ' = "' + node.attributes[i+1] + '"';
-// 			//}
-// 			text += '>';
-// 			return text;
-// 		} else if(type === NODE_CODE.COMMENT_NODE) {
-// 			var text = '(' + id + ') <!-- ';
-// 			text += this.getNodeValue().replace(/(\n|\t)/gi, '');
-// 			if(text.length > MAX_TEXT_LENGTH) {
-// 				text = text.substr(0, MAX_TEXT_LENGTH) + '...';
-// 			}
-// 			text +=  ' -->';
-// 			return text;
-// 		} else {
-// 			console.log(node);
-// 		}
-// 		return 'node';
-// 	};
-// 	proto.serialize = function() {
-// 		var nodeType = this.getNodeType();
-// 		var rv = {
-// 			type: nodeType,
-// 			name: this.getNodeName(),
-// 			value: this.getNodeValue(),
-// 			attributes: this.getAttributesMap(),
-// 			children: _.map(this.getChildren(), function(child) {
-// 				return child.serialize();
-// 			}),
-// 			inlineStyle: this.getInlineStyle()
-// 		};
-// 		return rv;
-// 	};
-//
-// 	proto.print = function(level) {
-// 		var str = '';
-// 		if(!level) { level = 0; }
-// 		for(var i = 0; i<level; i++) {
-// 			str += '  ';
-// 		}
-//         var node = this._getNode(),
-// 		type = node.nodeType,
-// 		id = node.nodeId;
-// 		str += this._stringifySelf();
-// 		var childFrame = this.getChildFrame();
-//
-// 		if(childFrame) {
-// 			str += ' ('+childFrame.getFrameId()+')';
-// 		}
-// 		console.log(str);
-// 		_.each(this.getChildren(), function(child) {
-// 			child.print(level+1);
-// 		});
-// 		/*if(childFrame) {
-// 			childFrame.print(level+1);
-// 		}*/
-//
-// 		return this;
-// 	};
-//
-// 	proto.summarize = function() {
-// 		var children = this.getChildren();
-// 		if(children.length > 0) {
-// 			return this.getId() + ':[' + _.map(children, function(child) { return child.summarize(); }).join(', ') + ']';
-// 		} else {
-// 			return this.getId();
-// 		}
-// 	};
-//
-// 	proto._getPage = function() {
-// 		var frame = this._getFrame();
-// 		return frame.getPage();
-// 	};
-// 	proto.getFrameId = function() {
-// 		return this._getFrame().getFrameId();
-// 	};
-// 	proto.getTabId = function() {
-// 		return this._getFrame().getTabId();
-// 	};
-// 	proto.getFrameStack = function() {
-// 		var frame = this._getFrame();
-// 		return frame.getFrameStack();
-// 	};
-// 	proto.querySelectorAll = function(selector) {
-// 		return new Promise(_.bind(function(resolve, reject) {
-// 				var chrome = this._getChrome();
-// 				chrome.DOM.querySelectorAll({
-// 					nodeId: this.getId(),
-// 					selector: selector
-// 				}, _.bind(function(err, value) {
-// 					if(err) {
-// 						reject(value);
-// 					} else {
-// 						resolve(value);
-// 					}
-// 				}, this));
-// 		}, this));
-// 	};
-// }(DOMState));
-//
-// function transformIFrameURL(childFrame, shadow) {
-// 	if(childFrame) {
-// 		return URL.format({
-// 			pathname: 'f',
-// 			query: {
-// 				u: shadow.getUserId(),
-// 				i: childFrame.getFrameId(),
-// 				t: childFrame.getTabId()
-// 			}
-// 		});
-// 	} else {
-// 		log.error('No child frame');
-// 	}
-// }
-//
-// module.exports = {
-// 	DOMState: DOMState
-// };

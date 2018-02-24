@@ -18,6 +18,7 @@ const events_1 = require("events");
 const sharedb_wrapper_1 = require("../../utils/sharedb_wrapper");
 const chat_doc_1 = require("../../utils/chat_doc");
 const log = logging_1.getColoredLogger('red');
+;
 const projectFileURLPath = fileUrl(path_1.join(path_1.resolve(__dirname, '..', '..'), 'browser'));
 class BrowserState extends events_1.EventEmitter {
     constructor(state, extraOptions) {
@@ -34,7 +35,7 @@ class BrowserState extends events_1.EventEmitter {
             this.sdb = new sharedb_wrapper_1.SDB(false);
             this.doc = this.sdb.get('arboretum', 'browser');
             yield this.doc.createIfEmpty({
-                tabs: []
+                tabs: {}
             });
             this.chat = new chat_doc_1.ArboretumChat(this.sdb);
             this.intervalID = setInterval(_.bind(this.refreshTabs, this), 2000);
@@ -54,7 +55,7 @@ class BrowserState extends events_1.EventEmitter {
         return __awaiter(this, void 0, void 0, function* () {
             const tabInfos = yield this.getTabs();
             const existingTabs = new Set(this.tabs.keys());
-            _.each(tabInfos, (tabInfo) => __awaiter(this, void 0, void 0, function* () {
+            const createPromises = tabInfos.map((tabInfo) => __awaiter(this, void 0, void 0, function* () {
                 const { id } = tabInfo;
                 let tab;
                 if (existingTabs.has(id)) {
@@ -68,18 +69,24 @@ class BrowserState extends events_1.EventEmitter {
                     tab = new tab_state_1.TabState(tabInfo, this.sdb);
                     this.tabs.set(id, tab);
                     yield tab.initialized;
-                    const shareDBOp = { p: ['tabs', id], oi: tab.getTabId() };
+                    const shareDBOp = { p: ['tabs', id], oi: id };
+                    yield this.doc.submitOp([shareDBOp]);
                     this.emit('tabCreated', {
                         id: id
                     });
                 }
             }));
-            existingTabs.forEach((id) => {
+            yield Promise.all(createPromises);
+            const destroyPromises = Array.from(existingTabs).map((id) => __awaiter(this, void 0, void 0, function* () {
                 log.trace(`Destroying tab ${id}`);
                 this.destroyTab(id);
-            });
+                const shareDBOp = { p: ['tabs', id], od: id };
+                yield this.doc.submitOp([shareDBOp]);
+            }));
+            yield Promise.all(destroyPromises);
         });
     }
+    ;
     destroy() {
         return __awaiter(this, void 0, void 0, function* () {
             clearInterval(this.intervalID);
@@ -158,182 +165,3 @@ class BrowserState extends events_1.EventEmitter {
 }
 exports.BrowserState = BrowserState;
 ;
-// var BrowserState = function(options) {
-// 	this._options = _.extend(OPTION_DEFAULTS, options);
-// 	this._tabs = {};
-// 	this._initialized = this._initialize().then(function() {
-// 		log.debug('=== CREATED BROWSER ===');
-// 	});
-//         ipcMain.on('asynchronous-message',_.bind(function(event,arg) {
-//            this.sender = event.sender;
-//         },this));
-// };
-//
-// (function(My) {
-// 	util.inherits(My, EventEmitter);
-// 	var proto = My.prototype;
-// 	proto._initialize = function() {
-// 		this._intervalID = setInterval(_.bind(this._refreshTabs, this), 2000);
-// 		return this._refreshTabs();
-// 	};
-// 	proto.destroy = function() {
-// 		clearInterval(this._intervalID);
-// 		var destroyPromises = _.map(this.getTabIds(), function(tabID) {
-// 			var tabState = this.getTabState(tabID);
-// 			return tabState.then(function(tabState) {
-// 				tabState.destroy();
-// 			});
-// 		}, this);
-// 		return Promise.all(destroyPromises);
-// 	};
-// 	proto.onDeviceEvent = function(event, tabId, frameId) {
-// 		this.getTabState(tabId).then(function(tabState) {
-// 			tabState.onDeviceEvent(event, frameId);
-// 		});
-// 	};
-// 	proto.summarizeTab = function(tabId) {
-// 		var info = this._tabs[tabId].tabInfo;
-// 		return _.extend({
-//
-// 		}, info);
-// 	};
-// 	proto.getActiveTabId = function() {
-// 		return this.getTabIds()[0];
-// 	};
-// 	proto.requestResource = function(url, frameId, tabId) {
-// 		return this.getTabState(tabId).then(function(tabState) {
-// 			return tabState.requestResource(url, frameId);
-// 		});
-// 	};
-// 	proto.getTabIds = function() {
-// 		return _.keys(this._tabs);
-// 	};
-// 	proto.getTabState = function(tabId) {
-// 		return this._tabs[tabId].statePromise;
-// 	};
-// 	proto.addTab = function() {
-//                 this.sender.send('asynchronous-reply','remoteTab');
-// 		/*var options = this._options;
-// 		return new Promise(function(resolve, reject) {
-// 			cri.New(options, function(err, tab) {
-// 				if(err) {
-// 					reject(tab);
-// 				} else {
-// 					resolve(tab);
-// 				}
-// 			});
-// 		}).then(_.bind(function(tabInfo) {
-// 			this._initializeTab(tabInfo);
-// 		}, this));*/
-// 	};
-// 	proto.closeTab = function(tabId) {
-//                 this.sender.send('closeTab',tabId);
-// 		/*return new Promise(function(resolve, reject) {
-// 			cri.Close({
-// 				id: tabId
-// 			}, function(err) {
-// 				if(err) {
-// 					reject(err);
-// 				} else {
-// 					resolve();
-// 				}
-// 			});
-// 		}).then(_.bind(function() {
-// 			var tabInfo = this._tabs[tabId].tabInfo;
-// 			this._destroyTab(tabInfo);
-// 		}, this)).catch(function(err) {
-// 			console.log(err.stack);
-// 		});*/
-// 	};
-// 	proto.openURL = function(url, tabId) {
-// 		if(!tabId) {
-// 			tabId = this.getActiveTabId();
-// 		}
-// 		return this.getTabState(tabId).then(function(tabState) {
-// 			return tabState.navigate(url);
-// 		});
-// 	};
-// 	proto._refreshTabs = function() {
-// 	};
-// 	proto._destroyTab = function(tabInfo) {
-// 		var id = tabInfo.id;
-// 		var tab = this._tabs[id];
-// 		if(tab) {
-// 			tab.statePromise.then(_.bind(function(state) {
-// 				state.destroy();
-// 				delete this._tabs[id];
-// 				this.emit('tabDestroyed', {
-// 					id: id
-// 				});
-// 			}, this));
-// 		}
-// 	};
-// 	proto._initializeTab = function(tabInfo) {
-// 		var id = tabInfo.id,
-// 			options = this._options;
-//                 this.sender.send('TabRefId',id);
-//
-// 		var statePromise = new Promise(function(resolve, reject) {
-// 			var chromeInstance = cri(_.extend({
-// 				chooseTab: tabInfo
-// 			}, options));
-// 			chromeInstance.once('connect', function(chrome) {
-// 				resolve(chrome);
-// 			}).once('error', function(err) {
-// 				reject(err);
-// 			});
-// 		}).then(function(chrome) {
-// 			return new TabState(id, chrome);
-// 		});
-//
-// 		this._tabs[id] = {
-// 			id: id,
-// 			tabInfo: tabInfo,
-// 			statePromise: statePromise
-// 		};
-//
-// 		this.emit('tabCreated', {
-// 			id: id
-// 		});
-// 	};
-// 	proto.findFrame = function(frameId) {
-// 		var statePromises = _.pluck(this._tabs, 'statePromise');
-// 		return Promise.all(statePromises).then(function(tabs) {
-// 			var result = false;
-//
-// 			_.each(tabs, function(tab) {
-// 				var frame = tab.getFrame(frameId);
-// 				if(frame) {
-// 					result = frame;
-// 				}
-// 			}, this);
-// 			return result;
-// 		});
-// 	};
-// 	proto.findNode = function(nodeId) {
-// 		var statePromises = _.pluck(this._tabs, 'statePromise');
-// 		return Promise.all(statePromises).then(function(tabs) {
-// 			_.each(tabs, function(tab) {
-// 				var node = tab.findNode(nodeId);
-// 				if(node) {
-// 					result = node;
-// 				}
-// 			}, this);
-// 			return result;
-// 		});
-// 	};
-// 	proto.print = function() {
-// 		return Promise.all(_.map(this._tabs, function(tab) {
-// 			return tab.statePromise.then(function(tabState) {
-// 				console.log('Tab ' + tab.id);
-// 				tabState.print();
-// 			});
-// 		}, this));
-// 	};
-// }(BrowserState));
-//
-// module.exports = {
-// 	BrowserState: BrowserState
-// };
-//
-// export default class BrowserState;
