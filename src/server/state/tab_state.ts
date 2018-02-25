@@ -1,21 +1,18 @@
 import * as cri from 'chrome-remote-interface';
-import { ShareDBFrame, FrameState } from './frame_state';
-import { ShareDBDOMNode, DOMState } from './dom_state';
+import { FrameState } from './frame_state';
+import { DOMState } from './dom_state';
 import { getColoredLogger, level, setLevel } from '../../utils/logging';
 import * as _ from 'underscore';
 import { EventEmitter } from 'events';
 import {SDB, SDBDoc} from '../../utils/sharedb_wrapper';
 import { parse, format } from 'url';
+import {TabDoc, ShareDBFrame } from '../../utils/state_interfaces';
 
 const log = getColoredLogger('yellow');
 interface PendingFrameEvent {
     frameId: CRI.FrameID,
     event: any,
     type: string
-};
-
-export interface ShareDBTab {
-
 };
 
 export class TabState extends EventEmitter {
@@ -27,7 +24,7 @@ export class TabState extends EventEmitter {
     private chromePromise: Promise<CRI.Chrome>;
     private domRoot:DOMState;
     private nodeMap: Map<CRI.NodeID, DOMState> = new Map<CRI.NodeID, DOMState>();
-    private doc:SDBDoc<ShareDBTab>;
+    private doc:SDBDoc<TabDoc>;
     public initialized:Promise<void>
     constructor(private info: CRI.TabInfo, private sdb:SDB) {
         super();
@@ -63,7 +60,7 @@ export class TabState extends EventEmitter {
         this.addNetworkListeners();
         this.addExecutionContextListeners();
     };
-    public getShareDBDoc():SDBDoc<ShareDBTab> { return this.doc; };
+    public getShareDBDoc():SDBDoc<TabDoc> { return this.doc; };
     public getShareDBPath():Array<string|number> {
         return [this.getTabId()];
     };

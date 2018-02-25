@@ -10935,6 +10935,10 @@ const sdb = new sharedb_wrapper_1.SDB(true, socket);
 const chat = new chat_doc_1.ArboretumChat(sdb);
 chat.addUser('steve', true);
 console.log(chat);
+const browser = sdb.get('arboretum', 'browser');
+browser.subscribe(() => {
+    console.log(browser.getData());
+});
 
 
 /***/ }),

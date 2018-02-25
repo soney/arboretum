@@ -18,7 +18,6 @@ const events_1 = require("events");
 const sharedb_wrapper_1 = require("../../utils/sharedb_wrapper");
 const chat_doc_1 = require("../../utils/chat_doc");
 const log = logging_1.getColoredLogger('red');
-;
 const projectFileURLPath = fileUrl(path_1.join(path_1.resolve(__dirname, '..', '..'), 'browser'));
 class BrowserState extends events_1.EventEmitter {
     constructor(state, extraOptions) {

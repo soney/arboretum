@@ -16,7 +16,6 @@ const node_code_1 = require("../../utils/node_code");
 const url_transform_1 = require("../url_transform");
 const _ = require("underscore");
 const log = logging_1.getColoredLogger('magenta');
-;
 class DOMState extends events_1.EventEmitter {
     constructor(node, tab, contentDocument, childFrame, parent) {
         super();

@@ -14,12 +14,9 @@ import { ipcMain } from 'electron';
 import {SDB, SDBDoc} from '../../utils/sharedb_wrapper';
 import {ArboretumChat} from '../../utils/chat_doc';
 import * as ShareDB from 'sharedb';
+import {BrowserDoc} from '../../utils/state_interfaces';
 
 const log = getColoredLogger('red');
-
-export interface BrowserDoc {
-    tabs:  { [key:string]: CRI.TabID }
-};
 
 const projectFileURLPath: string = fileUrl(join(resolve(__dirname, '..', '..'), 'browser'));
 export class BrowserState extends EventEmitter {

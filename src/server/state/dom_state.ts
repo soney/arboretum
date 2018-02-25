@@ -1,5 +1,5 @@
-import { ShareDBFrame, FrameState } from './frame_state';
-import { TabState, ShareDBTab } from './tab_state';
+import { FrameState } from './frame_state';
+import { TabState } from './tab_state';
 import { ShadowDOM } from '../shadows/dom_shadow';
 import { getCanvasImage, getUniqueSelector, getElementValue } from '../hack_driver/hack_driver';
 import { getColoredLogger, level, setLevel } from '../../utils/logging';
@@ -10,13 +10,10 @@ import { urlTransform } from '../url_transform';
 import {SDB, SDBDoc} from '../../utils/sharedb_wrapper';
 import * as _ from 'underscore';
 import * as ShareDB from 'sharedb';
+import {ShareDBDOMNode, ShareDBFrame, TabDoc} from '../../utils/state_interfaces';
 
 const log = getColoredLogger('magenta');
 
-export interface ShareDBDOMNode {
-    node: CRI.Node,
-    childFrame: ShareDBFrame
-};
 
 export class DOMState extends EventEmitter {
     private destroyed: boolean = false;
@@ -42,7 +39,7 @@ export class DOMState extends EventEmitter {
         });
         // log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     };
-    public getShareDBDoc():SDBDoc<ShareDBTab> { return this.tab.getShareDBDoc(); };
+    public getShareDBDoc():SDBDoc<TabDoc> { return this.tab.getShareDBDoc(); };
     public getShareDBNode():ShareDBDOMNode { return this.shareDBNode; };
     public async submitOp(...ops:Array<ShareDB.Op>):Promise<void> {
         await this.getShareDBDoc().submitOp(ops);

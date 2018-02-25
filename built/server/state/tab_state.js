@@ -17,7 +17,6 @@ const events_1 = require("events");
 const url_1 = require("url");
 const log = logging_1.getColoredLogger('yellow');
 ;
-;
 class TabState extends events_1.EventEmitter {
     constructor(info, sdb) {
         super();

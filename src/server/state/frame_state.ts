@@ -1,10 +1,11 @@
-import { TabState, ShareDBTab } from './tab_state';
+import { TabState } from './tab_state';
 import { DOMState } from './dom_state';
 import { EventManager } from '../event_manager';
 import { ResourceTracker } from '../resource_tracker';
 import { getColoredLogger, level, setLevel } from '../../utils/logging';
 import {SDB, SDBDoc} from '../../utils/sharedb_wrapper';
 import * as _ from 'underscore';
+import {TabDoc, ShareDBFrame } from '../../utils/state_interfaces';
 
 const log = getColoredLogger('green');
 
@@ -13,10 +14,6 @@ interface QueuedEvent<E> {
     promise: ResolvablePromise<E>,
     type: string
 }
-
-export interface ShareDBFrame {
-
-};
 
 export class FrameState {
     private setMainFrameExecuted: boolean = false;
@@ -37,7 +34,7 @@ export class FrameState {
         this.resourceTracker = new ResourceTracker(chrome, this, resources);
         log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
     };
-    public getShareDBDoc():SDBDoc<ShareDBTab> { return this.tab.getShareDBDoc(); };
+    public getShareDBDoc():SDBDoc<TabDoc> { return this.tab.getShareDBDoc(); };
     public getShareDBFrame():ShareDBFrame {
         return this.shareDBFrame;
     };
