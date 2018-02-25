@@ -32,6 +32,12 @@ class FrameState {
     ;
     getShareDBDoc() { return this.tab.getShareDBDoc(); }
     ;
+    submitOp(...ops) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // await this.getShareDBDoc().submitOp(ops);
+        });
+    }
+    ;
     getShareDBFrame() {
         return this.shareDBFrame;
     }

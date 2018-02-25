@@ -6,6 +6,7 @@ import * as _ from 'underscore';
 import { EventEmitter } from 'events';
 import {SDB, SDBDoc} from '../../utils/sharedb_wrapper';
 import { parse, format } from 'url';
+import * as ShareDB from 'sharedb';
 import {TabDoc, ShareDBFrame } from '../../utils/state_interfaces';
 
 const log = getColoredLogger('yellow');
@@ -17,7 +18,6 @@ interface PendingFrameEvent {
 
 export class TabState extends EventEmitter {
     private tabID: CRI.TabID;
-    private rootFrame: FrameState;
     private frames: Map<CRI.FrameID, FrameState> = new Map<CRI.FrameID, FrameState>();
     private pendingFrameEvents: Map<CRI.FrameID, Array<PendingFrameEvent>> = new Map<CRI.FrameID, Array<PendingFrameEvent>>();
     private chrome: CRI.Chrome;
@@ -28,7 +28,12 @@ export class TabState extends EventEmitter {
     public initialized:Promise<void>
     constructor(private info: CRI.TabInfo, private sdb:SDB) {
         super();
-        this.initialized = this.initialize();
+        try {
+            this.initialized = this.initialize();
+        } catch(err) {
+            console.error(err);
+            throw err;
+        }
         log.debug(`=== CREATED TAB STATE ${this.getTabId()} ====`);
     };
     private async initialize():Promise<void> {
@@ -60,12 +65,19 @@ export class TabState extends EventEmitter {
         this.addNetworkListeners();
         this.addExecutionContextListeners();
     };
+    public async submitOp(...ops:Array<ShareDB.Op>):Promise<void> {
+        // await this.getShareDBDoc().submitOp(ops);
+    };
     public getShareDBDoc():SDBDoc<TabDoc> { return this.doc; };
     public getShareDBPath():Array<string|number> {
         return [this.getTabId()];
     };
     public getRootFrame(): FrameState {
-        return this.rootFrame;
+        if(this.domRoot) {
+            return this.domRoot.getChildFrame();
+        } else {
+            return null;
+        }
     }
     public async evaluate(expression: string, frameId: CRI.FrameID = null): Promise<CRI.EvaluateResult> {
         const frame: FrameState = frameId ? this.getFrame(frameId) : this.getRootFrame();
@@ -124,7 +136,7 @@ export class TabState extends EventEmitter {
         const frameState: FrameState = new FrameState(this.chrome, info, this, parentFrame, resources);
         this.frames.set(id, frameState);
         if (!parentId) {
-            this.setRootFrame(frameState);
+            // this.setRootFrame(frameState);
             this.refreshRoot();
         }
         this.updateFrameOnEvents(frameState);
@@ -202,28 +214,28 @@ export class TabState extends EventEmitter {
             throw(err);
         });
     };
-    private setRootFrame(frame: FrameState):void {
-        if (this.rootFrame) {
-            this.frames.forEach((frame: FrameState, id: CRI.FrameID) => {
-                if (id !== frame.getFrameId()) {
-                    this.destroyFrame(id);
-                }
-            });
-        }
-        log.info(`Set main frame to ${frame.getFrameId()}`);
-        this.rootFrame = frame;
-        frame.markSetMainFrameExecuted(true);
-        this.emit('mainFrameChanged');
-        /*
-        return this.getDocument().then((root: CRI.Node) => {
-            this.rootFrame.setRoot(root);
-            this.emit('mainFrameChanged');
-        }).catch((err) => {
-            log.error(err);
-            throw (err);
-        });
-        */
-    }
+    // private setRootFrame(frame: FrameState):void {
+    //     if (this.rootFrame) {
+    //         this.frames.forEach((frame: FrameState, id: CRI.FrameID) => {
+    //             if (id !== frame.getFrameId()) {
+    //                 this.destroyFrame(id);
+    //             }
+    //         });
+    //     }
+    //     log.info(`Set main frame to ${frame.getFrameId()}`);
+    //     this.rootFrame = frame;
+    //     frame.markSetMainFrameExecuted(true);
+    //     this.emit('mainFrameChanged');
+    //     /*
+    //     return this.getDocument().then((root: CRI.Node) => {
+    //         this.rootFrame.setRoot(root);
+    //         this.emit('mainFrameChanged');
+    //     }).catch((err) => {
+    //         log.error(err);
+    //         throw (err);
+    //     });
+    //     */
+    // }
     public async navigate(url: string): Promise<CRI.FrameID> {
         const parsedURL = parse(url);
         if (!parsedURL.protocol) { parsedURL.protocol = 'http'; }

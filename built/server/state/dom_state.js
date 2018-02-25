@@ -29,10 +29,10 @@ class DOMState extends events_1.EventEmitter {
         this.inlineStyle = '';
         this.children = [];
         this.updateValueInterval = null;
-        // this.shareDBNode = {
-        //     node: _.clone(node),
-        //     childFrame: this.childFrame ? this.childFrame.getShareDBFrame() : null
-        // };
+        this.shareDBNode = {
+            node: _.clone(node),
+            childFrame: this.childFrame ? this.childFrame.getShareDBFrame() : null
+        };
         this.getFullString().then((fullNodeValue) => {
             this.setNodeValue(fullNodeValue);
         }).catch((err) => {
@@ -49,7 +49,7 @@ class DOMState extends events_1.EventEmitter {
     ;
     submitOp(...ops) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.getShareDBDoc().submitOp(ops);
+            // await this.getShareDBDoc().submitOp(ops);
         });
     }
     ;
@@ -189,14 +189,13 @@ class DOMState extends events_1.EventEmitter {
     updateInlineStyle() {
         return __awaiter(this, void 0, void 0, function* () {
             const oldInlineStyle = this.inlineStyle;
-            yield this.requestInlineStyle().then((inlineStyle) => {
-                this.inlineStyle = inlineStyle.cssText;
-                if (this.inlineStyle !== oldInlineStyle) {
-                    this.emit('inlineStyleChanged', {
-                        inlineStyle: this.inlineStyle
-                    });
-                }
-            });
+            const inlineStyle = yield this.requestInlineStyle();
+            this.inlineStyle = inlineStyle.cssText;
+            if (this.inlineStyle !== oldInlineStyle) {
+                this.emit('inlineStyleChanged', {
+                    inlineStyle: this.inlineStyle
+                });
+            }
         });
     }
     ;

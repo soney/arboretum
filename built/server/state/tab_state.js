@@ -202,7 +202,13 @@ class TabState extends events_1.EventEmitter {
                 // throw new Error(`Could not find ${nodeId}`);
             }
         };
-        this.initialized = this.initialize();
+        try {
+            this.initialized = this.initialize();
+        }
+        catch (err) {
+            console.error(err);
+            throw err;
+        }
         log.debug(`=== CREATED TAB STATE ${this.getTabId()} ====`);
     }
     ;
@@ -236,6 +242,12 @@ class TabState extends events_1.EventEmitter {
         });
     }
     ;
+    submitOp(...ops) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // await this.getShareDBDoc().submitOp(ops);
+        });
+    }
+    ;
     getShareDBDoc() { return this.doc; }
     ;
     getShareDBPath() {
@@ -243,7 +255,12 @@ class TabState extends events_1.EventEmitter {
     }
     ;
     getRootFrame() {
-        return this.rootFrame;
+        if (this.domRoot) {
+            return this.domRoot.getChildFrame();
+        }
+        else {
+            return null;
+        }
     }
     evaluate(expression, frameId = null) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -315,7 +332,7 @@ class TabState extends events_1.EventEmitter {
         const frameState = new frame_state_1.FrameState(this.chrome, info, this, parentFrame, resources);
         this.frames.set(id, frameState);
         if (!parentId) {
-            this.setRootFrame(frameState);
+            // this.setRootFrame(frameState);
             this.refreshRoot();
         }
         this.updateFrameOnEvents(frameState);
@@ -416,28 +433,28 @@ class TabState extends events_1.EventEmitter {
         });
     }
     ;
-    setRootFrame(frame) {
-        if (this.rootFrame) {
-            this.frames.forEach((frame, id) => {
-                if (id !== frame.getFrameId()) {
-                    this.destroyFrame(id);
-                }
-            });
-        }
-        log.info(`Set main frame to ${frame.getFrameId()}`);
-        this.rootFrame = frame;
-        frame.markSetMainFrameExecuted(true);
-        this.emit('mainFrameChanged');
-        /*
-        return this.getDocument().then((root: CRI.Node) => {
-            this.rootFrame.setRoot(root);
-            this.emit('mainFrameChanged');
-        }).catch((err) => {
-            log.error(err);
-            throw (err);
-        });
-        */
-    }
+    // private setRootFrame(frame: FrameState):void {
+    //     if (this.rootFrame) {
+    //         this.frames.forEach((frame: FrameState, id: CRI.FrameID) => {
+    //             if (id !== frame.getFrameId()) {
+    //                 this.destroyFrame(id);
+    //             }
+    //         });
+    //     }
+    //     log.info(`Set main frame to ${frame.getFrameId()}`);
+    //     this.rootFrame = frame;
+    //     frame.markSetMainFrameExecuted(true);
+    //     this.emit('mainFrameChanged');
+    //     /*
+    //     return this.getDocument().then((root: CRI.Node) => {
+    //         this.rootFrame.setRoot(root);
+    //         this.emit('mainFrameChanged');
+    //     }).catch((err) => {
+    //         log.error(err);
+    //         throw (err);
+    //     });
+    //     */
+    // }
     navigate(url) {
         return __awaiter(this, void 0, void 0, function* () {
             const parsedURL = url_1.parse(url);

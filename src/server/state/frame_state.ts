@@ -5,6 +5,7 @@ import { ResourceTracker } from '../resource_tracker';
 import { getColoredLogger, level, setLevel } from '../../utils/logging';
 import {SDB, SDBDoc} from '../../utils/sharedb_wrapper';
 import * as _ from 'underscore';
+import * as ShareDB from 'sharedb';
 import {TabDoc, ShareDBFrame } from '../../utils/state_interfaces';
 
 const log = getColoredLogger('green');
@@ -35,6 +36,9 @@ export class FrameState {
         log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
     };
     public getShareDBDoc():SDBDoc<TabDoc> { return this.tab.getShareDBDoc(); };
+    public async submitOp(...ops:Array<ShareDB.Op>):Promise<void> {
+        // await this.getShareDBDoc().submitOp(ops);
+    };
     public getShareDBFrame():ShareDBFrame {
         return this.shareDBFrame;
     };

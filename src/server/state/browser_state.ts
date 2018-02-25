@@ -47,6 +47,9 @@ export class BrowserState extends EventEmitter {
     public shareDBListen(ws:stream.Duplex):void {
         this.sdb.listen(ws);
     };
+    public async submitOp(...ops:Array<ShareDB.Op>):Promise<void> {
+        // await this.doc.submitOp(ops);
+    };
     private async refreshTabs():Promise<void> {
         const tabInfos:Array<CRI.TabInfo> = await this.getTabs();
         const existingTabs = new Set<CRI.TabID>(this.tabs.keys());
@@ -65,7 +68,7 @@ export class BrowserState extends EventEmitter {
 
                 await tab.initialized;
                 const shareDBOp:ShareDB.ObjectInsertOp = {p: ['tabs', id], oi: id};
-                await this.doc.submitOp([shareDBOp]);
+                await this.submitOp(shareDBOp);
 
                 this.emit('tabCreated', {
                     id: id
@@ -79,7 +82,7 @@ export class BrowserState extends EventEmitter {
             log.trace(`Destroying tab ${id}`);
             this.destroyTab(id);
             const shareDBOp:ShareDB.ObjectDeleteOp = {p: ['tabs', id], od: id};
-            await this.doc.submitOp([shareDBOp]);
+            await this.submitOp(shareDBOp);
         });
 
         await Promise.all(destroyPromises);

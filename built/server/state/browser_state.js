@@ -50,6 +50,12 @@ class BrowserState extends events_1.EventEmitter {
         this.sdb.listen(ws);
     }
     ;
+    submitOp(...ops) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // await this.doc.submitOp(ops);
+        });
+    }
+    ;
     refreshTabs() {
         return __awaiter(this, void 0, void 0, function* () {
             const tabInfos = yield this.getTabs();
@@ -69,7 +75,7 @@ class BrowserState extends events_1.EventEmitter {
                     this.tabs.set(id, tab);
                     yield tab.initialized;
                     const shareDBOp = { p: ['tabs', id], oi: id };
-                    yield this.doc.submitOp([shareDBOp]);
+                    yield this.submitOp(shareDBOp);
                     this.emit('tabCreated', {
                         id: id
                     });
@@ -80,7 +86,7 @@ class BrowserState extends events_1.EventEmitter {
                 log.trace(`Destroying tab ${id}`);
                 this.destroyTab(id);
                 const shareDBOp = { p: ['tabs', id], od: id };
-                yield this.doc.submitOp([shareDBOp]);
+                yield this.submitOp(shareDBOp);
             }));
             yield Promise.all(destroyPromises);
         });

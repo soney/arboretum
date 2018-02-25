@@ -25,10 +25,10 @@ export class DOMState extends EventEmitter {
 
     constructor(private node: CRI.Node, private tab:TabState, private contentDocument?:DOMState, private childFrame?:FrameState, private parent?:DOMState) {
         super();
-        // this.shareDBNode = {
-        //     node: _.clone(node),
-        //     childFrame: this.childFrame ? this.childFrame.getShareDBFrame() : null
-        // };
+        this.shareDBNode = {
+            node: _.clone(node),
+            childFrame: this.childFrame ? this.childFrame.getShareDBFrame() : null
+        };
 
         this.getFullString().then((fullNodeValue: string) => {
             this.setNodeValue(fullNodeValue);
@@ -42,7 +42,7 @@ export class DOMState extends EventEmitter {
     public getShareDBDoc():SDBDoc<TabDoc> { return this.tab.getShareDBDoc(); };
     public getShareDBNode():ShareDBDOMNode { return this.shareDBNode; };
     public async submitOp(...ops:Array<ShareDB.Op>):Promise<void> {
-        await this.getShareDBDoc().submitOp(ops);
+        // await this.getShareDBDoc().submitOp(ops);
     };
     public getNode():CRI.Node { return this.node; };
     public getShareDBPath():Array<string|number> {
@@ -148,14 +148,13 @@ export class DOMState extends EventEmitter {
     };
     public async updateInlineStyle():Promise<void> {
         const oldInlineStyle: string = this.inlineStyle;
-        await this.requestInlineStyle().then((inlineStyle) => {
-            this.inlineStyle = inlineStyle.cssText;
-            if (this.inlineStyle !== oldInlineStyle) {
-                this.emit('inlineStyleChanged', {
-                    inlineStyle: this.inlineStyle
-                });
-            }
-        });
+        const inlineStyle = await this.requestInlineStyle();
+        this.inlineStyle = inlineStyle.cssText;
+        if (this.inlineStyle !== oldInlineStyle) {
+            this.emit('inlineStyleChanged', {
+                inlineStyle: this.inlineStyle
+            });
+        }
     };
     public insertChild(childDomState: DOMState, previousDomState: DOMState = null, node:CRI.Node): void {
         if (previousDomState) {
