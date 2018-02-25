@@ -26,7 +26,7 @@ const opn = require("opn");
 // const BrowserState = require('./server/state/browser_state');
 // process.traceProcessWarnings = true;
 const state = { chat: {}, browser: {} };
-const OPEN_MIRROR = false;
+const OPEN_MIRROR = true;
 const RDB_PORT = 9222;
 const HTTP_PORT = 3000;
 const isMac = /^dar/.test(os_1.platform());
@@ -132,20 +132,36 @@ function getIPAddress() {
     return ip.address();
 }
 ;
+let serverState = {
+    running: false,
+    hostname: '',
+    port: -1
+};
 function startServer() {
     return __awaiter(this, void 0, void 0, function* () {
-        const port = yield new Promise((resolve, reject) => {
-            server.listen(() => {
-                const addy = server.address();
-                const { port } = addy;
-                resolve(port);
-            });
-        });
-        const hostname = getIPAddress();
-        if (OPEN_MIRROR) {
-            opn(`http://${hostname}:${port}`, { app: 'google-chrome' }); // open browser
+        if (serverState.running) {
+            const { hostname, port } = serverState;
+            return { hostname, port };
         }
-        return ({ hostname, port });
+        else {
+            const port = yield new Promise((resolve, reject) => {
+                server.listen(() => {
+                    const addy = server.address();
+                    const { port } = addy;
+                    resolve(port);
+                });
+            });
+            const hostname = getIPAddress();
+            serverState = {
+                running: true,
+                hostname: hostname,
+                port: port
+            };
+            if (OPEN_MIRROR) {
+                opn(`http://${hostname}:${port}`, { app: 'google-chrome' }); // open browser
+            }
+            return ({ hostname, port });
+        }
     });
 }
 ;
@@ -156,6 +172,11 @@ function stopServer() {
                 resolve();
             });
         });
+        serverState = {
+            running: false,
+            hostname: '',
+            port: -1
+        };
     });
 }
 ;
@@ -172,6 +193,9 @@ electron_1.ipcMain.on('asynchronous-message', (event, arg) => __awaiter(this, vo
         const info = yield startServer();
         event.sender.send('asynchronous-reply', info);
         console.log(chalk_1.default.bgWhite.bold.black(`Listening at ${info.hostname} port ${info.port}`));
+        if (OPEN_MIRROR) {
+            opn(`http://${info.hostname}:${info.port}/`, { app: 'google-chrome' }); // open browser
+        }
     }
     else if (arg === 'stopServer') {
         yield stopServer();

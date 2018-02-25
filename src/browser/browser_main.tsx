@@ -14,7 +14,8 @@ require('./css/browser.scss');
 export type BrowserTabID = number;
 
 type ArboretumProps = {
-    urls:Array<string>
+    urls:Array<string>,
+    serverState:"active" | "idle"
 };
 type ArboretumState = {
     tabs:Array<{url:string, id:number, selected:boolean}>,
@@ -22,6 +23,8 @@ type ArboretumState = {
     selectedTab:ArboretumTab,
     showingSidebar:boolean,
     serverActive:boolean,
+    shareURL:string,
+    adminURL:string,
     activeWebViewEl:JSX.Element
 };
 
@@ -46,8 +49,10 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
             webViews: [],
             selectedTab:null,
             showingSidebar:false,
-            serverActive:false,
-            activeWebViewEl:null
+            serverActive:this.props.serverState === "active",
+            activeWebViewEl:null,
+            shareURL: '',
+            adminURL: ''
         };
         this.updateWebViews();
     };
@@ -94,6 +99,7 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
         return reply;
     };
     private setServerActive = async (active:boolean):Promise<SetServerActiveValue> => {
+        let shareURL:string, adminURL:string;
         if(active) {
             const {hostname, port} = await this.sendIPCMessage('startServer');
             const fullShareURL = url.format({ protocol:'http', hostname, port });
@@ -102,7 +108,6 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
             this.socket = new WebSocket(wsAddress);
             this.sdb = new SDB(true, this.socket);
             this.chat = new ArboretumChat(this.sdb);
-            console.log(this.chat);
 
             if(this.sidebar) {
                 this.sidebar.setSDB(this.sdb);
@@ -111,10 +116,9 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
 
             this.chat.addUser('Admin');
 
-            const [shareURL, adminURL] = await Promise.all([
+            [shareURL, adminURL] = await Promise.all([
                 this.getShortcut(fullShareURL), this.getShortcut(fullAdminURL)
             ]);
-            return {shareURL, adminURL};
         } else {
             if(this.sidebar) {
                 this.sidebar.setSDB(null);
@@ -132,11 +136,13 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
                 this.chat = null;
             }
             await this.sendIPCMessage('stopServer');
-            return {
-                shareURL:'',
-                adminURL:''
-            };
+            [shareURL, adminURL] = ['', ''];
         }
+        if(this.sidebar) {
+            this.sidebar.setState({shareURL, adminURL});
+        }
+        this.setState({shareURL, adminURL});
+        return {shareURL, adminURL};
     };
     private async getShortcut(url:string):Promise<string> {
         return url;
@@ -250,6 +256,7 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
     };
     private sidebarRef = (sidebar:ArboretumSidebar):void => {
         this.sidebar = sidebar;
+        this.setServerActive(this.state.serverActive);
     };
 
     public render():React.ReactNode {
@@ -268,7 +275,7 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
             </header>
             <div className="window-content">
                 <div className="pane-group">
-                    <ArboretumSidebar ref={this.sidebarRef} onSendMessage={this.sendMessage} setServerActive={this.setServerActive} isVisible={this.state.showingSidebar} serverActive={this.state.serverActive} onPostTask={this.postTask}/>
+                    <ArboretumSidebar shareURL={this.state.shareURL} adminURL={this.state.adminURL} ref={this.sidebarRef} onSendMessage={this.sendMessage} setServerActive={this.setServerActive} isVisible={this.state.showingSidebar} serverActive={this.state.serverActive} onPostTask={this.postTask}/>
                     <div id="browser-pane" className="pane">
                         <div id="content">{this.state.webViews}</div>
                     </div>
@@ -279,6 +286,6 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
 };
 
 ReactDOM.render(
-    <Arboretum urls={['http://www.umich.edu/']} />,
+    <Arboretum serverState="active" urls={['file:///home/soney/code/arboretum/test/index.html']} />,
     document.getElementById('arboretum_main')
 );

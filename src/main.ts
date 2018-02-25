@@ -19,7 +19,7 @@ import * as opn from 'opn';
 
 const state = { chat: {}, browser: {} };
 
-const OPEN_MIRROR: boolean = false;
+const OPEN_MIRROR: boolean = true;
 const RDB_PORT: number = 9222;
 const HTTP_PORT: number = 3000;
 const isMac: boolean = /^dar/.test(platform());
@@ -137,19 +137,34 @@ function getIPAddress(): string {
     return ip.address();
 };
 
+let serverState:{running:boolean, hostname:string, port:number} = {
+    running: false,
+    hostname: '',
+    port: -1
+};
 async function startServer(): Promise<{hostname:string,port:number}> {
-    const port = await new Promise<number>((resolve, reject) => {
-        server.listen(() => {
-            const addy = server.address();
-            const { port } = addy;
-            resolve(port);
+    if(serverState.running) {
+        const {hostname, port} = serverState;
+        return {hostname, port};
+    } else {
+        const port = await new Promise<number>((resolve, reject) => {
+            server.listen(() => {
+                const addy = server.address();
+                const { port } = addy;
+                resolve(port);
+            });
         });
-    });
-    const hostname = getIPAddress();
-    if (OPEN_MIRROR) {
-        opn(`http://${hostname}:${port}`, { app: 'google-chrome' }); // open browser
+        const hostname = getIPAddress();
+        serverState = {
+            running:true,
+            hostname: hostname,
+            port: port
+        };
+        if (OPEN_MIRROR) {
+            opn(`http://${hostname}:${port}`, { app: 'google-chrome' }); // open browser
+        }
+        return({ hostname, port });
     }
-    return({ hostname, port });
 };
 async function stopServer(): Promise<void> {
     await new Promise<string>((resolve, reject) => {
@@ -157,6 +172,11 @@ async function stopServer(): Promise<void> {
             resolve();
         })
     });
+    serverState = {
+        running: false,
+        hostname: '',
+        port: -1
+    }
 };
 
 if (OPEN_MIRROR) {
@@ -173,6 +193,9 @@ ipcMain.on('asynchronous-message', async (event, arg) => {
         const info = await startServer();
         event.sender.send('asynchronous-reply', info);
         console.log(chalk.bgWhite.bold.black(`Listening at ${info.hostname} port ${info.port}`));
+        if(OPEN_MIRROR) {
+            opn(`http://${info.hostname}:${info.port}/`, { app: 'google-chrome' }); // open browser
+        }
     } else if (arg === 'stopServer') {
         await stopServer();
         event.sender.send('asynchronous-reply', 'ok');

@@ -6922,6 +6922,7 @@ class Arboretum extends React.Component {
             this.updateNavBarState();
         };
         this.setServerActive = (active) => __awaiter(this, void 0, void 0, function* () {
+            let shareURL, adminURL;
             if (active) {
                 const { hostname, port } = yield this.sendIPCMessage('startServer');
                 const fullShareURL = url.format({ protocol: 'http', hostname, port });
@@ -6930,16 +6931,14 @@ class Arboretum extends React.Component {
                 this.socket = new WebSocket(wsAddress);
                 this.sdb = new sharedb_wrapper_1.SDB(true, this.socket);
                 this.chat = new chat_doc_1.ArboretumChat(this.sdb);
-                console.log(this.chat);
                 if (this.sidebar) {
                     this.sidebar.setSDB(this.sdb);
                     this.sidebar.setChat(this.chat);
                 }
                 this.chat.addUser('Admin');
-                const [shareURL, adminURL] = yield Promise.all([
+                [shareURL, adminURL] = yield Promise.all([
                     this.getShortcut(fullShareURL), this.getShortcut(fullAdminURL)
                 ]);
-                return { shareURL, adminURL };
             }
             else {
                 if (this.sidebar) {
@@ -6958,11 +6957,13 @@ class Arboretum extends React.Component {
                     this.chat = null;
                 }
                 yield this.sendIPCMessage('stopServer');
-                return {
-                    shareURL: '',
-                    adminURL: ''
-                };
+                [shareURL, adminURL] = ['', ''];
             }
+            if (this.sidebar) {
+                this.sidebar.setState({ shareURL, adminURL });
+            }
+            this.setState({ shareURL, adminURL });
+            return { shareURL, adminURL };
         });
         this.sendMessage = (message) => {
             if (this.chat) {
@@ -7064,6 +7065,7 @@ class Arboretum extends React.Component {
         };
         this.sidebarRef = (sidebar) => {
             this.sidebar = sidebar;
+            this.setServerActive(this.state.serverActive);
         };
         this.state = {
             tabs: this.props.urls.map((url, index) => {
@@ -7076,8 +7078,10 @@ class Arboretum extends React.Component {
             webViews: [],
             selectedTab: null,
             showingSidebar: false,
-            serverActive: false,
-            activeWebViewEl: null
+            serverActive: this.props.serverState === "active",
+            activeWebViewEl: null,
+            shareURL: '',
+            adminURL: ''
         };
         this.updateWebViews();
     }
@@ -7141,7 +7145,7 @@ class Arboretum extends React.Component {
                 React.createElement(nav_bar_1.ArboretumNavigationBar, { ref: this.navBarRef, onBack: this.goBack, onForward: this.goForward, onReload: this.reload, onToggleSidebar: this.toggleSidebar, onNavigate: this.navigate })),
             React.createElement("div", { className: "window-content" },
                 React.createElement("div", { className: "pane-group" },
-                    React.createElement(sidebar_1.ArboretumSidebar, { ref: this.sidebarRef, onSendMessage: this.sendMessage, setServerActive: this.setServerActive, isVisible: this.state.showingSidebar, serverActive: this.state.serverActive, onPostTask: this.postTask }),
+                    React.createElement(sidebar_1.ArboretumSidebar, { shareURL: this.state.shareURL, adminURL: this.state.adminURL, ref: this.sidebarRef, onSendMessage: this.sendMessage, setServerActive: this.setServerActive, isVisible: this.state.showingSidebar, serverActive: this.state.serverActive, onPostTask: this.postTask }),
                     React.createElement("div", { id: "browser-pane", className: "pane" },
                         React.createElement("div", { id: "content" }, this.state.webViews)))));
     }
@@ -7149,7 +7153,7 @@ class Arboretum extends React.Component {
 }
 exports.Arboretum = Arboretum;
 ;
-ReactDOM.render(React.createElement(Arboretum, { urls: ['http://www.umich.edu/'] }), document.getElementById('arboretum_main'));
+ReactDOM.render(React.createElement(Arboretum, { serverState: "active", urls: ['file:///home/soney/code/arboretum/test/index.html'] }), document.getElementById('arboretum_main'));
 
 
 /***/ }),
@@ -7416,8 +7420,8 @@ class ArboretumSidebar extends React.Component {
         this.state = {
             isVisible: this.props.isVisible,
             serverActive: this.props.serverActive,
-            shareURL: '',
-            adminURL: '',
+            shareURL: this.props.shareURL,
+            adminURL: this.props.adminURL,
             sandbox: true
         };
     }
