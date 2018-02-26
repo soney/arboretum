@@ -87,67 +87,92 @@ class TabState extends events_1.EventEmitter {
                 log.error(`Could not find frame ${frameId} for execution context`);
             }
         };
-        this.doHandleDocumentUpdated = (event) => {
+        this.doHandleDocumentUpdated = (event) => __awaiter(this, void 0, void 0, function* () {
             log.debug(`Document Updated`);
-        };
-        this.doHandleCharacterDataModified = (event) => {
+        });
+        this.doHandleCharacterDataModified = (event) => __awaiter(this, void 0, void 0, function* () {
             const { nodeId } = event;
             const domState = this.getDOMStateWithID(nodeId);
             if (domState) {
                 log.debug(`Character Data Modified ${nodeId}`);
-                domState.setCharacterData(event.characterData);
+                try {
+                    yield domState.setCharacterData(event.characterData);
+                }
+                catch (err) {
+                    console.error(err);
+                    console.error(err.stack);
+                }
             }
             else {
                 console.error(`Could not find ${nodeId}`);
                 // throw new Error(`Could not find ${nodeId}`);
             }
-        };
+        });
         this.doHandleSetChildNodes = (event) => {
             const { parentId } = event;
             const parent = this.getDOMStateWithID(parentId);
             if (parent) {
-                const { nodes } = event;
-                log.debug(`Set child nodes ${parentId} -> [${nodes.map((node) => node.nodeId).join(', ')}]`);
-                this.setChildrenRecursive(parent, nodes);
+                try {
+                    const { nodes } = event;
+                    log.debug(`Set child nodes ${parentId} -> [${nodes.map((node) => node.nodeId).join(', ')}]`);
+                    this.setChildrenRecursive(parent, nodes);
+                }
+                catch (err) {
+                    console.error(err);
+                    console.error(err.stack);
+                }
             }
             else {
                 console.error(`Could not find ${parentId}`);
                 // throw new Error(`Could not find ${parentId}`);
             }
         };
-        this.doHandleInlineStyleInvalidated = (event) => {
+        this.doHandleInlineStyleInvalidated = (event) => __awaiter(this, void 0, void 0, function* () {
             const { nodeIds } = event;
-            const updatedInlineStyles = nodeIds.map((nodeId) => {
+            const updatedInlineStyles = nodeIds.map((nodeId) => __awaiter(this, void 0, void 0, function* () {
                 const node = this.getDOMStateWithID(nodeId);
                 if (node) {
-                    node.updateInlineStyle();
+                    try {
+                        yield node.updateInlineStyle();
+                    }
+                    catch (err) {
+                        console.error(err);
+                        console.error(err.stack);
+                    }
                     return true;
                 }
                 else {
                     return false;
                 }
-            });
-            if (_.any(updatedInlineStyles)) {
+            }));
+            const handled = yield Promise.all(updatedInlineStyles);
+            if (_.every(handled)) {
                 log.debug(`Set inline styles`);
             }
             else {
                 console.error(`Could not find nodes for inlineStyleInvalidated`);
                 // throw new Error(`Could not find nodes for inlineStyleInvalidated`);
             }
-        };
-        this.doHandleChildNodeCountUpdated = (event) => {
+        });
+        this.doHandleChildNodeCountUpdated = (event) => __awaiter(this, void 0, void 0, function* () {
             const { nodeId } = event;
             const domState = this.getDOMStateWithID(nodeId);
             if (domState) {
                 log.debug(`Child count updated for ${nodeId}`);
-                domState.childCountUpdated(event.childNodeCount);
+                try {
+                    yield domState.childCountUpdated(event.childNodeCount);
+                }
+                catch (err) {
+                    console.error(err);
+                    console.error(err.stack);
+                }
             }
             else {
                 log.error(`Could not find ${nodeId}`);
                 // throw new Error(`Could not find ${nodeId}`);
             }
-        };
-        this.doHandleChildNodeInserted = (event) => {
+        });
+        this.doHandleChildNodeInserted = (event) => __awaiter(this, void 0, void 0, function* () {
             const { parentNodeId } = event;
             const parentDomState = this.getDOMStateWithID(parentNodeId);
             if (parentDomState) {
@@ -155,6 +180,13 @@ class TabState extends events_1.EventEmitter {
                 const { nodeId } = node;
                 const previousDomState = previousNodeId > 0 ? this.getDOMStateWithID(previousNodeId) : null;
                 const domState = this.getOrCreateDOMState(node, null, null, parentDomState, previousDomState);
+                try {
+                    yield parentDomState.insertChild(domState, previousDomState);
+                }
+                catch (err) {
+                    console.error(err);
+                    console.error(err.stack);
+                }
                 log.debug(`Child node inserted ${nodeId} (parent: ${parentNodeId} / previous: ${previousNodeId})`);
                 this.setChildrenRecursive(domState, node.children);
                 this.requestChildNodes(nodeId, -1, true);
@@ -163,45 +195,63 @@ class TabState extends events_1.EventEmitter {
                 console.error(`Could not find ${parentNodeId}`);
                 // throw new Error(`Could not find ${parentNodeId}`);
             }
-        };
-        this.doHandleChildNodeRemoved = (event) => {
+        });
+        this.doHandleChildNodeRemoved = (event) => __awaiter(this, void 0, void 0, function* () {
             const { parentNodeId, nodeId } = event;
             const domState = this.getDOMStateWithID(nodeId);
             const parentDomState = this.getDOMStateWithID(parentNodeId);
             if (domState && parentDomState) {
                 log.debug(`Child node removed ${nodeId} (parent: ${parentNodeId})`);
-                parentDomState.removeChild(domState);
+                try {
+                    yield parentDomState.removeChild(domState);
+                }
+                catch (err) {
+                    console.error(err);
+                    console.error(err.stack);
+                }
             }
             else {
                 throw new Error(`Could not find ${parentNodeId} or ${nodeId}`);
             }
-        };
-        this.doHandleAttributeModified = (event) => {
+        });
+        this.doHandleAttributeModified = (event) => __awaiter(this, void 0, void 0, function* () {
             const { nodeId } = event;
             const domState = this.getDOMStateWithID(nodeId);
             if (domState) {
                 const { name, value } = event;
                 log.debug(`Attribute modified ${name} to ${value}`);
-                domState.setAttribute(name, value);
+                try {
+                    yield domState.setAttribute(name, value);
+                }
+                catch (err) {
+                    console.error(err);
+                    console.error(err.stack);
+                }
             }
             else {
                 console.error(`Could not find ${nodeId}`);
                 // throw new Error(`Could not find ${nodeId}`);
             }
-        };
-        this.doHandleAttributeRemoved = (event) => {
+        });
+        this.doHandleAttributeRemoved = (event) => __awaiter(this, void 0, void 0, function* () {
             const { nodeId } = event;
             const domState = this.getDOMStateWithID(nodeId);
             if (domState) {
                 const { name } = event;
                 log.debug(`Attribute removed ${name}`);
-                domState.removeAttribute(name);
+                try {
+                    yield domState.removeAttribute(name);
+                }
+                catch (err) {
+                    console.error(err);
+                    console.error(err.stack);
+                }
             }
             else {
                 console.error(`Could not find ${nodeId}`);
                 // throw new Error(`Could not find ${nodeId}`);
             }
-        };
+        });
         try {
             this.initialized = this.initialize();
         }
@@ -215,7 +265,10 @@ class TabState extends events_1.EventEmitter {
     initialize() {
         return __awaiter(this, void 0, void 0, function* () {
             this.doc = yield this.sdb.get('tab', this.getTabId());
-            yield this.doc.createIfEmpty({});
+            yield this.doc.createIfEmpty({
+                id: this.getTabId(),
+                root: null
+            });
             const chromeEventEmitter = cri({
                 chooseTab: this.info
             });
@@ -244,7 +297,7 @@ class TabState extends events_1.EventEmitter {
     ;
     submitOp(...ops) {
         return __awaiter(this, void 0, void 0, function* () {
-            // await this.getShareDBDoc().submitOp(ops);
+            yield this.getShareDBDoc().submitOp(ops);
         });
     }
     ;
@@ -286,12 +339,22 @@ class TabState extends events_1.EventEmitter {
         return this.chrome;
     }
     ;
+    p(...toAdd) {
+        return this.getShareDBPath().concat(...toAdd);
+    }
+    ;
     setDocument(root) {
-        if (this.domRoot) {
-            this.domRoot.destroy();
-        }
-        this.domRoot = this.getOrCreateDOMState(root);
-        this.setChildrenRecursive(this.domRoot, root.children);
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.domRoot) {
+                this.domRoot.destroy();
+            }
+            this.domRoot = this.getOrCreateDOMState(root);
+            this.setChildrenRecursive(this.domRoot, root.children);
+            const data = this.getShareDBDoc().getData();
+            const oldRoot = data.root;
+            const shareDBOp = { p: this.p('root'), oi: this.domRoot.getShareDBNode(), od: oldRoot };
+            yield this.submitOp(shareDBOp);
+        });
     }
     ;
     getDOMStateWithID(nodeId) {
@@ -301,6 +364,7 @@ class TabState extends events_1.EventEmitter {
     hasDOMStateWithID(nodeId) {
         return this.nodeMap.has(nodeId);
     }
+    ;
     getOrCreateDOMState(node, contentDocument, childFrame, parent, previousNode) {
         const { nodeId } = node;
         if (this.hasDOMStateWithID(nodeId)) {
@@ -312,12 +376,10 @@ class TabState extends events_1.EventEmitter {
                 this.removeDOMState(domState);
             });
             this.nodeMap.set(nodeId, domState);
-            if (parent) {
-                parent.insertChild(domState, previousNode, node);
-            }
             return domState;
         }
     }
+    ;
     refreshRoot() {
         return __awaiter(this, void 0, void 0, function* () {
             return this.getDocument(-1, true).then((root) => {
@@ -587,7 +649,7 @@ class TabState extends events_1.EventEmitter {
     ;
     setChildrenRecursive(parentState, children) {
         if (children) {
-            parentState.setChildren(children.map((child) => {
+            const childDOMStates = children.map((child) => {
                 const { children, contentDocument, frameId } = child;
                 const frame = frameId ? this.getFrame(frameId) : null;
                 const contentDocState = contentDocument ? this.getOrCreateDOMState(contentDocument) : null;
@@ -612,7 +674,8 @@ class TabState extends events_1.EventEmitter {
                 //
                 this.setChildrenRecursive(domState, children);
                 return domState;
-            }));
+            });
+            parentState.setChildren(childDOMStates);
         }
         return parentState;
     }

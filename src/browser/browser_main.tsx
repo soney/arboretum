@@ -286,6 +286,6 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
 };
 
 ReactDOM.render(
-    <Arboretum serverState="active" urls={['file:///home/soney/code/arboretum/test/index.html']} />,
+    <Arboretum serverState="active" urls={['file:///home/soney/code/arboretum/test/simple.html']} />,
     document.getElementById('arboretum_main')
 );

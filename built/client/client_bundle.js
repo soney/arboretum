@@ -10934,10 +10934,12 @@ console.log(socket);
 const sdb = new sharedb_wrapper_1.SDB(true, socket);
 const chat = new chat_doc_1.ArboretumChat(sdb);
 chat.addUser('steve', true);
-console.log(chat);
 const browser = sdb.get('arboretum', 'browser');
 browser.subscribe(() => {
     console.log(browser.getData());
+});
+window.addEventListener('beforeunload', () => {
+    chat.markUserNotPresent(chat.getMe());
 });
 
 
@@ -13989,7 +13991,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const typed_event_emitter_1 = __webpack_require__(68);
-const _ = __webpack_require__(69);
+const guid_1 = __webpack_require__(69);
+const _ = __webpack_require__(70);
 exports.userColors = [
     ['#A80000', '#B05E0D', '#C19C00', '#107C10', '#038387', '#004E8C', '#5C126B']
 ];
@@ -14042,6 +14045,11 @@ class ArboretumChat extends typed_event_emitter_1.EventEmitter {
                                 user: li
                             });
                         }
+                        else if (p.length === 3 && p[2] === 'present') {
+                            const userIndex = p[1];
+                            const user = this.doc.getData().users[userIndex];
+                            this.emit(this.userNotPresent, { user });
+                        }
                     }
                     else if (p[0] === 'messages') {
                         this.emit(this.messageAdded, {
@@ -14065,14 +14073,14 @@ class ArboretumChat extends typed_event_emitter_1.EventEmitter {
             yield this.initialized;
             const data = this.doc.getData();
             const { colors } = data;
-            const index = id % colors.length;
-            return data.colors[index];
+            const index = guid_1.guidIndex(id) % colors.length;
+            return colors[index];
         });
     }
     ;
     addUser(displayName, isMe = true, present = true) {
         return __awaiter(this, void 0, void 0, function* () {
-            const id = ArboretumChat.userCounter++;
+            const id = guid_1.guid();
             const color = yield this.getColor(id);
             const user = { id, color, displayName, present, typing: TypingStatus.IDLE };
             yield this.initialized;
@@ -14259,6 +14267,33 @@ exports.Listener = Listener;
 
 /***/ }),
 /* 69 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+function s4() {
+    return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+}
+;
+function guid() {
+    return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+}
+exports.guid = guid;
+;
+function guidIndex(id) {
+    let result = 0;
+    for (let i = 0; i < id.length; i++) {
+        result += id.charCodeAt(i);
+    }
+    return result;
+}
+exports.guidIndex = guidIndex;
+;
+
+
+/***/ }),
+/* 70 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;//     Underscore.js 1.8.3

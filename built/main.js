@@ -22,11 +22,8 @@ const keypress = require("keypress");
 const chalk_1 = require("chalk");
 const ip = require("ip");
 const opn = require("opn");
-// const ChatServer = require('./server/chat');
-// const BrowserState = require('./server/state/browser_state');
-// process.traceProcessWarnings = true;
 const state = { chat: {}, browser: {} };
-const OPEN_MIRROR = true;
+const OPEN_MIRROR = false;
 const RDB_PORT = 9222;
 const HTTP_PORT = 3000;
 const isMac = /^dar/.test(os_1.platform());
@@ -172,6 +169,10 @@ function stopServer() {
                 resolve();
             });
         });
+        if (chromeProcess) {
+            chromeProcess.kill();
+            chromeProcess = null;
+        }
         serverState = {
             running: false,
             hostname: '',
@@ -180,21 +181,14 @@ function stopServer() {
     });
 }
 ;
-if (OPEN_MIRROR) {
-    startServer().then((info) => {
-        console.log(chalk_1.default.bgWhite.bold.black(`Listening at ${info.hostname} port ${info.port} `));
-        // return opn(address, { app: 'google-chrome' }); // open browser
-    }).catch((err) => {
-        console.error(err);
-    });
-}
+let chromeProcess;
 electron_1.ipcMain.on('asynchronous-message', (event, arg) => __awaiter(this, void 0, void 0, function* () {
     if (arg === 'startServer') {
         const info = yield startServer();
         event.sender.send('asynchronous-reply', info);
         console.log(chalk_1.default.bgWhite.bold.black(`Listening at ${info.hostname} port ${info.port}`));
         if (OPEN_MIRROR) {
-            opn(`http://${info.hostname}:${info.port}/`, { app: 'google-chrome' }); // open browser
+            chromeProcess = yield opn(`http://${info.hostname}:${info.port}/`, { app: 'google-chrome' }); // open browser
         }
     }
     else if (arg === 'stopServer') {
@@ -220,6 +214,10 @@ process.stdin.on('keypress', (ch, key) => {
         browserState.printTabSummaries();
     }
     else if (name === 'q') {
+        if (chromeProcess) {
+            chromeProcess.kill();
+            chromeProcess = null;
+        }
         process.stdin.pause();
         process.stdin.setRawMode(false);
         process.exit();

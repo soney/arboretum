@@ -10,6 +10,7 @@ import { urlTransform } from '../url_transform';
 import {SDB, SDBDoc} from '../../utils/sharedb_wrapper';
 import * as _ from 'underscore';
 import * as ShareDB from 'sharedb';
+import * as timers from 'timers';
 import {ShareDBDOMNode, ShareDBFrame, TabDoc} from '../../utils/state_interfaces';
 
 const log = getColoredLogger('magenta');
@@ -25,9 +26,13 @@ export class DOMState extends EventEmitter {
 
     constructor(private node: CRI.Node, private tab:TabState, private contentDocument?:DOMState, private childFrame?:FrameState, private parent?:DOMState) {
         super();
+        const sdbNode = _.clone(node);
+        sdbNode.children = this.children.map((child) => child.getShareDBNode());
         this.shareDBNode = {
-            node: _.clone(node),
-            childFrame: this.childFrame ? this.childFrame.getShareDBFrame() : null
+            node: sdbNode,
+            childFrame: this.childFrame ? this.childFrame.getShareDBFrame() : null,
+            inlineStyle: this.inlineStyle,
+            inputValue: ''
         };
 
         this.getFullString().then((fullNodeValue: string) => {
@@ -37,12 +42,17 @@ export class DOMState extends EventEmitter {
                 log.error(`Could not find node ${this.getNodeId()}`)
             }
         });
-        // log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
+        log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     };
     public getShareDBDoc():SDBDoc<TabDoc> { return this.tab.getShareDBDoc(); };
     public getShareDBNode():ShareDBDOMNode { return this.shareDBNode; };
     public async submitOp(...ops:Array<ShareDB.Op>):Promise<void> {
-        // await this.getShareDBDoc().submitOp(ops);
+        try {
+            await this.getShareDBDoc().submitOp(ops);
+        } catch(e) {
+            console.error(e);
+            console.error(e.stack);
+        }
     };
     public getNode():CRI.Node { return this.node; };
     public getShareDBPath():Array<string|number> {
@@ -131,10 +141,12 @@ export class DOMState extends EventEmitter {
     private addValueListeners() {
         const tagName: string = this.getTagName().toLowerCase();
         if (tagName === 'input' || tagName === 'textarea') {
-            this.updateValueInterval = setInterval(() => {
-                this.getInputValue().then((data: string) => {
-                    this.emit('valueUpdated', 'input', data);
-                });
+            this.updateValueInterval = timers.setInterval(async () => {
+                const inputValue:string = await this.getInputValue();
+
+                const oldData = this.shareDBNode.inputValue;
+                const shareDBOp:ShareDB.ObjectReplaceOp = {p: this.p('inputValue'), oi: inputValue, od: oldData};
+                await this.submitOp(shareDBOp);
             }, 700);
         } else if (tagName === 'canvas') {
 
@@ -142,74 +154,63 @@ export class DOMState extends EventEmitter {
     };
     private removeValueListeners() {
         if (this.updateValueInterval) {
-            clearInterval(this.updateValueInterval);
+            timers.clearInterval(this.updateValueInterval);
             this.updateValueInterval = null;
         }
     };
     public async updateInlineStyle():Promise<void> {
         const oldInlineStyle: string = this.inlineStyle;
         const inlineStyle = await this.requestInlineStyle();
-        this.inlineStyle = inlineStyle.cssText;
-        if (this.inlineStyle !== oldInlineStyle) {
-            this.emit('inlineStyleChanged', {
-                inlineStyle: this.inlineStyle
-            });
-        }
+        const {cssText} = inlineStyle;
+
+        this.inlineStyle = cssText;
+        const oldData = this.shareDBNode.inlineStyle;
+        const shareDBOp:ShareDB.ObjectReplaceOp = {p: this.p('inlineStyle'), oi: cssText, od: oldData };
+        await this.submitOp(shareDBOp);
     };
-    public insertChild(childDomState: DOMState, previousDomState: DOMState = null, node:CRI.Node): void {
-        if (previousDomState) {
-            const index = this.children.indexOf(previousDomState);
-            this.children.splice(index + 1, 0, childDomState);
-            this.node.children.splice(index + 1, 0, node);
-            const shareDBOp:ShareDB.ListInsertOp = {p: this.p('node', 'children', index+1), li: childDomState.getShareDBNode()};
-            this.submitOp(shareDBOp);
-        } else {
-            this.children.unshift(childDomState);
-            this.node.children.unshift(node);
-            const shareDBOp:ShareDB.ListInsertOp = {p: this.p('node', 'children', 0), li: childDomState.getShareDBNode()};
-            this.submitOp(shareDBOp);
-        }
+    public async insertChild(childDomState: DOMState, previousDomState: DOMState): Promise<void> {
+        const index:number = previousDomState ? this.children.indexOf(previousDomState)+1 : 0;
+        this.children.splice(index, 0, childDomState);
+        this.node.children.splice(index, 0, childDomState.getNode());
         childDomState.setParent(this);
-        this.emit('childAdded', {
-            child: childDomState,
-            previousNode: previousDomState
-        });
+
+        const shareDBOp:ShareDB.ListInsertOp = {p: this.p('node', 'children', index), li: childDomState.getShareDBNode()};
+        await this.submitOp(shareDBOp);
     };
 
-    public setCharacterData(characterData: string): void {
+    public async setCharacterData(characterData: string): Promise<void> {
         this.node.nodeValue = characterData;
         const previousNodeValue = this.shareDBNode.node.nodeValue;
+
         const shareDBOp:ShareDB.ObjectReplaceOp = {p: this.p('node', 'nodeValue'), od: previousNodeValue, oi: characterData};
-        this.submitOp(shareDBOp);
-        this.emit('nodeValueChanged', {
-            value: this.getNodeValue()
-        });
+        await this.submitOp(shareDBOp);
     };
-    private setNodeValue(value: string): void {
+    private async setNodeValue(value: string): Promise<void> {
         this.node.nodeValue = value;
+
         const previousNodeValue = this.shareDBNode.node.nodeValue;
         const shareDBOp:ShareDB.ObjectReplaceOp = {p: this.p('node', 'nodeValue'), od: previousNodeValue, oi: value};
-        this.submitOp(shareDBOp);
+        await this.submitOp(shareDBOp);
     };
     public getNodeValue(): string {
         return this.node.nodeValue;
     };
-    public removeChild(child: DOMState): boolean {
+    public async removeChild(child: DOMState): Promise<boolean> {
         const index = this.children.indexOf(child);
         if (index >= 0) {
             this.node.children.splice(index, 1);
             this.children.splice(index, 1);
+            child.destroy();
+
             const oldValue = this.shareDBNode.node.children[index];
             const shareDBOp:ShareDB.ListDeleteOp = {p: this.p('node', 'nodeValue', index), ld:oldValue};
-            this.submitOp(shareDBOp);
-            this.emit('childRemoved', { child })
-            child.destroy();
+            await this.submitOp(shareDBOp);
             return true;
         } else {
             return false;
         }
     };
-    public setAttribute(name: string, value: string): void {
+    public async setAttribute(name: string, value: string):Promise<void> {
         const node = this.node;
         const { attributes } = node;
         if (!attributes) {
@@ -221,7 +222,7 @@ export class DOMState extends EventEmitter {
             if (n === name) {
                 attributes[i + 1] = value;
                 const shareDBOp:ShareDB.ListInsertOp = {p: this.p('node', 'attributes', i+1), li: value};
-                this.submitOp(shareDBOp);
+                await this.submitOp(shareDBOp);
                 found = true;
                 break;
             }
@@ -230,11 +231,10 @@ export class DOMState extends EventEmitter {
             attributes.push(name, value);
             const index = this.shareDBNode.node.attributes.length;
             const shareDBOps:[ShareDB.ListInsertOp,ShareDB.ListInsertOp] = [{p: this.p('node', 'attributes', index), li: name}, {p: this.p('node', 'attributes', index+1), li: value}];
-            this.submitOp(...shareDBOps);
+            await this.submitOp(...shareDBOps);
         }
-        this.notifyAttributeChange();
     };
-    public removeAttribute(name: string): boolean {
+    public async removeAttribute(name: string):Promise<boolean> {
         const node = this.node;
         const { attributes } = node;
         const attributeIndex = attributes.indexOf(name);
@@ -242,15 +242,11 @@ export class DOMState extends EventEmitter {
             attributes.splice(attributeIndex, 2);
             const oldValue = attributes[attributeIndex+1];
             const shareDBOps:[ShareDB.ListDeleteOp,ShareDB.ListDeleteOp] = [{p: this.p('node', 'attributes', attributeIndex+1), ld: oldValue}, {p: this.p('node', 'attributes', attributeIndex), ld: name}];
-            this.submitOp(...shareDBOps);
-            this.notifyAttributeChange();
+            await this.submitOp(...shareDBOps);
             return true;
         } else {
             return false;
         }
-    };
-    private notifyAttributeChange(): void {
-        this.emit('attributesChanged');
     };
     public childCountUpdated(count: number): void {
         this.getTab().requestChildNodes(this.getNodeId())
@@ -281,7 +277,7 @@ export class DOMState extends EventEmitter {
             });
         };
     }
-    public setChildren(children: Array<DOMState>): void {
+    public async setChildren(children: Array<DOMState>):Promise<void> {
         this.children.forEach((child: DOMState) => {
             if (children.indexOf(child) < 0) {
                 child.destroy();
@@ -300,11 +296,9 @@ export class DOMState extends EventEmitter {
 
         const shareDBOps:[ShareDB.ObjectReplaceOp, ShareDB.ObjectReplaceOp] = [
             {p: this.p('node', 'children'), od: previousChildren, oi: this.children.map((c) => c.getShareDBNode())},
-            {p: this.p('node', 'children'), od: previousChildNodeCount, oi: this.node.children.length}];
-        this.submitOp(...shareDBOps);
+            {p: this.p('node', 'childNodeCount'), od: previousChildNodeCount, oi: this.node.children.length}];
 
-
-        this.emit('childrenChanged', { children })
+        await this.submitOp(...shareDBOps);
     };
 
     private getBaseURL(): string {

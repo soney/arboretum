@@ -6885,7 +6885,7 @@ const url = __webpack_require__(43);
 const _ = __webpack_require__(5);
 const sharedb_wrapper_1 = __webpack_require__(44);
 const chat_doc_1 = __webpack_require__(57);
-__webpack_require__(59);
+__webpack_require__(60);
 class Arboretum extends React.Component {
     constructor(props) {
         super(props);
@@ -7153,7 +7153,7 @@ class Arboretum extends React.Component {
 }
 exports.Arboretum = Arboretum;
 ;
-ReactDOM.render(React.createElement(Arboretum, { serverState: "active", urls: ['file:///home/soney/code/arboretum/test/index.html'] }), document.getElementById('arboretum_main'));
+ReactDOM.render(React.createElement(Arboretum, { serverState: "active", urls: ['file:///home/soney/code/arboretum/test/simple.html'] }), document.getElementById('arboretum_main'));
 
 
 /***/ }),
@@ -7537,6 +7537,7 @@ class ArboretumChatBox extends React.Component {
         if (this.chat) {
             this.chat.messageAdded(this.updateMessagesState);
             this.chat.userJoined(this.updateUsersState);
+            this.chat.userNotPresent(this.updateUsersState);
             this.chat.ready(() => {
                 this.updateMessagesState();
                 this.updateUsersState();
@@ -7578,7 +7579,7 @@ class ArboretumChatBox extends React.Component {
         const users = this.state.users.map((u) => {
             const isMe = u.id === meUserID;
             const style = { color: u.color };
-            return React.createElement("span", { className: `participant ${isMe ? 'me' : ''}`, style: style }, u.displayName);
+            return React.createElement("span", { key: u.id, className: `participant ${isMe ? 'me' : ''}`, style: style }, u.displayName);
         });
         return React.createElement("div", { className: 'chat' },
             React.createElement("h6", { id: "task_title" },
@@ -11269,6 +11270,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const typed_event_emitter_1 = __webpack_require__(58);
+const guid_1 = __webpack_require__(59);
 const _ = __webpack_require__(5);
 exports.userColors = [
     ['#A80000', '#B05E0D', '#C19C00', '#107C10', '#038387', '#004E8C', '#5C126B']
@@ -11322,6 +11324,11 @@ class ArboretumChat extends typed_event_emitter_1.EventEmitter {
                                 user: li
                             });
                         }
+                        else if (p.length === 3 && p[2] === 'present') {
+                            const userIndex = p[1];
+                            const user = this.doc.getData().users[userIndex];
+                            this.emit(this.userNotPresent, { user });
+                        }
                     }
                     else if (p[0] === 'messages') {
                         this.emit(this.messageAdded, {
@@ -11345,14 +11352,14 @@ class ArboretumChat extends typed_event_emitter_1.EventEmitter {
             yield this.initialized;
             const data = this.doc.getData();
             const { colors } = data;
-            const index = id % colors.length;
-            return data.colors[index];
+            const index = guid_1.guidIndex(id) % colors.length;
+            return colors[index];
         });
     }
     ;
     addUser(displayName, isMe = true, present = true) {
         return __awaiter(this, void 0, void 0, function* () {
-            const id = ArboretumChat.userCounter++;
+            const id = guid_1.guid();
             const color = yield this.getColor(id);
             const user = { id, color, displayName, present, typing: TypingStatus.IDLE };
             yield this.initialized;
@@ -11541,8 +11548,35 @@ exports.Listener = Listener;
 /* 59 */
 /***/ (function(module, exports, __webpack_require__) {
 
+"use strict";
 
-var content = __webpack_require__(60);
+Object.defineProperty(exports, "__esModule", { value: true });
+function s4() {
+    return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+}
+;
+function guid() {
+    return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+}
+exports.guid = guid;
+;
+function guidIndex(id) {
+    let result = 0;
+    for (let i = 0; i < id.length; i++) {
+        result += id.charCodeAt(i);
+    }
+    return result;
+}
+exports.guidIndex = guidIndex;
+;
+
+
+/***/ }),
+/* 60 */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+var content = __webpack_require__(61);
 
 if(typeof content === 'string') content = [[module.i, content, '']];
 
@@ -11556,7 +11590,7 @@ var options = {"hmr":true}
 options.transform = transform
 options.insertInto = undefined;
 
-var update = __webpack_require__(62)(content, options);
+var update = __webpack_require__(63)(content, options);
 
 if(content.locals) module.exports = content.locals;
 
@@ -11588,10 +11622,10 @@ if(false) {
 }
 
 /***/ }),
-/* 60 */
+/* 61 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(61)(true);
+exports = module.exports = __webpack_require__(62)(true);
 // imports
 
 
@@ -11602,7 +11636,7 @@ exports.push([module.i, "#buttonSpacer {\n  width: 70px;\n  /*border-bottom: 1px
 
 
 /***/ }),
-/* 61 */
+/* 62 */
 /***/ (function(module, exports) {
 
 /*
@@ -11684,7 +11718,7 @@ function toComment(sourceMap) {
 
 
 /***/ }),
-/* 62 */
+/* 63 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /*
@@ -11750,7 +11784,7 @@ var singleton = null;
 var	singletonCounter = 0;
 var	stylesInsertedAtTop = [];
 
-var	fixUrls = __webpack_require__(63);
+var	fixUrls = __webpack_require__(64);
 
 module.exports = function(list, options) {
 	if (typeof DEBUG !== "undefined" && DEBUG) {
@@ -12066,7 +12100,7 @@ function updateLink (link, options, obj) {
 
 
 /***/ }),
-/* 63 */
+/* 64 */
 /***/ (function(module, exports) {
 
 

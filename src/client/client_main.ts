@@ -10,9 +10,12 @@ console.log(socket);
 const sdb = new SDB(true, socket);
 const chat = new ArboretumChat(sdb);
 chat.addUser('steve', true);
-console.log(chat);
 
 const browser:SDBDoc<BrowserDoc> = sdb.get('arboretum', 'browser');
 browser.subscribe(() => {
     console.log(browser.getData());
+});
+
+window.addEventListener('beforeunload', () => {
+    chat.markUserNotPresent(chat.getMe());
 });

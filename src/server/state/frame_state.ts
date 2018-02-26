@@ -37,7 +37,7 @@ export class FrameState {
     };
     public getShareDBDoc():SDBDoc<TabDoc> { return this.tab.getShareDBDoc(); };
     public async submitOp(...ops:Array<ShareDB.Op>):Promise<void> {
-        // await this.getShareDBDoc().submitOp(ops);
+        await this.getShareDBDoc().submitOp(ops);
     };
     public getShareDBFrame():ShareDBFrame {
         return this.shareDBFrame;

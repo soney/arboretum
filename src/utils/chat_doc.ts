@@ -1,5 +1,6 @@
 import {SDB, SDBDoc} from './sharedb_wrapper';
 import {EventEmitter} from './typed_event_emitter';
+import {guid, guidIndex} from './guid';
 import * as _ from 'underscore';
 
 export type Color = string;
@@ -8,7 +9,7 @@ export const userColors:Array<Array<Color>> = [
 ];
 export enum TypingStatus { IDLE, ACTIVE, IDLE_TYPED };
 
-export type UserID = number;
+export type UserID = string;
 export interface User {
     id:UserID,
     displayName:string,
@@ -80,6 +81,10 @@ export class ArboretumChat extends EventEmitter {
                         this.emit(this.userJoined, {
                             user:li
                         });
+                    } else if(p.length === 3 && p[2] === 'present') { // presence status changed
+                        const userIndex = p[1];
+                        const user = this.doc.getData().users[userIndex];
+                        this.emit(this.userNotPresent, { user });
                     }
                 } else if(p[0] === 'messages') {
                     this.emit(this.messageAdded, {
@@ -98,11 +103,11 @@ export class ArboretumChat extends EventEmitter {
         await this.initialized;
         const data:ChatDoc = this.doc.getData();
         const {colors} = data;
-        const index = id % colors.length;
-        return data.colors[index];
+        const index = guidIndex(id) % colors.length;
+        return colors[index];
     };
     public async addUser(displayName:string, isMe:boolean=true, present=true):Promise<User> {
-        const id:UserID = ArboretumChat.userCounter++;
+        const id:UserID = guid();
         const color:Color = await this.getColor(id);
         const user:User = {id, color, displayName, present, typing:TypingStatus.IDLE};
         await this.initialized;

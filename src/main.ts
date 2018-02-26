@@ -4,6 +4,7 @@ import { platform } from 'os';
 import { createServer, Server } from 'http';
 import { readFile } from 'fs';
 import { join } from 'path';
+import * as child from 'child_process';
 import * as express from 'express';
 import * as ShareDB from 'sharedb';
 import * as WebSocket from 'ws';
@@ -13,13 +14,10 @@ import * as keypress from 'keypress';
 import chalk from 'chalk';
 import * as ip from 'ip';
 import * as opn from 'opn';
-// const ChatServer = require('./server/chat');
-// const BrowserState = require('./server/state/browser_state');
-// process.traceProcessWarnings = true;
 
 const state = { chat: {}, browser: {} };
 
-const OPEN_MIRROR: boolean = true;
+const OPEN_MIRROR: boolean = false;
 const RDB_PORT: number = 9222;
 const HTTP_PORT: number = 3000;
 const isMac: boolean = /^dar/.test(platform());
@@ -172,6 +170,10 @@ async function stopServer(): Promise<void> {
             resolve();
         })
     });
+    if(chromeProcess) {
+        chromeProcess.kill();
+        chromeProcess = null;
+    }
     serverState = {
         running: false,
         hostname: '',
@@ -179,14 +181,7 @@ async function stopServer(): Promise<void> {
     }
 };
 
-if (OPEN_MIRROR) {
-    startServer().then((info) => {
-        console.log(chalk.bgWhite.bold.black(`Listening at ${info.hostname} port ${info.port} `));
-        // return opn(address, { app: 'google-chrome' }); // open browser
-    }).catch((err) => {
-        console.error(err);
-    });
-}
+let chromeProcess:child.ChildProcess;
 
 ipcMain.on('asynchronous-message', async (event, arg) => {
     if (arg === 'startServer') {
@@ -194,7 +189,7 @@ ipcMain.on('asynchronous-message', async (event, arg) => {
         event.sender.send('asynchronous-reply', info);
         console.log(chalk.bgWhite.bold.black(`Listening at ${info.hostname} port ${info.port}`));
         if(OPEN_MIRROR) {
-            opn(`http://${info.hostname}:${info.port}/`, { app: 'google-chrome' }); // open browser
+            chromeProcess = await opn(`http://${info.hostname}:${info.port}/`, { app: 'google-chrome' }); // open browser
         }
     } else if (arg === 'stopServer') {
         await stopServer();
@@ -217,6 +212,10 @@ process.stdin.on('keypress', (ch, key) => {
     } else if (name === 't') {
         browserState.printTabSummaries();
     } else if (name === 'q') {
+        if(chromeProcess) {
+            chromeProcess.kill();
+            chromeProcess = null;
+        }
         process.stdin.pause();
         process.stdin.setRawMode(false);
         process.exit();

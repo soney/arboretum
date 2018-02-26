@@ -17,6 +17,7 @@ const logging_1 = require("../../utils/logging");
 const events_1 = require("events");
 const sharedb_wrapper_1 = require("../../utils/sharedb_wrapper");
 const chat_doc_1 = require("../../utils/chat_doc");
+const timers = require("timers");
 const log = logging_1.getColoredLogger('red');
 const projectFileURLPath = fileUrl(path_1.join(path_1.resolve(__dirname, '..', '..'), 'browser'));
 class BrowserState extends events_1.EventEmitter {
@@ -37,7 +38,7 @@ class BrowserState extends events_1.EventEmitter {
                 tabs: {}
             });
             this.chat = new chat_doc_1.ArboretumChat(this.sdb);
-            this.intervalID = setInterval(_.bind(this.refreshTabs, this), 2000);
+            this.intervalID = timers.setInterval(_.bind(this.refreshTabs, this), 2000);
             log.debug('=== CREATED BROWSER ===');
         });
     }
@@ -52,7 +53,7 @@ class BrowserState extends events_1.EventEmitter {
     ;
     submitOp(...ops) {
         return __awaiter(this, void 0, void 0, function* () {
-            // await this.doc.submitOp(ops);
+            yield this.doc.submitOp(ops);
         });
     }
     ;
@@ -76,9 +77,6 @@ class BrowserState extends events_1.EventEmitter {
                     yield tab.initialized;
                     const shareDBOp = { p: ['tabs', id], oi: id };
                     yield this.submitOp(shareDBOp);
-                    this.emit('tabCreated', {
-                        id: id
-                    });
                 }
             }));
             yield Promise.all(createPromises);
@@ -94,7 +92,7 @@ class BrowserState extends events_1.EventEmitter {
     ;
     destroy() {
         return __awaiter(this, void 0, void 0, function* () {
-            clearInterval(this.intervalID);
+            timers.clearInterval(this.intervalID);
             this.tabs.forEach((tabState, tabId) => {
                 tabState.destroy();
             });

@@ -34,7 +34,7 @@ class FrameState {
     ;
     submitOp(...ops) {
         return __awaiter(this, void 0, void 0, function* () {
-            // await this.getShareDBDoc().submitOp(ops);
+            yield this.getShareDBDoc().submitOp(ops);
         });
     }
     ;

@@ -15,6 +15,7 @@ import {SDB, SDBDoc} from '../../utils/sharedb_wrapper';
 import {ArboretumChat} from '../../utils/chat_doc';
 import * as ShareDB from 'sharedb';
 import {BrowserDoc} from '../../utils/state_interfaces';
+import * as timers from 'timers';
 
 const log = getColoredLogger('red');
 
@@ -33,12 +34,12 @@ export class BrowserState extends EventEmitter {
     };
     private async initialize():Promise<void> {
         this.sdb = new SDB(false);
-        this.doc = this.sdb.get('arboretum', 'browser');
+        this.doc = this.sdb.get<BrowserDoc>('arboretum', 'browser');
         await this.doc.createIfEmpty({
             tabs: {}
         });
         this.chat = new ArboretumChat(this.sdb);
-        this.intervalID = setInterval(_.bind(this.refreshTabs, this), 2000);
+        this.intervalID = timers.setInterval(_.bind(this.refreshTabs, this), 2000);
         log.debug('=== CREATED BROWSER ===');
     };
     public getShareDBPath():Array<string|number> {
@@ -48,7 +49,7 @@ export class BrowserState extends EventEmitter {
         this.sdb.listen(ws);
     };
     public async submitOp(...ops:Array<ShareDB.Op>):Promise<void> {
-        // await this.doc.submitOp(ops);
+        await this.doc.submitOp(ops);
     };
     private async refreshTabs():Promise<void> {
         const tabInfos:Array<CRI.TabInfo> = await this.getTabs();
@@ -69,10 +70,6 @@ export class BrowserState extends EventEmitter {
                 await tab.initialized;
                 const shareDBOp:ShareDB.ObjectInsertOp = {p: ['tabs', id], oi: id};
                 await this.submitOp(shareDBOp);
-
-                this.emit('tabCreated', {
-                    id: id
-                });
             }
         });
 
@@ -88,7 +85,7 @@ export class BrowserState extends EventEmitter {
         await Promise.all(destroyPromises);
     };
     public async destroy():Promise<void> {
-        clearInterval(this.intervalID);
+        timers.clearInterval(this.intervalID);
         this.tabs.forEach((tabState: TabState, tabId: CRI.TabID) => {
             tabState.destroy();
         });

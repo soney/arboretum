@@ -96,8 +96,11 @@ export class SDBDoc<E> {
     public async submitOp(op:Array<ShareDB.Op>, source:boolean=true):Promise<void> {
         await new Promise<void>((resolve, reject) => {
             this.doc.submitOp(op, {source}, (err) => {
-                if(err) {reject(err);}
-                else {resolve();}
+                if(err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
             });
         });
     };

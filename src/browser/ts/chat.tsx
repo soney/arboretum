@@ -31,6 +31,7 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
         if(this.chat) {
             this.chat.messageAdded(this.updateMessagesState);
             this.chat.userJoined(this.updateUsersState);
+            this.chat.userNotPresent(this.updateUsersState);
             this.chat.ready(() => {
                 this.updateMessagesState();
                 this.updateUsersState();
@@ -93,7 +94,7 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
         const users = this.state.users.map((u) => {
             const isMe = u.id === meUserID;
             const style = {color: u.color};
-            return <span className={`participant ${isMe?'me':''}`} style={style}>{u.displayName}</span>;
+            return <span key={u.id} className={`participant ${isMe?'me':''}`} style={style}>{u.displayName}</span>;
         });
         return <div className='chat'>
             <h6 id="task_title"><span className="icon icon-chat"></span><span id='task-name'>Chat</span></h6>

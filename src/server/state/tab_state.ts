@@ -37,8 +37,10 @@ export class TabState extends EventEmitter {
         log.debug(`=== CREATED TAB STATE ${this.getTabId()} ====`);
     };
     private async initialize():Promise<void> {
-        this.doc = await this.sdb.get('tab', this.getTabId());
+        this.doc = await this.sdb.get<TabDoc>('tab', this.getTabId());
         await this.doc.createIfEmpty({
+            id:this.getTabId(),
+            root:null
         });
 
         const chromeEventEmitter = cri({
@@ -66,7 +68,7 @@ export class TabState extends EventEmitter {
         this.addExecutionContextListeners();
     };
     public async submitOp(...ops:Array<ShareDB.Op>):Promise<void> {
-        // await this.getShareDBDoc().submitOp(ops);
+        await this.getShareDBDoc().submitOp(ops);
     };
     public getShareDBDoc():SDBDoc<TabDoc> { return this.doc; };
     public getShareDBPath():Array<string|number> {
@@ -96,19 +98,27 @@ export class TabState extends EventEmitter {
     public getChrome():CRI.Chrome {
         return this.chrome;
     };
-    private setDocument(root:CRI.Node):void {
+    private p(...toAdd:Array<string|number>):Array<string|number> {
+        return this.getShareDBPath().concat(...toAdd);
+    };
+    private async setDocument(root:CRI.Node):Promise<void> {
         if(this.domRoot) {
             this.domRoot.destroy();
         }
         this.domRoot = this.getOrCreateDOMState(root);
         this.setChildrenRecursive(this.domRoot, root.children);
+
+        const data = this.getShareDBDoc().getData();
+        const oldRoot = data.root;
+        const shareDBOp:ShareDB.ObjectReplaceOp = { p: this.p('root'), oi: this.domRoot.getShareDBNode(), od: oldRoot };
+        await this.submitOp(shareDBOp);
     };
     private getDOMStateWithID(nodeId: CRI.NodeID): DOMState {
         return this.nodeMap.get(nodeId);
     };
     private hasDOMStateWithID(nodeId: CRI.NodeID): boolean {
         return this.nodeMap.has(nodeId);
-    }
+    };
     private getOrCreateDOMState(node:CRI.Node, contentDocument?:DOMState, childFrame?:FrameState, parent?:DOMState, previousNode?:DOMState): DOMState {
         const { nodeId } = node;
         if (this.hasDOMStateWithID(nodeId)) {
@@ -119,12 +129,9 @@ export class TabState extends EventEmitter {
                 this.removeDOMState(domState);
             })
             this.nodeMap.set(nodeId, domState);
-            if (parent) {
-                parent.insertChild(domState, previousNode, node);
-            }
             return domState;
         }
-    }
+    };
     private async refreshRoot(): Promise<CRI.Node> {
         return this.getDocument(-1, true).then((root: CRI.Node) => {
             this.setDocument(root);
@@ -399,7 +406,7 @@ export class TabState extends EventEmitter {
 
     private setChildrenRecursive(parentState: DOMState, children: Array<CRI.Node>):DOMState {
         if (children) {
-            parentState.setChildren(children.map((child: CRI.Node) => {
+            const childDOMStates:Array<DOMState> = children.map((child: CRI.Node) => {
                 const {children, contentDocument, frameId} = child;
                 const frame:FrameState = frameId ? this.getFrame(frameId) : null;
                 const contentDocState = contentDocument ? this.getOrCreateDOMState(contentDocument) : null;
@@ -426,7 +433,8 @@ export class TabState extends EventEmitter {
                 //
                 this.setChildrenRecursive(domState, children);
                 return domState;
-            }));
+            });
+            parentState.setChildren(childDOMStates);
         }
         return parentState;
     };
@@ -437,15 +445,20 @@ export class TabState extends EventEmitter {
             // this.oldNodeMap.set(nodeId, true);
         }
     }
-    private doHandleDocumentUpdated = (event: CRI.DocumentUpdatedEvent):void => {
+    private doHandleDocumentUpdated = async (event: CRI.DocumentUpdatedEvent):Promise<void> => {
         log.debug(`Document Updated`);
     };
-    private doHandleCharacterDataModified = (event: CRI.CharacterDataModifiedEvent):void => {
+    private doHandleCharacterDataModified = async (event: CRI.CharacterDataModifiedEvent):Promise<void> => {
         const { nodeId } = event;
         const domState = this.getDOMStateWithID(nodeId);
         if (domState) {
             log.debug(`Character Data Modified ${nodeId}`)
-            domState.setCharacterData(event.characterData);
+            try {
+                await domState.setCharacterData(event.characterData);
+            } catch(err) {
+                console.error(err);
+                console.error(err.stack);
+            }
         } else {
             console.error(`Could not find ${nodeId}`);
             // throw new Error(`Could not find ${nodeId}`);
@@ -455,44 +468,60 @@ export class TabState extends EventEmitter {
         const { parentId } = event;
         const parent = this.getDOMStateWithID(parentId);
         if (parent) {
-            const { nodes } = event;
-            log.debug(`Set child nodes ${parentId} -> [${nodes.map((node) => node.nodeId).join(', ')}]`);
-            this.setChildrenRecursive(parent, nodes);
+            try {
+                const { nodes } = event;
+                log.debug(`Set child nodes ${parentId} -> [${nodes.map((node) => node.nodeId).join(', ')}]`);
+                this.setChildrenRecursive(parent, nodes);
+            } catch(err) {
+                console.error(err);
+                console.error(err.stack);
+            }
         } else {
             console.error(`Could not find ${parentId}`);
             // throw new Error(`Could not find ${parentId}`);
         }
     };
-    private doHandleInlineStyleInvalidated = (event:CRI.InlineStyleInvalidatedEvent):void => {
+    private doHandleInlineStyleInvalidated = async (event:CRI.InlineStyleInvalidatedEvent):Promise<void> => {
         const { nodeIds } = event;
-        const updatedInlineStyles: Array<boolean> = nodeIds.map((nodeId) => {
+        const updatedInlineStyles:Array<Promise<boolean>> = nodeIds.map(async (nodeId) => {
             const node = this.getDOMStateWithID(nodeId);
             if (node) {
-                node.updateInlineStyle();
+                try {
+                    await node.updateInlineStyle();
+                } catch(err) {
+                    console.error(err);
+                    console.error(err.stack);
+                }
                 return true;
             } else {
                 return false;
             }
         });
-        if(_.any(updatedInlineStyles)) {
+        const handled:Array<boolean> = await Promise.all(updatedInlineStyles);
+        if(_.every(handled)) {
             log.debug(`Set inline styles`);
         } else {
             console.error(`Could not find nodes for inlineStyleInvalidated`);
             // throw new Error(`Could not find nodes for inlineStyleInvalidated`);
         }
     };
-    private doHandleChildNodeCountUpdated = (event:CRI.ChildNodeCountUpdatedEvent):void => {
+    private doHandleChildNodeCountUpdated = async (event:CRI.ChildNodeCountUpdatedEvent):Promise<void> => {
         const { nodeId } = event;
         const domState = this.getDOMStateWithID(nodeId);
         if (domState) {
             log.debug(`Child count updated for ${nodeId}`);
-            domState.childCountUpdated(event.childNodeCount);
+            try {
+                await domState.childCountUpdated(event.childNodeCount);
+            } catch(err) {
+                console.error(err);
+                console.error(err.stack);
+            }
         } else {
             log.error(`Could not find ${nodeId}`);
             // throw new Error(`Could not find ${nodeId}`);
         }
     }
-    private doHandleChildNodeInserted = (event:CRI.ChildNodeInsertedEvent):void => {
+    private doHandleChildNodeInserted = async (event:CRI.ChildNodeInsertedEvent):Promise<void> => {
         const { parentNodeId } = event;
         const parentDomState = this.getDOMStateWithID(parentNodeId);
         if (parentDomState) {
@@ -500,6 +529,12 @@ export class TabState extends EventEmitter {
             const { nodeId } = node;
             const previousDomState: DOMState = previousNodeId > 0 ? this.getDOMStateWithID(previousNodeId) : null;
             const domState = this.getOrCreateDOMState(node, null, null, parentDomState, previousDomState);
+            try {
+                await parentDomState.insertChild(domState, previousDomState);
+            } catch(err) {
+                console.error(err);
+                console.error(err.stack);
+            }
 
             log.debug(`Child node inserted ${nodeId} (parent: ${parentNodeId} / previous: ${previousNodeId})`);
             this.setChildrenRecursive(domState, node.children);
@@ -509,36 +544,51 @@ export class TabState extends EventEmitter {
             // throw new Error(`Could not find ${parentNodeId}`);
         }
     }
-    private doHandleChildNodeRemoved = (event:CRI.ChildNodeRemovedEvent):void => {
+    private doHandleChildNodeRemoved = async (event:CRI.ChildNodeRemovedEvent):Promise<void> => {
         const { parentNodeId, nodeId } = event;
         const domState = this.getDOMStateWithID(nodeId);
         const parentDomState = this.getDOMStateWithID(parentNodeId);
         if (domState && parentDomState) {
             log.debug(`Child node removed ${nodeId} (parent: ${parentNodeId})`);
-            parentDomState.removeChild(domState);
+            try {
+                await parentDomState.removeChild(domState);
+            } catch(err) {
+                console.error(err);
+                console.error(err.stack);
+            }
         } else {
             throw new Error(`Could not find ${parentNodeId} or ${nodeId}`);
         }
     };
-    private doHandleAttributeModified = (event:CRI.AttributeModifiedEvent):void => {
+    private doHandleAttributeModified = async (event:CRI.AttributeModifiedEvent):Promise<void> => {
         const { nodeId } = event;
         const domState = this.getDOMStateWithID(nodeId);
         if (domState) {
             const { name, value } = event;
             log.debug(`Attribute modified ${name} to ${value}`);
-            domState.setAttribute(name, value);
+            try {
+                await domState.setAttribute(name, value);
+            } catch(err) {
+                console.error(err);
+                console.error(err.stack);
+            }
         } else {
             console.error(`Could not find ${nodeId}`);
             // throw new Error(`Could not find ${nodeId}`);
         }
     }
-    private doHandleAttributeRemoved = (event:CRI.AttributeRemovedEvent):void => {
+    private doHandleAttributeRemoved = async (event:CRI.AttributeRemovedEvent):Promise<void> => {
         const { nodeId } = event;
         const domState = this.getDOMStateWithID(nodeId);
         if (domState) {
             const { name } = event;
             log.debug(`Attribute removed ${name}`);
-            domState.removeAttribute(name);
+            try {
+                await domState.removeAttribute(name);
+            } catch(err) {
+                console.error(err);
+                console.error(err.stack);
+            }
         } else {
             console.error(`Could not find ${nodeId}`);
             // throw new Error(`Could not find ${nodeId}`);

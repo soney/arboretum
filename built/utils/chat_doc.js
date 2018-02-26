@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const typed_event_emitter_1 = require("./typed_event_emitter");
+const guid_1 = require("./guid");
 const _ = require("underscore");
 exports.userColors = [
     ['#A80000', '#B05E0D', '#C19C00', '#107C10', '#038387', '#004E8C', '#5C126B']
@@ -62,6 +63,11 @@ class ArboretumChat extends typed_event_emitter_1.EventEmitter {
                                 user: li
                             });
                         }
+                        else if (p.length === 3 && p[2] === 'present') {
+                            const userIndex = p[1];
+                            const user = this.doc.getData().users[userIndex];
+                            this.emit(this.userNotPresent, { user });
+                        }
                     }
                     else if (p[0] === 'messages') {
                         this.emit(this.messageAdded, {
@@ -85,14 +91,14 @@ class ArboretumChat extends typed_event_emitter_1.EventEmitter {
             yield this.initialized;
             const data = this.doc.getData();
             const { colors } = data;
-            const index = id % colors.length;
-            return data.colors[index];
+            const index = guid_1.guidIndex(id) % colors.length;
+            return colors[index];
         });
     }
     ;
     addUser(displayName, isMe = true, present = true) {
         return __awaiter(this, void 0, void 0, function* () {
-            const id = ArboretumChat.userCounter++;
+            const id = guid_1.guid();
             const color = yield this.getColor(id);
             const user = { id, color, displayName, present, typing: TypingStatus.IDLE };
             yield this.initialized;
