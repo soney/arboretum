@@ -10926,6 +10926,7 @@ SubmitRequest.prototype.maxRetriesError = function() {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+const _ = __webpack_require__(70);
 const sharedb_wrapper_1 = __webpack_require__(39);
 const chat_doc_1 = __webpack_require__(67);
 const wsAddress = `ws://${window.location.hostname}:${window.location.port}`;
@@ -10936,7 +10937,14 @@ const chat = new chat_doc_1.ArboretumChat(sdb);
 chat.addUser('steve', true);
 const browser = sdb.get('arboretum', 'browser');
 browser.subscribe(() => {
-    console.log(browser.getData());
+    const data = browser.getData();
+    const tabIDs = _.values(data.tabs);
+    const tabId = tabIDs[0];
+    const tabDoc = sdb.get('tab', tabId);
+    tabDoc.subscribe(() => {
+        const data = tabDoc.getData();
+        console.log(data);
+    });
 });
 window.addEventListener('beforeunload', () => {
     chat.markUserNotPresent(chat.getMe());
@@ -11944,7 +11952,6 @@ var text = __webpack_require__(43);
 
 json.registerSubtype(text);
 module.exports = json;
-
 
 
 /***/ }),

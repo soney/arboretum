@@ -44,6 +44,7 @@ export class DOMState extends EventEmitter {
         });
         log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     };
+    public getContentDocument():DOMState { return this.contentDocument; };
     public getShareDBDoc():SDBDoc<TabDoc> { return this.tab.getShareDBDoc(); };
     public getShareDBNode():ShareDBDOMNode { return this.shareDBNode; };
     public async submitOp(...ops:Array<ShareDB.Op>):Promise<void> {
@@ -59,9 +60,9 @@ export class DOMState extends EventEmitter {
         if(this.parent) {
             const parentPath:Array<string|number> = this.parent.getShareDBPath();
             const myIndex:number = this.parent.getChildIndex(this);
-            return parentPath.concat([myIndex]);
+            return parentPath.concat(['node', 'children', myIndex]);
         } else {
-            return [];
+            return this.tab.getShareDBPath().concat(['root']);
         }
     };
     private p(...toAdd:Array<string|number>):Array<string|number> {

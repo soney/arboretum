@@ -72,7 +72,7 @@ export class TabState extends EventEmitter {
     };
     public getShareDBDoc():SDBDoc<TabDoc> { return this.doc; };
     public getShareDBPath():Array<string|number> {
-        return [this.getTabId()];
+        return [];
     };
     public getRootFrame(): FrameState {
         if(this.domRoot) {
@@ -106,12 +106,18 @@ export class TabState extends EventEmitter {
             this.domRoot.destroy();
         }
         this.domRoot = this.getOrCreateDOMState(root);
-        this.setChildrenRecursive(this.domRoot, root.children);
 
         const data = this.getShareDBDoc().getData();
         const oldRoot = data.root;
         const shareDBOp:ShareDB.ObjectReplaceOp = { p: this.p('root'), oi: this.domRoot.getShareDBNode(), od: oldRoot };
-        await this.submitOp(shareDBOp);
+        try {
+            await this.submitOp(shareDBOp);
+        } catch(e) {
+            console.error(e);
+            console.error(e.stack);
+        }
+
+        this.setChildrenRecursive(this.domRoot, root.children);
     };
     private getDOMStateWithID(nodeId: CRI.NodeID): DOMState {
         return this.nodeMap.get(nodeId);
@@ -407,11 +413,19 @@ export class TabState extends EventEmitter {
     private setChildrenRecursive(parentState: DOMState, children: Array<CRI.Node>):DOMState {
         if (children) {
             const childDOMStates:Array<DOMState> = children.map((child: CRI.Node) => {
-                const {children, contentDocument, frameId} = child;
-                const frame:FrameState = frameId ? this.getFrame(frameId) : null;
+                const {contentDocument, frameId} = child;
                 const contentDocState = contentDocument ? this.getOrCreateDOMState(contentDocument) : null;
+                const frame:FrameState = frameId ? this.getFrame(frameId) : null;
 
                 const domState:DOMState = this.getOrCreateDOMState(child, contentDocState, frame, parentState);
+                return domState;
+            });
+            parentState.setChildren(childDOMStates);
+
+            childDOMStates.map((domState:DOMState) => {
+                const child:CRI.Node = domState.getNode();
+                const {children, contentDocument, frameId} = child;
+                const frame:FrameState = domState.getChildFrame();
 
                 if(contentDocument) {
                     const contentDocState = this.getOrCreateDOMState(contentDocument);
@@ -434,7 +448,6 @@ export class TabState extends EventEmitter {
                 this.setChildrenRecursive(domState, children);
                 return domState;
             });
-            parentState.setChildren(childDOMStates);
         }
         return parentState;
     };

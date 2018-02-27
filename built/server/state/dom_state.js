@@ -48,6 +48,8 @@ class DOMState extends events_1.EventEmitter {
         log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     }
     ;
+    getContentDocument() { return this.contentDocument; }
+    ;
     getShareDBDoc() { return this.tab.getShareDBDoc(); }
     ;
     getShareDBNode() { return this.shareDBNode; }
@@ -70,10 +72,10 @@ class DOMState extends events_1.EventEmitter {
         if (this.parent) {
             const parentPath = this.parent.getShareDBPath();
             const myIndex = this.parent.getChildIndex(this);
-            return parentPath.concat([myIndex]);
+            return parentPath.concat(['node', 'children', myIndex]);
         }
         else {
-            return [];
+            return this.tab.getShareDBPath().concat(['root']);
         }
     }
     ;
