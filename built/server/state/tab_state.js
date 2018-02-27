@@ -303,8 +303,17 @@ class TabState extends events_1.EventEmitter {
     ;
     getShareDBDoc() { return this.doc; }
     ;
-    getShareDBPath() {
+    getAbsoluteShareDBPath() {
         return [];
+    }
+    ;
+    getShareDBPathToChild(child) {
+        if (child === this.domRoot) {
+            return ['root'];
+        }
+        else {
+            throw new Error(`Could not find path to node ${child.getNodeId()} from tab ${this.getTabId()}`);
+        }
     }
     ;
     getRootFrame() {
@@ -668,6 +677,7 @@ class TabState extends events_1.EventEmitter {
                 const { children, contentDocument, frameId } = child;
                 const frame = domState.getChildFrame();
                 if (contentDocument) {
+                    console.log('GOT A CONTENT DOC');
                     const contentDocState = this.getOrCreateDOMState(contentDocument);
                     this.setChildrenRecursive(contentDocState, contentDocument.children);
                     frame.setDOMRoot(contentDocState);

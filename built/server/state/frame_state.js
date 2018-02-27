@@ -46,7 +46,7 @@ class FrameState {
         return this.parentFrame;
     }
     ;
-    getShareDBPath() {
+    getAbsoluteShareDBPath() {
         return [this.getFrameId()];
     }
     ;

@@ -30,10 +30,13 @@ class DOMState extends events_1.EventEmitter {
         this.inlineStyle = '';
         this.children = [];
         this.updateValueInterval = null;
-        const sdbNode = _.clone(node);
-        sdbNode.children = this.children.map((child) => child.getShareDBNode());
         this.shareDBNode = {
-            node: sdbNode,
+            node: DOMState.stripNode(this.node),
+            attributes: _.clone(this.node.attributes),
+            nodeValue: this.node.nodeValue,
+            childNodeCount: this.children.length,
+            children: this.children.map((child) => child.getShareDBNode()),
+            contentDocument: this.contentDocument ? this.contentDocument.getShareDBNode() : null,
             childFrame: this.childFrame ? this.childFrame.getShareDBFrame() : null,
             inlineStyle: this.inlineStyle,
             inputValue: ''
@@ -46,6 +49,14 @@ class DOMState extends events_1.EventEmitter {
             }
         });
         log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
+    }
+    ;
+    static stripNode(node) {
+        const rv = _.clone(node);
+        rv.children = [];
+        rv.contentDocument = null;
+        rv.attributes = [];
+        return rv;
     }
     ;
     getContentDocument() { return this.contentDocument; }
@@ -68,25 +79,39 @@ class DOMState extends events_1.EventEmitter {
     ;
     getNode() { return this.node; }
     ;
-    getShareDBPath() {
+    getAbsoluteShareDBPath() {
         if (this.parent) {
-            const parentPath = this.parent.getShareDBPath();
-            const myIndex = this.parent.getChildIndex(this);
-            return parentPath.concat(['node', 'children', myIndex]);
+            const parentAbsolutePath = this.parent.getAbsoluteShareDBPath();
+            const parentToMe = this.parent.getShareDBPathToChild(this);
+            return parentAbsolutePath.concat(parentToMe);
         }
         else {
-            return this.tab.getShareDBPath().concat(['root']);
+            const tabAbsolutePath = this.tab.getAbsoluteShareDBPath();
+            const tabToMe = this.tab.getShareDBPathToChild(this);
+            return this.tab.getAbsoluteShareDBPath().concat(tabToMe);
         }
     }
     ;
     p(...toAdd) {
-        return this.getShareDBPath().concat(...toAdd);
+        return this.getAbsoluteShareDBPath().concat(...toAdd);
     }
     ;
-    getChildIndex(child) {
-        return this.children.indexOf(child);
+    getShareDBPathToChild(child) {
+        const childIndex = this.children.indexOf(child);
+        if (childIndex >= 0) {
+            return ['children', childIndex];
+        }
+        else if (child === this.contentDocument) {
+            return ['contentDocument'];
+        }
+        else {
+            throw new Error(`Could not find path to node ${child.getNodeId()} from node ${this.getNodeId()}`);
+        }
     }
     ;
+    // public getChildIndex(child:DOMState) {
+    //     return this.children.indexOf(child);
+    // };
     getChildFrame() {
         return this.childFrame;
     }
@@ -218,7 +243,7 @@ class DOMState extends events_1.EventEmitter {
             this.children.splice(index, 0, childDomState);
             this.node.children.splice(index, 0, childDomState.getNode());
             childDomState.setParent(this);
-            const shareDBOp = { p: this.p('node', 'children', index), li: childDomState.getShareDBNode() };
+            const shareDBOp = { p: this.p('children', index), li: childDomState.getShareDBNode().node };
             yield this.submitOp(shareDBOp);
         });
     }
@@ -227,7 +252,7 @@ class DOMState extends events_1.EventEmitter {
         return __awaiter(this, void 0, void 0, function* () {
             this.node.nodeValue = characterData;
             const previousNodeValue = this.shareDBNode.node.nodeValue;
-            const shareDBOp = { p: this.p('node', 'nodeValue'), od: previousNodeValue, oi: characterData };
+            const shareDBOp = { p: this.p('nodeValue'), od: previousNodeValue, oi: characterData };
             yield this.submitOp(shareDBOp);
         });
     }
@@ -236,7 +261,7 @@ class DOMState extends events_1.EventEmitter {
         return __awaiter(this, void 0, void 0, function* () {
             this.node.nodeValue = value;
             const previousNodeValue = this.shareDBNode.node.nodeValue;
-            const shareDBOp = { p: this.p('node', 'nodeValue'), od: previousNodeValue, oi: value };
+            const shareDBOp = { p: this.p('nodeValue'), od: previousNodeValue, oi: value };
             yield this.submitOp(shareDBOp);
         });
     }
@@ -253,7 +278,7 @@ class DOMState extends events_1.EventEmitter {
                 this.children.splice(index, 1);
                 child.destroy();
                 const oldValue = this.shareDBNode.node.children[index];
-                const shareDBOp = { p: this.p('node', 'nodeValue', index), ld: oldValue };
+                const shareDBOp = { p: this.p('nodeValue', index), ld: oldValue };
                 yield this.submitOp(shareDBOp);
                 return true;
             }
@@ -275,7 +300,7 @@ class DOMState extends events_1.EventEmitter {
                 const n = attributes[i];
                 if (n === name) {
                     attributes[i + 1] = value;
-                    const shareDBOp = { p: this.p('node', 'attributes', i + 1), li: value };
+                    const shareDBOp = { p: this.p('attributes', i + 1), li: value };
                     yield this.submitOp(shareDBOp);
                     found = true;
                     break;
@@ -284,7 +309,7 @@ class DOMState extends events_1.EventEmitter {
             if (!found) {
                 attributes.push(name, value);
                 const index = this.shareDBNode.node.attributes.length;
-                const shareDBOps = [{ p: this.p('node', 'attributes', index), li: name }, { p: this.p('node', 'attributes', index + 1), li: value }];
+                const shareDBOps = [{ p: this.p('attributes', index), li: name }, { p: this.p('attributes', index + 1), li: value }];
                 yield this.submitOp(...shareDBOps);
             }
         });
@@ -298,7 +323,7 @@ class DOMState extends events_1.EventEmitter {
             if (attributeIndex >= 0) {
                 attributes.splice(attributeIndex, 2);
                 const oldValue = attributes[attributeIndex + 1];
-                const shareDBOps = [{ p: this.p('node', 'attributes', attributeIndex + 1), ld: oldValue }, { p: this.p('node', 'attributes', attributeIndex), ld: name }];
+                const shareDBOps = [{ p: this.p('attributes', attributeIndex + 1), ld: oldValue }, { p: this.p('attributes', attributeIndex), ld: name }];
                 yield this.submitOp(...shareDBOps);
                 return true;
             }
@@ -359,8 +384,8 @@ class DOMState extends events_1.EventEmitter {
             const previousChildren = this.shareDBNode.node.children;
             const previousChildNodeCount = this.shareDBNode.node.childNodeCount;
             const shareDBOps = [
-                { p: this.p('node', 'children'), od: previousChildren, oi: this.children.map((c) => c.getShareDBNode()) },
-                { p: this.p('node', 'childNodeCount'), od: previousChildNodeCount, oi: this.node.children.length }
+                { p: this.p('children'), od: previousChildren, oi: this.children.map((c) => c.getShareDBNode().node) },
+                { p: this.p('childNodeCount'), od: previousChildNodeCount, oi: this.node.children.length }
             ];
             yield this.submitOp(...shareDBOps);
         });

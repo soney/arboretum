@@ -6,6 +6,11 @@ export interface BrowserDoc {
 
 export interface ShareDBDOMNode {
     node: CRI.Node,
+    attributes:Array<string>,
+    nodeValue: string,
+    childNodeCount:number,
+    children: Array<ShareDBDOMNode>,
+    contentDocument:ShareDBDOMNode,
     childFrame: ShareDBFrame,
     inlineStyle:string,
     inputValue:string

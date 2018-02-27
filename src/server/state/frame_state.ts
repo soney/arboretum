@@ -45,7 +45,7 @@ export class FrameState {
     public getParentFrame(): FrameState {
         return this.parentFrame;
     };
-    public getShareDBPath():Array<string|number> {
+    public getAbsoluteShareDBPath():Array<string|number> {
         return [this.getFrameId()];
     };
     public setDOMParent(parent: DOMState): void {
