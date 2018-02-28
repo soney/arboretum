@@ -432,30 +432,18 @@ export class TabState extends ShareDBSharedState<TabDoc> {
 
             childDOMStates.map((domState:DOMState) => {
                 const child:CRI.Node = domState.getNode();
-                const {children, contentDocument, frameId} = child;
-                // const frame:FrameState = domState.getChildFrame();
-
-                // if(contentDocument) {
-                //     const contentDocState = this.getOrCreateDOMState(contentDocument, null, null, domState);
-                //     this.setChildrenRecursive(contentDocState, contentDocument.children);
-                //     frame.setDOMRoot(contentDocState);
-                // }
-                //
-                // // } && contentDocument) {
-                //     const frame:FrameState = this.getFrame(frameId);
-                //     domState = this.getOrCreateDOMState(child, frame, parentState);
-                //
-                //     const newDocument = this.getOrCreateDOMState(contentDocument);
-                //     this.setChildrenRecursive(newDocument, contentDocument.children);
-                //
-                //     frame.setDOMRoot(newDocument);
-                // } else {
-                //     domState = this.getOrCreateDOMState(child, null, parentState);
-                // }
-                //
+                const {children} = child;
                 this.setChildrenRecursive(domState, children);
                 return domState;
             });
+
+        }
+        
+        const contentDocument:DOMState = parentState.getContentDocument();
+        if(contentDocument) {
+            const node:CRI.Node = contentDocument.getNode();
+            const {children} = node;
+            this.setChildrenRecursive(contentDocument, children);
         }
         return parentState;
     };
