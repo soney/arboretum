@@ -1,5 +1,5 @@
-import {SDB, SDBDoc} from './sharedb_wrapper';
-import {EventEmitter} from './typed_event_emitter';
+import {SDB, SDBDoc} from './ShareDBDoc';
+import {EventEmitter} from './typedEventEmitter';
 import {guid, guidIndex} from './guid';
 import * as _ from 'underscore';
 

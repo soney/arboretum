@@ -12482,13 +12482,13 @@ SubmitRequest.prototype.maxRetriesError = function() {
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const _ = __webpack_require__(16);
-const sharedb_wrapper_1 = __webpack_require__(40);
-const chat_doc_1 = __webpack_require__(68);
+const ShareDBDoc_1 = __webpack_require__(40);
+const ArboretumChat_1 = __webpack_require__(68);
 const wsAddress = `ws://${window.location.hostname}:${window.location.port}`;
 const socket = new WebSocket(wsAddress);
 console.log(socket);
-const sdb = new sharedb_wrapper_1.SDB(true, socket);
-const chat = new chat_doc_1.ArboretumChat(sdb);
+const sdb = new ShareDBDoc_1.SDB(true, socket);
+const chat = new ArboretumChat_1.ArboretumChat(sdb);
 chat.addUser('steve', true);
 const browser = sdb.get('arboretum', 'browser');
 browser.subscribe(() => {
@@ -12957,7 +12957,6 @@ json.checkList = function(elem) {
 
 json.checkObj = function(elem) {
   if (!isObject(elem)) {
-    debugger;
     throw new Error("Referenced element not an object (it was " + JSON.stringify(elem) + ")");
   }
 };
@@ -13005,7 +13004,6 @@ json.apply = function(snapshot, op) {
 
       parent = elem;
       parentKey = key;
-      if(!elem) { debugger; }
       elem = elem[key];
       key = p;
 
@@ -15554,7 +15552,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const typed_event_emitter_1 = __webpack_require__(69);
+const typedEventEmitter_1 = __webpack_require__(69);
 const guid_1 = __webpack_require__(70);
 const _ = __webpack_require__(16);
 exports.userColors = [
@@ -15576,7 +15574,7 @@ var TypingStatus;
 ;
 ;
 ;
-class ArboretumChat extends typed_event_emitter_1.EventEmitter {
+class ArboretumChat extends typedEventEmitter_1.EventEmitter {
     constructor(sdb) {
         super();
         this.sdb = sdb;

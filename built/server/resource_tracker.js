@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var _ = require('underscore'), util = require('util'), EventEmitter = require('events'), processCSS = require('./css_parser').parseCSS, mime = require('mime');
-var log = require('../utils/logging').getColoredLogger('cyan');
+var log = require('../utils/ColoredLogger').getColoredLogger('cyan');
 class ResourceTracker {
     constructor(chrome, frame, initialResources) {
         this.chrome = chrome;

@@ -22,5 +22,6 @@ export interface TabDoc {
 };
 
 export interface ShareDBFrame {
-
+    frameID:CRI.FrameID,
+    frame:CRI.Frame
 };

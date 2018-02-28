@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 import { BrowserState } from '../../server/state/browser_state';
-import { getColoredLogger, level, setLevel } from '../../utils/logging';
+import { getColoredLogger, level, setLevel } from '../../utils/ColoredLogger';
 import { ShadowTab } from './tab_shadow';
 
 const log = getColoredLogger('red', 'bgBlack');

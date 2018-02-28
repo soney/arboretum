@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const events_1 = require("events");
-const logging_1 = require("../../utils/logging");
-const log = logging_1.getColoredLogger('red', 'bgBlack');
+const ColoredLogger_1 = require("../../utils/ColoredLogger");
+const log = ColoredLogger_1.getColoredLogger('red', 'bgBlack');
 // var _ = require('underscore'),
 // 	util = require('util'),
 // 	EventEmitter = require('events'),

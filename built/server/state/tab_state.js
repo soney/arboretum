@@ -11,13 +11,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const cri = require("chrome-remote-interface");
 const frame_state_1 = require("./frame_state");
 const dom_state_1 = require("./dom_state");
-const logging_1 = require("../../utils/logging");
+const ColoredLogger_1 = require("../../utils/ColoredLogger");
 const _ = require("underscore");
-const events_1 = require("events");
 const url_1 = require("url");
-const log = logging_1.getColoredLogger('yellow');
+const ShareDBSharedState_1 = require("../../utils/ShareDBSharedState");
+const log = ColoredLogger_1.getColoredLogger('yellow');
 ;
-class TabState extends events_1.EventEmitter {
+class TabState extends ShareDBSharedState_1.ShareDBSharedState {
     constructor(info, sdb) {
         super();
         this.info = info;
@@ -269,6 +269,7 @@ class TabState extends events_1.EventEmitter {
                 id: this.getTabId(),
                 root: null
             });
+            this.markAttachedToShareDBDoc();
             const chromeEventEmitter = cri({
                 chooseTab: this.info
             });
@@ -295,17 +296,9 @@ class TabState extends events_1.EventEmitter {
         });
     }
     ;
-    submitOp(...ops) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.getShareDBDoc().submitOp(ops);
-        });
-    }
-    ;
     getShareDBDoc() { return this.doc; }
     ;
-    getAbsoluteShareDBPath() {
-        return [];
-    }
+    getAbsoluteShareDBPath() { return []; }
     ;
     getShareDBPathToChild(child) {
         if (child === this.domRoot) {
@@ -348,8 +341,13 @@ class TabState extends events_1.EventEmitter {
         return this.chrome;
     }
     ;
-    p(...toAdd) {
-        return this.getShareDBPath().concat(...toAdd);
+    onAttachedToShareDBDoc() {
+        return __awaiter(this, void 0, void 0, function* () {
+            log.debug(`Tab State ${this.getTabId()} added to ShareDB doc`);
+            if (this.domRoot) {
+                this.domRoot.markAttachedToShareDBDoc();
+            }
+        });
     }
     ;
     setDocument(root) {
@@ -367,6 +365,9 @@ class TabState extends events_1.EventEmitter {
             catch (e) {
                 console.error(e);
                 console.error(e.stack);
+            }
+            if (this.isAttachedToShareDBDoc) {
+                yield this.domRoot.markAttachedToShareDBDoc();
             }
             this.setChildrenRecursive(this.domRoot, root.children);
         });
@@ -387,9 +388,6 @@ class TabState extends events_1.EventEmitter {
         }
         else {
             const domState = new dom_state_1.DOMState(node, this, contentDocument, childFrame, parent);
-            domState.once('destroyed', () => {
-                this.removeDOMState(domState);
-            });
             this.nodeMap.set(nodeId, domState);
             return domState;
         }
@@ -558,14 +556,14 @@ class TabState extends events_1.EventEmitter {
         const frameId = frameState.getFrameId();
         const pendingFrameEvents = this.pendingFrameEvents.get(frameId);
         if (pendingFrameEvents) {
-            const resourceTracker = frameState.resourceTracker;
+            // const resourceTracker = frameState.resourceTracker;
             pendingFrameEvents.forEach((eventInfo) => {
                 const { type, event } = eventInfo;
                 if (type === 'responseReceived') {
-                    resourceTracker.responseReceived(event);
+                    frameState.responseReceived(event);
                 }
                 else if (type === 'requestWillBeSent') {
-                    resourceTracker.requestWillBeSent(event);
+                    frameState.requestWillBeSent(event);
                 }
             });
             this.pendingFrameEvents.delete(frameId);
@@ -675,13 +673,12 @@ class TabState extends events_1.EventEmitter {
             childDOMStates.map((domState) => {
                 const child = domState.getNode();
                 const { children, contentDocument, frameId } = child;
-                const frame = domState.getChildFrame();
-                if (contentDocument) {
-                    console.log('GOT A CONTENT DOC');
-                    const contentDocState = this.getOrCreateDOMState(contentDocument);
-                    this.setChildrenRecursive(contentDocState, contentDocument.children);
-                    frame.setDOMRoot(contentDocState);
-                }
+                // const frame:FrameState = domState.getChildFrame();
+                // if(contentDocument) {
+                //     const contentDocState = this.getOrCreateDOMState(contentDocument, null, null, domState);
+                //     this.setChildrenRecursive(contentDocState, contentDocument.children);
+                //     frame.setDOMRoot(contentDocState);
+                // }
                 //
                 // // } && contentDocument) {
                 //     const frame:FrameState = this.getFrame(frameId);

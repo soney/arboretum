@@ -1,7 +1,7 @@
 import * as $ from 'jquery';
 import * as _ from 'underscore';
-import {SDB, SDBDoc} from '../utils/sharedb_wrapper';
-import {ArboretumChat} from '../utils/chat_doc';
+import {SDB, SDBDoc} from '../utils/ShareDBDoc';
+import {ArboretumChat} from '../utils/ArboretumChat';
 import {ShareDBDOMNode, ShareDBFrame, TabDoc, BrowserDoc} from '../utils/state_interfaces';
 
 const wsAddress:string = `ws://${window.location.hostname}:${window.location.port}`;

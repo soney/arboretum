@@ -73,7 +73,7 @@ module.exports = React;
 /* 1 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var makeError = __webpack_require__(47);
+var makeError = __webpack_require__(48);
 
 function ShareDBError(code, message) {
   ShareDBError.super.call(this, message);
@@ -120,7 +120,7 @@ exports.hasKeys = function(object) {
 /* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var EventEmitter = __webpack_require__(46).EventEmitter;
+var EventEmitter = __webpack_require__(47).EventEmitter;
 
 exports.EventEmitter = EventEmitter;
 exports.mixin = mixin;
@@ -3663,7 +3663,7 @@ function callEach(callbacks, err) {
 // into a separate module that json0 can depend on).
 
 module.exports = {
-  type: __webpack_require__(48)
+  type: __webpack_require__(49)
 };
 
 
@@ -5232,7 +5232,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
 /* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var hat = __webpack_require__(52);
+var hat = __webpack_require__(53);
 var util = __webpack_require__(3);
 var types = __webpack_require__(2);
 
@@ -6166,7 +6166,7 @@ MemoryPubSub.prototype._publish = function(channels, data, callback) {
 /* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var OpStream = __webpack_require__(53);
+var OpStream = __webpack_require__(54);
 var ShareDBError = __webpack_require__(1);
 var util = __webpack_require__(3);
 
@@ -6307,8 +6307,8 @@ module.exports = require("stream");
 /* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var arraydiff = __webpack_require__(54);
-var deepEquals = __webpack_require__(55);
+var arraydiff = __webpack_require__(55);
+var deepEquals = __webpack_require__(56);
 var ShareDBError = __webpack_require__(1);
 var util = __webpack_require__(3);
 
@@ -6866,6 +6866,26 @@ SubmitRequest.prototype.maxRetriesError = function() {
 
 "use strict";
 
+Object.defineProperty(exports, "__esModule", { value: true });
+const React = __webpack_require__(0);
+const ReactDOM = __webpack_require__(28);
+const arboretum_1 = __webpack_require__(29);
+__webpack_require__(61);
+ReactDOM.render(React.createElement(arboretum_1.Arboretum, { serverState: "active", urls: ['file:///home/soney/code/arboretum/test/simple.html'] }), document.getElementById('arboretum_main'));
+
+
+/***/ }),
+/* 28 */
+/***/ (function(module, exports) {
+
+module.exports = ReactDOM;
+
+/***/ }),
+/* 29 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -6876,16 +6896,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(0);
-const ReactDOM = __webpack_require__(28);
-const nav_bar_1 = __webpack_require__(29);
-const tab_1 = __webpack_require__(30);
-const sidebar_1 = __webpack_require__(31);
-const electron_1 = __webpack_require__(42);
-const url = __webpack_require__(43);
+const nav_bar_1 = __webpack_require__(30);
+const tab_1 = __webpack_require__(31);
+const sidebar_1 = __webpack_require__(32);
+const electron_1 = __webpack_require__(43);
+const url = __webpack_require__(44);
 const _ = __webpack_require__(5);
-const sharedb_wrapper_1 = __webpack_require__(44);
-const chat_doc_1 = __webpack_require__(57);
-__webpack_require__(60);
+const ShareDBDoc_1 = __webpack_require__(45);
+const ArboretumChat_1 = __webpack_require__(58);
 class Arboretum extends React.Component {
     constructor(props) {
         super(props);
@@ -6929,8 +6947,8 @@ class Arboretum extends React.Component {
                 const fullAdminURL = url.format({ protocol: 'http', hostname, port, pathname: '/admin' });
                 const wsAddress = url.format({ protocol: 'ws', hostname, port });
                 this.socket = new WebSocket(wsAddress);
-                this.sdb = new sharedb_wrapper_1.SDB(true, this.socket);
-                this.chat = new chat_doc_1.ArboretumChat(this.sdb);
+                this.sdb = new ShareDBDoc_1.SDB(true, this.socket);
+                this.chat = new ArboretumChat_1.ArboretumChat(this.sdb);
                 if (this.sidebar) {
                     this.sidebar.setSDB(this.sdb);
                     this.sidebar.setChat(this.chat);
@@ -7153,17 +7171,10 @@ class Arboretum extends React.Component {
 }
 exports.Arboretum = Arboretum;
 ;
-ReactDOM.render(React.createElement(Arboretum, { serverState: "active", urls: ['file:///home/soney/code/arboretum/test/simple.html'] }), document.getElementById('arboretum_main'));
 
 
 /***/ }),
-/* 28 */
-/***/ (function(module, exports) {
-
-module.exports = ReactDOM;
-
-/***/ }),
-/* 29 */
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7243,7 +7254,7 @@ exports.ArboretumNavigationBar = ArboretumNavigationBar;
 
 
 /***/ }),
-/* 30 */
+/* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7355,7 +7366,7 @@ exports.ArboretumTab = ArboretumTab;
 
 
 /***/ }),
-/* 31 */
+/* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7370,9 +7381,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(0);
-const chat_1 = __webpack_require__(32);
-const Clipboard = __webpack_require__(33);
-const react_switch_1 = __webpack_require__(34);
+const chat_1 = __webpack_require__(33);
+const Clipboard = __webpack_require__(34);
+const react_switch_1 = __webpack_require__(35);
 const ENTER_KEY = 13;
 ;
 class ArboretumSidebar extends React.Component {
@@ -7482,7 +7493,7 @@ exports.ArboretumSidebar = ArboretumSidebar;
 
 
 /***/ }),
-/* 32 */
+/* 33 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7599,13 +7610,13 @@ exports.ArboretumChatBox = ArboretumChatBox;
 
 
 /***/ }),
-/* 33 */
+/* 34 */
 /***/ (function(module, exports) {
 
 module.exports = require("clipboard");
 
 /***/ }),
-/* 34 */
+/* 35 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7621,13 +7632,13 @@ var _react = __webpack_require__(0);
 
 var _react2 = _interopRequireDefault(_react);
 
-var _propTypes = __webpack_require__(35);
+var _propTypes = __webpack_require__(36);
 
 var _propTypes2 = _interopRequireDefault(_propTypes);
 
-var _icons = __webpack_require__(40);
+var _icons = __webpack_require__(41);
 
-var _getBackgroundColor = __webpack_require__(41);
+var _getBackgroundColor = __webpack_require__(42);
 
 var _getBackgroundColor2 = _interopRequireDefault(_getBackgroundColor);
 
@@ -7990,7 +8001,7 @@ Switch.defaultProps = {
 exports.default = Switch;
 
 /***/ }),
-/* 35 */
+/* 36 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /**
@@ -8015,16 +8026,16 @@ if (process.env.NODE_ENV !== 'production') {
   // By explicitly using `prop-types` you are opting into new development behavior.
   // http://fb.me/prop-types-in-prod
   var throwOnDirectAccess = true;
-  module.exports = __webpack_require__(36)(isValidElement, throwOnDirectAccess);
+  module.exports = __webpack_require__(37)(isValidElement, throwOnDirectAccess);
 } else {
   // By explicitly using `prop-types` you are opting into new production behavior.
   // http://fb.me/prop-types-in-prod
-  module.exports = __webpack_require__(39)();
+  module.exports = __webpack_require__(40)();
 }
 
 
 /***/ }),
-/* 36 */
+/* 37 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8040,10 +8051,10 @@ if (process.env.NODE_ENV !== 'production') {
 var emptyFunction = __webpack_require__(6);
 var invariant = __webpack_require__(7);
 var warning = __webpack_require__(11);
-var assign = __webpack_require__(37);
+var assign = __webpack_require__(38);
 
 var ReactPropTypesSecret = __webpack_require__(8);
-var checkPropTypes = __webpack_require__(38);
+var checkPropTypes = __webpack_require__(39);
 
 module.exports = function(isValidElement, throwOnDirectAccess) {
   /* global Symbol */
@@ -8573,7 +8584,7 @@ module.exports = function(isValidElement, throwOnDirectAccess) {
 
 
 /***/ }),
-/* 37 */
+/* 38 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8670,7 +8681,7 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 
 
 /***/ }),
-/* 38 */
+/* 39 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8736,7 +8747,7 @@ module.exports = checkPropTypes;
 
 
 /***/ }),
-/* 39 */
+/* 40 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8801,7 +8812,7 @@ module.exports = function() {
 
 
 /***/ }),
-/* 40 */
+/* 41 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8873,7 +8884,7 @@ var checkedIcon = exports.checkedIcon = _react2.default.createElement(
 );
 
 /***/ }),
-/* 41 */
+/* 42 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8924,19 +8935,19 @@ function getBackgroundColor(pos, checkedPos, uncheckedPos, offColor, onColor) {
 }
 
 /***/ }),
-/* 42 */
+/* 43 */
 /***/ (function(module, exports) {
 
 module.exports = require("electron");
 
 /***/ }),
-/* 43 */
+/* 44 */
 /***/ (function(module, exports) {
 
 module.exports = require("url");
 
 /***/ }),
-/* 44 */
+/* 45 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8950,8 +8961,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const ShareDBClient = __webpack_require__(45);
-const ShareDB = __webpack_require__(50);
+const ShareDBClient = __webpack_require__(46);
+const ShareDB = __webpack_require__(51);
 class SDB {
     constructor(client, connection) {
         this.docs = new Map();
@@ -9109,7 +9120,7 @@ exports.SDBDoc = SDBDoc;
 
 
 /***/ }),
-/* 45 */
+/* 46 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports.Connection = __webpack_require__(12);
@@ -9120,13 +9131,13 @@ exports.types = __webpack_require__(2);
 
 
 /***/ }),
-/* 46 */
+/* 47 */
 /***/ (function(module, exports) {
 
 module.exports = require("events");
 
 /***/ }),
-/* 47 */
+/* 48 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9275,7 +9286,7 @@ exports.BaseError = BaseError
 
 
 /***/ }),
-/* 48 */
+/* 49 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /*
@@ -9392,7 +9403,6 @@ json.checkList = function(elem) {
 
 json.checkObj = function(elem) {
   if (!isObject(elem)) {
-    debugger;
     throw new Error("Referenced element not an object (it was " + JSON.stringify(elem) + ")");
   }
 };
@@ -9440,7 +9450,6 @@ json.apply = function(snapshot, op) {
 
       parent = elem;
       parentKey = key;
-      if(!elem) { debugger; }
       elem = elem[key];
       key = p;
 
@@ -9940,14 +9949,14 @@ __webpack_require__(15)(json, json.transformComponent, json.checkValidOp, json.a
 /**
  * Register a subtype for string operations, using the text0 type.
  */
-var text = __webpack_require__(49);
+var text = __webpack_require__(50);
 
 json.registerSubtype(text);
 module.exports = json;
 
 
 /***/ }),
-/* 49 */
+/* 50 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // DEPRECATED!
@@ -10209,10 +10218,10 @@ __webpack_require__(15)(text, transformComponent, checkValidOp, append);
 
 
 /***/ }),
-/* 50 */
+/* 51 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var Backend = __webpack_require__(51);
+var Backend = __webpack_require__(52);
 module.exports = Backend;
 
 Backend.Agent = __webpack_require__(18);
@@ -10230,7 +10239,7 @@ Backend.types = __webpack_require__(2);
 
 
 /***/ }),
-/* 51 */
+/* 52 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var async = __webpack_require__(17);
@@ -10242,7 +10251,7 @@ var MemoryPubSub = __webpack_require__(21);
 var ot = __webpack_require__(9);
 var projections = __webpack_require__(10);
 var QueryEmitter = __webpack_require__(25);
-var StreamSocket = __webpack_require__(56);
+var StreamSocket = __webpack_require__(57);
 var SubmitRequest = __webpack_require__(26);
 
 function Backend(options) {
@@ -10760,7 +10769,7 @@ function pluckIds(snapshots) {
 
 
 /***/ }),
-/* 52 */
+/* 53 */
 /***/ (function(module, exports) {
 
 var hat = module.exports = function (bits, base) {
@@ -10828,7 +10837,7 @@ hat.rack = function (bits, base, expandBy) {
 
 
 /***/ }),
-/* 53 */
+/* 54 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var inherits = __webpack_require__(23).inherits;
@@ -10893,7 +10902,7 @@ OpStream.prototype.destroy = function() {
 
 
 /***/ }),
-/* 54 */
+/* 55 */
 /***/ (function(module, exports) {
 
 module.exports = arrayDiff;
@@ -11080,7 +11089,7 @@ function arrayDiff(before, after, equalFn) {
 
 
 /***/ }),
-/* 55 */
+/* 56 */
 /***/ (function(module, exports) {
 
 var pSlice = Array.prototype.slice;
@@ -11188,7 +11197,7 @@ function objEquiv(a, b) {
 
 
 /***/ }),
-/* 56 */
+/* 57 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var Duplex = __webpack_require__(24).Duplex;
@@ -11256,7 +11265,7 @@ ServerStream.prototype._write = function(chunk, encoding, callback) {
 
 
 /***/ }),
-/* 57 */
+/* 58 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -11270,8 +11279,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const typed_event_emitter_1 = __webpack_require__(58);
-const guid_1 = __webpack_require__(59);
+const typedEventEmitter_1 = __webpack_require__(59);
+const guid_1 = __webpack_require__(60);
 const _ = __webpack_require__(5);
 exports.userColors = [
     ['#A80000', '#B05E0D', '#C19C00', '#107C10', '#038387', '#004E8C', '#5C126B']
@@ -11292,7 +11301,7 @@ var TypingStatus;
 ;
 ;
 ;
-class ArboretumChat extends typed_event_emitter_1.EventEmitter {
+class ArboretumChat extends typedEventEmitter_1.EventEmitter {
     constructor(sdb) {
         super();
         this.sdb = sdb;
@@ -11446,7 +11455,7 @@ exports.ArboretumChat = ArboretumChat;
 
 
 /***/ }),
-/* 58 */
+/* 59 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -11546,7 +11555,7 @@ exports.Listener = Listener;
 
 
 /***/ }),
-/* 59 */
+/* 60 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -11573,11 +11582,11 @@ exports.guidIndex = guidIndex;
 
 
 /***/ }),
-/* 60 */
+/* 61 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
-var content = __webpack_require__(61);
+var content = __webpack_require__(62);
 
 if(typeof content === 'string') content = [[module.i, content, '']];
 
@@ -11591,7 +11600,7 @@ var options = {"hmr":true}
 options.transform = transform
 options.insertInto = undefined;
 
-var update = __webpack_require__(63)(content, options);
+var update = __webpack_require__(64)(content, options);
 
 if(content.locals) module.exports = content.locals;
 
@@ -11623,10 +11632,10 @@ if(false) {
 }
 
 /***/ }),
-/* 61 */
+/* 62 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(62)(true);
+exports = module.exports = __webpack_require__(63)(true);
 // imports
 
 
@@ -11637,7 +11646,7 @@ exports.push([module.i, "#buttonSpacer {\n  width: 70px;\n  /*border-bottom: 1px
 
 
 /***/ }),
-/* 62 */
+/* 63 */
 /***/ (function(module, exports) {
 
 /*
@@ -11719,7 +11728,7 @@ function toComment(sourceMap) {
 
 
 /***/ }),
-/* 63 */
+/* 64 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /*
@@ -11785,7 +11794,7 @@ var singleton = null;
 var	singletonCounter = 0;
 var	stylesInsertedAtTop = [];
 
-var	fixUrls = __webpack_require__(64);
+var	fixUrls = __webpack_require__(65);
 
 module.exports = function(list, options) {
 	if (typeof DEBUG !== "undefined" && DEBUG) {
@@ -12101,7 +12110,7 @@ function updateLink (link, options, obj) {
 
 
 /***/ }),
-/* 64 */
+/* 65 */
 /***/ (function(module, exports) {
 
 

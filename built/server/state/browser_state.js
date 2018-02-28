@@ -13,14 +13,14 @@ const _ = require("underscore");
 const fileUrl = require("file-url");
 const path_1 = require("path");
 const tab_state_1 = require("./tab_state");
-const logging_1 = require("../../utils/logging");
-const events_1 = require("events");
-const sharedb_wrapper_1 = require("../../utils/sharedb_wrapper");
-const chat_doc_1 = require("../../utils/chat_doc");
+const ColoredLogger_1 = require("../../utils/ColoredLogger");
+const ShareDBDoc_1 = require("../../utils/ShareDBDoc");
+const ArboretumChat_1 = require("../../utils/ArboretumChat");
 const timers = require("timers");
-const log = logging_1.getColoredLogger('red');
+const ShareDBSharedState_1 = require("../../utils/ShareDBSharedState");
+const log = ColoredLogger_1.getColoredLogger('red');
 const projectFileURLPath = fileUrl(path_1.join(path_1.resolve(__dirname, '..', '..'), 'browser'));
-class BrowserState extends events_1.EventEmitter {
+class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
     constructor(state, extraOptions) {
         super();
         this.state = state;
@@ -30,31 +30,30 @@ class BrowserState extends events_1.EventEmitter {
         this.initialize();
     }
     ;
+    getShareDBDoc() { return this.doc; }
+    ;
+    getAbsoluteShareDBPath() { return []; }
+    ;
+    onAttachedToShareDBDoc() {
+        return __awaiter(this, void 0, void 0, function* () { log.debug(`Browser added to ShareDB doc`); });
+    }
+    ;
     initialize() {
         return __awaiter(this, void 0, void 0, function* () {
-            this.sdb = new sharedb_wrapper_1.SDB(false);
+            this.sdb = new ShareDBDoc_1.SDB(false);
             this.doc = this.sdb.get('arboretum', 'browser');
             yield this.doc.createIfEmpty({
                 tabs: {}
             });
-            this.chat = new chat_doc_1.ArboretumChat(this.sdb);
+            this.markAttachedToShareDBDoc();
+            this.chat = new ArboretumChat_1.ArboretumChat(this.sdb);
             this.intervalID = timers.setInterval(_.bind(this.refreshTabs, this), 2000);
             log.debug('=== CREATED BROWSER ===');
         });
     }
     ;
-    getShareDBPath() {
-        return [];
-    }
-    ;
     shareDBListen(ws) {
         this.sdb.listen(ws);
-    }
-    ;
-    submitOp(...ops) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.doc.submitOp(ops);
-        });
     }
     ;
     refreshTabs() {
@@ -105,7 +104,6 @@ class BrowserState extends events_1.EventEmitter {
             const tab = this.getTab(id);
             tab.destroy();
             this.tabs.delete(id);
-            this.emit('tabDestroyed', { id });
         }
     }
     ;

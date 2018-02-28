@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const logging_1 = require("../../utils/logging");
-const log = logging_1.getColoredLogger('magenta', 'bgBlack');
+const ColoredLogger_1 = require("../../utils/ColoredLogger");
+const log = ColoredLogger_1.getColoredLogger('magenta', 'bgBlack');
 class DOMTreePlaceholder {
     constructor(domState) {
         this.domState = domState;

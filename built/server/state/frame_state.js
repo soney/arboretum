@@ -9,11 +9,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const event_manager_1 = require("../event_manager");
-const resource_tracker_1 = require("../resource_tracker");
-const logging_1 = require("../../utils/logging");
-const log = logging_1.getColoredLogger('green');
-class FrameState {
+const ColoredLogger_1 = require("../../utils/ColoredLogger");
+const _ = require("underscore");
+const ShareDBSharedState_1 = require("../../utils/ShareDBSharedState");
+const mime = require("mime");
+const css_parser_1 = require("../css_parser");
+const log = ColoredLogger_1.getColoredLogger('green');
+class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
     constructor(chrome, info, tab, parentFrame = null, resources = []) {
+        super();
         this.chrome = chrome;
         this.info = info;
         this.tab = tab;
@@ -25,18 +29,30 @@ class FrameState {
         this.oldNodeMap = new Map();
         this.queuedEvents = [];
         this.executionContext = null;
+        // public resourceTracker: ResourceTracker;
+        this.requests = new Map();
+        this.responses = new Map();
+        this.resourcePromises = new Map();
+        this.shareDBFrame = {
+            frame: this.info,
+            frameID: this.getFrameId()
+        };
         this.eventManager = new event_manager_1.EventManager(this.chrome, this);
-        this.resourceTracker = new resource_tracker_1.ResourceTracker(chrome, this, resources);
+        _.each(resources, (resource) => this.recordResponse(resource));
+        // this.resourceTracker = new ResourceTracker(chrome, this, resources);
         log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
     }
     ;
-    getShareDBDoc() { return this.tab.getShareDBDoc(); }
-    ;
-    submitOp(...ops) {
+    onAttachedToShareDBDoc() {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.getShareDBDoc().submitOp(ops);
+            log.debug(`Frame State ${this.getFrameId()} added to ShareDB doc`);
+            if (this.root) {
+                yield this.root.markAttachedToShareDBDoc();
+            }
         });
     }
+    ;
+    getShareDBDoc() { return this.tab.getShareDBDoc(); }
     ;
     getShareDBFrame() {
         return this.shareDBFrame;
@@ -74,12 +90,6 @@ class FrameState {
         this.info = info;
     }
     ;
-    requestWillBeSent(resource) {
-    }
-    ;
-    responseReceived(event) {
-    }
-    ;
     executionContextCreated(context) {
         this.executionContext = context;
     }
@@ -105,7 +115,10 @@ class FrameState {
         if (root) {
             root.destroy();
         }
-        this.resourceTracker.destroy();
+        // this.resourceTracker.destroy();
+        this.requests.clear();
+        this.responses.clear();
+        this.resourcePromises.clear();
         log.debug(`=== DESTROYED FRAME STATE ${this.getFrameId()} ====`);
     }
     ;
@@ -146,10 +159,77 @@ class FrameState {
     ;
     hasRoot() { return !!this.getRoot(); }
     ;
-    requestResource(url) {
-        return this.resourceTracker.getResource(url);
+    recordResponse(response) {
+        this.responses.set(response.url, response);
     }
-    ;
+    requestWillBeSent(resource) {
+        const { url } = resource;
+        this.requests.set(url, resource);
+        log.debug('request will be sent ' + url);
+    }
+    responseReceived(event) {
+        return this.recordResponse(event.response);
+    }
+    getResponseBody(requestId) {
+        return new Promise((resolve, reject) => {
+            this.chrome.Network.getResponseBody({
+                requestId: requestId
+            }, function (err, value) {
+                if (err) {
+                    reject(value);
+                }
+                else {
+                    resolve(value);
+                }
+            });
+        });
+    }
+    requestResource(url) {
+        let promise;
+        if (this.resourcePromises.has(url)) {
+            promise = this.resourcePromises.get(url);
+        }
+        else {
+            promise = this.doGetResource(url);
+            this.resourcePromises.set(url, promise);
+        }
+        return promise.then((responseBody) => {
+            const resourceInfo = this.responses.get(url);
+            const mimeType = resourceInfo ? resourceInfo.mimeType : mime.getType(url);
+            let content;
+            if (mimeType === 'text/css') {
+                content = css_parser_1.parseCSS(content, url, this.getFrameId(), this.getTabId());
+            }
+            else {
+                content = responseBody.content;
+            }
+            return {
+                mimeType: mimeType,
+                base64Encoded: responseBody.base64Encoded,
+                content: content
+            };
+        });
+    }
+    doGetResource(url) {
+        return new Promise((resolve, reject) => {
+            this.chrome.Page.getResourceContent({
+                frameId: this.getFrameId(),
+                url: url
+            }, function (err, val) {
+                if (err) {
+                    reject(new Error('Could not find resource "' + url + '"'));
+                }
+                else {
+                    resolve(val);
+                }
+            });
+        }).catch((err) => {
+            throw (err);
+        });
+    }
+    // public requestResource(url: string): Promise<any> {
+    //     return this.resourceTracker.getResource(url);
+    // };
     print(level = 0) {
         const root = this.getRoot();
         if (root) {
@@ -175,22 +255,3 @@ class FrameState {
     }
 }
 exports.FrameState = FrameState;
-class ResolvablePromise {
-    constructor() {
-        this._promise = new Promise((resolve, reject) => {
-            this._resolve = resolve;
-            this._reject = reject;
-        });
-    }
-    resolve(val) {
-        this._resolve(val);
-        return this.getPromise();
-    }
-    reject(val) {
-        this._reject(val);
-        return this.getPromise();
-    }
-    getPromise() {
-        return this._promise;
-    }
-}

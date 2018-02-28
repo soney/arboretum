@@ -1,13 +1,14 @@
 import * as cri from 'chrome-remote-interface';
 import { FrameState } from './frame_state';
 import { DOMState } from './dom_state';
-import { getColoredLogger, level, setLevel } from '../../utils/logging';
+import { getColoredLogger, level, setLevel } from '../../utils/ColoredLogger';
 import * as _ from 'underscore';
 import { EventEmitter } from 'events';
-import {SDB, SDBDoc} from '../../utils/sharedb_wrapper';
+import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
 import { parse, format } from 'url';
 import * as ShareDB from 'sharedb';
 import {TabDoc, ShareDBFrame } from '../../utils/state_interfaces';
+import {ShareDBSharedState} from '../../utils/ShareDBSharedState';
 
 const log = getColoredLogger('yellow');
 interface PendingFrameEvent {
@@ -16,7 +17,7 @@ interface PendingFrameEvent {
     type: string
 };
 
-export class TabState extends EventEmitter {
+export class TabState extends ShareDBSharedState<TabDoc> {
     private tabID: CRI.TabID;
     private frames: Map<CRI.FrameID, FrameState> = new Map<CRI.FrameID, FrameState>();
     private pendingFrameEvents: Map<CRI.FrameID, Array<PendingFrameEvent>> = new Map<CRI.FrameID, Array<PendingFrameEvent>>();
@@ -42,6 +43,7 @@ export class TabState extends EventEmitter {
             id:this.getTabId(),
             root:null
         });
+        this.markAttachedToShareDBDoc();
 
         const chromeEventEmitter = cri({
             chooseTab: this.info
@@ -67,13 +69,8 @@ export class TabState extends EventEmitter {
         this.addNetworkListeners();
         this.addExecutionContextListeners();
     };
-    public async submitOp(...ops:Array<ShareDB.Op>):Promise<void> {
-        await this.getShareDBDoc().submitOp(ops);
-    };
     public getShareDBDoc():SDBDoc<TabDoc> { return this.doc; };
-    public getAbsoluteShareDBPath():Array<string|number> {
-        return [];
-    };
+    public getAbsoluteShareDBPath():Array<string|number> { return []; };
     public getShareDBPathToChild(child:DOMState):Array<string|number> {
         if(child === this.domRoot) {
             return ['root'];
@@ -105,8 +102,11 @@ export class TabState extends EventEmitter {
     public getChrome():CRI.Chrome {
         return this.chrome;
     };
-    private p(...toAdd:Array<string|number>):Array<string|number> {
-        return this.getShareDBPath().concat(...toAdd);
+    public async onAttachedToShareDBDoc():Promise<void> {
+        log.debug(`Tab State ${this.getTabId()} added to ShareDB doc`);
+        if(this.domRoot) {
+            this.domRoot.markAttachedToShareDBDoc();
+        }
     };
     private async setDocument(root:CRI.Node):Promise<void> {
         if(this.domRoot) {
@@ -124,6 +124,10 @@ export class TabState extends EventEmitter {
             console.error(e.stack);
         }
 
+        if(this.isAttachedToShareDBDoc) {
+            await this.domRoot.markAttachedToShareDBDoc();
+        }
+
         this.setChildrenRecursive(this.domRoot, root.children);
     };
     private getDOMStateWithID(nodeId: CRI.NodeID): DOMState {
@@ -138,9 +142,6 @@ export class TabState extends EventEmitter {
             return this.getDOMStateWithID(nodeId);
         } else {
             const domState = new DOMState(node, this, contentDocument, childFrame, parent);
-            domState.once('destroyed', () => {
-                this.removeDOMState(domState);
-            })
             this.nodeMap.set(nodeId, domState);
             return domState;
         }
@@ -276,13 +277,13 @@ export class TabState extends EventEmitter {
         const pendingFrameEvents = this.pendingFrameEvents.get(frameId);
 
         if (pendingFrameEvents) {
-            const resourceTracker = frameState.resourceTracker;
+            // const resourceTracker = frameState.resourceTracker;
             pendingFrameEvents.forEach((eventInfo) => {
                 const { type, event } = eventInfo;
                 if (type === 'responseReceived') {
-                    resourceTracker.responseReceived(event);
+                    frameState.responseReceived(event);
                 } else if (type === 'requestWillBeSent') {
-                    resourceTracker.requestWillBeSent(event);
+                    frameState.requestWillBeSent(event);
                 }
             });
             this.pendingFrameEvents.delete(frameId);
@@ -432,14 +433,13 @@ export class TabState extends EventEmitter {
             childDOMStates.map((domState:DOMState) => {
                 const child:CRI.Node = domState.getNode();
                 const {children, contentDocument, frameId} = child;
-                const frame:FrameState = domState.getChildFrame();
+                // const frame:FrameState = domState.getChildFrame();
 
-                if(contentDocument) {
-                    console.log('GOT A CONTENT DOC');
-                    const contentDocState = this.getOrCreateDOMState(contentDocument);
-                    this.setChildrenRecursive(contentDocState, contentDocument.children);
-                    frame.setDOMRoot(contentDocState);
-                }
+                // if(contentDocument) {
+                //     const contentDocState = this.getOrCreateDOMState(contentDocument, null, null, domState);
+                //     this.setChildrenRecursive(contentDocState, contentDocument.children);
+                //     frame.setDOMRoot(contentDocState);
+                // }
                 //
                 // // } && contentDocument) {
                 //     const frame:FrameState = this.getFrame(frameId);

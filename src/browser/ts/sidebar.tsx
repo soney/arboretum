@@ -2,8 +2,8 @@ import * as React from 'react';
 import {ArboretumChatBox} from './chat';
 import * as Clipboard from 'clipboard';
 import Switch from 'react-switch';
-import {SDB, SDBDoc} from '../../utils/sharedb_wrapper';
-import {ArboretumChat, Message, User} from '../../utils/chat_doc';
+import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
+import {ArboretumChat, Message, User} from '../../utils/ArboretumChat';
 
 const ENTER_KEY:number = 13;
 

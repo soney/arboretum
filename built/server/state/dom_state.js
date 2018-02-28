@@ -9,15 +9,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const hack_driver_1 = require("../hack_driver/hack_driver");
-const logging_1 = require("../../utils/logging");
+const ColoredLogger_1 = require("../../utils/ColoredLogger");
 const css_parser_1 = require("../css_parser");
-const events_1 = require("events");
-const node_code_1 = require("../../utils/node_code");
+const NodeCode_1 = require("../../utils/NodeCode");
 const url_transform_1 = require("../url_transform");
 const _ = require("underscore");
 const timers = require("timers");
-const log = logging_1.getColoredLogger('magenta');
-class DOMState extends events_1.EventEmitter {
+const ShareDBSharedState_1 = require("../../utils/ShareDBSharedState");
+const log = ColoredLogger_1.getColoredLogger('magenta');
+class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
     constructor(node, tab, contentDocument, childFrame, parent) {
         super();
         this.node = node;
@@ -30,6 +30,9 @@ class DOMState extends events_1.EventEmitter {
         this.inlineStyle = '';
         this.children = [];
         this.updateValueInterval = null;
+        if (this.contentDocument) {
+            this.contentDocument.setParent(this);
+        }
         this.shareDBNode = {
             node: DOMState.stripNode(this.node),
             attributes: _.clone(this.node.attributes),
@@ -41,14 +44,37 @@ class DOMState extends events_1.EventEmitter {
             inlineStyle: this.inlineStyle,
             inputValue: ''
         };
-        this.getFullString().then((fullNodeValue) => {
-            this.setNodeValue(fullNodeValue);
-        }).catch((err) => {
-            if (err.code && err.code === -32000) {
-                log.error(`Could not find node ${this.getNodeId()}`);
+        log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
+    }
+    ;
+    onAttachedToShareDBDoc() {
+        return __awaiter(this, void 0, void 0, function* () {
+            log.debug(`DOM State ${this.getNodeId()} added to ShareDB doc`);
+            this.updateNodeValue();
+            this.children.map((child) => {
+                child.markAttachedToShareDBDoc();
+            });
+            if (this.childFrame) {
+                this.childFrame.markAttachedToShareDBDoc();
+            }
+            if (this.contentDocument) {
+                this.contentDocument.markAttachedToShareDBDoc();
             }
         });
-        log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
+    }
+    ;
+    updateNodeValue() {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const fullNodeValue = yield this.getFullString();
+                this.setNodeValue(fullNodeValue);
+            }
+            catch (err) {
+                if (err.code && err.code === -32000) {
+                    log.error(`Could not find node ${this.getNodeId()}`);
+                }
+            }
+        });
     }
     ;
     static stripNode(node) {
@@ -65,18 +91,6 @@ class DOMState extends events_1.EventEmitter {
     ;
     getShareDBNode() { return this.shareDBNode; }
     ;
-    submitOp(...ops) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                yield this.getShareDBDoc().submitOp(ops);
-            }
-            catch (e) {
-                console.error(e);
-                console.error(e.stack);
-            }
-        });
-    }
-    ;
     getNode() { return this.node; }
     ;
     getAbsoluteShareDBPath() {
@@ -90,10 +104,6 @@ class DOMState extends events_1.EventEmitter {
             const tabToMe = this.tab.getShareDBPathToChild(this);
             return this.tab.getAbsoluteShareDBPath().concat(tabToMe);
         }
-    }
-    ;
-    p(...toAdd) {
-        return this.getAbsoluteShareDBPath().concat(...toAdd);
     }
     ;
     getShareDBPathToChild(child) {
@@ -139,7 +149,6 @@ class DOMState extends events_1.EventEmitter {
         this.children.forEach((child) => {
             child.destroy();
         });
-        this.emit('destroyed');
         this.destroyed = true;
         // log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
     }
@@ -182,7 +191,7 @@ class DOMState extends events_1.EventEmitter {
             return new Promise((resolve, reject) => {
                 const nodeType = this.getNodeType();
                 const nodeValue = this.getNodeValue();
-                if (nodeType === node_code_1.NodeCode.TEXT_NODE && nodeValue && nodeValue.endsWith('…')) {
+                if (nodeType === NodeCode_1.NodeCode.TEXT_NODE && nodeValue && nodeValue.endsWith('…')) {
                     this.getChrome().DOM.getOuterHTML({
                         nodeId: this.getNodeId()
                     }, (err, value) => {
@@ -243,7 +252,10 @@ class DOMState extends events_1.EventEmitter {
             this.children.splice(index, 0, childDomState);
             this.node.children.splice(index, 0, childDomState.getNode());
             childDomState.setParent(this);
-            const shareDBOp = { p: this.p('children', index), li: childDomState.getShareDBNode().node };
+            if (this.isAttachedToShareDBDoc()) {
+                childDomState.markAttachedToShareDBDoc();
+            }
+            const shareDBOp = { p: this.p('children', index), li: childDomState.getShareDBNode() };
             yield this.submitOp(shareDBOp);
         });
     }
@@ -340,7 +352,7 @@ class DOMState extends events_1.EventEmitter {
     requestInlineStyle() {
         return __awaiter(this, void 0, void 0, function* () {
             const nodeType = this.getNodeType();
-            if (nodeType === node_code_1.NodeCode.ELEMENT_NODE) {
+            if (nodeType === NodeCode_1.NodeCode.ELEMENT_NODE) {
                 return new Promise((resolve, reject) => {
                     this.getChrome().CSS.getInlineStylesForNode({
                         nodeId: this.getNodeId()
@@ -379,12 +391,17 @@ class DOMState extends events_1.EventEmitter {
             this.children.forEach((child) => {
                 child.setParent(this);
             });
+            if (this.isAttachedToShareDBDoc()) {
+                this.children.forEach((child) => {
+                    child.markAttachedToShareDBDoc();
+                });
+            }
             this.node.children = children.map((c) => c.getNode());
             this.node.childNodeCount = this.node.children.length;
-            const previousChildren = this.shareDBNode.node.children;
-            const previousChildNodeCount = this.shareDBNode.node.childNodeCount;
+            const previousChildren = this.shareDBNode.children;
+            const previousChildNodeCount = this.shareDBNode.childNodeCount;
             const shareDBOps = [
-                { p: this.p('children'), od: previousChildren, oi: this.children.map((c) => c.getShareDBNode().node) },
+                { p: this.p('children'), od: previousChildren, oi: this.children.map((c) => c.getShareDBNode()) },
                 { p: this.p('childNodeCount'), od: previousChildNodeCount, oi: this.node.children.length }
             ];
             yield this.submitOp(...shareDBOps);
@@ -400,20 +417,20 @@ class DOMState extends events_1.EventEmitter {
         const MAX_TEXT_LENGTH = 50;
         const type = this.getNodeType();
         const id = this.getNodeId();
-        if (type === node_code_1.NodeCode.DOCUMENT_NODE) {
+        if (type === NodeCode_1.NodeCode.DOCUMENT_NODE) {
             return `(${id}) ${this.getTagName()}`;
         }
-        else if (type === node_code_1.NodeCode.TEXT_NODE) {
+        else if (type === NodeCode_1.NodeCode.TEXT_NODE) {
             var text = this.getNodeValue().replace(/(\n|\t)/gi, '');
             if (text.length > MAX_TEXT_LENGTH) {
                 text = `${text.substr(0, MAX_TEXT_LENGTH)}...`;
             }
             return `(${id}) text: ${text}`;
         }
-        else if (type === node_code_1.NodeCode.DOCUMENT_TYPE_NODE) {
+        else if (type === NodeCode_1.NodeCode.DOCUMENT_TYPE_NODE) {
             return `(${id}) <${this.getTagName()}>`;
         }
-        else if (type === node_code_1.NodeCode.ELEMENT_NODE) {
+        else if (type === NodeCode_1.NodeCode.ELEMENT_NODE) {
             let text = `(${id}) <${this.getTagName()}`;
             var attributesMap = this.getAttributesMap();
             var style = this.getInlineStyle();
@@ -426,7 +443,7 @@ class DOMState extends events_1.EventEmitter {
             text += '>';
             return text;
         }
-        else if (type === node_code_1.NodeCode.COMMENT_NODE) {
+        else if (type === NodeCode_1.NodeCode.COMMENT_NODE) {
             let text = `(${id}) <!-- `;
             text += this.getNodeValue().replace(/(\n|\t)/gi, '');
             if (text.length > MAX_TEXT_LENGTH) {

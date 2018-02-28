@@ -1,12 +1,15 @@
 import { TabState } from './tab_state';
 import { DOMState } from './dom_state';
 import { EventManager } from '../event_manager';
-import { ResourceTracker } from '../resource_tracker';
-import { getColoredLogger, level, setLevel } from '../../utils/logging';
-import {SDB, SDBDoc} from '../../utils/sharedb_wrapper';
+import { getColoredLogger, level, setLevel } from '../../utils/ColoredLogger';
+import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
 import * as _ from 'underscore';
 import * as ShareDB from 'sharedb';
 import {TabDoc, ShareDBFrame } from '../../utils/state_interfaces';
+import {ShareDBSharedState} from '../../utils/ShareDBSharedState';
+import {ResolvablePromise} from '../../utils/ResolvablePromise';
+import * as mime from 'mime';
+import {parseCSS} from '../css_parser';
 
 const log = getColoredLogger('green');
 
@@ -16,7 +19,7 @@ interface QueuedEvent<E> {
     type: string
 }
 
-export class FrameState {
+export class FrameState extends ShareDBSharedState<TabDoc> {
     private setMainFrameExecuted: boolean = false;
     private refreshingRoot: boolean = false;
     private root: DOMState;
@@ -28,17 +31,29 @@ export class FrameState {
     private shareDBFrame:ShareDBFrame;
 
     private eventManager: EventManager;
-    public resourceTracker: ResourceTracker;
+    // public resourceTracker: ResourceTracker;
+	private requests:Map<any, any> = new Map<any, any>();
+	private responses:Map<string, any> = new Map<string, any>();
+	private resourcePromises = new Map();
 
     constructor(private chrome, private info: CRI.Frame, private tab: TabState, private parentFrame: FrameState = null, resources: Array<CRI.FrameResource> = []) {
+        super();
+        this.shareDBFrame = {
+            frame: this.info,
+            frameID: this.getFrameId()
+        };
         this.eventManager = new EventManager(this.chrome, this);
-        this.resourceTracker = new ResourceTracker(chrome, this, resources);
+		_.each(resources, (resource) => this.recordResponse(resource));
+        // this.resourceTracker = new ResourceTracker(chrome, this, resources);
         log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
     };
-    public getShareDBDoc():SDBDoc<TabDoc> { return this.tab.getShareDBDoc(); };
-    public async submitOp(...ops:Array<ShareDB.Op>):Promise<void> {
-        await this.getShareDBDoc().submitOp(ops);
+    protected async onAttachedToShareDBDoc():Promise<void> {
+        log.debug(`Frame State ${this.getFrameId()} added to ShareDB doc`);
+        if(this.root) {
+            await this.root.markAttachedToShareDBDoc();
+        }
     };
+    public getShareDBDoc():SDBDoc<TabDoc> { return this.tab.getShareDBDoc(); };
     public getShareDBFrame():ShareDBFrame {
         return this.shareDBFrame;
     };
@@ -69,12 +84,6 @@ export class FrameState {
     public updateInfo(info: CRI.Frame) {
         this.info = info;
     };
-    public requestWillBeSent(resource) {
-
-    };
-    public responseReceived(event) {
-
-    };
     public executionContextCreated(context: CRI.ExecutionContextDescription): void {
         this.executionContext = context;
     };
@@ -99,7 +108,10 @@ export class FrameState {
         if (root) {
             root.destroy();
         }
-        this.resourceTracker.destroy();
+        // this.resourceTracker.destroy();
+		this.requests.clear();
+		this.responses.clear();
+		this.resourcePromises.clear();
         log.debug(`=== DESTROYED FRAME STATE ${this.getFrameId()} ====`);
     };
 
@@ -138,9 +150,76 @@ export class FrameState {
     public setDOMRoot(domState:DOMState):void { this.root = domState; };
     public hasRoot():boolean { return !!this.getRoot(); };
 
-    public requestResource(url: string): Promise<any> {
-        return this.resourceTracker.getResource(url);
-    };
+	private recordResponse(response):void {
+		this.responses.set(response.url, response);
+	}
+	public requestWillBeSent(resource):void {
+		const {url} = resource;
+		this.requests.set(url, resource);
+		log.debug('request will be sent ' + url);
+	}
+	public responseReceived(event) {
+		return this.recordResponse(event.response);
+	}
+	public getResponseBody(requestId:CRI.RequestID):Promise<CRI.GetResponseBodyResponse> {
+		return new Promise<CRI.GetResponseBodyResponse>((resolve, reject) => {
+			this.chrome.Network.getResponseBody({
+				requestId: requestId
+			}, function(err, value) {
+				if(err) {
+					reject(value);
+				} else {
+					resolve(value);
+				}
+			});
+		});
+	}
+	public requestResource(url:string):Promise<any> {
+		let promise;
+		if(this.resourcePromises.has(url)) {
+			promise = this.resourcePromises.get(url);
+		} else {
+			promise = this.doGetResource(url);
+			this.resourcePromises.set(url, promise);
+		}
+		return promise.then((responseBody) => {
+			const resourceInfo = this.responses.get(url);
+			const mimeType = resourceInfo ? resourceInfo.mimeType : mime.getType(url);
+			let content;
+			if(mimeType === 'text/css') {
+				content = parseCSS(content, url, this.getFrameId(), this.getTabId());
+			} else {
+				content = responseBody.content;
+			}
+
+			return {
+				mimeType: mimeType,
+				base64Encoded: responseBody.base64Encoded,
+				content: content
+			};
+		});
+	}
+
+	private doGetResource(url:string):Promise<CRI.GetResourceContentResponse> {
+		return new Promise<CRI.GetResourceContentResponse>((resolve, reject) => {
+			this.chrome.Page.getResourceContent({
+				frameId: this.getFrameId(),
+				url: url
+			}, function(err, val) {
+				if(err) {
+					reject(new Error('Could not find resource "' + url + '"'));
+				} else {
+					resolve(val);
+				}
+			});
+		}).catch((err) => {
+			throw(err);
+		});
+	}
+
+    // public requestResource(url: string): Promise<any> {
+    //     return this.resourceTracker.getResource(url);
+    // };
     public print(level: number = 0): void {
         const root = this.getRoot();
         if(root) {
@@ -158,28 +237,5 @@ export class FrameState {
                 reject(new Error('Could not find root'));
             });
         }
-    }
-}
-
-class ResolvablePromise<E> {
-    private _resolve: (E) => any;
-    private _reject: (any) => any;
-    private _promise: Promise<E>;
-    constructor() {
-        this._promise = new Promise<E>((resolve, reject) => {
-            this._resolve = resolve;
-            this._reject = reject;
-        });
-    }
-    public resolve(val: E): Promise<E> {
-        this._resolve(val);
-        return this.getPromise();
-    }
-    public reject(val: any): Promise<E> {
-        this._reject(val);
-        return this.getPromise();
-    }
-    public getPromise(): Promise<E> {
-        return this._promise;
     }
 }

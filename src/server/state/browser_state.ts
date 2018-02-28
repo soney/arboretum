@@ -8,19 +8,20 @@ import * as http from 'http';
 import * as WebSocket from 'ws';
 import * as WebSocketJSONStream from 'websocket-json-stream';
 import * as stream from 'stream';
-import { getColoredLogger, level, setLevel } from '../../utils/logging';
+import { getColoredLogger, level, setLevel } from '../../utils/ColoredLogger';
 import { EventEmitter } from 'events';
 import { ipcMain } from 'electron';
-import {SDB, SDBDoc} from '../../utils/sharedb_wrapper';
-import {ArboretumChat} from '../../utils/chat_doc';
+import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
+import {ArboretumChat} from '../../utils/ArboretumChat';
 import * as ShareDB from 'sharedb';
 import {BrowserDoc} from '../../utils/state_interfaces';
 import * as timers from 'timers';
+import {ShareDBSharedState} from '../../utils/ShareDBSharedState';
 
 const log = getColoredLogger('red');
 
 const projectFileURLPath: string = fileUrl(join(resolve(__dirname, '..', '..'), 'browser'));
-export class BrowserState extends EventEmitter {
+export class BrowserState extends ShareDBSharedState<BrowserDoc> {
     private tabs: Map<CRI.TabID, TabState> = new Map<CRI.TabID, TabState>();
     private options = { host: 'localhost', port: 9222 };
     private intervalID: NodeJS.Timer;
@@ -32,24 +33,22 @@ export class BrowserState extends EventEmitter {
         _.extend(this.options, extraOptions);
         this.initialize();
     };
+    public getShareDBDoc():SDBDoc<BrowserDoc> { return this.doc; };
+    public getAbsoluteShareDBPath():Array<string|number> { return []; };
+    protected async onAttachedToShareDBDoc():Promise<void> { log.debug(`Browser added to ShareDB doc`); };
     private async initialize():Promise<void> {
         this.sdb = new SDB(false);
         this.doc = this.sdb.get<BrowserDoc>('arboretum', 'browser');
         await this.doc.createIfEmpty({
             tabs: {}
         });
+        this.markAttachedToShareDBDoc();
         this.chat = new ArboretumChat(this.sdb);
         this.intervalID = timers.setInterval(_.bind(this.refreshTabs, this), 2000);
         log.debug('=== CREATED BROWSER ===');
     };
-    public getShareDBPath():Array<string|number> {
-        return [];
-    };
     public shareDBListen(ws:stream.Duplex):void {
         this.sdb.listen(ws);
-    };
-    public async submitOp(...ops:Array<ShareDB.Op>):Promise<void> {
-        await this.doc.submitOp(ops);
     };
     private async refreshTabs():Promise<void> {
         const tabInfos:Array<CRI.TabInfo> = await this.getTabs();
@@ -96,7 +95,6 @@ export class BrowserState extends EventEmitter {
             const tab = this.getTab(id);
             tab.destroy();
             this.tabs.delete(id);
-            this.emit('tabDestroyed', { id });
         }
     };
     private tabIsInspectable(tab: any): boolean {

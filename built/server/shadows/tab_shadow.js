@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const events_1 = require("events");
-const logging_1 = require("../../utils/logging");
+const ColoredLogger_1 = require("../../utils/ColoredLogger");
 const frame_shadow_1 = require("./frame_shadow");
 // var _ = require('underscore'),
 // 	util = require('util'),
@@ -9,7 +9,7 @@ const frame_shadow_1 = require("./frame_shadow");
 // 	ShadowFrame = require('./frame_shadow').ShadowFrame;
 //
 // var log = require('../../utils/logging').getColoredLogger('yellow', 'bgBlack');
-const log = logging_1.getColoredLogger('red', 'bgBlack');
+const log = ColoredLogger_1.getColoredLogger('red', 'bgBlack');
 class ShadowTab extends events_1.EventEmitter {
     constructor(tabState, socket, browserShadow) {
         super();
@@ -51,7 +51,7 @@ class ShadowTab extends events_1.EventEmitter {
     ;
     destroy() {
         const tabState = this.getTab();
-        tabState.removeListener('mainFrameChanged', this.mainFrameChanged);
+        // tabState.removeListener('mainFrameChanged', this.mainFrameChanged);
     }
     ;
 }

@@ -1,7 +1,7 @@
 import { ShadowBrowser } from './browser_shadow';
 import { FrameState } from '../../server/state/frame_state';
 
-import { getColoredLogger, level, setLevel } from '../../utils/logging';
+import { getColoredLogger, level, setLevel } from '../../utils/ColoredLogger';
 
 const log = getColoredLogger('green', 'bgBlack');
 export class ShadowFrame {
@@ -9,7 +9,7 @@ export class ShadowFrame {
 
     };
     public destroy() {
-        
+
     };
 }
 // var _ = require('underscore'),

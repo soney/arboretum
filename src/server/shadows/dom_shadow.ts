@@ -1,6 +1,6 @@
 //NO, this has nothing to do with *that* shadow dom
 import { DOMState } from '../../server/state/dom_state';
-import { getColoredLogger, level, setLevel } from '../../utils/logging';
+import { getColoredLogger, level, setLevel } from '../../utils/ColoredLogger';
 
 const log = getColoredLogger('magenta', 'bgBlack');
 

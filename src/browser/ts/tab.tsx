@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as _ from 'underscore';
-import {BrowserTabID} from '../browser_main';
+import {BrowserTabID} from './arboretum';
 
 type ArboretumTabProps = {
     startURL:string,

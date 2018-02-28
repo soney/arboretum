@@ -6,6 +6,7 @@ class EventManager {
         this.chrome = chrome;
         this.frameState = frameState;
     }
+    ;
     onDeviceEvent(event, frame) {
         const { type } = event;
         if (EventManager.MOUSE_EVENT_TYPES.has(type)) {
@@ -15,6 +16,8 @@ class EventManager {
             hack_driver_1.setElementValue(this.chrome, event.id, event.value);
         }
     }
+    ;
 }
 EventManager.MOUSE_EVENT_TYPES = new Set(['click', 'mousedown', 'mouseup', 'mousemove']);
 exports.EventManager = EventManager;
+;

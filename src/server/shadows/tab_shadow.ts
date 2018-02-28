@@ -1,5 +1,5 @@
 import {EventEmitter} from 'events';
-import { getColoredLogger, level, setLevel } from '../../utils/logging';
+import { getColoredLogger, level, setLevel } from '../../utils/ColoredLogger';
 import { TabState } from '../../server/state/tab_state';
 import { FrameState } from '../../server/state/frame_state';
 import { ShadowFrame } from './frame_shadow';
@@ -49,7 +49,7 @@ export class ShadowTab extends EventEmitter {
     };
     public destroy():void {
         const tabState = this.getTab();
-        tabState.removeListener('mainFrameChanged', this.mainFrameChanged);
+        // tabState.removeListener('mainFrameChanged', this.mainFrameChanged);
     };
 };
 //
