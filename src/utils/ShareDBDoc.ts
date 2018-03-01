@@ -53,6 +53,13 @@ export class SDB {
 export class SDBDoc<E> {
     constructor(public docIdentifier:DocIdentifier, private doc:ShareDB.Doc<E>, private sdb:SDB) {
     };
+    public traverse(path:Array<string|number>):any {
+        let x:any = this.getData();
+        for(let i:number = 0; i<path.length; i++) {
+            x = x[path[i]];
+        }
+        return x;
+    };
     public async fetch():Promise<ShareDB.Doc<E>> {
         return new Promise<ShareDB.Doc<E>>((resolve, reject) => {
             this.doc.fetch((err) => {

@@ -8,8 +8,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-class ShareDBSharedState {
+const TypedEventEmitter_1 = require("./TypedEventEmitter");
+class ShareDBSharedState extends TypedEventEmitter_1.TypedEventEmitter {
     constructor(attachedToShareDBDoc = false) {
+        super();
         this.attachedToShareDBDoc = attachedToShareDBDoc;
     }
     ;

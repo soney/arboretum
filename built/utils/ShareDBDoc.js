@@ -68,6 +68,14 @@ class SDBDoc {
         this.sdb = sdb;
     }
     ;
+    traverse(path) {
+        let x = this.getData();
+        for (let i = 0; i < path.length; i++) {
+            x = x[path[i]];
+        }
+        return x;
+    }
+    ;
     fetch() {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((resolve, reject) => {

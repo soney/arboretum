@@ -8,7 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const typedEventEmitter_1 = require("./typedEventEmitter");
+const TypedEventEmitter_1 = require("./TypedEventEmitter");
 const guid_1 = require("./guid");
 const _ = require("underscore");
 exports.userColors = [
@@ -30,7 +30,7 @@ var TypingStatus;
 ;
 ;
 ;
-class ArboretumChat extends typedEventEmitter_1.EventEmitter {
+class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
     constructor(sdb) {
         super();
         this.sdb = sdb;

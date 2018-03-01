@@ -1,3 +1,4 @@
+"use strict";
 /******************************************************************************
  * The MIT License (MIT)                                                      *
  *                                                                            *
@@ -21,50 +22,46 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER        *
  * EALINGS IN THE SOFTWARE.                                                   *
  ******************************************************************************/
-
-export class TypedEventEmitter {
-    private eventListeners: Map<Function, Function[]>;
-
+Object.defineProperty(exports, "__esModule", { value: true });
+class TypedEventEmitter {
     constructor() {
-        this.eventListeners = new Map<Function, Function[]>();
-    };
-
-    public on(event: Function, listener: Function): TypedListener {
+        this.eventListeners = new Map();
+    }
+    ;
+    on(event, listener) {
         if (!this.eventListeners.has(event)) {
             this.eventListeners.set(event, [listener]);
-        } else {
+        }
+        else {
             this.eventListeners.get(event).push(listener);
         }
-
         return new TypedListener(this, event, listener);
-    };
-    public once(event: Function, baseListener: Function): TypedListener {
-        const listener = (...args):any => {
-            const rv:any = baseListener(...args);
+    }
+    ;
+    once(event, baseListener) {
+        const listener = (...args) => {
+            const rv = baseListener(...args);
             this.removeListener(event, listener);
             return rv;
         };
         return this.on(event, listener);
-    };
-
-    public addListener(event: Function, listener: Function): TypedListener {
+    }
+    ;
+    addListener(event, listener) {
         return this.on(event, listener);
-    };
-
-    public removeListener():void;
-    public removeListener(id: TypedListener):void;
-    public removeListener(event: Function, listener?: Function):void;
-
-    public removeListener():void {
+    }
+    ;
+    removeListener() {
         if (arguments.length == 0) {
             this.eventListeners.clear();
-        } else if (arguments.length == 1 && typeof arguments[0] == 'object') {
+        }
+        else if (arguments.length == 1 && typeof arguments[0] == 'object') {
             const id = arguments[0];
             this.removeListener(id.event, id.listener);
-        } else if (arguments.length >= 1) {
-            let event = <Function>arguments[0];
-            let listener = <Function>arguments[1];
-
+        }
+        else if (arguments.length >= 1) {
+            let event = arguments[0];
+            let listener = arguments[1];
             if (this.eventListeners.has(event)) {
                 const listeners = this.eventListeners.get(event);
                 let idx;
@@ -73,39 +70,44 @@ export class TypedEventEmitter {
                 }
             }
         }
-    };
-
+    }
+    ;
     /**
      * Emit event. Calls all bound listeners with args.
      */
-    protected emit(event: Function, ...args):void {
+    emit(event, ...args) {
         if (this.eventListeners.has(event)) {
             for (let listener of this.eventListeners.get(event)) {
                 listener(...args);
             }
         }
-    };
-
+    }
+    ;
     /**
      * @typeparam T The event handler signature.
      */
-    public registerEvent<T extends Function>():Function {
-        const eventBinder = (handler: T) => {
+    registerEvent() {
+        const eventBinder = (handler) => {
             return this.addListener(eventBinder, handler);
         };
-
         return eventBinder;
-    };
-};
-
-export class TypedListener {
-    constructor(public owner: TypedEventEmitter,
-        public event: Function,
-        public listener: Function, public unbindWhenRun:boolean=false) {
-
-    };
-
-    unbind():void {
+    }
+    ;
+}
+exports.TypedEventEmitter = TypedEventEmitter;
+;
+class TypedListener {
+    constructor(owner, event, listener, unbindWhenRun = false) {
+        this.owner = owner;
+        this.event = event;
+        this.listener = listener;
+        this.unbindWhenRun = unbindWhenRun;
+    }
+    ;
+    unbind() {
         this.owner.removeListener(this);
-    };
-};
+    }
+    ;
+}
+exports.TypedListener = TypedListener;
+;

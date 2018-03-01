@@ -17,6 +17,7 @@ const _ = require("underscore");
 const timers = require("timers");
 const ShareDBSharedState_1 = require("../../utils/ShareDBSharedState");
 const log = ColoredLogger_1.getColoredLogger('magenta');
+;
 class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
     constructor(node, tab, contentDocument, childFrame, parent) {
         super();
@@ -30,20 +31,11 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         this.inlineStyle = '';
         this.children = [];
         this.updateValueInterval = null;
+        this.inputValue = '';
+        this.onDestroyed = this.registerEvent();
         if (this.contentDocument) {
             this.contentDocument.setParent(this);
         }
-        this.shareDBNode = {
-            node: DOMState.stripNode(this.node),
-            attributes: _.clone(this.node.attributes),
-            nodeValue: this.node.nodeValue,
-            childNodeCount: this.children.length,
-            children: this.children.map((child) => child.getShareDBNode()),
-            contentDocument: this.contentDocument ? this.contentDocument.getShareDBNode() : null,
-            childFrame: this.childFrame ? this.childFrame.getShareDBFrame() : null,
-            inlineStyle: this.inlineStyle,
-            inputValue: ''
-        };
         log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     }
     ;
@@ -89,7 +81,24 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
     ;
     getShareDBDoc() { return this.tab.getShareDBDoc(); }
     ;
-    getShareDBNode() { return this.shareDBNode; }
+    createShareDBNode() {
+        return {
+            node: DOMState.stripNode(this.node),
+            attributes: _.clone(this.node.attributes),
+            nodeValue: this.node.nodeValue,
+            childNodeCount: this.children.length,
+            children: this.children.map((child) => child.getShareDBNode()),
+            contentDocument: this.contentDocument ? this.contentDocument.createShareDBNode() : null,
+            childFrame: this.childFrame ? this.childFrame.getShareDBFrame() : null,
+            inlineStyle: this.inlineStyle,
+            inputValue: this.inputValue
+        };
+    }
+    ;
+    getComputedShareDBNode() {
+        const doc = this.getShareDBDoc();
+        return doc.traverse(this.getAbsoluteShareDBPath());
+    }
     ;
     getNode() { return this.node; }
     ;
@@ -150,6 +159,7 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
             child.destroy();
         });
         this.destroyed = true;
+        this.emit(this.onDestroyed, {});
         // log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
     }
     getTab() { return this.tab; }
@@ -217,9 +227,10 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         const tagName = this.getTagName().toLowerCase();
         if (tagName === 'input' || tagName === 'textarea') {
             this.updateValueInterval = timers.setInterval(() => __awaiter(this, void 0, void 0, function* () {
-                const inputValue = yield this.getInputValue();
-                const oldData = this.shareDBNode.inputValue;
-                const shareDBOp = { p: this.p('inputValue'), oi: inputValue, od: oldData };
+                this.inputValue = yield this.getInputValue();
+                const p = this.p('inputValue');
+                const doc = this.getShareDBDoc();
+                const shareDBOp = { p, oi: this.inputValue, od: doc.traverse(p) };
                 yield this.submitOp(shareDBOp);
             }), 700);
         }
@@ -240,10 +251,39 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
             const inlineStyle = yield this.requestInlineStyle();
             const { cssText } = inlineStyle;
             this.inlineStyle = cssText;
-            const oldData = this.shareDBNode.inlineStyle;
-            const shareDBOp = { p: this.p('inlineStyle'), oi: cssText, od: oldData };
+            const p = this.p('inlineStyle');
+            const doc = this.getShareDBDoc();
+            const shareDBOp = { p, oi: cssText, od: doc.traverse(p) };
             yield this.submitOp(shareDBOp);
         });
+    }
+    ;
+    setCharacterData(characterData) {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.node.nodeValue = characterData;
+            const p = this.p('characterData');
+            const doc = this.getShareDBDoc();
+            const shareDBOp = { p, od: doc.traverse(p), oi: characterData };
+            yield this.submitOp(shareDBOp);
+        });
+    }
+    ;
+    setNodeValue(value) {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.node.nodeValue = value;
+            const p = this.p('nodeValue');
+            const doc = this.getShareDBDoc();
+            const shareDBOp = { p, od: doc.traverse(p), oi: value };
+            yield this.submitOp(shareDBOp);
+        });
+    }
+    ;
+    getNodeValue() {
+        return this.node.nodeValue;
+    }
+    ;
+    childCountUpdated(count) {
+        this.getTab().requestChildNodes(this.getNodeId());
     }
     ;
     insertChild(childDomState, previousDomState) {
@@ -255,31 +295,10 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
             if (this.isAttachedToShareDBDoc()) {
                 childDomState.markAttachedToShareDBDoc();
             }
-            const shareDBOp = { p: this.p('children', index), li: childDomState.getShareDBNode() };
+            const p = this.p('children', index);
+            const shareDBOp = { p, li: childDomState.createShareDBNode() };
             yield this.submitOp(shareDBOp);
         });
-    }
-    ;
-    setCharacterData(characterData) {
-        return __awaiter(this, void 0, void 0, function* () {
-            this.node.nodeValue = characterData;
-            const previousNodeValue = this.shareDBNode.node.nodeValue;
-            const shareDBOp = { p: this.p('nodeValue'), od: previousNodeValue, oi: characterData };
-            yield this.submitOp(shareDBOp);
-        });
-    }
-    ;
-    setNodeValue(value) {
-        return __awaiter(this, void 0, void 0, function* () {
-            this.node.nodeValue = value;
-            const previousNodeValue = this.shareDBNode.node.nodeValue;
-            const shareDBOp = { p: this.p('nodeValue'), od: previousNodeValue, oi: value };
-            yield this.submitOp(shareDBOp);
-        });
-    }
-    ;
-    getNodeValue() {
-        return this.node.nodeValue;
     }
     ;
     removeChild(child) {
@@ -288,8 +307,9 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
             if (index >= 0) {
                 this.node.children.splice(index, 1);
                 this.children.splice(index, 1);
-                const oldValue = this.shareDBNode.children[index];
-                const shareDBOp = { p: this.p('nodeValue', index), ld: oldValue };
+                const p = this.p('children', index);
+                const doc = this.getShareDBDoc();
+                const shareDBOp = { p, ld: doc.traverse(p) };
                 yield this.submitOp(shareDBOp);
                 child.destroy();
                 return true;
@@ -297,6 +317,35 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
             else {
                 return false;
             }
+        });
+    }
+    ;
+    setChildren(children) {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.children.forEach((child) => {
+                if (children.indexOf(child) < 0) {
+                    child.destroy();
+                }
+            });
+            this.children = children;
+            this.children.forEach((child) => {
+                child.setParent(this);
+            });
+            if (this.isAttachedToShareDBDoc()) {
+                this.children.forEach((child) => {
+                    child.markAttachedToShareDBDoc();
+                });
+            }
+            this.node.children = children.map((c) => c.getNode());
+            this.node.childNodeCount = this.node.children.length;
+            const doc = this.getShareDBDoc();
+            const p0 = this.p('children');
+            const p1 = this.p('childNodeCount');
+            const shareDBOps = [
+                { p: p0, od: doc.traverse(p0), oi: this.children.map((c) => c.createShareDBNode()) },
+                { p: p1, od: doc.traverse(p1), oi: this.node.children.length }
+            ];
+            yield this.submitOp(...shareDBOps);
         });
     }
     ;
@@ -312,7 +361,8 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
                 const n = attributes[i];
                 if (n === name) {
                     attributes[i + 1] = value;
-                    const shareDBOp = { p: this.p('attributes', i + 1), li: value };
+                    const p = this.p('attributes', i + 1);
+                    const shareDBOp = { p, li: value };
                     yield this.submitOp(shareDBOp);
                     found = true;
                     break;
@@ -320,8 +370,10 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
             }
             if (!found) {
                 attributes.push(name, value);
-                const index = this.shareDBNode.node.attributes.length;
-                const shareDBOps = [{ p: this.p('attributes', index), li: name }, { p: this.p('attributes', index + 1), li: value }];
+                const index = attributes.length;
+                const p0 = this.p('attributes', index);
+                const p1 = this.p('attributes', index + 1);
+                const shareDBOps = [{ p: p0, li: name }, { p: p1, li: value }];
                 yield this.submitOp(...shareDBOps);
             }
         });
@@ -335,7 +387,10 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
             if (attributeIndex >= 0) {
                 attributes.splice(attributeIndex, 2);
                 const oldValue = attributes[attributeIndex + 1];
-                const shareDBOps = [{ p: this.p('attributes', attributeIndex + 1), ld: oldValue }, { p: this.p('attributes', attributeIndex), ld: name }];
+                const p0 = this.p('attributes', attributeIndex);
+                const p1 = this.p('attributes', attributeIndex + 1);
+                const doc = this.getShareDBDoc();
+                const shareDBOps = [{ p: p1, ld: doc.traverse(p1) }, { p: p0, ld: doc.traverse(p1) }];
                 yield this.submitOp(...shareDBOps);
                 return true;
             }
@@ -343,10 +398,6 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
                 return false;
             }
         });
-    }
-    ;
-    childCountUpdated(count) {
-        this.getTab().requestChildNodes(this.getNodeId());
     }
     ;
     requestInlineStyle() {
@@ -378,33 +429,6 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
                 });
             }
             ;
-        });
-    }
-    setChildren(children) {
-        return __awaiter(this, void 0, void 0, function* () {
-            this.children.forEach((child) => {
-                if (children.indexOf(child) < 0) {
-                    child.destroy();
-                }
-            });
-            this.children = children;
-            this.children.forEach((child) => {
-                child.setParent(this);
-            });
-            if (this.isAttachedToShareDBDoc()) {
-                this.children.forEach((child) => {
-                    child.markAttachedToShareDBDoc();
-                });
-            }
-            this.node.children = children.map((c) => c.getNode());
-            this.node.childNodeCount = this.node.children.length;
-            const previousChildren = this.shareDBNode.children;
-            const previousChildNodeCount = this.shareDBNode.childNodeCount;
-            const shareDBOps = [
-                { p: this.p('children'), od: previousChildren, oi: this.children.map((c) => c.getShareDBNode()) },
-                { p: this.p('childNodeCount'), od: previousChildNodeCount, oi: this.node.children.length }
-            ];
-            yield this.submitOp(...shareDBOps);
         });
     }
     ;

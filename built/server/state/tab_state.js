@@ -356,16 +356,10 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
                 this.domRoot.destroy();
             }
             this.domRoot = this.getOrCreateDOMState(root);
-            const data = this.getShareDBDoc().getData();
-            const oldRoot = data.root;
-            const shareDBOp = { p: this.p('root'), oi: this.domRoot.getShareDBNode(), od: oldRoot };
-            try {
-                yield this.submitOp(shareDBOp);
-            }
-            catch (e) {
-                console.error(e);
-                console.error(e.stack);
-            }
+            const p = this.p('root');
+            const shareDBDoc = this.getShareDBDoc();
+            const shareDBOp = { p, oi: this.domRoot.createShareDBNode(), od: shareDBDoc.traverse(p) };
+            yield this.submitOp(shareDBOp);
             if (this.isAttachedToShareDBDoc) {
                 yield this.domRoot.markAttachedToShareDBDoc();
             }
@@ -389,6 +383,9 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
         else {
             const domState = new dom_state_1.DOMState(node, this, contentDocument, childFrame, parent);
             this.nodeMap.set(nodeId, domState);
+            domState.once(domState.onDestroyed, () => {
+                this.nodeMap.delete(nodeId);
+            });
             return domState;
         }
     }

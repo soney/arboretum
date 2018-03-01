@@ -9021,6 +9021,14 @@ class SDBDoc {
         this.sdb = sdb;
     }
     ;
+    traverse(path) {
+        let x = this.getData();
+        for (let i = 0; i < path.length; i++) {
+            x = x[path[i]];
+        }
+        return x;
+    }
+    ;
     fetch() {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((resolve, reject) => {
@@ -9503,6 +9511,7 @@ json.apply = function(snapshot, op) {
 
     // Object insert / replace
     else if (c.oi !== void 0) {
+        debugger;
       json.checkObj(elem);
 
       // Should check that elem[key] == c.od
@@ -11499,6 +11508,15 @@ class TypedEventEmitter {
         return new TypedListener(this, event, listener);
     }
     ;
+    once(event, baseListener) {
+        const listener = (...args) => {
+            const rv = baseListener(...args);
+            this.removeListener(event, listener);
+            return rv;
+        };
+        return this.on(event, listener);
+    }
+    ;
     addListener(event, listener) {
         return this.on(event, listener);
     }
@@ -11529,7 +11547,7 @@ class TypedEventEmitter {
      */
     emit(event, ...args) {
         if (this.eventListeners.has(event)) {
-            for (var listener of this.eventListeners.get(event)) {
+            for (let listener of this.eventListeners.get(event)) {
                 listener(...args);
             }
         }
@@ -11539,7 +11557,7 @@ class TypedEventEmitter {
      * @typeparam T The event handler signature.
      */
     registerEvent() {
-        let eventBinder = (handler) => {
+        const eventBinder = (handler) => {
             return this.addListener(eventBinder, handler);
         };
         return eventBinder;
@@ -11549,10 +11567,11 @@ class TypedEventEmitter {
 exports.TypedEventEmitter = TypedEventEmitter;
 ;
 class TypedListener {
-    constructor(owner, event, listener) {
+    constructor(owner, event, listener, unbindWhenRun = false) {
         this.owner = owner;
         this.event = event;
         this.listener = listener;
+        this.unbindWhenRun = unbindWhenRun;
     }
     ;
     unbind() {
