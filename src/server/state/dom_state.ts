@@ -41,7 +41,7 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
         log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     };
     protected async onAttachedToShareDBDoc():Promise<void> {
-        log.debug(`DOM State ${this.getNodeId()} added to ShareDB doc`);
+        // log.debug(`DOM State ${this.getNodeId()} added to ShareDB doc`);
         this.updateNodeValue();
         this.children.map((child:DOMState) => {
             child.markAttachedToShareDBDoc();
@@ -231,11 +231,12 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
         if (index >= 0) {
             this.node.children.splice(index, 1);
             this.children.splice(index, 1);
-            child.destroy();
 
-            const oldValue = this.shareDBNode.node.children[index];
+            const oldValue = this.shareDBNode.children[index];
             const shareDBOp:ShareDB.ListDeleteOp = {p: this.p('nodeValue', index), ld:oldValue};
             await this.submitOp(shareDBOp);
+
+            child.destroy();
             return true;
         } else {
             return false;

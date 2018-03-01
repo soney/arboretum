@@ -1,5 +1,5 @@
 import {SDB, SDBDoc} from './ShareDBDoc';
-import {EventEmitter} from './typedEventEmitter';
+import {TypedEventEmitter} from './TypedEventEmitter';
 import {guid, guidIndex} from './guid';
 import * as _ from 'underscore';
 
@@ -48,7 +48,7 @@ export interface MessageAddedEvent {
 };
 export interface ReadyEvent { };
 
-export class ArboretumChat extends EventEmitter {
+export class ArboretumChat extends TypedEventEmitter {
     private static userCounter:number = 1;
     private doc:SDBDoc<ChatDoc>;
     public initialized:Promise<void>;

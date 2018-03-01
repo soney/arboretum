@@ -438,7 +438,7 @@ export class TabState extends ShareDBSharedState<TabDoc> {
             });
 
         }
-        
+
         const contentDocument:DOMState = parentState.getContentDocument();
         if(contentDocument) {
             const node:CRI.Node = contentDocument.getNode();
@@ -453,7 +453,7 @@ export class TabState extends ShareDBSharedState<TabDoc> {
             this.nodeMap.delete(nodeId);
             // this.oldNodeMap.set(nodeId, true);
         }
-    }
+    };
     private doHandleDocumentUpdated = async (event: CRI.DocumentUpdatedEvent):Promise<void> => {
         log.debug(`Document Updated`);
     };
@@ -529,7 +529,7 @@ export class TabState extends ShareDBSharedState<TabDoc> {
             log.error(`Could not find ${nodeId}`);
             // throw new Error(`Could not find ${nodeId}`);
         }
-    }
+    };
     private doHandleChildNodeInserted = async (event:CRI.ChildNodeInsertedEvent):Promise<void> => {
         const { parentNodeId } = event;
         const parentDomState = this.getDOMStateWithID(parentNodeId);
@@ -552,7 +552,7 @@ export class TabState extends ShareDBSharedState<TabDoc> {
             console.error(`Could not find ${parentNodeId}`);
             // throw new Error(`Could not find ${parentNodeId}`);
         }
-    }
+    };
     private doHandleChildNodeRemoved = async (event:CRI.ChildNodeRemovedEvent):Promise<void> => {
         const { parentNodeId, nodeId } = event;
         const domState = this.getDOMStateWithID(nodeId);
@@ -585,7 +585,7 @@ export class TabState extends ShareDBSharedState<TabDoc> {
             console.error(`Could not find ${nodeId}`);
             // throw new Error(`Could not find ${nodeId}`);
         }
-    }
+    };
     private doHandleAttributeRemoved = async (event:CRI.AttributeRemovedEvent):Promise<void> => {
         const { nodeId } = event;
         const domState = this.getDOMStateWithID(nodeId);
@@ -602,5 +602,5 @@ export class TabState extends ShareDBSharedState<TabDoc> {
             console.error(`Could not find ${nodeId}`);
             // throw new Error(`Could not find ${nodeId}`);
         }
-    }
+    };
 }

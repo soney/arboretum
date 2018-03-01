@@ -693,5 +693,6 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             // this.oldNodeMap.set(nodeId, true);
         }
     }
+    ;
 }
 exports.TabState = TabState;

@@ -1,8 +1,10 @@
 import * as ShareDB from 'sharedb';
 import {SDB, SDBDoc} from './ShareDBDoc';
+import {TypedEventEmitter, TypedListener} from './TypedEventEmitter';
 
-export abstract class ShareDBSharedState<E> {
+export abstract class ShareDBSharedState<E> extends TypedEventEmitter {
     constructor(private attachedToShareDBDoc:boolean=false) {
+        super();
     };
 
     public abstract getAbsoluteShareDBPath():Array<string|number>;

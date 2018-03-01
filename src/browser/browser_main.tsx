@@ -5,6 +5,6 @@ import {Arboretum} from './ts/arboretum';
 require('./css/browser.scss');
 
 ReactDOM.render(
-    <Arboretum serverState="active" urls={['file:///home/soney/code/arboretum/test/simple.html']} />,
+    <Arboretum serverState="active" urls={['file:///home/soney/code/arboretum/test/index.html']} />,
     document.getElementById('arboretum_main')
 );

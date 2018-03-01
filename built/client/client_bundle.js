@@ -15552,7 +15552,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const typedEventEmitter_1 = __webpack_require__(69);
+const TypedEventEmitter_1 = __webpack_require__(69);
 const guid_1 = __webpack_require__(70);
 const _ = __webpack_require__(16);
 exports.userColors = [
@@ -15574,7 +15574,7 @@ var TypingStatus;
 ;
 ;
 ;
-class ArboretumChat extends typedEventEmitter_1.EventEmitter {
+class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
     constructor(sdb) {
         super();
         this.sdb = sdb;
@@ -15757,10 +15757,11 @@ exports.ArboretumChat = ArboretumChat;
  * EALINGS IN THE SOFTWARE.                                                   *
  ******************************************************************************/
 Object.defineProperty(exports, "__esModule", { value: true });
-class EventEmitter {
+class TypedEventEmitter {
     constructor() {
         this.eventListeners = new Map();
     }
+    ;
     on(event, listener) {
         if (!this.eventListeners.has(event)) {
             this.eventListeners.set(event, [listener]);
@@ -15768,31 +15769,34 @@ class EventEmitter {
         else {
             this.eventListeners.get(event).push(listener);
         }
-        return new Listener(this, event, listener);
+        return new TypedListener(this, event, listener);
     }
+    ;
     addListener(event, listener) {
         return this.on(event, listener);
     }
+    ;
     removeListener() {
         if (arguments.length == 0) {
             this.eventListeners.clear();
         }
         else if (arguments.length == 1 && typeof arguments[0] == 'object') {
-            let id = arguments[0];
+            const id = arguments[0];
             this.removeListener(id.event, id.listener);
         }
         else if (arguments.length >= 1) {
             let event = arguments[0];
             let listener = arguments[1];
             if (this.eventListeners.has(event)) {
-                var listeners = this.eventListeners.get(event);
-                var idx;
+                const listeners = this.eventListeners.get(event);
+                let idx;
                 while (!listener || (idx = listeners.indexOf(listener)) != -1) {
                     listeners.splice(idx, 1);
                 }
             }
         }
     }
+    ;
     /**
      * Emit event. Calls all bound listeners with args.
      */
@@ -15803,6 +15807,7 @@ class EventEmitter {
             }
         }
     }
+    ;
     /**
      * @typeparam T The event handler signature.
      */
@@ -15812,19 +15817,24 @@ class EventEmitter {
         };
         return eventBinder;
     }
+    ;
 }
-exports.EventEmitter = EventEmitter;
-class Listener {
+exports.TypedEventEmitter = TypedEventEmitter;
+;
+class TypedListener {
     constructor(owner, event, listener) {
         this.owner = owner;
         this.event = event;
         this.listener = listener;
     }
+    ;
     unbind() {
         this.owner.removeListener(this);
     }
+    ;
 }
-exports.Listener = Listener;
+exports.TypedListener = TypedListener;
+;
 
 
 /***/ }),

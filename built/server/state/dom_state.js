@@ -49,7 +49,7 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
     ;
     onAttachedToShareDBDoc() {
         return __awaiter(this, void 0, void 0, function* () {
-            log.debug(`DOM State ${this.getNodeId()} added to ShareDB doc`);
+            // log.debug(`DOM State ${this.getNodeId()} added to ShareDB doc`);
             this.updateNodeValue();
             this.children.map((child) => {
                 child.markAttachedToShareDBDoc();
@@ -288,10 +288,10 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
             if (index >= 0) {
                 this.node.children.splice(index, 1);
                 this.children.splice(index, 1);
-                child.destroy();
-                const oldValue = this.shareDBNode.node.children[index];
+                const oldValue = this.shareDBNode.children[index];
                 const shareDBOp = { p: this.p('nodeValue', index), ld: oldValue };
                 yield this.submitOp(shareDBOp);
+                child.destroy();
                 return true;
             }
             else {
