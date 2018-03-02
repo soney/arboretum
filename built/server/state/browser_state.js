@@ -74,16 +74,15 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
                     tab = new tab_state_1.TabState(tabInfo, this.sdb);
                     this.tabs.set(id, tab);
                     yield tab.initialized;
-                    const shareDBOp = { p: ['tabs', id], oi: id };
-                    yield this.submitOp(shareDBOp);
+                    yield this.getShareDBDoc().submitObjectInsertOp(['tabs', id], id);
                 }
             }));
             yield Promise.all(createPromises);
             const destroyPromises = Array.from(existingTabs).map((id) => __awaiter(this, void 0, void 0, function* () {
                 log.trace(`Destroying tab ${id}`);
                 this.destroyTab(id);
-                const shareDBOp = { p: ['tabs', id], od: id };
-                yield this.submitOp(shareDBOp);
+                const doc = this.getShareDBDoc();
+                yield doc.submitObjectDeleteOp(this.p('tabs', id));
             }));
             yield Promise.all(destroyPromises);
         });

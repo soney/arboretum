@@ -13,7 +13,9 @@ export interface ShareDBDOMNode {
     contentDocument:ShareDBDOMNode,
     childFrame: ShareDBFrame,
     inlineStyle:string,
-    inputValue:string
+    inputValue:string,
+    shadowRootType:CRI.ShadowRootType,
+    shadowRoots:Array<ShareDBDOMNode>,
 };
 
 export interface TabDoc {

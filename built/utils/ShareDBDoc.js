@@ -76,6 +76,60 @@ class SDBDoc {
         return x;
     }
     ;
+    submitObjectReplaceOp(p, oi, od = this.traverse(p)) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const op = { p, oi, od };
+            return yield this.submitOp([op]);
+        });
+    }
+    ;
+    submitObjectInsertOp(p, oi) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const op = { p, oi };
+            return yield this.submitOp([op]);
+        });
+    }
+    ;
+    submitObjectDeleteOp(p, od = this.traverse(p)) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const op = { p, od };
+            return yield this.submitOp([op]);
+        });
+    }
+    ;
+    submitListReplaceOp(p, li, ld = this.traverse(p)) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const op = { p, li, ld };
+            return yield this.submitOp([op]);
+        });
+    }
+    ;
+    submitListInsertOp(p, li) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const op = { p, li };
+            return yield this.submitOp([op]);
+        });
+    }
+    ;
+    submitListDeleteOp(p, ld = this.traverse(p)) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const op = { p, ld };
+            return yield this.submitOp([op]);
+        });
+    }
+    ;
+    submitListPushOp(p, ...items) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const arr = this.traverse(p);
+            const previousLength = arr.length;
+            const ops = items.map((x, i) => {
+                const op = { p: p.concat(i), li: x };
+                return op;
+            });
+            return yield this.submitOp(ops);
+        });
+    }
+    ;
     fetch() {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((resolve, reject) => {

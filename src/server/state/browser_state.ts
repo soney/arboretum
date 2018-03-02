@@ -67,8 +67,7 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
                 this.tabs.set(id, tab);
 
                 await tab.initialized;
-                const shareDBOp:ShareDB.ObjectInsertOp = {p: ['tabs', id], oi: id};
-                await this.submitOp(shareDBOp);
+                await this.getShareDBDoc().submitObjectInsertOp(['tabs', id], id);
             }
         });
 
@@ -77,8 +76,8 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
         const destroyPromises = Array.from(existingTabs).map(async (id: CRI.TabID):Promise<void> => {
             log.trace(`Destroying tab ${id}`);
             this.destroyTab(id);
-            const shareDBOp:ShareDB.ObjectDeleteOp = {p: ['tabs', id], od: id};
-            await this.submitOp(shareDBOp);
+            const doc = this.getShareDBDoc();
+            await doc.submitObjectDeleteOp(this.p('tabs', id));
         });
 
         await Promise.all(destroyPromises);

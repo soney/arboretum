@@ -60,6 +60,40 @@ export class SDBDoc<E> {
         }
         return x;
     };
+    public async submitObjectReplaceOp(p:Array<string|number>, oi:any, od:any=this.traverse(p)):Promise<void> {
+        const op:ShareDB.ObjectReplaceOp = {p, oi, od};
+        return await this.submitOp([op]);
+    };
+    public async submitObjectInsertOp(p:Array<string|number>, oi:any):Promise<void> {
+        const op:ShareDB.ObjectInsertOp = {p, oi};
+        return await this.submitOp([op]);
+    };
+    public async submitObjectDeleteOp(p:Array<string|number>, od:any=this.traverse(p)):Promise<void> {
+        const op:ShareDB.ObjectDeleteOp = {p, od};
+        return await this.submitOp([op]);
+    };
+    public async submitListReplaceOp(p:Array<string|number>, li:any, ld:any=this.traverse(p)):Promise<void> {
+        const op:ShareDB.ListReplaceOp = {p, li, ld};
+        return await this.submitOp([op]);
+    };
+    public async submitListInsertOp(p:Array<string|number>, li:any):Promise<void> {
+        const op:ShareDB.ListInsertOp = {p, li};
+        return await this.submitOp([op]);
+    };
+    public async submitListDeleteOp(p:Array<string|number>, ld:any=this.traverse(p)):Promise<void> {
+        const op:ShareDB.ListDeleteOp = {p, ld};
+        return await this.submitOp([op]);
+    };
+    public async submitListPushOp(p:Array<string|number>, ...items:Array<any>):Promise<void> {
+        const arr:Array<any> = this.traverse(p);
+        const previousLength:number = arr.length;
+        const ops:Array<ShareDB.ListInsertOp> = items.map((x:any, i:number) => {
+            const op:ShareDB.ListInsertOp = {p:p.concat(i), li:x};
+            return op;
+        });
+        return await this.submitOp(ops);
+    };
+
     public async fetch():Promise<ShareDB.Doc<E>> {
         return new Promise<ShareDB.Doc<E>>((resolve, reject) => {
             this.doc.fetch((err) => {

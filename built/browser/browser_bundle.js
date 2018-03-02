@@ -6871,7 +6871,7 @@ const React = __webpack_require__(0);
 const ReactDOM = __webpack_require__(28);
 const arboretum_1 = __webpack_require__(29);
 __webpack_require__(61);
-ReactDOM.render(React.createElement(arboretum_1.Arboretum, { serverState: "active", urls: ['file:///home/soney/code/arboretum/test/index.html'] }), document.getElementById('arboretum_main'));
+ReactDOM.render(React.createElement(arboretum_1.Arboretum, { serverState: "active", urls: ['http://www.umich.edu/'] }), document.getElementById('arboretum_main'));
 
 
 /***/ }),
@@ -9029,6 +9029,60 @@ class SDBDoc {
         return x;
     }
     ;
+    submitObjectReplaceOp(p, oi, od = this.traverse(p)) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const op = { p, oi, od };
+            return yield this.submitOp([op]);
+        });
+    }
+    ;
+    submitObjectInsertOp(p, oi) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const op = { p, oi };
+            return yield this.submitOp([op]);
+        });
+    }
+    ;
+    submitObjectDeleteOp(p, od = this.traverse(p)) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const op = { p, od };
+            return yield this.submitOp([op]);
+        });
+    }
+    ;
+    submitListReplaceOp(p, li, ld = this.traverse(p)) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const op = { p, li, ld };
+            return yield this.submitOp([op]);
+        });
+    }
+    ;
+    submitListInsertOp(p, li) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const op = { p, li };
+            return yield this.submitOp([op]);
+        });
+    }
+    ;
+    submitListDeleteOp(p, ld = this.traverse(p)) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const op = { p, ld };
+            return yield this.submitOp([op]);
+        });
+    }
+    ;
+    submitListPushOp(p, ...items) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const arr = this.traverse(p);
+            const previousLength = arr.length;
+            const ops = items.map((x, i) => {
+                const op = { p: p.concat(i), li: x };
+                return op;
+            });
+            return yield this.submitOp(ops);
+        });
+    }
+    ;
     fetch() {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((resolve, reject) => {
@@ -9511,7 +9565,6 @@ json.apply = function(snapshot, op) {
 
     // Object insert / replace
     else if (c.oi !== void 0) {
-        debugger;
       json.checkObj(elem);
 
       // Should check that elem[key] == c.od

@@ -261,6 +261,16 @@ declare namespace CRI {
     namespace DOM {
         type BackendNodeID = number;
     }
+    interface ShadowRootPoppedParams {}
+    interface ShadowRootPushedParams {}
+    interface ShadowRootPoppedEvent {
+        hostId:NodeID,
+        rootId:NodeID
+    }
+    interface ShadowRootPushedEvent {
+        hostId:NodeID,
+        root:Node
+    }
     interface DOM {
         getDocument:(params:GetDocumentOptions, callback:(err:any, value:GetDocumentResult)=>void) => void
         requestChildNodes:(params:RequestChildNodesOptions, callback:(err:any, value:RequestChildNodesResult)=>void) => void
@@ -269,6 +279,8 @@ declare namespace CRI {
         requestNode:(params:RequestNodeOptions, callback:(err:any, value:RequestNodeResult)=>void) => void
         resolveNode:(params:ResolveNodeOptions, callback:(err:any, value:ResolveNodeResult)=>void) => void
         describeNode:(params:DescribeNodeParams, callback:(err:any, value:DescribeNodeResult)=>void) => void
+        shadowRootPopped:(params:ShadowRootPoppedParams, callback:(value:ShadowRootPoppedEvent)=>void) => void
+        shadowRootPushed:(params:ShadowRootPushedParams, callback:(value:ShadowRootPushedEvent)=>void) => void
     }
     interface FrameResourceTree {
         frameTree:FrameTree
