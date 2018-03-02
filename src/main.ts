@@ -92,23 +92,6 @@ expressApp.all('/', async (req, res, next) => {
         res.send(contents);
     })
     .use('/f', express.static(join(__dirname, 'client')))
-    .all('/a', async (req, res, next) => {
-        const contents: string = await setClientOptions({
-            viewType: 'admin'
-        });
-        res.send(contents);
-    })
-    .use('/a', express.static(join(__dirname, 'client')))
-    .all('/m', async (req, res, next) => {
-        var messageId = req.query.m;
-
-        const contents: string = await setClientOptions({
-            viewType: 'message',
-            messageId: messageId
-        });
-        res.send(contents);
-    })
-    .use('/m', express.static(join(__dirname, 'client')))
     .all('/r', async (req, res, next) => {
         var url = req.query.l,
             tabId = req.query.t,

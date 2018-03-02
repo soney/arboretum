@@ -90,22 +90,6 @@ expressApp.all('/', (req, res, next) => __awaiter(this, void 0, void 0, function
     res.send(contents);
 }))
     .use('/f', express.static(path_1.join(__dirname, 'client')))
-    .all('/a', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
-    const contents = yield setClientOptions({
-        viewType: 'admin'
-    });
-    res.send(contents);
-}))
-    .use('/a', express.static(path_1.join(__dirname, 'client')))
-    .all('/m', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
-    var messageId = req.query.m;
-    const contents = yield setClientOptions({
-        viewType: 'message',
-        messageId: messageId
-    });
-    res.send(contents);
-}))
-    .use('/m', express.static(path_1.join(__dirname, 'client')))
     .all('/r', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
     var url = req.query.l, tabId = req.query.t, frameId = req.query.f;
     try {

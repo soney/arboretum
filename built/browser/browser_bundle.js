@@ -6871,7 +6871,7 @@ const React = __webpack_require__(0);
 const ReactDOM = __webpack_require__(28);
 const arboretum_1 = __webpack_require__(29);
 __webpack_require__(61);
-ReactDOM.render(React.createElement(arboretum_1.Arboretum, { serverState: "active", urls: ['http://www.umich.edu/'] }), document.getElementById('arboretum_main'));
+ReactDOM.render(React.createElement(arboretum_1.Arboretum, { serverState: "active", urls: ['file:///home/soney/code/arboretum/test/simple_frame_contents.html'] }), document.getElementById('arboretum_main'));
 
 
 /***/ }),
