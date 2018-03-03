@@ -76,7 +76,7 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const fullNodeValue = yield this.getFullString();
-                this.setNodeValue(fullNodeValue);
+                yield this.setNodeValue(fullNodeValue);
             }
             catch (err) {
                 if (err.code && err.code === -32000) {
@@ -86,14 +86,6 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         });
     }
     ;
-    static stripNode(node) {
-        const rv = _.clone(node);
-        rv.children = [];
-        rv.contentDocument = null;
-        rv.attributes = [];
-        return rv;
-    }
-    ;
     getContentDocument() { return this.contentDocument; }
     ;
     getShareDBDoc() { return this.tab.getShareDBDoc(); }
@@ -101,7 +93,6 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
     createShareDBNode() {
         const node = this.getNode();
         return {
-            // node: DOMState.stripNode(this.node),
             nodeType: node.nodeType,
             nodeName: node.nodeName,
             nodeValue: node.nodeValue,
@@ -120,9 +111,18 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         if (!attributes) {
             return null;
         }
+        const tagName = this.getTagName();
+        const tagTransform = url_transform_1.urlTransform[tagName.toLowerCase()];
         const rv = [];
-        for (let i = 0; i < attributes.length; i += 2) {
-            rv.push([attributes[i], attributes[i + 1]]);
+        const len = attributes.length;
+        let i = 0;
+        while (i < len) {
+            const [attributeName, attributeValue] = [attributes[i], attributes[i + 1]];
+            if (this.shouldIncludeAttribute(attributeName)) {
+                const newValue = this.transformAttributeValue(attributeName, attributeValue);
+                rv.push([attributeName, newValue]);
+            }
+            i += 2;
         }
         return rv;
     }
@@ -292,8 +292,9 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
     ;
     pushShadowRoot(root) {
         return __awaiter(this, void 0, void 0, function* () {
+            const rootNode = root.getNode();
             const shadowRoots = this.getShadowRoots();
-            this.node.shadowRoots.push(root.getNode());
+            this.node.shadowRoots.push(rootNode);
             shadowRoots.push(root);
             const p = this.p('shadowRoots');
             const doc = this.getShareDBDoc();
@@ -354,9 +355,9 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
             if (this.isAttachedToShareDBDoc()) {
                 childDomState.markAttachedToShareDBDoc();
             }
-            const p = this.p('children', index);
-            const doc = this.getShareDBDoc();
-            yield doc.submitListInsertOp(p, childDomState.createShareDBNode());
+            // const p = this.p('children', index);
+            // const doc = this.getShareDBDoc();
+            // await doc.submitListInsertOp(p, childDomState.createShareDBNode());
         });
     }
     ;
@@ -367,9 +368,16 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
             if (index >= 0) {
                 this.node.children.splice(index, 1);
                 children.splice(index, 1);
-                const p = this.p('children', index);
                 const doc = this.getShareDBDoc();
-                yield doc.submitListDeleteOp(p);
+                const sdbChildren = doc.traverse(this.p('children'));
+                const nodeId = child.getNodeId();
+                for (let i = 0; i < sdbChildren.length; i++) {
+                    const sdbChild = sdbChildren[i];
+                    if (sdbChild.nodeId === nodeId) {
+                        yield doc.submitListDeleteOp(this.p('children', i));
+                        break;
+                    }
+                }
                 child.destroy();
                 return true;
             }
@@ -415,8 +423,6 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
             this.setSubNodes('shadowRoots', newChildren);
             const children = this.getShadowRoots();
             this.node.shadowRoots = children.map((c) => c.getNode());
-            const doc = this.getShareDBDoc();
-            yield doc.submitObjectReplaceOp(this.p('shadowRoots'), children.map((c) => c.createShareDBNode()));
         });
     }
     ;
@@ -432,20 +438,50 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
                 const n = attributes[i];
                 if (n === name) {
                     attributes[i + 1] = value;
-                    const p = this.p('attributes', i + 1);
-                    const doc = this.getShareDBDoc();
-                    yield doc.submitListReplaceOp(p, value);
                     found = true;
                     break;
                 }
             }
             if (!found) {
                 attributes.push(name, value);
-                const index = attributes.length;
+            }
+            // === TRANSFORMED ATTRIBUTES ===
+            if (this.shouldIncludeAttribute(name)) {
                 const doc = this.getShareDBDoc();
-                yield doc.submitListPushOp(this.p('attributes'), name, value);
+                const sdbNode = this.getComputedShareDBNode();
+                const sdbAttributes = sdbNode.attributes;
+                const newValue = this.transformAttributeValue(name, value);
+                found = false;
+                for (let i = 0; i < sdbAttributes.length; i++) {
+                    const [attributeName, attributeValue] = sdbAttributes[i];
+                    if (attributeName === name) {
+                        yield doc.submitListReplaceOp(this.p('attributes', i, 1), newValue);
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    yield doc.submitListPushOp(this.p('attributes'), [name, newValue]);
+                }
             }
         });
+    }
+    ;
+    transformAttributeValue(attributeName, attributeValue) {
+        const tagName = this.getTagName();
+        const tagTransform = url_transform_1.urlTransform[tagName.toLowerCase()];
+        let newValue = attributeValue;
+        if (_.has(tagTransform, attributeName.toLowerCase())) {
+            const attributeTransofrm = tagTransform[attributeName.toLowerCase()];
+            const url = this.getBaseURL();
+            if (url) {
+                newValue = attributeTransofrm.transform(attributeValue, url, this);
+            }
+            else {
+                log.debug('No base URL');
+            }
+        }
+        return newValue;
     }
     ;
     removeAttribute(name) {
@@ -455,11 +491,16 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
             const attributeIndex = attributes.indexOf(name);
             if (attributeIndex >= 0) {
                 attributes.splice(attributeIndex, 2);
-                const oldValue = attributes[attributeIndex + 1];
-                const p0 = this.p('attributes', attributeIndex);
-                const p1 = this.p('attributes', attributeIndex + 1);
                 const doc = this.getShareDBDoc();
-                yield Promise.all([doc.submitListDeleteOp(p1), doc.submitListDeleteOp(p0)]);
+                const sdbNode = this.getComputedShareDBNode();
+                const sdbAttributes = sdbNode.attributes;
+                for (let i = 0; i < sdbAttributes.length; i++) {
+                    const [attributeName, attributeValue] = sdbAttributes[i];
+                    if (attributeName === name) {
+                        yield doc.submitListDeleteOp(this.p('attributes', i));
+                        break;
+                    }
+                }
                 return true;
             }
             else {
@@ -562,35 +603,8 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         return DOMState.attributesToIgnore.indexOf(lowercaseAttributeName) < 0;
     }
     ;
-    getAttributesMap(shadow) {
-        const tagName = this.getTagName();
-        const tagTransform = url_transform_1.urlTransform[tagName.toLowerCase()];
-        const attributes = this.getNodeAttributes();
-        const rv = new Map();
-        const len = attributes.length;
-        let i = 0;
-        while (i < len) {
-            const [attributeName, attributeValue] = [attributes[i], attributes[i + 1]];
-            let newValue = attributeValue;
-            if (this.shouldIncludeAttribute(attributeName)) {
-                if (_.has(tagTransform, attributeName.toLowerCase())) {
-                    const attributeTransofrm = tagTransform[attributeName.toLowerCase()];
-                    const url = this.getBaseURL();
-                    if (url) {
-                        newValue = attributeTransofrm.transform(attributeValue, url, this, shadow);
-                    }
-                    else {
-                        log.debug('No base URL');
-                    }
-                }
-            }
-            else {
-                newValue = '';
-            }
-            rv.set(attributeName, newValue);
-            i += 2;
-        }
-        return rv;
+    getAttributesMap() {
+        return new Map(this.computeGroupedAttributes(this.getNode().attributes));
     }
     ;
     print(level = 0) {
@@ -637,6 +651,46 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
                 });
             });
         });
+    }
+    ;
+    setChildrenRecursive(children, shadowRoots = []) {
+        if (children) {
+            const childDOMStates = children.map((child) => {
+                const { contentDocument, frameId } = child;
+                const contentDocState = contentDocument ? this.tab.getOrCreateDOMState(contentDocument) : null;
+                const frame = frameId ? this.tab.getFrame(frameId) : null;
+                const domState = this.tab.getOrCreateDOMState(child, contentDocState, frame, this);
+                return domState;
+            });
+            this.setChildren(childDOMStates);
+            childDOMStates.map((domState) => {
+                const child = domState.getNode();
+                const { children, shadowRoots } = child;
+                domState.setChildrenRecursive(children, shadowRoots);
+                return domState;
+            });
+        }
+        const shadowDOMNodes = shadowRoots;
+        const shadowDOMRoots = shadowDOMNodes.map((r) => {
+            const { contentDocument, frameId } = r;
+            const contentDocState = contentDocument ? this.tab.getOrCreateDOMState(contentDocument) : null;
+            const frame = frameId ? this.tab.getFrame(frameId) : null;
+            const domState = this.tab.getOrCreateDOMState(r, contentDocState, frame, this);
+            return domState;
+        });
+        this.setShadowRoots(shadowDOMRoots);
+        shadowDOMRoots.map((domState) => {
+            const child = domState.getNode();
+            const { children, shadowRoots } = child;
+            domState.setChildrenRecursive(children, shadowRoots);
+            return domState;
+        });
+        const contentDocument = this.getContentDocument();
+        if (contentDocument) {
+            const node = contentDocument.getNode();
+            const { children, shadowRoots } = node;
+            contentDocument.setChildrenRecursive(children, shadowRoots);
+        }
     }
     ;
 }

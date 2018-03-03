@@ -121,8 +121,7 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         if(this.isAttachedToShareDBDoc) {
             await this.domRoot.markAttachedToShareDBDoc();
         }
-
-        this.setChildrenRecursive(this.domRoot, root.children);
+        this.domRoot.setChildrenRecursive(root.children, root.shadowRoots);
     };
     private getDOMStateWithID(nodeId: CRI.NodeID): DOMState {
         return this.nodeMap.get(nodeId);
@@ -130,7 +129,7 @@ export class TabState extends ShareDBSharedState<TabDoc> {
     private hasDOMStateWithID(nodeId: CRI.NodeID): boolean {
         return this.nodeMap.has(nodeId);
     };
-    private getOrCreateDOMState(node:CRI.Node, contentDocument?:DOMState, childFrame?:FrameState, parent?:DOMState, previousNode?:DOMState): DOMState {
+    public getOrCreateDOMState(node:CRI.Node, contentDocument?:DOMState, childFrame?:FrameState, parent?:DOMState, previousNode?:DOMState): DOMState {
         const { nodeId } = node;
         if (this.hasDOMStateWithID(nodeId)) {
             return this.getDOMStateWithID(nodeId);
@@ -417,52 +416,6 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         console.log(`Tab ${this.getTabId()} (${this.getTabTitle()})`);
     };
 
-    private setChildrenRecursive(parentState: DOMState, children: Array<CRI.Node>):DOMState {
-        if (children) {
-            const childDOMStates:Array<DOMState> = children.map((child: CRI.Node) => {
-                const {contentDocument, frameId} = child;
-                const contentDocState = contentDocument ? this.getOrCreateDOMState(contentDocument) : null;
-                const frame:FrameState = frameId ? this.getFrame(frameId) : null;
-
-                const domState:DOMState = this.getOrCreateDOMState(child, contentDocState, frame, parentState);
-                return domState;
-            });
-            parentState.setChildren(childDOMStates);
-
-            childDOMStates.map((domState:DOMState) => {
-                const child:CRI.Node = domState.getNode();
-                const {children} = child;
-                this.setChildrenRecursive(domState, children);
-                return domState;
-            });
-        }
-
-        const shadowDOMNodes:Array<CRI.Node> = parentState.getNode().shadowRoots || [];
-        const shadowDOMRoots = shadowDOMNodes.map((r:CRI.Node) => {
-            const {contentDocument, frameId} = r;
-            const contentDocState = contentDocument ? this.getOrCreateDOMState(contentDocument) : null;
-            const frame:FrameState = frameId ? this.getFrame(frameId) : null;
-
-            const domState:DOMState = this.getOrCreateDOMState(r, contentDocState, frame, parentState);
-            return domState;
-        });
-        parentState.setShadowRoots(shadowDOMRoots);
-        shadowDOMRoots.map((domState:DOMState) => {
-            const child:CRI.Node = domState.getNode();
-            const {children} = child;
-            this.setChildrenRecursive(domState, children);
-            return domState;
-        });
-
-
-        const contentDocument:DOMState = parentState.getContentDocument();
-        if(contentDocument) {
-            const node:CRI.Node = contentDocument.getNode();
-            const {children} = node;
-            this.setChildrenRecursive(contentDocument, children);
-        }
-        return parentState;
-    };
 
     private removeDOMState(domState: DOMState): void {
         const nodeId = domState.getNodeId();
@@ -502,7 +455,7 @@ export class TabState extends ShareDBSharedState<TabDoc> {
             try {
                 const { nodes } = event;
                 log.debug(`Set child nodes ${parentId} -> [${nodes.map((node) => node.nodeId).join(', ')}]`);
-                this.setChildrenRecursive(parent, nodes);
+                parent.setChildrenRecursive(nodes);
             } catch(err) {
                 console.error(err);
                 console.error(err.stack);
@@ -568,7 +521,7 @@ export class TabState extends ShareDBSharedState<TabDoc> {
             }
 
             log.debug(`Child node inserted ${nodeId} (parent: ${parentNodeId} / previous: ${previousNodeId})`);
-            this.setChildrenRecursive(domState, node.children);
+            domState.setChildrenRecursive(node.children, node.shadowRoots);
             this.requestChildNodes(nodeId, -1, true);
         } else {
             console.error(`Could not find ${parentNodeId} for childNodeInserted`);
