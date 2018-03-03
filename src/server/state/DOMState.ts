@@ -310,17 +310,13 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
         this.node.children.splice(index, 0, childDomState.getNode());
         childDomState.setParent(this);
 
-        if(this.isAttachedToShareDBDoc()) {
-            if(DOMState.shouldIncludeChild(childDomState)) {
-                const filteredChildren = children.filter((c) => DOMState.shouldIncludeChild(c));
-                const fcIndex:number = filteredChildren.indexOf(childDomState);
-                const doc = this.getShareDBDoc();
-                await doc.submitListInsertOp(this.p('children', fcIndex), childDomState.createShareDBNode());
+        if(this.isAttachedToShareDBDoc() && DOMState.shouldIncludeChild(childDomState)) {
+            const filteredChildren = children.filter(DOMState.shouldIncludeChild);
+            const fcIndex:number = filteredChildren.indexOf(childDomState);
+            const doc = this.getShareDBDoc();
+            await doc.submitListInsertOp(this.p('children', fcIndex), childDomState.createShareDBNode());
 
-                if(this.isAttachedToShareDBDoc()) {
-                    childDomState.markAttachedToShareDBDoc();
-                }
-            }
+            childDomState.markAttachedToShareDBDoc();
         }
     };
     public async removeChild(child: DOMState): Promise<boolean> {
@@ -572,25 +568,23 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
             })
         });
     };
-    public setChildrenRecursive(children: Array<CRI.Node>, shadowRoots:Array<CRI.Node>=[]):void {
-        if (children) {
-            const childDOMStates:Array<DOMState> = children.map((child: CRI.Node) => {
-                const {contentDocument, frameId} = child;
-                const contentDocState = contentDocument ? this.tab.getOrCreateDOMState(contentDocument) : null;
-                const frame:FrameState = frameId ? this.tab.getFrame(frameId) : null;
+    public setChildrenRecursive(children: Array<CRI.Node>=[], shadowRoots:Array<CRI.Node>=[]):void {
+        const childDOMStates:Array<DOMState> = children.map((child: CRI.Node) => {
+            const {contentDocument, frameId} = child;
+            const contentDocState = contentDocument ? this.tab.getOrCreateDOMState(contentDocument) : null;
+            const frame:FrameState = frameId ? this.tab.getFrame(frameId) : null;
 
-                const domState:DOMState = this.tab.getOrCreateDOMState(child, contentDocState, frame, this);
-                return domState;
-            });
-            this.setChildren(childDOMStates);
+            const domState:DOMState = this.tab.getOrCreateDOMState(child, contentDocState, frame, this);
+            return domState;
+        });
+        this.setChildren(childDOMStates);
 
-            childDOMStates.map((domState:DOMState) => {
-                const child:CRI.Node = domState.getNode();
-                const {children, shadowRoots} = child;
-                domState.setChildrenRecursive(children, shadowRoots);
-                return domState;
-            });
-        }
+        childDOMStates.map((domState:DOMState) => {
+            const child:CRI.Node = domState.getNode();
+            const {children, shadowRoots} = child;
+            domState.setChildrenRecursive(children, shadowRoots);
+            return domState;
+        });
 
         const shadowDOMNodes:Array<CRI.Node> = shadowRoots;
         const shadowDOMRoots = shadowDOMNodes.map((r:CRI.Node) => {

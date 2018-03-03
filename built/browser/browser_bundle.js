@@ -7370,7 +7370,7 @@ const React = __webpack_require__(0);
 const ReactDOM = __webpack_require__(39);
 const arboretum_1 = __webpack_require__(48);
 __webpack_require__(78);
-ReactDOM.render(React.createElement(arboretum_1.Arboretum, { serverState: "active", urls: ['file:///home/soney/code/arboretum/test/index.html'] }), document.getElementById('arboretum_main'));
+ReactDOM.render(React.createElement(arboretum_1.Arboretum, { serverState: "active", urls: ['file:///home/soney/code/arboretum/test/simple_iframe_content.html'] }), document.getElementById('arboretum_main'));
 
 
 /***/ }),
