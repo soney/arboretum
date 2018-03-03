@@ -33645,6 +33645,7 @@ class ClientTab extends React.Component {
     constructor(props) {
         super(props);
         this.docUpdated = (ops, source, data) => {
+            console.log(data);
             if (ops) {
                 ops.forEach((op) => {
                     this.handleOp(op);
@@ -33778,8 +33779,7 @@ class ClientNode {
     ;
     getNodeChildren() { return this.sdbNode.children; }
     ;
-    getNodeShadowRoots() { return this.sdbNode.shadowRoots; }
-    ;
+    // protected getNodeShadowRoots():Array<ShareDBDOMNode> { return this.sdbNode.shadowRoots; };
     setCharacterData(characterData) { }
 }
 exports.ClientNode = ClientNode;

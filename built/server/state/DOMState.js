@@ -38,6 +38,22 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         }
         log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     }
+    static shouldIncludeChild(child) {
+        return true;
+        // const node:CRI.Node = child.getNode();
+        // const {nodeName, nodeType} = node;
+        // if(nodeName === 'SCRIPT' || nodeName === '#comment' || nodeName === 'BASE' || nodeType === NodeCode.DOCUMENT_TYPE_NODE) {
+        //     return false;
+        // } else {
+        //     return true;
+        // }
+    }
+    ;
+    static shouldIncludeAttribute(attributeName) {
+        const lowercaseAttributeName = attributeName.toLowerCase();
+        return DOMState.attributesToIgnore.indexOf(lowercaseAttributeName) < 0;
+    }
+    ;
     ;
     getSubNodes(type) {
         if (this.subNodes.has(type)) {
@@ -61,7 +77,9 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
             // log.debug(`DOM State ${this.getNodeId()} added to ShareDB doc`);
             this.updateNodeValue();
             this.getChildren().map((child) => {
-                child.markAttachedToShareDBDoc();
+                if (DOMState.shouldIncludeChild(child)) {
+                    child.markAttachedToShareDBDoc();
+                }
             });
             if (this.childFrame) {
                 this.childFrame.markAttachedToShareDBDoc();
@@ -91,15 +109,12 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
     getShareDBDoc() { return this.tab.getShareDBDoc(); }
     ;
     createShareDBNode() {
-        const node = this.getNode();
+        const filteredChildren = this.getChildren().filter((c) => DOMState.shouldIncludeChild(c));
+        const children = filteredChildren.map((c) => c.createShareDBNode());
+        const { nodeType, nodeName, nodeValue, attributes } = this.getNode();
         return {
-            nodeType: node.nodeType,
-            nodeName: node.nodeName,
-            nodeValue: node.nodeValue,
-            attributes: this.computeGroupedAttributes(node.attributes),
-            shadowRootType: node.shadowRootType,
-            shadowRoots: this.getShadowRoots().map((sr) => sr.createShareDBNode()),
-            children: this.getChildren().map((child) => child.createShareDBNode()),
+            nodeType, nodeName, nodeValue, children,
+            attributes: this.computeGroupedAttributes(attributes),
             contentDocument: this.contentDocument ? this.contentDocument.createShareDBNode() : null,
             childFrame: this.childFrame ? this.childFrame.getShareDBFrame() : null,
             inlineStyle: this.inlineStyle,
@@ -118,7 +133,7 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         let i = 0;
         while (i < len) {
             const [attributeName, attributeValue] = [attributes[i], attributes[i + 1]];
-            if (this.shouldIncludeAttribute(attributeName)) {
+            if (DOMState.shouldIncludeAttribute(attributeName)) {
                 const newValue = this.transformAttributeValue(attributeName, attributeValue);
                 rv.push([attributeName, newValue]);
             }
@@ -155,10 +170,10 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         if (child === this.contentDocument) {
             return ['contentDocument'];
         }
-        const shadowRootIndex = this.getShadowRoots().indexOf(child);
-        if (shadowRootIndex >= 0) {
-            return ['shadowRoots', shadowRootIndex];
-        }
+        // const shadowRootIndex:number = this.getShadowRoots().indexOf(child);
+        // if(shadowRootIndex >= 0) {
+        //     return ['shadowRoots', shadowRootIndex];
+        // }
         throw new Error(`Could not find path to node ${child.getNodeId()} from node ${this.getNodeId()}`);
     }
     ;
@@ -262,9 +277,10 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         if (tagName === 'input' || tagName === 'textarea') {
             this.updateValueInterval = timers.setInterval(() => __awaiter(this, void 0, void 0, function* () {
                 this.inputValue = yield this.getInputValue();
-                const p = this.p('inputValue');
-                const doc = this.getShareDBDoc();
-                yield doc.submitObjectReplaceOp(p, this.inputValue);
+                if (this.isAttachedToShareDBDoc()) {
+                    const doc = this.getShareDBDoc();
+                    yield doc.submitObjectReplaceOp(this.p('inputValue'), this.inputValue);
+                }
             }), 700);
         }
         else if (tagName === 'canvas') {
@@ -284,9 +300,10 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
             const inlineStyle = yield this.requestInlineStyle();
             const { cssText } = inlineStyle;
             this.inlineStyle = cssText;
-            const p = this.p('inlineStyle');
-            const doc = this.getShareDBDoc();
-            yield doc.submitObjectReplaceOp(p, cssText);
+            if (this.isAttachedToShareDBDoc()) {
+                const doc = this.getShareDBDoc();
+                yield doc.submitObjectReplaceOp(this.p('inlineStyle'), cssText);
+            }
         });
     }
     ;
@@ -353,11 +370,16 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
             this.node.children.splice(index, 0, childDomState.getNode());
             childDomState.setParent(this);
             if (this.isAttachedToShareDBDoc()) {
-                childDomState.markAttachedToShareDBDoc();
+                if (DOMState.shouldIncludeChild(childDomState)) {
+                    const filteredChildren = children.filter((c) => DOMState.shouldIncludeChild(c));
+                    const fcIndex = filteredChildren.indexOf(childDomState);
+                    const doc = this.getShareDBDoc();
+                    yield doc.submitListInsertOp(this.p('children', fcIndex), childDomState.createShareDBNode());
+                    if (this.isAttachedToShareDBDoc()) {
+                        childDomState.markAttachedToShareDBDoc();
+                    }
+                }
             }
-            // const p = this.p('children', index);
-            // const doc = this.getShareDBDoc();
-            // await doc.submitListInsertOp(p, childDomState.createShareDBNode());
         });
     }
     ;
@@ -399,11 +421,6 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
             subNodes.forEach((subNode) => {
                 subNode.setParent(this);
             });
-            if (this.isAttachedToShareDBDoc()) {
-                subNodes.forEach((child) => {
-                    child.markAttachedToShareDBDoc();
-                });
-            }
         });
     }
     ;
@@ -413,8 +430,12 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
             const children = this.getChildren();
             this.node.children = children.map((c) => c.getNode());
             this.node.childNodeCount = this.node.children.length;
-            const doc = this.getShareDBDoc();
-            yield doc.submitObjectReplaceOp(this.p('children'), children.map((c) => c.createShareDBNode()));
+            if (this.isAttachedToShareDBDoc()) {
+                const doc = this.getShareDBDoc();
+                const filteredChildren = newChildren.filter((c) => DOMState.shouldIncludeChild(c));
+                const sdbChildren = filteredChildren.map((c) => c.createShareDBNode());
+                yield doc.submitObjectReplaceOp(this.p('children'), sdbChildren);
+            }
         });
     }
     ;
@@ -446,7 +467,7 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
                 attributes.push(name, value);
             }
             // === TRANSFORMED ATTRIBUTES ===
-            if (this.shouldIncludeAttribute(name)) {
+            if (DOMState.shouldIncludeAttribute(name)) {
                 const doc = this.getShareDBDoc();
                 const sdbNode = this.getComputedShareDBNode();
                 const sdbAttributes = sdbNode.attributes;
@@ -598,11 +619,6 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         return this.inlineStyle;
     }
     ;
-    shouldIncludeAttribute(attributeName) {
-        const lowercaseAttributeName = attributeName.toLowerCase();
-        return DOMState.attributesToIgnore.indexOf(lowercaseAttributeName) < 0;
-    }
-    ;
     getAttributesMap() {
         return new Map(this.computeGroupedAttributes(this.getNode().attributes));
     }
@@ -694,6 +710,5 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
     }
     ;
 }
-DOMState.attributesToIgnore = ['onload', 'onclick', 'onmouseover', 'onmouseout',
-    'onmouseenter', 'onmouseleave', 'action', 'oncontextmenu', 'onfocus'];
+DOMState.attributesToIgnore = ['onload', 'onclick', 'onmouseover', 'onmouseout', 'onmouseenter', 'onmouseleave', 'action', 'oncontextmenu', 'onfocus'];
 exports.DOMState = DOMState;

@@ -26,7 +26,7 @@ export abstract class ClientNode {
     public getChild(index:number=0):ClientNode { return this.children[index]; };
     protected getChildren():Array<ClientNode> { return this.children; };
     protected getNodeChildren():Array<ShareDBDOMNode> { return this.sdbNode.children; };
-    protected getNodeShadowRoots():Array<ShareDBDOMNode> { return this.sdbNode.shadowRoots; };
+    // protected getNodeShadowRoots():Array<ShareDBDOMNode> { return this.sdbNode.shadowRoots; };
     public setCharacterData(characterData:string):void {}
     public abstract getElement():HTMLElement|Text|Comment;
 };

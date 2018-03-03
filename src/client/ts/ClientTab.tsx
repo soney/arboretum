@@ -40,6 +40,7 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
         }
     };
     private docUpdated = (ops?:Array<ShareDBClient.Op>, source?:boolean, data?:TabDoc):void => {
+        console.log(data);
         if(ops) {
             ops.forEach((op:ShareDBClient.Op) => {
                 this.handleOp(op);
