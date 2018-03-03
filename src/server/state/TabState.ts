@@ -1,6 +1,6 @@
 import * as cri from 'chrome-remote-interface';
-import { FrameState } from './frame_state';
-import { DOMState } from './dom_state';
+import { FrameState } from './FrameState';
+import { DOMState } from './DOMState';
 import { getColoredLogger, level, setLevel } from '../../utils/ColoredLogger';
 import * as _ from 'underscore';
 import { EventEmitter } from 'events';

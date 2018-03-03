@@ -2,7 +2,7 @@
 import * as URL from 'url';
 import * as srcset from 'srcset';
 import * as _ from 'underscore';
-import {DOMState} from './state/dom_state';
+import {DOMState} from './state/DOMState';
 
 enum Strategy {
 	TRANSFORM,

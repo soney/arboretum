@@ -56,14 +56,14 @@ const webpackCommonConfig = {
     // assume a corresponding global variable exists and use that instead.
     // This is important because it allows us to avoid bundling all of our
     // dependencies, which allows browsers to cache those libraries between builds.
-    externals: {
-        "react": "React",
-        "react-dom": "ReactDOM"
-    },
+    // externals: {
+    //     "react": "React",
+    //     "react-dom": "ReactDOM"
+    // },
 };
 
 const clientWebpackConfig = _.extend({
-    entry: path.join(__dirname, 'src', 'client', 'client_main.ts'),
+    entry: path.join(__dirname, 'src', 'client', 'client_main.tsx'),
     output: {
         filename: 'client_bundle.js',
         path: path.resolve(__dirname, 'built', 'client')

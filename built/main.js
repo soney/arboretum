@@ -17,7 +17,7 @@ const path_1 = require("path");
 const express = require("express");
 const WebSocket = require("ws");
 const WebSocketJSONStream = require("websocket-json-stream");
-const browser_state_1 = require("./server/state/browser_state");
+const BrowserState_1 = require("./server/state/BrowserState");
 const keypress = require("keypress");
 const chalk_1 = require("chalk");
 const ip = require("ip");
@@ -63,7 +63,7 @@ electron_1.app.on('ready', () => {
     let wn = createBrowserWindow();
 });
 // const browserState = null;
-const browserState = new browser_state_1.BrowserState({
+const browserState = new BrowserState_1.BrowserState({
     port: RDB_PORT
 });
 const expressApp = express();

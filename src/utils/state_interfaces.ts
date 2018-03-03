@@ -1,14 +1,14 @@
-import * as cri from 'chrome-remote-interface';
-
 export interface BrowserDoc {
-    tabs:  { [key:string]: CRI.TabID }
+    tabs:  { [key:string]: CRI.TabInfo },
+    selectedTab: CRI.TabID
 };
 
 export interface ShareDBDOMNode {
-    node: CRI.Node,
-    attributes:Array<string>,
+    // node: CRI.Node,
+    nodeType: CRI.NodeType,
+    nodeName: string,
     nodeValue: string,
-    childNodeCount:number,
+    attributes:Array<[string,string]>,
     children: Array<ShareDBDOMNode>,
     contentDocument:ShareDBDOMNode,
     childFrame: ShareDBFrame,

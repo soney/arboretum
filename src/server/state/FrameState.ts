@@ -1,5 +1,5 @@
-import { TabState } from './tab_state';
-import { DOMState } from './dom_state';
+import { TabState } from './TabState';
+import { DOMState } from './DOMState';
 import { EventManager } from '../event_manager';
 import { getColoredLogger, level, setLevel } from '../../utils/ColoredLogger';
 import {SDB, SDBDoc} from '../../utils/ShareDBDoc';

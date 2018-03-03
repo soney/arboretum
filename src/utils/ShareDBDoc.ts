@@ -121,13 +121,13 @@ export class SDBDoc<E> {
         });
         this.sdb.deleteDoc(this);
     };
-    public subscribe(callback:(op:ShareDB.Op, source:boolean, data:E)=>void):()=>void {
+    public subscribe(callback:(ops:Array<ShareDB.Op>, source:boolean, data:E)=>void):()=>void {
         this.doc.subscribe((err) => {
             if(err) { throw(err); }
             callback(null, null, this.doc.data);
         });
-        const onOpFunc = (op:ShareDB.Op, source:boolean) => {
-            callback(op, source, this.doc.data);
+        const onOpFunc = (ops:Array<ShareDB.Op>, source:boolean) => {
+            callback(ops, source, this.doc.data);
         };
         this.doc.on('op', onOpFunc);
         return () => {

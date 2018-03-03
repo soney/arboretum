@@ -1,5 +1,5 @@
 import {mouseEvent, setElementValue} from './hack_driver/hack_driver';
-import {FrameState} from './state/frame_state';
+import {FrameState} from './state/FrameState';
 
 export class EventManager {
     private static MOUSE_EVENT_TYPES:Set<string> = new Set<string>(['click', 'mousedown', 'mouseup', 'mousemove']);

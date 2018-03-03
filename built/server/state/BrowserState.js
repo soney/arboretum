@@ -12,7 +12,7 @@ const cri = require("chrome-remote-interface");
 const _ = require("underscore");
 const fileUrl = require("file-url");
 const path_1 = require("path");
-const tab_state_1 = require("./tab_state");
+const TabState_1 = require("./TabState");
 const ColoredLogger_1 = require("../../utils/ColoredLogger");
 const ShareDBDoc_1 = require("../../utils/ShareDBDoc");
 const ArboretumChat_1 = require("../../utils/ArboretumChat");
@@ -72,7 +72,7 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
                 }
                 else {
                     log.trace(`Creating tab ${id}`);
-                    tab = new tab_state_1.TabState(tabInfo, this.sdb);
+                    tab = new TabState_1.TabState(tabInfo, this.sdb);
                     this.tabs.set(id, tab);
                     yield tab.initialized;
                     yield this.getShareDBDoc().submitObjectInsertOp(['tabs', id], tabInfo);

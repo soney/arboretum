@@ -41,6 +41,10 @@ export class ArboretumTab extends React.Component<ArboretumTabProps, ArboretumTa
         this.webViewEl = <webview id={`${this.props.tabID}`} key={this.props.tabID} ref={this.webViewRef} src={this.props.startURL}/>;
     };
 
+    public getTabID() {
+        return this.props.tabID;
+    };
+
     private webViewRef = (el:Electron.WebviewTag):void => {
         if(el) {
             this.webView = el;

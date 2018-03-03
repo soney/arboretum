@@ -53,33 +53,36 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
                 messages: [],
                 colors: _.shuffle(_.sample(exports.userColors))
             });
-            this.doc.subscribe((op, source, data) => {
-                if (op) {
-                    const opInfo = op[0];
-                    const { p, li } = opInfo;
-                    if (p[0] === 'users') {
-                        if (p.length === 2 && li) {
-                            this.emit(this.userJoined, {
-                                user: li
-                            });
-                        }
-                        else if (p.length === 3 && p[2] === 'present') {
-                            const userIndex = p[1];
-                            const user = this.doc.getData().users[userIndex];
-                            this.emit(this.userNotPresent, { user });
-                        }
-                    }
-                    else if (p[0] === 'messages') {
-                        this.emit(this.messageAdded, {
-                            message: li
-                        });
-                    }
+            this.doc.subscribe((ops, source, data) => {
+                if (ops) {
+                    ops.forEach((op) => this.handleOp(op));
                 }
                 else {
                     this.emit(this.ready);
                 }
             });
         });
+    }
+    ;
+    handleOp(op) {
+        const { p, li } = op;
+        if (p[0] === 'users') {
+            if (p.length === 2 && li) {
+                this.emit(this.userJoined, {
+                    user: li
+                });
+            }
+            else if (p.length === 3 && p[2] === 'present') {
+                const userIndex = p[1];
+                const user = this.doc.getData().users[userIndex];
+                this.emit(this.userNotPresent, { user });
+            }
+        }
+        else if (p[0] === 'messages') {
+            this.emit(this.messageAdded, {
+                message: li
+            });
+        }
     }
     ;
     getMe() {
@@ -93,6 +96,12 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             const { colors } = data;
             const index = guid_1.guidIndex(id) % colors.length;
             return colors[index];
+        });
+    }
+    ;
+    join(displayName) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.addUser(displayName);
         });
     }
     ;
@@ -142,6 +151,12 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             const userIndex = yield this.getUserIndex(user);
             const oldValue = data.users[userIndex].present;
             yield this.doc.submitOp([{ p: ['users', userIndex, 'present'], od: oldValue, oi: false }]);
+        });
+    }
+    ;
+    leave() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.markUserNotPresent(this.getMe());
         });
     }
     ;

@@ -9,7 +9,7 @@ import * as express from 'express';
 import * as ShareDB from 'sharedb';
 import * as WebSocket from 'ws';
 import * as WebSocketJSONStream from 'websocket-json-stream';
-import { BrowserState } from './server/state/browser_state';
+import { BrowserState } from './server/state/BrowserState';
 import * as keypress from 'keypress';
 import chalk from 'chalk';
 import * as ip from 'ip';

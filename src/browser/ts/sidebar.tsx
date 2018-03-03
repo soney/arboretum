@@ -1,9 +1,8 @@
 import * as React from 'react';
-import {ArboretumChatBox} from './chat';
+import {ArboretumChatBox} from '../../utils/ArboretumChatBox';
 import * as Clipboard from 'clipboard';
 import Switch from 'react-switch';
 import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
-import {ArboretumChat, Message, User} from '../../utils/ArboretumChat';
 
 const ENTER_KEY:number = 13;
 
@@ -84,12 +83,6 @@ export class ArboretumSidebar extends React.Component<ArboretumSidebarProps, Arb
             this.chatbox.setSDB(sdb);
         }
     };
-    public setChat(chat:ArboretumChat):void {
-        if(this.chatbox) {
-            this.chatbox.setChat(chat);
-        }
-    };
-
     public render():React.ReactNode {
         return <div className='sidebar'>
             <table id="server-controls">
@@ -130,7 +123,7 @@ export class ArboretumSidebar extends React.Component<ArboretumSidebarProps, Arb
                     </tr>
                 </tbody>
             </table>
-            <ArboretumChatBox ref={this.chatBoxRef} onSendMessage={this.sendMessage} />
+            <ArboretumChatBox username="Admin" ref={this.chatBoxRef} onSendMessage={this.sendMessage} />
         </div>;
     };
 };

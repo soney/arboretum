@@ -2,7 +2,7 @@ import * as cri from 'chrome-remote-interface';
 import * as _ from 'underscore'
 import * as fileUrl from 'file-url';
 import { join, resolve } from 'path';
-import { TabState } from './tab_state';
+import { TabState } from './TabState';
 import * as express from 'express';
 import * as http from 'http';
 import * as WebSocket from 'ws';
@@ -40,7 +40,8 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
         this.sdb = new SDB(false);
         this.doc = this.sdb.get<BrowserDoc>('arboretum', 'browser');
         await this.doc.createIfEmpty({
-            tabs: {}
+            tabs: {},
+            selectedTab:null
         });
         this.markAttachedToShareDBDoc();
         this.chat = new ArboretumChat(this.sdb);
@@ -67,7 +68,8 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
                 this.tabs.set(id, tab);
 
                 await tab.initialized;
-                await this.getShareDBDoc().submitObjectInsertOp(['tabs', id], id);
+                await this.getShareDBDoc().submitObjectInsertOp(['tabs', id], tabInfo);
+                await this.getShareDBDoc().submitObjectReplaceOp(['selectedTab'], id);
             }
         });
 

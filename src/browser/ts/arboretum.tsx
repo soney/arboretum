@@ -8,6 +8,7 @@ import * as url from 'url';
 import * as _ from 'underscore';
 import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
 import {ArboretumChat} from '../../utils/ArboretumChat';
+import {BrowserDoc} from '../../utils/state_interfaces';
 
 export type BrowserTabID = number;
 
@@ -33,7 +34,7 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
     private tabs:Map<BrowserTabID, ArboretumTab> = new Map<BrowserTabID, ArboretumTab>();
     private socket:WebSocket;
     private sdb:SDB;
-    private chat:ArboretumChat;
+    private doc:SDBDoc<BrowserDoc>;
     constructor(props) {
         super(props);
         this.state = {
@@ -52,7 +53,6 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
             shareURL: '',
             adminURL: ''
         };
-        this.updateWebViews();
     };
 
     private goBack = ():void => {
@@ -105,22 +105,21 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
             const wsAddress = url.format({ protocol:'ws', hostname, port });
             this.socket = new WebSocket(wsAddress);
             this.sdb = new SDB(true, this.socket);
-            this.chat = new ArboretumChat(this.sdb);
+            this.doc = this.sdb.get<BrowserDoc>('arboretum', 'browser');
 
             if(this.sidebar) {
                 this.sidebar.setSDB(this.sdb);
-                this.sidebar.setChat(this.chat);
             }
-
-            this.chat.addUser('Admin');
 
             [shareURL, adminURL] = await Promise.all([
                 this.getShortcut(fullShareURL), this.getShortcut(fullAdminURL)
             ]);
         } else {
+            if(this.doc) {
+                this.doc.destroy();
+            }
             if(this.sidebar) {
                 this.sidebar.setSDB(null);
-                this.sidebar.setChat(null);
             }
             if(this.sdb) {
                 await this.sdb.close();
@@ -129,9 +128,6 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
             if(this.socket) {
                 this.socket.close();
                 this.socket = null;
-            }
-            if(this.chat) {
-                this.chat = null;
             }
             await this.sendIPCMessage('stopServer');
             [shareURL, adminURL] = ['', ''];
@@ -144,11 +140,6 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
     };
     private async getShortcut(url:string):Promise<string> {
         return url;
-    };
-    private sendMessage = (message:string):void => {
-        if(this.chat) {
-            this.chat.addTextMessage(message);
-        }
     };
     private postTask(sandbox:boolean):void {
         console.log('post task', sandbox);
@@ -191,6 +182,8 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
 
     private selectTab = (selectedTab:ArboretumTab):void => {
         if(selectedTab !== this.state.selectedTab) {
+            const tabID = selectedTab.getTabID();
+            console.log(selectedTab);
             this.tabs.forEach((t) => {
                 const isSelected = t===selectedTab;
                 t.markSelected(isSelected);
@@ -273,7 +266,7 @@ export class Arboretum extends React.Component<ArboretumProps, ArboretumState> {
             </header>
             <div className="window-content">
                 <div className="pane-group">
-                    <ArboretumSidebar shareURL={this.state.shareURL} adminURL={this.state.adminURL} ref={this.sidebarRef} onSendMessage={this.sendMessage} setServerActive={this.setServerActive} isVisible={this.state.showingSidebar} serverActive={this.state.serverActive} onPostTask={this.postTask}/>
+                    <ArboretumSidebar shareURL={this.state.shareURL} adminURL={this.state.adminURL} ref={this.sidebarRef} setServerActive={this.setServerActive} isVisible={this.state.showingSidebar} serverActive={this.state.serverActive} onPostTask={this.postTask}/>
                     <div id="browser-pane" className="pane">
                         <div id="content">{this.state.webViews}</div>
                     </div>

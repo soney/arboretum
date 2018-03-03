@@ -72,29 +72,31 @@ export class ArboretumChat extends TypedEventEmitter {
             messages: [],
             colors: _.shuffle(_.sample(userColors))
         });
-        this.doc.subscribe((op, source, data) => {
-            if(op) {
-                const opInfo = op[0];
-                const {p, li} = opInfo;
-                if(p[0] === 'users') {
-                    if(p.length === 2 && li) { // user added
-                        this.emit(this.userJoined, {
-                            user:li
-                        });
-                    } else if(p.length === 3 && p[2] === 'present') { // presence status changed
-                        const userIndex = p[1];
-                        const user = this.doc.getData().users[userIndex];
-                        this.emit(this.userNotPresent, { user });
-                    }
-                } else if(p[0] === 'messages') {
-                    this.emit(this.messageAdded, {
-                        message:li
-                    });
-                }
+        this.doc.subscribe((ops, source, data) => {
+            if(ops) {
+                ops.forEach((op) => this.handleOp(op));
             } else {
                 this.emit(this.ready);
             }
         });
+    };
+    private handleOp(op) {
+        const {p, li} = op;
+        if(p[0] === 'users') {
+            if(p.length === 2 && li) { // user added
+                this.emit(this.userJoined, {
+                    user:li
+                });
+            } else if(p.length === 3 && p[2] === 'present') { // presence status changed
+                const userIndex = p[1];
+                const user = this.doc.getData().users[userIndex];
+                this.emit(this.userNotPresent, { user });
+            }
+        } else if(p[0] === 'messages') {
+            this.emit(this.messageAdded, {
+                message:li
+            });
+        }
     };
     public getMe():User {
         return this.meUser;
@@ -105,6 +107,9 @@ export class ArboretumChat extends TypedEventEmitter {
         const {colors} = data;
         const index = guidIndex(id) % colors.length;
         return colors[index];
+    };
+    public async join(displayName:string):Promise<User> {
+        return this.addUser(displayName);
     };
     public async addUser(displayName:string, isMe:boolean=true, present=true):Promise<User> {
         const id:UserID = guid();
@@ -142,6 +147,9 @@ export class ArboretumChat extends TypedEventEmitter {
         const userIndex:number = await this.getUserIndex(user);
         const oldValue = data.users[userIndex].present;
         await this.doc.submitOp([{p:['users', userIndex, 'present'], od:oldValue, oi:false}]);
+    };
+    public async leave():Promise<void> {
+        await this.markUserNotPresent(this.getMe());
     };
     public async setUserTypingStatus(user:User, typingStatus:TypingStatus):Promise<void> {
         await this.initialized;

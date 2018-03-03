@@ -178,8 +178,8 @@ class SDBDoc {
             }
             callback(null, null, this.doc.data);
         });
-        const onOpFunc = (op, source) => {
-            callback(op, source, this.doc.data);
+        const onOpFunc = (ops, source) => {
+            callback(ops, source, this.doc.data);
         };
         this.doc.on('op', onOpFunc);
         return () => {

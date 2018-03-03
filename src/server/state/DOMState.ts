@@ -1,5 +1,5 @@
-import { FrameState } from './frame_state';
-import { TabState } from './tab_state';
+import { FrameState } from './FrameState';
+import { TabState } from './TabState';
 import { ShadowDOM } from '../shadows/dom_shadow';
 import { getCanvasImage, getUniqueSelector, getElementValue } from '../hack_driver/hack_driver';
 import { getColoredLogger, level, setLevel } from '../../utils/ColoredLogger';
@@ -81,19 +81,31 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
     public getContentDocument():DOMState { return this.contentDocument; };
     public getShareDBDoc():SDBDoc<TabDoc> { return this.tab.getShareDBDoc(); };
     public createShareDBNode():ShareDBDOMNode {
+        const node = this.getNode();
         return {
-            node: DOMState.stripNode(this.node),
-            attributes: _.clone(this.node.attributes),
-            nodeValue: this.node.nodeValue,
-            shadowRootType: this.node.shadowRootType,
+            // node: DOMState.stripNode(this.node),
+            nodeType: node.nodeType,
+            nodeName: node.nodeName,
+            nodeValue: node.nodeValue,
+            attributes: this.computeGroupedAttributes(node.attributes),
+            shadowRootType: node.shadowRootType,
             shadowRoots: this.getShadowRoots().map((sr) => sr.createShareDBNode()),
-            childNodeCount: this.getChildren().length,
             children: this.getChildren().map((child) => child.createShareDBNode()),
             contentDocument: this.contentDocument ? this.contentDocument.createShareDBNode() : null,
             childFrame: this.childFrame ? this.childFrame.getShareDBFrame() : null,
             inlineStyle: this.inlineStyle,
             inputValue: this.inputValue
         };
+    };
+    private computeGroupedAttributes(attributes:Array<string>):Array<[string, string]> {
+        if(!attributes) {
+            return null;
+        }
+        const rv:Array<[string,string]> = [];
+        for(let i = 0; i<attributes.length; i+=2) {
+            rv.push([attributes[i], attributes[i+1]]);
+        }
+        return rv;
     };
     public getComputedShareDBNode():ShareDBDOMNode {
         const doc = this.getShareDBDoc();
@@ -331,9 +343,8 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
         this.node.childNodeCount = this.node.children.length;
 
         const doc = this.getShareDBDoc();
-        const ops = [doc.submitObjectReplaceOp(this.p('children'), children.map((c) => c.createShareDBNode())),
-                    doc.submitObjectReplaceOp(this.p('childNodeCount'), this.node.children.length)];
-        await Promise.all(ops);
+
+        await doc.submitObjectReplaceOp(this.p('children'), children.map((c) => c.createShareDBNode()));
     };
     public async setShadowRoots(newChildren: Array<DOMState>):Promise<void> {
         this.setSubNodes('shadowRoots', newChildren);

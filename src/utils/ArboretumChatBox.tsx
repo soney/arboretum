@@ -1,12 +1,14 @@
 import * as React from 'react';
-import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
-import {ArboretumChat, Message, User} from '../../utils/ArboretumChat';
+import {SDB, SDBDoc} from './ShareDBDoc';
+import {ArboretumChat, Message, User} from './ArboretumChat';
 
 const ENTER_KEY:number = 13;
 
 type ArboretumChatProps = {
-    onSendMessage:(message:string)=>void,
-    chatText?:string
+    onSendMessage?:(message:string)=>void,
+    chatText?:string,
+    sdb?:SDB,
+    username:string
 };
 type ArboretumChatState = {
     chatText:string,
@@ -25,21 +27,23 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
             messages:[],
             users:[]
         };
+        if(this.props.sdb) { this.setSDB(this.props.sdb); }
+        window.addEventListener('beforeunload', () => this.leave());
     };
-    public setChat(chat:ArboretumChat) {
-        this.chat = chat;
-        if(this.chat) {
+    public async setSDB(sdb:SDB):Promise<void> {
+        this.sdb = sdb;
+        this.chat = new ArboretumChat(this.sdb);
+
+        this.chat.ready(async () => {
+            await this.chat.join(this.props.username);
+
+            await this.updateMessagesState();
+            await this.updateUsersState();
+
             this.chat.messageAdded(this.updateMessagesState);
             this.chat.userJoined(this.updateUsersState);
             this.chat.userNotPresent(this.updateUsersState);
-            this.chat.ready(() => {
-                this.updateMessagesState();
-                this.updateUsersState();
-            });
-        }
-    };
-    public setSDB(sdb:SDB) {
-        this.sdb = sdb;
+        });
     };
     private updateMessagesState = async ():Promise<void> => {
         const messages = await this.chat.getMessages();
@@ -56,7 +60,12 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
             event.preventDefault();
             const {chatText} = this.state;
             if(chatText !== '') {
-                if(this.props.onSendMessage) { this.props.onSendMessage(chatText); }
+                if(this.props.onSendMessage) {
+                    this.props.onSendMessage(chatText);
+                }
+                if(this.chat) {
+                    this.chat.addTextMessage(chatText);
+                }
                 this.setState({chatText:''});
             }
         }
@@ -75,14 +84,24 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
         this.scrollToBottom();
     };
 
+    private leave():void {
+        if(this.chat) {
+            this.chat.leave();
+        }
+    };
+
+    public componentWillUnmount():void {
+        this.leave();
+    };
+
     public componentDidUpdate():void {
         this.scrollToBottom();
     };
 
     public render():React.ReactNode {
-        const messages = this.state.messages.map((m:Message) => {
+        const messages = this.state.messages.map((m:Message, i:number) => {
             const senderStyle = {color: m.sender.color};
-            return <li className='chat-line'><span style={senderStyle} className='from'>{m.sender.displayName}</span><span className='message'>{m.content}</span></li>;
+            return <li key={i} className='chat-line'><span style={senderStyle} className='from'>{m.sender.displayName}</span><span className='message'>{m.content}</span></li>;
         });
         let meUserID;
         if(this.chat) {
@@ -94,6 +113,10 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
         const users = this.state.users.map((u) => {
             const isMe = u.id === meUserID;
             const style = {color: u.color};
+            if(isMe) {
+                style['textDecoration'] = 'underline overline';
+                style['fontWeight'] = 'bold';
+            }
             return <span key={u.id} className={`participant ${isMe?'me':''}`} style={style}>{u.displayName}</span>;
         });
         return <div className='chat'>
