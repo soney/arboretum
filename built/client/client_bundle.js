@@ -33649,6 +33649,7 @@ class ClientTab extends React.Component {
     constructor(props) {
         super(props);
         this.docUpdated = (ops, source, data) => {
+            // console.log(data);
             if (ops) {
                 ops.forEach((op) => {
                     this.handleOp(op);
@@ -33700,7 +33701,7 @@ class ClientTab extends React.Component {
             const { oi, od } = op;
             console.log(op);
             if (property === 'characterData') {
-                node.setCharacterData(oi);
+                node.setNodeValue(oi);
                 // node.setCharacterData
             }
             else if (property === 'nodeValue') {
@@ -33726,7 +33727,10 @@ class ClientTab extends React.Component {
                 node = node.getChild(index);
                 i++;
             }
-            else if (item === 'characterData') {
+            else if (item === 'contentDocument') {
+                node = node.getContentDocument();
+            }
+            else if (item === 'nodeValue') {
                 return { node, property: item };
             }
             else if (item === 'shadowRoots') {
@@ -33755,6 +33759,14 @@ exports.ClientTab = ClientTab;
 
 "use strict";
 
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const NodeCode_1 = __webpack_require__(96);
 function createClientNode(sdbNode) {
@@ -33786,6 +33798,8 @@ class ClientNode {
         this.children = this.getNodeChildren().map((child) => createClientNode(child));
     }
     ;
+    getContentDocument() { return this.contentDocument; }
+    ;
     getChild(index = 0) { return this.children[index]; }
     ;
     getChildren() { return this.children; }
@@ -33799,8 +33813,18 @@ class ClientNode {
 exports.ClientNode = ClientNode;
 ;
 class ClientDocumentNode extends ClientNode {
-    constructor(sdbNode) {
+    constructor(sdbNode, document) {
         super(sdbNode);
+        this.document = document;
+    }
+    ;
+    getDocument() { return this.document; }
+    ;
+    removeChildren() {
+        for (let i = this.document.children.length - 1; i >= 0; i--) {
+            const c = this.document.children.item(i);
+            c.remove();
+        }
     }
     ;
     getElement() {
@@ -33822,16 +33846,35 @@ exports.ClientDocumentTypeNode = ClientDocumentTypeNode;
 class ClientElementNode extends ClientNode {
     constructor(sdbNode) {
         super(sdbNode);
-        const { nodeName } = sdbNode;
+        const { nodeName } = this.sdbNode;
         this.element = document.createElement(nodeName);
-        this.getAttributes().forEach((attr) => {
-            const [name, value] = attr;
-            this.element.setAttribute(name, value);
-        });
-        this.getChildren().forEach((child) => {
-            this.element.appendChild(child.getElement());
+        this.initialize();
+    }
+    ;
+    initialize() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { nodeName } = this.sdbNode;
+            this.getAttributes().forEach((attr) => {
+                const [name, value] = attr;
+                this.element.setAttribute(name, value);
+            });
+            if (nodeName === 'IFRAME') {
+                const iFrameElement = this.element;
+                yield iframeLoaded(iFrameElement);
+                this.contentDocument = new ClientDocumentNode(this.getNodeContentDocument(), iFrameElement.contentDocument);
+                this.contentDocument.removeChildren();
+                const iframeBody = this.contentDocument.getChild();
+                iFrameElement.contentDocument.appendChild(iframeBody.getElement());
+            }
+            else {
+                this.getChildren().forEach((child) => {
+                    this.element.appendChild(child.getElement());
+                });
+            }
         });
     }
+    ;
+    getNodeContentDocument() { return this.sdbNode.contentDocument; }
     ;
     getAttributes() { return this.sdbNode.attributes; }
     ;
@@ -33857,8 +33900,8 @@ class ClientTextNode extends ClientNode {
         return this.element;
     }
     ;
-    setCharacterData(characterData) {
-        this.element.replaceData(0, this.element.length, characterData);
+    setNodeValue(value) {
+        this.element.replaceData(0, this.element.length, value);
     }
 }
 exports.ClientTextNode = ClientTextNode;
@@ -33877,6 +33920,13 @@ class ClientCommentNode extends ClientNode {
 }
 exports.ClientCommentNode = ClientCommentNode;
 ;
+function iframeLoaded(element) {
+    return new Promise((resolve, reject) => {
+        element.addEventListener('load', () => {
+            resolve(element);
+        });
+    });
+}
 
 
 /***/ }),

@@ -7,7 +7,7 @@ import { EventEmitter } from 'events';
 import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
 import { parse, format } from 'url';
 import * as ShareDB from 'sharedb';
-import {TabDoc, ShareDBFrame } from '../../utils/state_interfaces';
+import {TabDoc, FrameDoc } from '../../utils/state_interfaces';
 import {ShareDBSharedState} from '../../utils/ShareDBSharedState';
 
 const log = getColoredLogger('yellow');
@@ -43,7 +43,7 @@ export class TabState extends ShareDBSharedState<TabDoc> {
             id:this.getTabId(),
             root:null
         });
-        this.markAttachedToShareDBDoc();
+        await this.markAttachedToShareDBDoc();
 
         const chromeEventEmitter = cri({
             chooseTab: this.info
@@ -69,6 +69,7 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         this.addNetworkListeners();
         this.addExecutionContextListeners();
     };
+    public getSDB():SDB { return this.sdb; };
     public getShareDBDoc():SDBDoc<TabDoc> { return this.doc; };
     public getAbsoluteShareDBPath():Array<string|number> { return []; };
     public getShareDBPathToChild(child:DOMState):Array<string|number> {

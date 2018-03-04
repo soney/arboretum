@@ -298,7 +298,7 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
                 id: this.getTabId(),
                 root: null
             });
-            this.markAttachedToShareDBDoc();
+            yield this.markAttachedToShareDBDoc();
             const chromeEventEmitter = cri({
                 chooseTab: this.info
             });
@@ -324,6 +324,8 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             this.addExecutionContextListeners();
         });
     }
+    ;
+    getSDB() { return this.sdb; }
     ;
     getShareDBDoc() { return this.doc; }
     ;

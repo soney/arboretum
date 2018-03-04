@@ -22,6 +22,10 @@ export interface TabDoc {
     root:ShareDBDOMNode,
     id:CRI.TabID
 };
+export interface FrameDoc {
+    frameID:CRI.FrameID,
+    root:ShareDBDOMNode
+}
 
 export interface ShareDBFrame {
     frameID:CRI.FrameID,

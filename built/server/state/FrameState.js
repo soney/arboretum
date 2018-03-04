@@ -10,7 +10,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const event_manager_1 = require("../event_manager");
 const ColoredLogger_1 = require("../../utils/ColoredLogger");
-const _ = require("underscore");
 const ShareDBSharedState_1 = require("../../utils/ShareDBSharedState");
 const mime = require("mime");
 const css_parser_1 = require("../css_parser");
@@ -38,7 +37,7 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
             frameID: this.getFrameId()
         };
         this.eventManager = new event_manager_1.EventManager(this.chrome, this);
-        _.each(resources, (resource) => this.recordResponse(resource));
+        resources.forEach((resource) => this.recordResponse(resource));
         // this.resourceTracker = new ResourceTracker(chrome, this, resources);
         log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
     }
@@ -69,9 +68,11 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
     setDOMParent(parent) {
         this.domParent = parent;
     }
+    ;
     getTab() {
         return this.tab;
     }
+    ;
     markSetMainFrameExecuted(val) {
         this.setMainFrameExecuted = val;
     }
@@ -83,6 +84,7 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
     getTabId() {
         return this.tab.getTabId();
     }
+    ;
     // 	proto._getWrappedDOMNodeWithID = function(id) {
     // 		return this._nodeMap[id];
     // 	};

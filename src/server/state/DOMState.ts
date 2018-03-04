@@ -38,9 +38,19 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
             return true;
         }
     };
-    private static shouldIncludeAttribute(attributeName: string): boolean {
+    private static shouldIncludeAttribute(node:CRI.Node, attributeName: string): boolean {
+        const {nodeName, nodeType} = node;
         const lowercaseAttributeName = attributeName.toLowerCase();
-        return DOMState.attributesToIgnore.indexOf(lowercaseAttributeName) < 0;
+        if(DOMState.attributesToIgnore.indexOf(lowercaseAttributeName) >= 0) {
+            return false;
+        } else {
+            if(nodeName === 'IFRAME') {
+                if(['src'].indexOf(lowercaseAttributeName)>=0) {
+                    return false;
+                }
+            }
+        }
+        return true;
     };
 
     public onDestroyed = this.registerEvent<(DestroyedEvent)=>void>();
@@ -63,15 +73,15 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
     public getPseudoElements():Array<DOMState> { return this.getSubNodes('pseudoElements'); };
     protected async onAttachedToShareDBDoc():Promise<void> {
         // log.debug(`DOM State ${this.getNodeId()} added to ShareDB doc`);
-        this.updateNodeValue();
+        await this.updateNodeValue();
         this.getChildren().map((child:DOMState) => {
             if(DOMState.shouldIncludeChild(child)) {
                 child.markAttachedToShareDBDoc();
             }
         });
-        if(this.childFrame) {
-            this.childFrame.markAttachedToShareDBDoc();
-        }
+        // if(this.childFrame) {
+        //     this.childFrame.markAttachedToShareDBDoc();
+        // }
         if(this.contentDocument) {
             this.contentDocument.markAttachedToShareDBDoc();
         }
@@ -88,7 +98,9 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
         }
     };
     public getContentDocument():DOMState { return this.contentDocument; };
-    public getShareDBDoc():SDBDoc<TabDoc> { return this.tab.getShareDBDoc(); };
+    public getShareDBDoc():SDBDoc<TabDoc> {
+        return this.tab.getShareDBDoc();
+    };
     public createShareDBNode():ShareDBDOMNode {
         const filteredChildren:Array<DOMState> = this.getChildren().filter((c) => DOMState.shouldIncludeChild(c));
         const children:Array<ShareDBDOMNode> = filteredChildren.map((c) => c.createShareDBNode());
@@ -113,7 +125,7 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
         let i: number = 0;
         while (i < len) {
             const [attributeName, attributeValue] = [attributes[i], attributes[i + 1]];
-            if (DOMState.shouldIncludeAttribute(attributeName)) {
+            if (DOMState.shouldIncludeAttribute(this.getNode(), attributeName)) {
                 const newValue: string = this.transformAttributeValue(attributeName, attributeValue);
                 rv.push([attributeName, newValue]);
             }
@@ -138,9 +150,10 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
         }
     };
     public getShareDBPathToChild(child:DOMState):Array<string|number> {
-        const childIndex:number = this.getChildren().indexOf(child);
-        if(childIndex >= 0) {
-            return ['children', childIndex];
+        const filteredChildren = this.getChildren().filter(DOMState.shouldIncludeChild);
+        const fcIndex:number = filteredChildren.indexOf(child);
+        if(fcIndex >= 0) {
+            return ['children', fcIndex];
         }
         if(child === this.contentDocument) {
             return ['contentDocument'];
@@ -285,7 +298,7 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
     public async setCharacterData(characterData: string): Promise<void> {
         this.node.nodeValue = characterData;
 
-        const p = this.p('characterData');
+        const p = this.p('nodeValue');
         const doc = this.getShareDBDoc();
         await doc.submitObjectReplaceOp(p, characterData);
     };
@@ -394,7 +407,7 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
         }
 
         // === TRANSFORMED ATTRIBUTES ===
-        if(DOMState.shouldIncludeAttribute(name)) {
+        if(DOMState.shouldIncludeAttribute(this.getNode(), name)) {
             const doc = this.getShareDBDoc();
             const sdbNode = this.getComputedShareDBNode();
             const sdbAttributes = sdbNode.attributes;

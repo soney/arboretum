@@ -49,9 +49,20 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         }
     }
     ;
-    static shouldIncludeAttribute(attributeName) {
+    static shouldIncludeAttribute(node, attributeName) {
+        const { nodeName, nodeType } = node;
         const lowercaseAttributeName = attributeName.toLowerCase();
-        return DOMState.attributesToIgnore.indexOf(lowercaseAttributeName) < 0;
+        if (DOMState.attributesToIgnore.indexOf(lowercaseAttributeName) >= 0) {
+            return false;
+        }
+        else {
+            if (nodeName === 'IFRAME') {
+                if (['src'].indexOf(lowercaseAttributeName) >= 0) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
     ;
     ;
@@ -75,15 +86,15 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
     onAttachedToShareDBDoc() {
         return __awaiter(this, void 0, void 0, function* () {
             // log.debug(`DOM State ${this.getNodeId()} added to ShareDB doc`);
-            this.updateNodeValue();
+            yield this.updateNodeValue();
             this.getChildren().map((child) => {
                 if (DOMState.shouldIncludeChild(child)) {
                     child.markAttachedToShareDBDoc();
                 }
             });
-            if (this.childFrame) {
-                this.childFrame.markAttachedToShareDBDoc();
-            }
+            // if(this.childFrame) {
+            //     this.childFrame.markAttachedToShareDBDoc();
+            // }
             if (this.contentDocument) {
                 this.contentDocument.markAttachedToShareDBDoc();
             }
@@ -106,7 +117,9 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
     ;
     getContentDocument() { return this.contentDocument; }
     ;
-    getShareDBDoc() { return this.tab.getShareDBDoc(); }
+    getShareDBDoc() {
+        return this.tab.getShareDBDoc();
+    }
     ;
     createShareDBNode() {
         const filteredChildren = this.getChildren().filter((c) => DOMState.shouldIncludeChild(c));
@@ -133,7 +146,7 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         let i = 0;
         while (i < len) {
             const [attributeName, attributeValue] = [attributes[i], attributes[i + 1]];
-            if (DOMState.shouldIncludeAttribute(attributeName)) {
+            if (DOMState.shouldIncludeAttribute(this.getNode(), attributeName)) {
                 const newValue = this.transformAttributeValue(attributeName, attributeValue);
                 rv.push([attributeName, newValue]);
             }
@@ -163,9 +176,10 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
     }
     ;
     getShareDBPathToChild(child) {
-        const childIndex = this.getChildren().indexOf(child);
-        if (childIndex >= 0) {
-            return ['children', childIndex];
+        const filteredChildren = this.getChildren().filter(DOMState.shouldIncludeChild);
+        const fcIndex = filteredChildren.indexOf(child);
+        if (fcIndex >= 0) {
+            return ['children', fcIndex];
         }
         if (child === this.contentDocument) {
             return ['contentDocument'];
@@ -339,7 +353,7 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
     setCharacterData(characterData) {
         return __awaiter(this, void 0, void 0, function* () {
             this.node.nodeValue = characterData;
-            const p = this.p('characterData');
+            const p = this.p('nodeValue');
             const doc = this.getShareDBDoc();
             yield doc.submitObjectReplaceOp(p, characterData);
         });
@@ -463,7 +477,7 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
                 attributes.push(name, value);
             }
             // === TRANSFORMED ATTRIBUTES ===
-            if (DOMState.shouldIncludeAttribute(name)) {
+            if (DOMState.shouldIncludeAttribute(this.getNode(), name)) {
                 const doc = this.getShareDBDoc();
                 const sdbNode = this.getComputedShareDBNode();
                 const sdbAttributes = sdbNode.attributes;

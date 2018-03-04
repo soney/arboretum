@@ -1,9 +1,9 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import {ShareDBDOMNode, ShareDBFrame, TabDoc, BrowserDoc} from '../../utils/state_interfaces';
+import {ShareDBDOMNode, FrameDoc, TabDoc, BrowserDoc} from '../../utils/state_interfaces';
 import * as ShareDBClient from 'sharedb/lib/client';
 import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
-import {createClientNode, ClientNode} from './ClientDOMNode';
+import {createClientNode, ClientNode, ClientElementNode} from './ClientDOMNode';
 
 type ClientTabProps = {
     tabID?:CRI.TabID,
@@ -43,6 +43,7 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
         }
     };
     private docUpdated = (ops?:Array<ShareDBClient.Op>, source?:boolean, data?:TabDoc):void => {
+        // console.log(data);
         if(ops) {
             ops.forEach((op:ShareDBClient.Op) => {
                 this.handleOp(op);
@@ -67,7 +68,7 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
             const {oi, od} = op;
             console.log(op);
             if(property === 'characterData') {
-                node.setCharacterData(oi);
+                node.setNodeValue(oi);
                 // node.setCharacterData
             } else if(property === 'nodeValue') {
                 node.setNodeValue(oi);
@@ -88,7 +89,9 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
                 const index:number = p[i+1] as number;
                 node = node.getChild(index);
                 i++;
-            } else if(item === 'characterData') {
+            } else if(item === 'contentDocument') {
+                node = node.getContentDocument();
+            } else if(item === 'nodeValue') {
                 return {node, property:item};
             } else if(item === 'shadowRoots') {
                 throw new Error('ShadowRoots not expected to be included');

@@ -43,7 +43,7 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
             frameID: this.getFrameId()
         };
         this.eventManager = new EventManager(this.chrome, this);
-		_.each(resources, (resource) => this.recordResponse(resource));
+        resources.forEach((resource) => this.recordResponse(resource));
         // this.resourceTracker = new ResourceTracker(chrome, this, resources);
         log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
     };
@@ -65,10 +65,10 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
     };
     public setDOMParent(parent: DOMState): void {
         this.domParent = parent;
-    }
+    };
     public getTab(): TabState {
         return this.tab;
-    }
+    };
     public markSetMainFrameExecuted(val: boolean): void {
         this.setMainFrameExecuted = val;
     };
@@ -77,7 +77,7 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
     };
     public getTabId(): CRI.TabID {
         return this.tab.getTabId();
-    }
+    };
     // 	proto._getWrappedDOMNodeWithID = function(id) {
     // 		return this._nodeMap[id];
     // 	};
