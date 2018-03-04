@@ -23,7 +23,7 @@ const chalk_1 = require("chalk");
 const ip = require("ip");
 const opn = require("opn");
 const state = { chat: {}, browser: {} };
-const OPEN_MIRROR = false;
+const OPEN_MIRROR = true;
 const RDB_PORT = 9222;
 const HTTP_PORT = 3000;
 const isMac = /^dar/.test(os_1.platform());
@@ -75,25 +75,23 @@ wss.on('connection', (ws, req) => {
 });
 expressApp.all('/', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
     const contents = yield setClientOptions({
-        userId: getUserID()
+        userID: getUserID()
     });
     res.send(contents);
 }))
     .use('/', express.static(path_1.join(__dirname, 'client')))
     .all('/f', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
-    var frameId = req.query.i, tabId = req.query.t, userId = req.query.u, taskId = req.query.k;
-    const contents = yield setClientOptions({
-        userId: userId,
-        frameId: frameId,
+    var frameID = req.query.i, tabID = req.query.t, userID = req.query.u;
+    const contents = yield setClientOptions({ userID, frameID, tabID,
         viewType: 'mirror'
     });
     res.send(contents);
 }))
     .use('/f', express.static(path_1.join(__dirname, 'client')))
     .all('/r', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
-    var url = req.query.l, tabId = req.query.t, frameId = req.query.f;
+    var url = req.query.l, tabID = req.query.t, frameID = req.query.f;
     try {
-        const resourceInfo = yield browserState.requestResource(url, frameId, tabId);
+        const resourceInfo = yield browserState.requestResource(url, frameID, tabID);
         var content = resourceInfo.content;
         res.set('Content-Type', resourceInfo.mimeType);
         if (resourceInfo.base64Encoded) {

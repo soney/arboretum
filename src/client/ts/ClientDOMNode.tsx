@@ -12,7 +12,7 @@ export function createClientNode(sdbNode:ShareDBDOMNode) {
     } else if(nodeType === NodeCode.COMMENT_NODE) {
         return new ClientCommentNode(sdbNode);
     } else if(nodeType === NodeCode.DOCUMENT_TYPE_NODE) {
-
+        return new ClientDocumentTypeNode(sdbNode);
     } else {
         console.log(sdbNode);
     }
@@ -28,6 +28,7 @@ export abstract class ClientNode {
     protected getNodeChildren():Array<ShareDBDOMNode> { return this.sdbNode.children; };
     // protected getNodeShadowRoots():Array<ShareDBDOMNode> { return this.sdbNode.shadowRoots; };
     public setCharacterData(characterData:string):void {}
+    public setNodeValue(value:string):void {}
     public abstract getElement():HTMLElement|Text|Comment;
 };
 
@@ -63,6 +64,9 @@ export class ClientElementNode extends ClientNode {
     private getAttributes():Array<[string, string]> { return this.sdbNode.attributes; };
     public getElement():HTMLElement {
         return this.element;
+    };
+    public setNodeValue(value:string):void {
+        this.element['value'] = value;
     };
 };
 export class ClientTextNode extends ClientNode {

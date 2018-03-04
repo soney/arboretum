@@ -6,8 +6,8 @@ import {ArboretumClient} from './ts/ArboretumClient';
 // window.addEventListener('beforeunload', () => {
 //     arboretumClient.destroy();
 // });
-
+const {userID, frameID, tabID, viewType} = window['clientOptions'];
 ReactDOM.render(
-    <ArboretumClient />,
+    <ArboretumClient userID={userID} frameID={frameID} tabID={tabID} viewType={viewType} />,
     document.getElementsByTagName('body')[0]
 );

@@ -13214,7 +13214,8 @@ const ArboretumClient_1 = __webpack_require__(65);
 // window.addEventListener('beforeunload', () => {
 //     arboretumClient.destroy();
 // });
-ReactDOM.render(React.createElement(ArboretumClient_1.ArboretumClient, null), document.getElementsByTagName('body')[0]);
+const { userID, frameID, tabID, viewType } = window['clientOptions'];
+ReactDOM.render(React.createElement(ArboretumClient_1.ArboretumClient, { userID: userID, frameID: frameID, tabID: tabID, viewType: viewType }), document.getElementsByTagName('body')[0]);
 
 
 /***/ }),
@@ -30506,7 +30507,9 @@ class ArboretumClient extends React.Component {
                 this.clientTab.setTabID(this.tabID);
             }
         };
-        this.state = {};
+        this.state = {
+            showControls: !this.props.frameID
+        };
         this.socket = new WebSocket(this.props.wsAddress);
         this.sdb = new ShareDBDoc_1.SDB(true, this.socket);
     }
@@ -30516,10 +30519,11 @@ class ArboretumClient extends React.Component {
     }
     ;
     render() {
+        const { showControls } = this.state;
         return React.createElement("div", null,
-            React.createElement(TabList_1.TabList, { sdb: this.sdb, onSelectTab: this.onSelectTab }),
-            React.createElement(ArboretumChatBox_1.ArboretumChatBox, { username: "Steve", sdb: this.sdb }),
-            React.createElement(ClientTab_1.ClientTab, { ref: this.clientTabRef, sdb: this.sdb }));
+            showControls ? React.createElement(TabList_1.TabList, { sdb: this.sdb, onSelectTab: this.onSelectTab }) : null,
+            showControls ? React.createElement(ArboretumChatBox_1.ArboretumChatBox, { username: "Steve", sdb: this.sdb }) : null,
+            React.createElement(ClientTab_1.ClientTab, { tabID: this.props.tabID, frameID: this.props.frameID, ref: this.clientTabRef, sdb: this.sdb }));
     }
     ;
 }
@@ -33645,22 +33649,27 @@ class ClientTab extends React.Component {
     constructor(props) {
         super(props);
         this.docUpdated = (ops, source, data) => {
-            console.log(data);
             if (ops) {
                 ops.forEach((op) => {
                     this.handleOp(op);
                 });
             }
             else {
-                const data = this.tabDoc.getData();
-                const { root } = data;
-                this.rootElement = ClientDOMNode_1.createClientNode(root);
-                const node = ReactDOM.findDOMNode(this);
-                node.appendChild(this.rootElement.getElement());
+                if (this.props.frameID) {
+                    console.log(this.props.frameID);
+                }
+                else {
+                    const data = this.tabDoc.getData();
+                    const { root } = data;
+                    this.rootElement = ClientDOMNode_1.createClientNode(root);
+                    const node = ReactDOM.findDOMNode(this);
+                    node.appendChild(this.rootElement.getElement());
+                }
             }
         };
         this.state = {
-            tabID: this.props.tabID
+            tabID: this.props.tabID,
+            frameID: this.props.frameID
         };
         // this.setTabID(this.props.tabID);
     }
@@ -33694,6 +33703,9 @@ class ClientTab extends React.Component {
                 node.setCharacterData(oi);
                 // node.setCharacterData
             }
+            else if (property === 'nodeValue') {
+                node.setNodeValue(oi);
+            }
             console.log(node);
             console.log(property);
         }
@@ -33718,7 +33730,7 @@ class ClientTab extends React.Component {
                 return { node, property: item };
             }
             else if (item === 'shadowRoots') {
-                break;
+                throw new Error('ShadowRoots not expected to be included');
             }
             else {
                 console.log(p);
@@ -33729,7 +33741,7 @@ class ClientTab extends React.Component {
     }
     ;
     render() {
-        return React.createElement("div", null, this.state.tabID);
+        return React.createElement("div", null, this.state.frameID);
     }
     ;
 }
@@ -33760,6 +33772,7 @@ function createClientNode(sdbNode) {
         return new ClientCommentNode(sdbNode);
     }
     else if (nodeType === NodeCode_1.NodeCode.DOCUMENT_TYPE_NODE) {
+        return new ClientDocumentTypeNode(sdbNode);
     }
     else {
         console.log(sdbNode);
@@ -33781,6 +33794,7 @@ class ClientNode {
     ;
     // protected getNodeShadowRoots():Array<ShareDBDOMNode> { return this.sdbNode.shadowRoots; };
     setCharacterData(characterData) { }
+    setNodeValue(value) { }
 }
 exports.ClientNode = ClientNode;
 ;
@@ -33823,6 +33837,10 @@ class ClientElementNode extends ClientNode {
     ;
     getElement() {
         return this.element;
+    }
+    ;
+    setNodeValue(value) {
+        this.element['value'] = value;
     }
     ;
 }

@@ -8,9 +8,15 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 
 type ArboretumClientProps = {
-    wsAddress?:string
+    wsAddress?:string,
+    userID?:string,
+    frameID?:string,
+    tabID?:string,
+    viewType?:string
 };
-type ArboretumClientState = { };
+type ArboretumClientState = {
+    showControls:boolean
+};
 
 export class ArboretumClient extends React.Component<ArboretumClientProps, ArboretumClientState> {
     private socket:WebSocket;
@@ -24,7 +30,9 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
 
     constructor(props) {
         super(props);
-        this.state = { };
+        this.state = {
+            showControls: !this.props.frameID
+        };
         this.socket = new WebSocket(this.props.wsAddress);
         this.sdb = new SDB(true, this.socket);
     };
@@ -44,10 +52,11 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
         }
     };
     public render():React.ReactNode {
+        const {showControls} = this.state;
         return <div>
-            <TabList sdb={this.sdb} onSelectTab={this.onSelectTab} />
-            <ArboretumChatBox username="Steve" sdb={this.sdb} />
-            <ClientTab ref={this.clientTabRef} sdb={this.sdb} />
+            {showControls ? <TabList sdb={this.sdb} onSelectTab={this.onSelectTab} /> : null}
+            {showControls ? <ArboretumChatBox username="Steve" sdb={this.sdb} /> : null}
+            <ClientTab tabID={this.props.tabID} frameID={this.props.frameID} ref={this.clientTabRef} sdb={this.sdb} />
         </div>;
     };
 };

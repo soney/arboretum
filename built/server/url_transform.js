@@ -25,27 +25,25 @@ exports.urlTransform = {
             transform: transformURL
         }
     },
-    /*
-
     'iframe': {
         'src': {
             strategy: Strategy.TRANSFORM,
-            transform: function(url, baseURL, node) {
+            transform: function (url, baseURL, node) {
                 var childFrame = node.getChildFrame();
-                if(childFrame) {
+                if (childFrame) {
                     return URL.format({
                         pathname: 'f',
                         query: {
                             i: childFrame.getFrameId()
                         }
                     });
-                } else {
-                    log.error('No child frame');
+                }
+                else {
+                    console.error('No child frame');
                 }
             }
         },
     },
-    */
     'img': {
         'src': {
             strategy: Strategy.TRANSFORM,

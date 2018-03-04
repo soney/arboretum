@@ -7,10 +7,12 @@ import {createClientNode, ClientNode} from './ClientDOMNode';
 
 type ClientTabProps = {
     tabID?:CRI.TabID,
+    frameID?:CRI.FrameID,
     sdb:SDB
 };
 type ClientTabState = {
-    tabID:CRI.TabID
+    tabID:CRI.TabID,
+    frameID:CRI.FrameID
 };
 
 export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
@@ -19,7 +21,8 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
     constructor(props) {
         super(props);
         this.state = {
-            tabID:this.props.tabID
+            tabID:this.props.tabID,
+            frameID:this.props.frameID
         };
         // this.setTabID(this.props.tabID);
     };
@@ -40,18 +43,21 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
         }
     };
     private docUpdated = (ops?:Array<ShareDBClient.Op>, source?:boolean, data?:TabDoc):void => {
-        console.log(data);
         if(ops) {
             ops.forEach((op:ShareDBClient.Op) => {
                 this.handleOp(op);
             })
         } else {
-            const data:TabDoc = this.tabDoc.getData();
-            const {root} = data;
+            if(this.props.frameID) {
+                console.log(this.props.frameID);
+            } else {
+                const data:TabDoc = this.tabDoc.getData();
+                const {root} = data;
 
-            this.rootElement = createClientNode(root);
-            const node = ReactDOM.findDOMNode(this);
-            node.appendChild(this.rootElement.getElement());
+                this.rootElement = createClientNode(root);
+                const node = ReactDOM.findDOMNode(this);
+                node.appendChild(this.rootElement.getElement());
+            }
         }
     };
     private handleOp(op:ShareDBClient.Op):void {
@@ -63,6 +69,8 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
             if(property === 'characterData') {
                 node.setCharacterData(oi);
                 // node.setCharacterData
+            } else if(property === 'nodeValue') {
+                node.setNodeValue(oi);
             }
             console.log(node);
             console.log(property);
@@ -83,7 +91,7 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
             } else if(item === 'characterData') {
                 return {node, property:item};
             } else if(item === 'shadowRoots') {
-                break;
+                throw new Error('ShadowRoots not expected to be included');
             } else {
                 console.log(p);
                 console.log(item);
@@ -92,6 +100,6 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
         return {node:null, property:null};
     };
     public render():React.ReactNode {
-        return <div>{this.state.tabID}</div>
+        return <div>{this.state.frameID}</div>
     };
 };

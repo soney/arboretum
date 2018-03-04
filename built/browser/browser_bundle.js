@@ -7368,9 +7368,9 @@ SubmitRequest.prototype.maxRetriesError = function() {
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(0);
 const ReactDOM = __webpack_require__(39);
-const arboretum_1 = __webpack_require__(48);
+const ArboretumBrowser_1 = __webpack_require__(48);
 __webpack_require__(78);
-ReactDOM.render(React.createElement(arboretum_1.Arboretum, { serverState: "active", urls: ['file:///home/soney/code/arboretum/test/simple_iframe_content.html'] }), document.getElementById('arboretum_main'));
+ReactDOM.render(React.createElement(ArboretumBrowser_1.ArboretumBrowser, { serverState: "active", urls: ['file:///home/soney/code/arboretum/test/simple.html'] }), document.getElementById('arboretum_main'));
 
 
 /***/ }),
@@ -24675,14 +24675,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(0);
-const nav_bar_1 = __webpack_require__(49);
-const tab_1 = __webpack_require__(50);
-const sidebar_1 = __webpack_require__(51);
+const BrowserNavigationBar_1 = __webpack_require__(49);
+const BrowserTab_1 = __webpack_require__(50);
+const BrowserSidebar_1 = __webpack_require__(51);
 const electron_1 = __webpack_require__(63);
 const url = __webpack_require__(64);
 const _ = __webpack_require__(12);
 const ShareDBDoc_1 = __webpack_require__(65);
-class Arboretum extends React.Component {
+class ArboretumBrowser extends React.Component {
     constructor(props) {
         super(props);
         this.tabCounter = 0;
@@ -24783,7 +24783,6 @@ class Arboretum extends React.Component {
         this.selectTab = (selectedTab) => {
             if (selectedTab !== this.state.selectedTab) {
                 const tabID = selectedTab.getTabID();
-                console.log(selectedTab);
                 this.tabs.forEach((t) => {
                     const isSelected = t === selectedTab;
                     t.markSelected(isSelected);
@@ -24923,7 +24922,7 @@ class Arboretum extends React.Component {
     }
     ;
     render() {
-        const tabs = this.state.tabs.map((info, index) => React.createElement(tab_1.ArboretumTab, { ref: this.tabRef, selected: info.selected, key: info.id, tabID: info.id, startURL: info.url, onSelect: this.selectTab, onClose: this.closeTab, pageTitleChanged: this.pageTitleChanged, urlChanged: this.tabURLChanged, isLoadingChanged: this.tabIsLoadingChanged, canGoBackChanged: this.tabCanGoBackChanged, canGoForwardChanged: this.tabCanGoForwardChanged }));
+        const tabs = this.state.tabs.map((info, index) => React.createElement(BrowserTab_1.BrowserTab, { ref: this.tabRef, selected: info.selected, key: info.id, tabID: info.id, startURL: info.url, onSelect: this.selectTab, onClose: this.closeTab, pageTitleChanged: this.pageTitleChanged, urlChanged: this.tabURLChanged, isLoadingChanged: this.tabIsLoadingChanged, canGoBackChanged: this.tabCanGoBackChanged, canGoForwardChanged: this.tabCanGoForwardChanged }));
         return React.createElement("div", { className: "window" },
             React.createElement("header", { className: "toolbar toolbar-header" },
                 React.createElement("div", { id: "tabsBar", className: "tab-group" },
@@ -24931,16 +24930,16 @@ class Arboretum extends React.Component {
                     tabs,
                     React.createElement("div", { onClick: this.addTab, className: "tab-item tab-item-fixed", id: 'addTab' },
                         React.createElement("span", { className: "icon icon-plus" }))),
-                React.createElement(nav_bar_1.ArboretumNavigationBar, { ref: this.navBarRef, onBack: this.goBack, onForward: this.goForward, onReload: this.reload, onToggleSidebar: this.toggleSidebar, onNavigate: this.navigate })),
+                React.createElement(BrowserNavigationBar_1.BrowserNavigationBar, { ref: this.navBarRef, onBack: this.goBack, onForward: this.goForward, onReload: this.reload, onToggleSidebar: this.toggleSidebar, onNavigate: this.navigate })),
             React.createElement("div", { className: "window-content" },
                 React.createElement("div", { className: "pane-group" },
-                    React.createElement(sidebar_1.ArboretumSidebar, { shareURL: this.state.shareURL, adminURL: this.state.adminURL, ref: this.sidebarRef, setServerActive: this.setServerActive, isVisible: this.state.showingSidebar, serverActive: this.state.serverActive, onPostTask: this.postTask }),
+                    React.createElement(BrowserSidebar_1.BrowserSidebar, { shareURL: this.state.shareURL, adminURL: this.state.adminURL, ref: this.sidebarRef, setServerActive: this.setServerActive, isVisible: this.state.showingSidebar, serverActive: this.state.serverActive, onPostTask: this.postTask }),
                     React.createElement("div", { id: "browser-pane", className: "pane" },
                         React.createElement("div", { id: "content" }, this.state.webViews)))));
     }
     ;
 }
-exports.Arboretum = Arboretum;
+exports.ArboretumBrowser = ArboretumBrowser;
 ;
 
 
@@ -24953,7 +24952,7 @@ exports.Arboretum = Arboretum;
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(0);
 const ENTER_KEY = 13;
-class ArboretumNavigationBar extends React.Component {
+class BrowserNavigationBar extends React.Component {
     constructor(props) {
         super(props);
         this.handleURLChange = (event) => {
@@ -25020,7 +25019,7 @@ class ArboretumNavigationBar extends React.Component {
     }
     ;
 }
-exports.ArboretumNavigationBar = ArboretumNavigationBar;
+exports.BrowserNavigationBar = BrowserNavigationBar;
 ;
 
 
@@ -25033,7 +25032,7 @@ exports.ArboretumNavigationBar = ArboretumNavigationBar;
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(0);
 const _ = __webpack_require__(12);
-class ArboretumTab extends React.Component {
+class BrowserTab extends React.Component {
     constructor(props) {
         super(props);
         this.webViewRef = (el) => {
@@ -25136,7 +25135,7 @@ class ArboretumTab extends React.Component {
     }
     ;
 }
-exports.ArboretumTab = ArboretumTab;
+exports.BrowserTab = BrowserTab;
 ;
 
 
@@ -25161,7 +25160,7 @@ const Clipboard = __webpack_require__(56);
 const react_switch_1 = __webpack_require__(57);
 const ENTER_KEY = 13;
 ;
-class ArboretumSidebar extends React.Component {
+class BrowserSidebar extends React.Component {
     constructor(props) {
         super(props);
         this.handleServerSwitchChange = (serverActive) => __awaiter(this, void 0, void 0, function* () {
@@ -25257,7 +25256,7 @@ class ArboretumSidebar extends React.Component {
     }
     ;
 }
-exports.ArboretumSidebar = ArboretumSidebar;
+exports.BrowserSidebar = BrowserSidebar;
 ;
 
 

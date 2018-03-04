@@ -25,12 +25,11 @@ export const urlTransform = {
 			transform: transformURL
 		}
 	},
-	/*
 
 	'iframe': {
 		'src': {
 			strategy: Strategy.TRANSFORM,
-			transform: function(url, baseURL, node) {
+			transform: function(url:string, baseURL:string, node:DOMState) {
 				var childFrame = node.getChildFrame();
 				if(childFrame) {
 					return URL.format({
@@ -40,12 +39,11 @@ export const urlTransform = {
 						}
 					});
 				} else {
-					log.error('No child frame');
+					console.error('No child frame');
 				}
 			}
 		},
 	},
-	*/
 
 	'img': {
 		'src': {

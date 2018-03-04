@@ -1,10 +1,10 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import {Arboretum} from './ts/arboretum';
+import {ArboretumBrowser} from './ts/ArboretumBrowser';
 
 require('./css/browser.scss');
 
 ReactDOM.render(
-    <Arboretum serverState="active" urls={['file:///home/soney/code/arboretum/test/simple_iframe_content.html']} />,
+    <ArboretumBrowser serverState="active" urls={['file:///home/soney/code/arboretum/test/simple.html']} />,
     document.getElementById('arboretum_main')
 );

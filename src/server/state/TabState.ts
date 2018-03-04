@@ -113,15 +113,13 @@ export class TabState extends ShareDBSharedState<TabDoc> {
             this.domRoot.destroy();
         }
         this.domRoot = this.getOrCreateDOMState(root);
+        this.domRoot.setChildrenRecursive(root.children, root.shadowRoots);
 
-        const p = this.p('root');
-        const shareDBDoc = this.getShareDBDoc();
-        await shareDBDoc.submitObjectReplaceOp(p, this.domRoot.createShareDBNode());
-
-        if(this.isAttachedToShareDBDoc) {
+        if(this.isAttachedToShareDBDoc()) {
+            const shareDBDoc = this.getShareDBDoc();
+            await shareDBDoc.submitObjectReplaceOp(this.p('root'), this.domRoot.createShareDBNode());
             await this.domRoot.markAttachedToShareDBDoc();
         }
-        this.domRoot.setChildrenRecursive(root.children, root.shadowRoots);
     };
     private getDOMStateWithID(nodeId: CRI.NodeID): DOMState {
         return this.nodeMap.get(nodeId);
@@ -400,6 +398,8 @@ export class TabState extends ShareDBSharedState<TabDoc> {
     }
     public print(): void {
         if(this.domRoot) {
+            const doc = this.getShareDBDoc();
+            console.log(doc.getData());
             this.domRoot.print();
         } else {
             console.log(`No root frame for ${this.getTabId()}`);

@@ -17,7 +17,7 @@ import * as opn from 'opn';
 
 const state = { chat: {}, browser: {} };
 
-const OPEN_MIRROR: boolean = false;
+const OPEN_MIRROR: boolean = true;
 const RDB_PORT: number = 9222;
 const HTTP_PORT: number = 3000;
 const isMac: boolean = /^dar/.test(platform());
@@ -73,20 +73,17 @@ wss.on('connection', (ws:WebSocket, req) => {
 });
 expressApp.all('/', async (req, res, next) => {
         const contents: string = await setClientOptions({
-            userId: getUserID()
+            userID: getUserID()
         });
         res.send(contents);
     })
     .use('/', express.static(join(__dirname, 'client')))
     .all('/f', async (req, res, next) => {
-        var frameId = req.query.i,
-            tabId = req.query.t,
-            userId = req.query.u,
-            taskId = req.query.k;
+        var frameID = req.query.i,
+            tabID = req.query.t,
+            userID = req.query.u;
 
-        const contents: string = await setClientOptions({
-            userId: userId,
-            frameId: frameId,
+        const contents: string = await setClientOptions({userID, frameID, tabID,
             viewType: 'mirror'
         });
         res.send(contents);
@@ -94,11 +91,11 @@ expressApp.all('/', async (req, res, next) => {
     .use('/f', express.static(join(__dirname, 'client')))
     .all('/r', async (req, res, next) => {
         var url = req.query.l,
-            tabId = req.query.t,
-            frameId = req.query.f;
+            tabID = req.query.t,
+            frameID = req.query.f;
 
         try {
-            const resourceInfo = await browserState.requestResource(url, frameId, tabId);
+            const resourceInfo = await browserState.requestResource(url, frameID, tabID);
             var content = resourceInfo.content;
             res.set('Content-Type', resourceInfo.mimeType);
 

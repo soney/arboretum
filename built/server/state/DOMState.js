@@ -39,14 +39,14 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     }
     static shouldIncludeChild(child) {
-        return true;
-        // const node:CRI.Node = child.getNode();
-        // const {nodeName, nodeType} = node;
-        // if(nodeName === 'SCRIPT' || nodeName === '#comment' || nodeName === 'BASE' || nodeType === NodeCode.DOCUMENT_TYPE_NODE) {
-        //     return false;
-        // } else {
-        //     return true;
-        // }
+        const node = child.getNode();
+        const { nodeName, nodeType } = node;
+        if (nodeName === 'SCRIPT' || nodeName === '#comment' || nodeName === 'BASE' || nodeType === NodeCode_1.NodeCode.DOCUMENT_TYPE_NODE) {
+            return false;
+        }
+        else {
+            return true;
+        }
     }
     ;
     static shouldIncludeAttribute(attributeName) {

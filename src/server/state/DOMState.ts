@@ -30,14 +30,13 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
 
     private static attributesToIgnore: Array<string> = ['onload', 'onclick', 'onmouseover', 'onmouseout', 'onmouseenter', 'onmouseleave', 'action', 'oncontextmenu', 'onfocus'];
     private static shouldIncludeChild(child:DOMState):boolean {
-        return true;
-        // const node:CRI.Node = child.getNode();
-        // const {nodeName, nodeType} = node;
-        // if(nodeName === 'SCRIPT' || nodeName === '#comment' || nodeName === 'BASE' || nodeType === NodeCode.DOCUMENT_TYPE_NODE) {
-        //     return false;
-        // } else {
-        //     return true;
-        // }
+        const node:CRI.Node = child.getNode();
+        const {nodeName, nodeType} = node;
+        if(nodeName === 'SCRIPT' || nodeName === '#comment' || nodeName === 'BASE' || nodeType === NodeCode.DOCUMENT_TYPE_NODE) {
+            return false;
+        } else {
+            return true;
+        }
     };
     private static shouldIncludeAttribute(attributeName: string): boolean {
         const lowercaseAttributeName = attributeName.toLowerCase();

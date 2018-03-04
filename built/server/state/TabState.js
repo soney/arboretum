@@ -385,13 +385,12 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
                 this.domRoot.destroy();
             }
             this.domRoot = this.getOrCreateDOMState(root);
-            const p = this.p('root');
-            const shareDBDoc = this.getShareDBDoc();
-            yield shareDBDoc.submitObjectReplaceOp(p, this.domRoot.createShareDBNode());
-            if (this.isAttachedToShareDBDoc) {
+            this.domRoot.setChildrenRecursive(root.children, root.shadowRoots);
+            if (this.isAttachedToShareDBDoc()) {
+                const shareDBDoc = this.getShareDBDoc();
+                yield shareDBDoc.submitObjectReplaceOp(this.p('root'), this.domRoot.createShareDBNode());
                 yield this.domRoot.markAttachedToShareDBDoc();
             }
-            this.domRoot.setChildrenRecursive(root.children, root.shadowRoots);
         });
     }
     ;
@@ -667,6 +666,8 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
     }
     print() {
         if (this.domRoot) {
+            const doc = this.getShareDBDoc();
+            console.log(doc.getData());
             this.domRoot.print();
         }
         else {
