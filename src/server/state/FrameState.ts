@@ -24,17 +24,15 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
     private refreshingRoot: boolean = false;
     private root: DOMState;
     private domParent: DOMState = null;
-    private nodeMap: Map<CRI.NodeID, DOMState> = new Map<CRI.NodeID, DOMState>();
-    private oldNodeMap: Map<CRI.NodeID, boolean> = new Map<CRI.NodeID, boolean>();
     private queuedEvents: Array<QueuedEvent<any>> = [];
     private executionContext: CRI.ExecutionContextDescription = null;
     private shareDBFrame:ShareDBFrame;
 
     private eventManager: EventManager;
     // public resourceTracker: ResourceTracker;
-	private requests:Map<any, any> = new Map<any, any>();
+	private requests:Map<string, any> = new Map<string, any>();
 	private responses:Map<string, any> = new Map<string, any>();
-	private resourcePromises = new Map();
+	private resourcePromises:Map<string, Promise<CRI.GetResourceContentResponse>> = new Map<string, Promise<CRI.GetResourceContentResponse>>();
 
     constructor(private chrome, private info: CRI.Frame, private tab: TabState, private parentFrame: FrameState = null, resources: Array<CRI.FrameResource> = []) {
         super();
@@ -78,29 +76,11 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
     public getTabId(): CRI.TabID {
         return this.tab.getTabId();
     };
-    // 	proto._getWrappedDOMNodeWithID = function(id) {
-    // 		return this._nodeMap[id];
-    // 	};
     public updateInfo(info: CRI.Frame) {
         this.info = info;
     };
     public executionContextCreated(context: CRI.ExecutionContextDescription): void {
         this.executionContext = context;
-    };
-    private isRefreshingRoot(): boolean { return this.refreshingRoot; }
-    private markRefreshingRoot(r: boolean): void {
-        if (r) {
-            this.refreshingRoot = true;
-        } else {
-            this.refreshingRoot = false;
-
-            while (this.queuedEvents.length > 0) {
-                var queuedEvent = this.queuedEvents.shift();
-                queuedEvent.promise.resolve(queuedEvent.event).catch((err) => {
-                    log.error(err);
-                });
-            }
-        }
     };
 
     public destroy(): void {
@@ -119,19 +99,6 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
         return this.info.id;
     };
     public getRoot(): DOMState { return this.root; };
-    // public setRoot(rootNode: CRI.Node): void {
-    //     const oldRoot: DOMState = this.getRoot();
-    //     if (oldRoot) {
-    //         oldRoot.destroy();
-    //     }
-    //     if (rootNode) {
-    //         const rootState = this.getOrCreateDOMState(rootNode);
-    //         log.info(`Set root of frame ${this.getFrameId()} to ${rootState.getNodeId()}`)
-    //         this.root = rootState;
-    //         this.setChildrenRecursive(rootState, rootNode.children);
-    //         this.markRefreshingRoot(false);
-    //     }
-    // };
 
     public getExecutionContext(): CRI.ExecutionContextDescription {
         return this.executionContext;
@@ -153,10 +120,10 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
 	private recordResponse(response):void {
 		this.responses.set(response.url, response);
 	}
-	public requestWillBeSent(resource):void {
-		const {url} = resource;
-		this.requests.set(url, resource);
-		log.debug('request will be sent ' + url);
+	public requestWillBeSent(event):void {
+		const {url} = event;
+		this.requests.set(url, event);
+		log.debug(`Request will be sent ${url}`);
 	}
 	public responseReceived(event) {
 		return this.recordResponse(event.response);
@@ -174,30 +141,26 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
 			});
 		});
 	}
-	public requestResource(url:string):Promise<any> {
-		let promise;
-		if(this.resourcePromises.has(url)) {
-			promise = this.resourcePromises.get(url);
-		} else {
-			promise = this.doGetResource(url);
-			this.resourcePromises.set(url, promise);
+	public async requestResource(url:string):Promise<{mimeType:string,base64Encoded:boolean,content:string}> {
+		if(!this.resourcePromises.has(url)) {
+			const resource:Promise<CRI.GetResourceContentResponse> = this.doGetResource(url);
+			this.resourcePromises.set(url, resource);
 		}
-		return promise.then((responseBody) => {
-			const resourceInfo = this.responses.get(url);
-			const mimeType = resourceInfo ? resourceInfo.mimeType : mime.getType(url);
-			let content;
-			if(mimeType === 'text/css') {
-				content = parseCSS(content, url, this.getFrameId(), this.getTabId());
-			} else {
-				content = responseBody.content;
-			}
+        const responseBody = await this.resourcePromises.get(url);
+		const resourceInfo = this.responses.get(url);
+		const mimeType = resourceInfo ? resourceInfo.mimeType : mime.getType(url);
+		let content;
+		if(mimeType === 'text/css') {
+			content = parseCSS(content, url, this.getFrameId(), this.getTabId());
+		} else {
+			content = responseBody.content;
+		}
 
-			return {
-				mimeType: mimeType,
-				base64Encoded: responseBody.base64Encoded,
-				content: content
-			};
-		});
+		return {
+			mimeType: mimeType,
+			base64Encoded: responseBody.base64Encoded,
+			content: content
+		};
 	}
 
 	private doGetResource(url:string):Promise<CRI.GetResourceContentResponse> {
@@ -207,7 +170,7 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
 				url: url
 			}, function(err, val) {
 				if(err) {
-					reject(new Error('Could not find resource "' + url + '"'));
+					reject(new Error(`Could not find resource '${url}'`));
 				} else {
 					resolve(val);
 				}

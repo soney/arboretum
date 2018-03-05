@@ -7368,7 +7368,7 @@ SubmitRequest.prototype.maxRetriesError = function() {
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(0);
 const ReactDOM = __webpack_require__(39);
-const ArboretumBrowser_1 = __webpack_require__(83);
+const ArboretumBrowser_1 = __webpack_require__(48);
 __webpack_require__(78);
 ReactDOM.render(React.createElement(ArboretumBrowser_1.ArboretumBrowser, { serverState: "active", urls: ['file:///home/soney/code/arboretum/test/index.html'] }), document.getElementById('arboretum_main'));
 
@@ -24660,10 +24660,607 @@ function camelize(string) {
 module.exports = camelize;
 
 /***/ }),
-/* 48 */,
-/* 49 */,
-/* 50 */,
-/* 51 */,
+/* 48 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const React = __webpack_require__(0);
+const BrowserNavigationBar_1 = __webpack_require__(49);
+const BrowserTab_1 = __webpack_require__(50);
+const BrowserSidebar_1 = __webpack_require__(51);
+const electron_1 = __webpack_require__(63);
+const url = __webpack_require__(64);
+const _ = __webpack_require__(12);
+const ShareDBDoc_1 = __webpack_require__(65);
+class ArboretumBrowser extends React.Component {
+    constructor(props) {
+        super(props);
+        this.tabCounter = 0;
+        this.tabs = new Map();
+        this.goBack = () => {
+            const { selectedTab } = this.state;
+            if (selectedTab) {
+                selectedTab.goBack();
+            }
+        };
+        this.goForward = () => {
+            const { selectedTab } = this.state;
+            if (selectedTab) {
+                selectedTab.goForward();
+            }
+        };
+        this.reload = () => {
+            const { selectedTab } = this.state;
+            if (selectedTab) {
+                selectedTab.reload();
+            }
+        };
+        this.toggleSidebar = () => {
+        };
+        this.navigate = (url) => {
+            const { selectedTab } = this.state;
+            if (selectedTab) {
+                selectedTab.navigate(url);
+            }
+        };
+        this.navBarRef = (el) => {
+            this.navBar = el;
+            this.updateNavBarState();
+        };
+        this.setServerActive = (active) => __awaiter(this, void 0, void 0, function* () {
+            let shareURL, adminURL;
+            if (active) {
+                const { hostname, port } = yield this.sendIPCMessage('startServer');
+                const fullShareURL = url.format({ protocol: 'http', hostname, port });
+                const fullAdminURL = url.format({ protocol: 'http', hostname, port, pathname: '/admin' });
+                const wsAddress = url.format({ protocol: 'ws', hostname, port });
+                this.socket = new WebSocket(wsAddress);
+                this.sdb = new ShareDBDoc_1.SDB(true, this.socket);
+                this.doc = this.sdb.get('arboretum', 'browser');
+                if (this.sidebar) {
+                    this.sidebar.setSDB(this.sdb);
+                }
+                [shareURL, adminURL] = yield Promise.all([
+                    this.getShortcut(fullShareURL), this.getShortcut(fullAdminURL)
+                ]);
+            }
+            else {
+                if (this.doc) {
+                    this.doc.destroy();
+                }
+                if (this.sidebar) {
+                    this.sidebar.setSDB(null);
+                }
+                if (this.sdb) {
+                    yield this.sdb.close();
+                    this.sdb = null;
+                }
+                if (this.socket) {
+                    this.socket.close();
+                    this.socket = null;
+                }
+                yield this.sendIPCMessage('stopServer');
+                [shareURL, adminURL] = ['', ''];
+            }
+            if (this.sidebar) {
+                this.sidebar.setState({ shareURL, adminURL });
+            }
+            this.setState({ shareURL, adminURL });
+            return { shareURL, adminURL };
+        });
+        this.selectedTabURLChanged = (url) => { this.updateNavBarState(); };
+        this.selectedTabLoadingChanged = (isLoading) => { this.updateNavBarState(); };
+        this.selectedTabCanGoBackChanged = (canGoBack) => { this.updateNavBarState(); };
+        this.selectedTabCanGoForwardChanged = (canGoForward) => { this.updateNavBarState(); };
+        this.selectedTabPageTitleChanged = (title) => {
+            if (!title) {
+                title = 'Arboretum';
+            }
+            document.title = title;
+        };
+        this.addTab = () => {
+            const tabs = this.state.tabs.map((tab) => {
+                return _.extend(tab, { selected: false });
+            }).concat([{
+                    id: this.tabCounter++,
+                    url: 'http://www.cmu.edu/',
+                    selected: false
+                }]);
+            this.setState({ tabs }, () => {
+                this.updateWebViews();
+            });
+        };
+        this.selectTab = (selectedTab) => {
+            if (selectedTab !== this.state.selectedTab) {
+                const tabID = selectedTab.getTabID();
+                this.tabs.forEach((t) => {
+                    const isSelected = t === selectedTab;
+                    t.markSelected(isSelected);
+                    if (t.webView) {
+                        t.webView.setAttribute('class', isSelected ? '' : 'hidden');
+                    }
+                });
+                const activeWebViewEl = selectedTab ? selectedTab.webViewEl : null;
+                this.setState({ selectedTab, activeWebViewEl }, () => {
+                    this.updateNavBarState();
+                    if (this.state.selectedTab) {
+                        this.selectedTabPageTitleChanged(selectedTab.state.title);
+                    }
+                });
+            }
+        };
+        this.closeTab = (tab) => {
+            let selectedTab = this.state.selectedTab;
+            if (tab === this.state.selectedTab) {
+                const tabIndex = this.state.tabs.map((t) => t.id).indexOf(tab.props.tabID);
+                if (this.state.tabs.length === 1) {
+                    selectedTab = null;
+                }
+                else if (tabIndex === this.state.tabs.length - 1) {
+                    selectedTab = this.tabs.get(this.state.tabs[tabIndex - 1].id);
+                }
+                else {
+                    selectedTab = this.tabs.get(this.state.tabs[tabIndex + 1].id);
+                }
+            }
+            this.tabs.delete(tab.props.tabID);
+            const tabs = this.state.tabs.filter((tabInfo) => tabInfo.id !== tab.props.tabID);
+            this.setState({ tabs }, () => {
+                this.selectTab(selectedTab);
+                this.updateWebViews();
+            });
+        };
+        this.tabRef = (el) => {
+            if (el) {
+                this.tabs.set(el.props.tabID, el);
+                this.selectTab(el);
+                this.updateWebViews();
+            }
+        };
+        this.tabIsLoadingChanged = (tab, isLoading) => {
+            if (tab === this.state.selectedTab) {
+                this.selectedTabLoadingChanged(isLoading);
+            }
+        };
+        this.tabCanGoBackChanged = (tab, canGoBack) => {
+            if (tab === this.state.selectedTab) {
+                this.selectedTabCanGoBackChanged(canGoBack);
+            }
+        };
+        this.tabCanGoForwardChanged = (tab, canGoForward) => {
+            if (tab === this.state.selectedTab) {
+                this.selectedTabCanGoBackChanged(canGoForward);
+            }
+        };
+        this.tabURLChanged = (tab, url) => {
+            if (tab === this.state.selectedTab) {
+                this.selectedTabURLChanged(url);
+            }
+        };
+        this.pageTitleChanged = (tab, title) => {
+            if (tab === this.state.selectedTab) {
+                this.selectedTabPageTitleChanged(title);
+            }
+        };
+        this.sidebarRef = (sidebar) => {
+            this.sidebar = sidebar;
+            this.setServerActive(this.state.serverActive);
+        };
+        this.state = {
+            tabs: this.props.urls.map((url, index) => {
+                return {
+                    selected: index === 0,
+                    id: this.tabCounter++,
+                    url: url
+                };
+            }),
+            webViews: [],
+            selectedTab: null,
+            showingSidebar: false,
+            serverActive: this.props.serverState === "active",
+            activeWebViewEl: null,
+            shareURL: '',
+            adminURL: ''
+        };
+    }
+    ;
+    updateNavBarState() {
+        const { selectedTab } = this.state;
+        if (selectedTab && this.navBar) {
+            const { canGoBack, canGoForward, isLoading, loadedURL } = selectedTab.state;
+            this.navBar.setState({ canGoBack, canGoForward, isLoading });
+            if (!this.navBar.state.urlBarFocused) {
+                this.navBar.setState({ urlText: loadedURL });
+            }
+        }
+    }
+    ;
+    sendIPCMessage(message) {
+        return __awaiter(this, void 0, void 0, function* () {
+            electron_1.ipcRenderer.send('asynchronous-message', message);
+            const reply = yield new Promise((resolve, reject) => {
+                electron_1.ipcRenderer.once('asynchronous-reply', (event, data) => {
+                    resolve(data);
+                });
+            });
+            return reply;
+        });
+    }
+    ;
+    getShortcut(url) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return url;
+        });
+    }
+    ;
+    postTask(sandbox) {
+        console.log('post task', sandbox);
+    }
+    ;
+    updateWebViews() {
+        const webViews = this.state.tabs.map((tab) => {
+            const { id } = tab;
+            if (this.tabs.has(id)) {
+                const arboretumTab = this.tabs.get(id);
+                return arboretumTab.webViewEl;
+            }
+            else {
+                return null;
+            }
+        });
+        this.setState({ webViews });
+    }
+    ;
+    render() {
+        const tabs = this.state.tabs.map((info, index) => React.createElement(BrowserTab_1.BrowserTab, { ref: this.tabRef, selected: info.selected, key: info.id, tabID: info.id, startURL: info.url, onSelect: this.selectTab, onClose: this.closeTab, pageTitleChanged: this.pageTitleChanged, urlChanged: this.tabURLChanged, isLoadingChanged: this.tabIsLoadingChanged, canGoBackChanged: this.tabCanGoBackChanged, canGoForwardChanged: this.tabCanGoForwardChanged }));
+        return React.createElement("div", { className: "window" },
+            React.createElement("header", { className: "toolbar toolbar-header" },
+                React.createElement("div", { id: "tabsBar", className: "tab-group" },
+                    React.createElement("div", { id: 'buttonSpacer', className: "tab-item tab-item-fixed" }, " "),
+                    tabs,
+                    React.createElement("div", { onClick: this.addTab, className: "tab-item tab-item-fixed", id: 'addTab' },
+                        React.createElement("span", { className: "icon icon-plus" }))),
+                React.createElement(BrowserNavigationBar_1.BrowserNavigationBar, { ref: this.navBarRef, onBack: this.goBack, onForward: this.goForward, onReload: this.reload, onToggleSidebar: this.toggleSidebar, onNavigate: this.navigate })),
+            React.createElement("div", { className: "window-content" },
+                React.createElement("div", { className: "pane-group" },
+                    React.createElement(BrowserSidebar_1.BrowserSidebar, { shareURL: this.state.shareURL, adminURL: this.state.adminURL, ref: this.sidebarRef, setServerActive: this.setServerActive, isVisible: this.state.showingSidebar, serverActive: this.state.serverActive, onPostTask: this.postTask }),
+                    React.createElement("div", { id: "browser-pane", className: "pane" },
+                        React.createElement("div", { id: "content" }, this.state.webViews)))));
+    }
+    ;
+}
+exports.ArboretumBrowser = ArboretumBrowser;
+;
+
+
+/***/ }),
+/* 49 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const React = __webpack_require__(0);
+const ENTER_KEY = 13;
+class BrowserNavigationBar extends React.Component {
+    constructor(props) {
+        super(props);
+        this.handleURLChange = (event) => {
+            this.setState({ urlText: event.target.value });
+        };
+        this.backClicked = () => {
+            if (this.props.onBack) {
+                this.props.onBack();
+            }
+        };
+        this.forwardClicked = () => {
+            if (this.props.onForward) {
+                this.props.onForward();
+            }
+        };
+        this.reloadClicked = () => {
+            if (this.props.onReload) {
+                this.props.onReload();
+            }
+        };
+        this.toggleSidebarClicked = () => {
+            if (this.props.onToggleSidebar) {
+                this.props.onToggleSidebar();
+            }
+        };
+        this.urlKeyDown = (event) => {
+            const { keyCode } = event;
+            if (keyCode === ENTER_KEY) {
+                const { urlText } = this.state;
+                if (this.props.onNavigate) {
+                    this.props.onNavigate(urlText);
+                }
+            }
+        };
+        this.onURLBarFocus = (event) => {
+            this.setState({ urlBarFocused: true });
+        };
+        this.onURLBarBlur = (event) => {
+            this.setState({ urlBarFocused: false });
+        };
+        this.state = {
+            urlText: '',
+            canGoBack: false,
+            canGoForward: false,
+            isLoading: false,
+            urlBarFocused: false
+        };
+    }
+    ;
+    render() {
+        return React.createElement("div", { id: "navBar" },
+            React.createElement("div", { className: "toolbar-actions" },
+                React.createElement("div", { className: "btn-group" },
+                    React.createElement("button", { disabled: !this.state.canGoBack, onClick: this.backClicked, className: 'btn btn-default btn-mini', id: 'back' },
+                        React.createElement("span", { className: 'icon icon-left-open-big' })),
+                    React.createElement("button", { disabled: !this.state.canGoForward, onClick: this.forwardClicked, className: 'btn btn-default btn-mini', id: 'forward' },
+                        React.createElement("span", { className: 'icon icon-right-open-big' }))),
+                React.createElement("div", { className: "btn-group" },
+                    React.createElement("button", { onClick: this.reloadClicked, className: 'btn btn-default btn-mini', id: 'reload' },
+                        React.createElement("span", { className: `icon ${this.state.isLoading ? 'icon-cancel' : 'icon-ccw'}` })),
+                    React.createElement("button", { onClick: this.toggleSidebarClicked, className: 'btn btn-default btn-mini', id: 'task' },
+                        React.createElement("span", { className: 'icon icon-publish' })))),
+            React.createElement("input", { value: this.state.urlText, onChange: this.handleURLChange, onKeyDown: this.urlKeyDown, onFocus: this.onURLBarFocus, onBlur: this.onURLBarBlur, id: 'url', type: "text", placeholder: "Enter URL or Term to Search" }));
+    }
+    ;
+}
+exports.BrowserNavigationBar = BrowserNavigationBar;
+;
+
+
+/***/ }),
+/* 50 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const React = __webpack_require__(0);
+const _ = __webpack_require__(12);
+class BrowserTab extends React.Component {
+    constructor(props) {
+        super(props);
+        this.webViewRef = (el) => {
+            if (el) {
+                this.webView = el;
+                this.webView.addEventListener('page-title-updated', (event) => {
+                    const { title } = event;
+                    this.setState({ title });
+                    if (this.props.pageTitleChanged) {
+                        this.props.pageTitleChanged(this, title);
+                    }
+                });
+                this.webView.addEventListener('load-commit', (event) => {
+                    const { isMainFrame, url } = event;
+                    if (isMainFrame) {
+                        const loadedURL = url;
+                        if (this.props.urlChanged) {
+                            this.props.urlChanged(this, url);
+                        }
+                        this.setState({ loadedURL });
+                    }
+                });
+                this.webView.addEventListener('page-favicon-updated', (event) => {
+                    const { favicons } = event;
+                    const favIconURL = favicons[0];
+                    this.setState({ favIconURL });
+                });
+                this.webView.addEventListener('did-start-loading', (event) => {
+                    this.setState({ isLoading: true });
+                    if (this.props.isLoadingChanged) {
+                        this.props.isLoadingChanged(this, true);
+                    }
+                });
+                this.webView.addEventListener('did-stop-loading', (event) => {
+                    this.setState({ isLoading: false });
+                    if (this.props.isLoadingChanged) {
+                        this.props.isLoadingChanged(this, false);
+                    }
+                });
+            }
+        };
+        this.onSelect = (event) => {
+            if (this.props.onSelect) {
+                this.props.onSelect(this);
+            }
+        };
+        this.onClose = (event) => {
+            event.stopPropagation(); // don't send a select event
+            if (this.props.onClose) {
+                this.props.onClose(this);
+            }
+        };
+        this.state = {
+            title: this.props.startURL,
+            selected: this.props.selected,
+            loadedURL: this.props.startURL,
+            favIconURL: null,
+            canGoBack: false,
+            canGoForward: false,
+            isLoading: false
+        };
+        this.webViewEl = React.createElement("webview", { id: `${this.props.tabID}`, key: this.props.tabID, ref: this.webViewRef, src: this.props.startURL });
+    }
+    ;
+    getTabID() {
+        return this.props.tabID;
+    }
+    ;
+    markSelected(selected = true) {
+        this.setState(_.extend(this.state, { selected }));
+    }
+    ;
+    goBack() {
+        this.webView.goBack();
+    }
+    ;
+    goForward() {
+        this.webView.goForward();
+    }
+    ;
+    reload() {
+        if (this.webView.isLoading()) {
+            this.webView.stop();
+        }
+        else {
+            this.webView.reload();
+        }
+    }
+    ;
+    navigate(url, options) {
+        this.webView.loadURL(url, options);
+    }
+    ;
+    render() {
+        return React.createElement("div", { onClick: this.onSelect, className: `tab-item ${this.state.selected ? 'active' : 'not-active'}` },
+            React.createElement("span", { onClick: this.onClose, className: 'icon icon-cancel icon-close-tab' }),
+            React.createElement("span", { className: 'tab-icon' }, this.state.favIconURL ?
+                React.createElement("img", { className: 'tab-img', src: this.state.favIconURL }) : null),
+            React.createElement("span", { className: 'tab-title' }, this.state.title));
+    }
+    ;
+}
+exports.BrowserTab = BrowserTab;
+;
+
+
+/***/ }),
+/* 51 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const React = __webpack_require__(0);
+const ArboretumChatBox_1 = __webpack_require__(52);
+const Clipboard = __webpack_require__(56);
+const react_switch_1 = __webpack_require__(57);
+const ENTER_KEY = 13;
+;
+class BrowserSidebar extends React.Component {
+    constructor(props) {
+        super(props);
+        this.handleServerSwitchChange = (serverActive) => __awaiter(this, void 0, void 0, function* () {
+            this.setState({ serverActive });
+            if (this.props.setServerActive) {
+                const shareURLs = yield this.props.setServerActive(serverActive);
+                if (serverActive) {
+                    const { shareURL, adminURL } = shareURLs;
+                    this.setState({ shareURL, adminURL });
+                }
+                else {
+                    this.setState({ shareURL: '', adminURL: '' });
+                }
+            }
+        });
+        this.sendMessage = (message) => {
+            if (this.props.onSendMessage) {
+                this.props.onSendMessage(message);
+            }
+        };
+        this.postToMTurk = () => {
+            if (this.props.onPostTask) {
+                this.props.onPostTask(this.state.sandbox);
+            }
+        };
+        this.onSandboxChange = (event) => {
+            this.setState({ sandbox: event.target.checked });
+        };
+        this.adminURLRef = (el) => {
+            if (el) {
+                new Clipboard(el);
+            }
+        };
+        this.shareURLRef = (el) => {
+            if (el) {
+                new Clipboard(el);
+            }
+        };
+        this.chatBoxRef = (chatbox) => {
+            this.chatbox = chatbox;
+        };
+        this.state = {
+            isVisible: this.props.isVisible,
+            serverActive: this.props.serverActive,
+            shareURL: this.props.shareURL,
+            adminURL: this.props.adminURL,
+            sandbox: true
+        };
+    }
+    ;
+    setVisible(isVisible) {
+        this.setState({ isVisible });
+    }
+    ;
+    setSDB(sdb) {
+        if (this.chatbox) {
+            this.chatbox.setSDB(sdb);
+        }
+    }
+    ;
+    render() {
+        return React.createElement("div", { className: 'sidebar' },
+            React.createElement("table", { id: "server-controls" },
+                React.createElement("thead", null,
+                    React.createElement("tr", null,
+                        React.createElement("td", null,
+                            React.createElement("h5", { className: "nav-group-title" }, "Server")),
+                        React.createElement("td", null,
+                            React.createElement("h5", { className: "nav-group-title" }, "Share URL")),
+                        React.createElement("td", null,
+                            React.createElement("h5", { className: "nav-group-title" }, "Admin URL")),
+                        React.createElement("td", null,
+                            React.createElement("h5", { className: "nav-group-title" }, "MTurk")))),
+                React.createElement("tbody", null,
+                    React.createElement("tr", { id: "control_content" },
+                        React.createElement("td", null,
+                            React.createElement(react_switch_1.default, { height: 24, width: 48, onChange: this.handleServerSwitchChange, checked: this.state.serverActive })),
+                        React.createElement("td", { className: "copy_area" },
+                            React.createElement("input", { ref: this.shareURLRef, value: this.state.shareURL, id: "share_url", "data-disabled": "true" }),
+                            React.createElement("span", { ref: (el) => (el), "data-clipboard-target": "#share_url", id: "share_copy", className: "icon icon-clipboard" })),
+                        React.createElement("td", { className: "copy_area" },
+                            React.createElement("input", { ref: this.adminURLRef, value: this.state.adminURL, id: "admin_url", "data-disabled": "true" }),
+                            React.createElement("span", { "data-clipboard-target": "#admin_url", id: "admin_copy", className: "icon icon-clipboard" })),
+                        React.createElement("td", null,
+                            React.createElement("button", { onClick: this.postToMTurk, id: "mturk_post", className: 'btn btn-default' },
+                                React.createElement("span", { className: "icon icon-upload-cloud" }),
+                                "\u00A0Post"),
+                            React.createElement("br", null),
+                            React.createElement("label", null,
+                                React.createElement("input", { type: "checkbox", name: "sandbox", value: "sandbox", id: "sandbox", checked: this.state.sandbox, onChange: this.onSandboxChange }),
+                                " Sandbox"))))),
+            React.createElement(ArboretumChatBox_1.ArboretumChatBox, { username: "Admin", ref: this.chatBoxRef, onSendMessage: this.sendMessage }));
+    }
+    ;
+}
+exports.BrowserSidebar = BrowserSidebar;
+;
+
+
+/***/ }),
 /* 52 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -29327,607 +29924,6 @@ module.exports = function (css) {
 	// send back the fixed css
 	return fixedCss;
 };
-
-
-/***/ }),
-/* 83 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const React = __webpack_require__(0);
-const BrowserNavigationBar_1 = __webpack_require__(84);
-const BrowserTab_1 = __webpack_require__(85);
-const BrowserSidebar_1 = __webpack_require__(86);
-const electron_1 = __webpack_require__(63);
-const url = __webpack_require__(64);
-const _ = __webpack_require__(12);
-const ShareDBDoc_1 = __webpack_require__(65);
-class ArboretumBrowser extends React.Component {
-    constructor(props) {
-        super(props);
-        this.tabCounter = 0;
-        this.tabs = new Map();
-        this.goBack = () => {
-            const { selectedTab } = this.state;
-            if (selectedTab) {
-                selectedTab.goBack();
-            }
-        };
-        this.goForward = () => {
-            const { selectedTab } = this.state;
-            if (selectedTab) {
-                selectedTab.goForward();
-            }
-        };
-        this.reload = () => {
-            const { selectedTab } = this.state;
-            if (selectedTab) {
-                selectedTab.reload();
-            }
-        };
-        this.toggleSidebar = () => {
-        };
-        this.navigate = (url) => {
-            const { selectedTab } = this.state;
-            if (selectedTab) {
-                selectedTab.navigate(url);
-            }
-        };
-        this.navBarRef = (el) => {
-            this.navBar = el;
-            this.updateNavBarState();
-        };
-        this.setServerActive = (active) => __awaiter(this, void 0, void 0, function* () {
-            let shareURL, adminURL;
-            if (active) {
-                const { hostname, port } = yield this.sendIPCMessage('startServer');
-                const fullShareURL = url.format({ protocol: 'http', hostname, port });
-                const fullAdminURL = url.format({ protocol: 'http', hostname, port, pathname: '/admin' });
-                const wsAddress = url.format({ protocol: 'ws', hostname, port });
-                this.socket = new WebSocket(wsAddress);
-                this.sdb = new ShareDBDoc_1.SDB(true, this.socket);
-                this.doc = this.sdb.get('arboretum', 'browser');
-                if (this.sidebar) {
-                    this.sidebar.setSDB(this.sdb);
-                }
-                [shareURL, adminURL] = yield Promise.all([
-                    this.getShortcut(fullShareURL), this.getShortcut(fullAdminURL)
-                ]);
-            }
-            else {
-                if (this.doc) {
-                    this.doc.destroy();
-                }
-                if (this.sidebar) {
-                    this.sidebar.setSDB(null);
-                }
-                if (this.sdb) {
-                    yield this.sdb.close();
-                    this.sdb = null;
-                }
-                if (this.socket) {
-                    this.socket.close();
-                    this.socket = null;
-                }
-                yield this.sendIPCMessage('stopServer');
-                [shareURL, adminURL] = ['', ''];
-            }
-            if (this.sidebar) {
-                this.sidebar.setState({ shareURL, adminURL });
-            }
-            this.setState({ shareURL, adminURL });
-            return { shareURL, adminURL };
-        });
-        this.selectedTabURLChanged = (url) => { this.updateNavBarState(); };
-        this.selectedTabLoadingChanged = (isLoading) => { this.updateNavBarState(); };
-        this.selectedTabCanGoBackChanged = (canGoBack) => { this.updateNavBarState(); };
-        this.selectedTabCanGoForwardChanged = (canGoForward) => { this.updateNavBarState(); };
-        this.selectedTabPageTitleChanged = (title) => {
-            if (!title) {
-                title = 'Arboretum';
-            }
-            document.title = title;
-        };
-        this.addTab = () => {
-            const tabs = this.state.tabs.map((tab) => {
-                return _.extend(tab, { selected: false });
-            }).concat([{
-                    id: this.tabCounter++,
-                    url: 'http://www.cmu.edu/',
-                    selected: false
-                }]);
-            this.setState({ tabs }, () => {
-                this.updateWebViews();
-            });
-        };
-        this.selectTab = (selectedTab) => {
-            if (selectedTab !== this.state.selectedTab) {
-                const tabID = selectedTab.getTabID();
-                this.tabs.forEach((t) => {
-                    const isSelected = t === selectedTab;
-                    t.markSelected(isSelected);
-                    if (t.webView) {
-                        t.webView.setAttribute('class', isSelected ? '' : 'hidden');
-                    }
-                });
-                const activeWebViewEl = selectedTab ? selectedTab.webViewEl : null;
-                this.setState({ selectedTab, activeWebViewEl }, () => {
-                    this.updateNavBarState();
-                    if (this.state.selectedTab) {
-                        this.selectedTabPageTitleChanged(selectedTab.state.title);
-                    }
-                });
-            }
-        };
-        this.closeTab = (tab) => {
-            let selectedTab = this.state.selectedTab;
-            if (tab === this.state.selectedTab) {
-                const tabIndex = this.state.tabs.map((t) => t.id).indexOf(tab.props.tabID);
-                if (this.state.tabs.length === 1) {
-                    selectedTab = null;
-                }
-                else if (tabIndex === this.state.tabs.length - 1) {
-                    selectedTab = this.tabs.get(this.state.tabs[tabIndex - 1].id);
-                }
-                else {
-                    selectedTab = this.tabs.get(this.state.tabs[tabIndex + 1].id);
-                }
-            }
-            this.tabs.delete(tab.props.tabID);
-            const tabs = this.state.tabs.filter((tabInfo) => tabInfo.id !== tab.props.tabID);
-            this.setState({ tabs }, () => {
-                this.selectTab(selectedTab);
-                this.updateWebViews();
-            });
-        };
-        this.tabRef = (el) => {
-            if (el) {
-                this.tabs.set(el.props.tabID, el);
-                this.selectTab(el);
-                this.updateWebViews();
-            }
-        };
-        this.tabIsLoadingChanged = (tab, isLoading) => {
-            if (tab === this.state.selectedTab) {
-                this.selectedTabLoadingChanged(isLoading);
-            }
-        };
-        this.tabCanGoBackChanged = (tab, canGoBack) => {
-            if (tab === this.state.selectedTab) {
-                this.selectedTabCanGoBackChanged(canGoBack);
-            }
-        };
-        this.tabCanGoForwardChanged = (tab, canGoForward) => {
-            if (tab === this.state.selectedTab) {
-                this.selectedTabCanGoBackChanged(canGoForward);
-            }
-        };
-        this.tabURLChanged = (tab, url) => {
-            if (tab === this.state.selectedTab) {
-                this.selectedTabURLChanged(url);
-            }
-        };
-        this.pageTitleChanged = (tab, title) => {
-            if (tab === this.state.selectedTab) {
-                this.selectedTabPageTitleChanged(title);
-            }
-        };
-        this.sidebarRef = (sidebar) => {
-            this.sidebar = sidebar;
-            this.setServerActive(this.state.serverActive);
-        };
-        this.state = {
-            tabs: this.props.urls.map((url, index) => {
-                return {
-                    selected: index === 0,
-                    id: this.tabCounter++,
-                    url: url
-                };
-            }),
-            webViews: [],
-            selectedTab: null,
-            showingSidebar: false,
-            serverActive: this.props.serverState === "active",
-            activeWebViewEl: null,
-            shareURL: '',
-            adminURL: ''
-        };
-    }
-    ;
-    updateNavBarState() {
-        const { selectedTab } = this.state;
-        if (selectedTab && this.navBar) {
-            const { canGoBack, canGoForward, isLoading, loadedURL } = selectedTab.state;
-            this.navBar.setState({ canGoBack, canGoForward, isLoading });
-            if (!this.navBar.state.urlBarFocused) {
-                this.navBar.setState({ urlText: loadedURL });
-            }
-        }
-    }
-    ;
-    sendIPCMessage(message) {
-        return __awaiter(this, void 0, void 0, function* () {
-            electron_1.ipcRenderer.send('asynchronous-message', message);
-            const reply = yield new Promise((resolve, reject) => {
-                electron_1.ipcRenderer.once('asynchronous-reply', (event, data) => {
-                    resolve(data);
-                });
-            });
-            return reply;
-        });
-    }
-    ;
-    getShortcut(url) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return url;
-        });
-    }
-    ;
-    postTask(sandbox) {
-        console.log('post task', sandbox);
-    }
-    ;
-    updateWebViews() {
-        const webViews = this.state.tabs.map((tab) => {
-            const { id } = tab;
-            if (this.tabs.has(id)) {
-                const arboretumTab = this.tabs.get(id);
-                return arboretumTab.webViewEl;
-            }
-            else {
-                return null;
-            }
-        });
-        this.setState({ webViews });
-    }
-    ;
-    render() {
-        const tabs = this.state.tabs.map((info, index) => React.createElement(BrowserTab_1.BrowserTab, { ref: this.tabRef, selected: info.selected, key: info.id, tabID: info.id, startURL: info.url, onSelect: this.selectTab, onClose: this.closeTab, pageTitleChanged: this.pageTitleChanged, urlChanged: this.tabURLChanged, isLoadingChanged: this.tabIsLoadingChanged, canGoBackChanged: this.tabCanGoBackChanged, canGoForwardChanged: this.tabCanGoForwardChanged }));
-        return React.createElement("div", { className: "window" },
-            React.createElement("header", { className: "toolbar toolbar-header" },
-                React.createElement("div", { id: "tabsBar", className: "tab-group" },
-                    React.createElement("div", { id: 'buttonSpacer', className: "tab-item tab-item-fixed" }, " "),
-                    tabs,
-                    React.createElement("div", { onClick: this.addTab, className: "tab-item tab-item-fixed", id: 'addTab' },
-                        React.createElement("span", { className: "icon icon-plus" }))),
-                React.createElement(BrowserNavigationBar_1.BrowserNavigationBar, { ref: this.navBarRef, onBack: this.goBack, onForward: this.goForward, onReload: this.reload, onToggleSidebar: this.toggleSidebar, onNavigate: this.navigate })),
-            React.createElement("div", { className: "window-content" },
-                React.createElement("div", { className: "pane-group" },
-                    React.createElement(BrowserSidebar_1.BrowserSidebar, { shareURL: this.state.shareURL, adminURL: this.state.adminURL, ref: this.sidebarRef, setServerActive: this.setServerActive, isVisible: this.state.showingSidebar, serverActive: this.state.serverActive, onPostTask: this.postTask }),
-                    React.createElement("div", { id: "browser-pane", className: "pane" },
-                        React.createElement("div", { id: "content" }, this.state.webViews)))));
-    }
-    ;
-}
-exports.ArboretumBrowser = ArboretumBrowser;
-;
-
-
-/***/ }),
-/* 84 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const React = __webpack_require__(0);
-const ENTER_KEY = 13;
-class BrowserNavigationBar extends React.Component {
-    constructor(props) {
-        super(props);
-        this.handleURLChange = (event) => {
-            this.setState({ urlText: event.target.value });
-        };
-        this.backClicked = () => {
-            if (this.props.onBack) {
-                this.props.onBack();
-            }
-        };
-        this.forwardClicked = () => {
-            if (this.props.onForward) {
-                this.props.onForward();
-            }
-        };
-        this.reloadClicked = () => {
-            if (this.props.onReload) {
-                this.props.onReload();
-            }
-        };
-        this.toggleSidebarClicked = () => {
-            if (this.props.onToggleSidebar) {
-                this.props.onToggleSidebar();
-            }
-        };
-        this.urlKeyDown = (event) => {
-            const { keyCode } = event;
-            if (keyCode === ENTER_KEY) {
-                const { urlText } = this.state;
-                if (this.props.onNavigate) {
-                    this.props.onNavigate(urlText);
-                }
-            }
-        };
-        this.onURLBarFocus = (event) => {
-            this.setState({ urlBarFocused: true });
-        };
-        this.onURLBarBlur = (event) => {
-            this.setState({ urlBarFocused: false });
-        };
-        this.state = {
-            urlText: '',
-            canGoBack: false,
-            canGoForward: false,
-            isLoading: false,
-            urlBarFocused: false
-        };
-    }
-    ;
-    render() {
-        return React.createElement("div", { id: "navBar" },
-            React.createElement("div", { className: "toolbar-actions" },
-                React.createElement("div", { className: "btn-group" },
-                    React.createElement("button", { disabled: !this.state.canGoBack, onClick: this.backClicked, className: 'btn btn-default btn-mini', id: 'back' },
-                        React.createElement("span", { className: 'icon icon-left-open-big' })),
-                    React.createElement("button", { disabled: !this.state.canGoForward, onClick: this.forwardClicked, className: 'btn btn-default btn-mini', id: 'forward' },
-                        React.createElement("span", { className: 'icon icon-right-open-big' }))),
-                React.createElement("div", { className: "btn-group" },
-                    React.createElement("button", { onClick: this.reloadClicked, className: 'btn btn-default btn-mini', id: 'reload' },
-                        React.createElement("span", { className: `icon ${this.state.isLoading ? 'icon-cancel' : 'icon-ccw'}` })),
-                    React.createElement("button", { onClick: this.toggleSidebarClicked, className: 'btn btn-default btn-mini', id: 'task' },
-                        React.createElement("span", { className: 'icon icon-publish' })))),
-            React.createElement("input", { value: this.state.urlText, onChange: this.handleURLChange, onKeyDown: this.urlKeyDown, onFocus: this.onURLBarFocus, onBlur: this.onURLBarBlur, id: 'url', type: "text", placeholder: "Enter URL or Term to Search" }));
-    }
-    ;
-}
-exports.BrowserNavigationBar = BrowserNavigationBar;
-;
-
-
-/***/ }),
-/* 85 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const React = __webpack_require__(0);
-const _ = __webpack_require__(12);
-class BrowserTab extends React.Component {
-    constructor(props) {
-        super(props);
-        this.webViewRef = (el) => {
-            if (el) {
-                this.webView = el;
-                this.webView.addEventListener('page-title-updated', (event) => {
-                    const { title } = event;
-                    this.setState({ title });
-                    if (this.props.pageTitleChanged) {
-                        this.props.pageTitleChanged(this, title);
-                    }
-                });
-                this.webView.addEventListener('load-commit', (event) => {
-                    const { isMainFrame, url } = event;
-                    if (isMainFrame) {
-                        const loadedURL = url;
-                        if (this.props.urlChanged) {
-                            this.props.urlChanged(this, url);
-                        }
-                        this.setState({ loadedURL });
-                    }
-                });
-                this.webView.addEventListener('page-favicon-updated', (event) => {
-                    const { favicons } = event;
-                    const favIconURL = favicons[0];
-                    this.setState({ favIconURL });
-                });
-                this.webView.addEventListener('did-start-loading', (event) => {
-                    this.setState({ isLoading: true });
-                    if (this.props.isLoadingChanged) {
-                        this.props.isLoadingChanged(this, true);
-                    }
-                });
-                this.webView.addEventListener('did-stop-loading', (event) => {
-                    this.setState({ isLoading: false });
-                    if (this.props.isLoadingChanged) {
-                        this.props.isLoadingChanged(this, false);
-                    }
-                });
-            }
-        };
-        this.onSelect = (event) => {
-            if (this.props.onSelect) {
-                this.props.onSelect(this);
-            }
-        };
-        this.onClose = (event) => {
-            event.stopPropagation(); // don't send a select event
-            if (this.props.onClose) {
-                this.props.onClose(this);
-            }
-        };
-        this.state = {
-            title: this.props.startURL,
-            selected: this.props.selected,
-            loadedURL: this.props.startURL,
-            favIconURL: null,
-            canGoBack: false,
-            canGoForward: false,
-            isLoading: false
-        };
-        this.webViewEl = React.createElement("webview", { id: `${this.props.tabID}`, key: this.props.tabID, ref: this.webViewRef, src: this.props.startURL });
-    }
-    ;
-    getTabID() {
-        return this.props.tabID;
-    }
-    ;
-    markSelected(selected = true) {
-        this.setState(_.extend(this.state, { selected }));
-    }
-    ;
-    goBack() {
-        this.webView.goBack();
-    }
-    ;
-    goForward() {
-        this.webView.goForward();
-    }
-    ;
-    reload() {
-        if (this.webView.isLoading()) {
-            this.webView.stop();
-        }
-        else {
-            this.webView.reload();
-        }
-    }
-    ;
-    navigate(url, options) {
-        this.webView.loadURL(url, options);
-    }
-    ;
-    render() {
-        return React.createElement("div", { onClick: this.onSelect, className: `tab-item ${this.state.selected ? 'active' : 'not-active'}` },
-            React.createElement("span", { onClick: this.onClose, className: 'icon icon-cancel icon-close-tab' }),
-            React.createElement("span", { className: 'tab-icon' }, this.state.favIconURL ?
-                React.createElement("img", { className: 'tab-img', src: this.state.favIconURL }) : null),
-            React.createElement("span", { className: 'tab-title' }, this.state.title));
-    }
-    ;
-}
-exports.BrowserTab = BrowserTab;
-;
-
-
-/***/ }),
-/* 86 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const React = __webpack_require__(0);
-const ArboretumChatBox_1 = __webpack_require__(52);
-const Clipboard = __webpack_require__(56);
-const react_switch_1 = __webpack_require__(57);
-const ENTER_KEY = 13;
-;
-class BrowserSidebar extends React.Component {
-    constructor(props) {
-        super(props);
-        this.handleServerSwitchChange = (serverActive) => __awaiter(this, void 0, void 0, function* () {
-            this.setState({ serverActive });
-            if (this.props.setServerActive) {
-                const shareURLs = yield this.props.setServerActive(serverActive);
-                if (serverActive) {
-                    const { shareURL, adminURL } = shareURLs;
-                    this.setState({ shareURL, adminURL });
-                }
-                else {
-                    this.setState({ shareURL: '', adminURL: '' });
-                }
-            }
-        });
-        this.sendMessage = (message) => {
-            if (this.props.onSendMessage) {
-                this.props.onSendMessage(message);
-            }
-        };
-        this.postToMTurk = () => {
-            if (this.props.onPostTask) {
-                this.props.onPostTask(this.state.sandbox);
-            }
-        };
-        this.onSandboxChange = (event) => {
-            this.setState({ sandbox: event.target.checked });
-        };
-        this.adminURLRef = (el) => {
-            if (el) {
-                new Clipboard(el);
-            }
-        };
-        this.shareURLRef = (el) => {
-            if (el) {
-                new Clipboard(el);
-            }
-        };
-        this.chatBoxRef = (chatbox) => {
-            this.chatbox = chatbox;
-        };
-        this.state = {
-            isVisible: this.props.isVisible,
-            serverActive: this.props.serverActive,
-            shareURL: this.props.shareURL,
-            adminURL: this.props.adminURL,
-            sandbox: true
-        };
-    }
-    ;
-    setVisible(isVisible) {
-        this.setState({ isVisible });
-    }
-    ;
-    setSDB(sdb) {
-        if (this.chatbox) {
-            this.chatbox.setSDB(sdb);
-        }
-    }
-    ;
-    render() {
-        return React.createElement("div", { className: 'sidebar' },
-            React.createElement("table", { id: "server-controls" },
-                React.createElement("thead", null,
-                    React.createElement("tr", null,
-                        React.createElement("td", null,
-                            React.createElement("h5", { className: "nav-group-title" }, "Server")),
-                        React.createElement("td", null,
-                            React.createElement("h5", { className: "nav-group-title" }, "Share URL")),
-                        React.createElement("td", null,
-                            React.createElement("h5", { className: "nav-group-title" }, "Admin URL")),
-                        React.createElement("td", null,
-                            React.createElement("h5", { className: "nav-group-title" }, "MTurk")))),
-                React.createElement("tbody", null,
-                    React.createElement("tr", { id: "control_content" },
-                        React.createElement("td", null,
-                            React.createElement(react_switch_1.default, { height: 24, width: 48, onChange: this.handleServerSwitchChange, checked: this.state.serverActive })),
-                        React.createElement("td", { className: "copy_area" },
-                            React.createElement("input", { ref: this.shareURLRef, value: this.state.shareURL, id: "share_url", "data-disabled": "true" }),
-                            React.createElement("span", { ref: (el) => (el), "data-clipboard-target": "#share_url", id: "share_copy", className: "icon icon-clipboard" })),
-                        React.createElement("td", { className: "copy_area" },
-                            React.createElement("input", { ref: this.adminURLRef, value: this.state.adminURL, id: "admin_url", "data-disabled": "true" }),
-                            React.createElement("span", { "data-clipboard-target": "#admin_url", id: "admin_copy", className: "icon icon-clipboard" })),
-                        React.createElement("td", null,
-                            React.createElement("button", { onClick: this.postToMTurk, id: "mturk_post", className: 'btn btn-default' },
-                                React.createElement("span", { className: "icon icon-upload-cloud" }),
-                                "\u00A0Post"),
-                            React.createElement("br", null),
-                            React.createElement("label", null,
-                                React.createElement("input", { type: "checkbox", name: "sandbox", value: "sandbox", id: "sandbox", checked: this.state.sandbox, onChange: this.onSandboxChange }),
-                                " Sandbox"))))),
-            React.createElement(ArboretumChatBox_1.ArboretumChatBox, { username: "Admin", ref: this.chatBoxRef, onSendMessage: this.sendMessage }));
-    }
-    ;
-}
-exports.BrowserSidebar = BrowserSidebar;
-;
 
 
 /***/ })

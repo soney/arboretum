@@ -22,8 +22,10 @@ const keypress = require("keypress");
 const chalk_1 = require("chalk");
 const ip = require("ip");
 const opn = require("opn");
+const request = require("request");
+const URL = require("url");
 const state = { chat: {}, browser: {} };
-const OPEN_MIRROR = true;
+const OPEN_MIRROR = false;
 const RDB_PORT = 9222;
 const HTTP_PORT = 3000;
 const isMac = /^dar/.test(os_1.platform());
@@ -80,21 +82,16 @@ expressApp.all('/', (req, res, next) => __awaiter(this, void 0, void 0, function
     res.send(contents);
 }))
     .use('/', express.static(path_1.join(__dirname, 'client')))
-    .all('/f', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
-    var frameID = req.query.i, tabID = req.query.t, userID = req.query.u;
-    const contents = yield setClientOptions({ userID, frameID, tabID,
-        viewType: 'mirror'
-    });
-    res.send(contents);
-}))
-    .use('/f', express.static(path_1.join(__dirname, 'client')))
     .all('/r', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
     var url = req.query.l, tabID = req.query.t, frameID = req.query.f;
     try {
-        const resourceInfo = yield browserState.requestResource(url, frameID, tabID);
-        var content = resourceInfo.content;
-        res.set('Content-Type', resourceInfo.mimeType);
-        if (resourceInfo.base64Encoded) {
+        const [resource, resourceContent] = yield browserState.requestResource(url, frameID, tabID);
+        const { content, base64Encoded } = resourceContent;
+        if (resource) {
+            const { type, mimeType } = resource;
+            res.set('Content-Type', mimeType);
+        }
+        if (base64Encoded) {
             var bodyBuffer = new Buffer(content, 'base64');
             res.send(bodyBuffer);
         }
@@ -103,8 +100,21 @@ expressApp.all('/', (req, res, next) => __awaiter(this, void 0, void 0, function
         }
     }
     catch (err) {
-        req.pipe(req[req.method.toLowerCase().replace('del', 'delete')](url))
-            .pipe(res);
+        console.error(`Failed to get ${url}. Trying to pipe`);
+        try {
+            const { method } = req;
+            const uri = URL.parse(url);
+            const { protocol, path } = uri;
+            if (protocol === 'file:') {
+                fs_1.createReadStream(path).pipe(res);
+            }
+            else {
+                req.pipe(request({ uri, method })).pipe(res);
+            }
+        }
+        catch (err) {
+            console.error(err);
+        }
     }
 }));
 function getIPAddress() {
@@ -194,6 +204,9 @@ process.stdin.on('keypress', (ch, key) => {
     }
     else if (name === 't') {
         browserState.printTabSummaries();
+    }
+    else if (name === 'n') {
+        browserState.printNetworkSummary();
     }
     else if (name === 'q') {
         if (chromeProcess) {

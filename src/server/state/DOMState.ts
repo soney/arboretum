@@ -86,6 +86,14 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
             this.contentDocument.markAttachedToShareDBDoc();
         }
     };
+    private processNodeValue(nodeValue:string):string {
+        const parent = this.getParent();
+        if(parent && parent.getTagName().toLowerCase() === 'style') {
+            return processCSSURLs(nodeValue, this.getBaseURL(), this.getFrameId(), this.getTabId());
+        } else {
+            return nodeValue;
+        }
+    };
 
     private async updateNodeValue():Promise<void> {
         try {
@@ -104,9 +112,10 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
     public createShareDBNode():ShareDBDOMNode {
         const filteredChildren:Array<DOMState> = this.getChildren().filter((c) => DOMState.shouldIncludeChild(c));
         const children:Array<ShareDBDOMNode> = filteredChildren.map((c) => c.createShareDBNode());
-        const {nodeType, nodeName, nodeValue, attributes} = this.getNode();
+        const {nodeId, nodeType, nodeName, nodeValue, attributes, isSVG} = this.getNode();
         return {
-            nodeType, nodeName, nodeValue, children,
+            nodeId, nodeType, nodeName, children, isSVG,
+            nodeValue: this.processNodeValue(nodeValue),
             attributes: this.computeGroupedAttributes(attributes),
             contentDocument: this.contentDocument ? this.contentDocument.createShareDBNode() : null,
             childFrame: this.childFrame ? this.childFrame.getShareDBFrame() : null,
@@ -296,18 +305,14 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
     };
 
     public async setCharacterData(characterData: string): Promise<void> {
-        this.node.nodeValue = characterData;
-
-        const p = this.p('nodeValue');
-        const doc = this.getShareDBDoc();
-        await doc.submitObjectReplaceOp(p, characterData);
+        return this.setNodeValue(characterData);
     };
     private async setNodeValue(value: string): Promise<void> {
         this.node.nodeValue = value;
 
         const p = this.p('nodeValue');
         const doc = this.getShareDBDoc();
-        await doc.submitObjectReplaceOp(p, value);
+        await doc.submitObjectReplaceOp(p, this.processNodeValue(value));
     };
     public getNodeValue(): string {
         return this.node.nodeValue;
@@ -339,7 +344,7 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
             children.splice(index, 1);
 
             const doc = this.getShareDBDoc();
-            const sdbChildren = doc.traverse(this.p('children'));
+            const sdbChildren:Array<ShareDBDOMNode> = doc.traverse(this.p('children'));
             const nodeId = child.getNodeId();
             for(let i=0; i<sdbChildren.length; i++) {
                 const sdbChild = sdbChildren[i];

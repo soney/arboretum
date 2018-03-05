@@ -17,6 +17,7 @@ import * as ShareDB from 'sharedb';
 import {BrowserDoc} from '../../utils/state_interfaces';
 import * as timers from 'timers';
 import {ShareDBSharedState} from '../../utils/ShareDBSharedState';
+import { processCSSURLs } from '../css_parser';
 
 const log = getColoredLogger('red');
 
@@ -117,9 +118,17 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
             tabState.printSummary();
         });
     };
-    public async requestResource(url: string, frameID: CRI.FrameID, tabID: CRI.TabID): Promise<any> {
+    public async requestResource(url: string, frameID: CRI.FrameID, tabID: CRI.TabID): Promise<[CRI.FrameResource, CRI.GetResourceContentResponse]> {
         const tabState: TabState = this.tabs.get(tabID);
-        return tabState.requestResource(url, frameID);
+        const resourceContent:CRI.GetResourceContentResponse = await tabState.getResourceContent(frameID, url);
+        const resource:CRI.FrameResource = await tabState.getResource(url);
+        if(resource) {
+            const {mimeType} = resource;
+            if(mimeType === 'text/css') {
+                resourceContent.content = processCSSURLs(resourceContent.content, url, frameID, tabID);
+            }
+        }
+        return [resource, resourceContent];
     };
     private getTab(id: CRI.TabID): TabState {
         return this.tabs.get(id);
@@ -138,5 +147,10 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
     };
     public getActiveTabId():CRI.TabID {
         return this.getTabIds()[0];
+    };
+    public printNetworkSummary():void {
+        this.tabs.forEach((tabState:TabState) => {
+            tabState.printNetworkSummary();
+        });
     };
 };

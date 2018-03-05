@@ -101,6 +101,16 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         });
     }
     ;
+    processNodeValue(nodeValue) {
+        const parent = this.getParent();
+        if (parent && parent.getTagName().toLowerCase() === 'style') {
+            return css_parser_1.processCSSURLs(nodeValue, this.getBaseURL(), this.getFrameId(), this.getTabId());
+        }
+        else {
+            return nodeValue;
+        }
+    }
+    ;
     updateNodeValue() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -124,9 +134,10 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
     createShareDBNode() {
         const filteredChildren = this.getChildren().filter((c) => DOMState.shouldIncludeChild(c));
         const children = filteredChildren.map((c) => c.createShareDBNode());
-        const { nodeType, nodeName, nodeValue, attributes } = this.getNode();
+        const { nodeId, nodeType, nodeName, nodeValue, attributes, isSVG } = this.getNode();
         return {
-            nodeType, nodeName, nodeValue, children,
+            nodeId, nodeType, nodeName, children, isSVG,
+            nodeValue: this.processNodeValue(nodeValue),
             attributes: this.computeGroupedAttributes(attributes),
             contentDocument: this.contentDocument ? this.contentDocument.createShareDBNode() : null,
             childFrame: this.childFrame ? this.childFrame.getShareDBFrame() : null,
@@ -352,10 +363,7 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
     ;
     setCharacterData(characterData) {
         return __awaiter(this, void 0, void 0, function* () {
-            this.node.nodeValue = characterData;
-            const p = this.p('nodeValue');
-            const doc = this.getShareDBDoc();
-            yield doc.submitObjectReplaceOp(p, characterData);
+            return this.setNodeValue(characterData);
         });
     }
     ;
@@ -364,7 +372,7 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
             this.node.nodeValue = value;
             const p = this.p('nodeValue');
             const doc = this.getShareDBDoc();
-            yield doc.submitObjectReplaceOp(p, value);
+            yield doc.submitObjectReplaceOp(p, this.processNodeValue(value));
         });
     }
     ;

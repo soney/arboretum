@@ -63,11 +63,13 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         const { frameTree } = resourceTree;
         const { frame, childFrames, resources } = frameTree;
         this.createFrameState(frame, null, childFrames, resources);
-        this.refreshRoot();
-        this.addFrameListeners();
-        this.addDOMListeners();
-        this.addNetworkListeners();
-        this.addExecutionContextListeners();
+        await this.refreshRoot();
+
+        await this.addFrameListeners();
+        // await this.addNetworkListeners();
+        await this.addDOMListeners();
+        // this.addNetworkListeners();
+        await this.addExecutionContextListeners();
     };
     public getSDB():SDB { return this.sdb; };
     public getShareDBDoc():SDBDoc<TabDoc> { return this.doc; };
@@ -151,10 +153,10 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         const { id, parentId } = info;
         const frameState: FrameState = new FrameState(this.chrome, info, this, parentFrame, resources);
         this.frames.set(id, frameState);
-        if (!parentId) {
+        // if (!parentId) {
             // this.setRootFrame(frameState);
-            this.refreshRoot();
-        }
+            // this.refreshRoot();
+        // }
         this.updateFrameOnEvents(frameState);
         childFrames.forEach((childFrame) => {
             const { frame, childFrames, resources } = childFrame;
@@ -163,22 +165,22 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         return frameState;
     }
     public getTabId(): string { return this.info.id; }
-    private addFrameListeners() {
-        this.chrome.Page.enable();
+    private async addFrameListeners():Promise<void> {
+        await this.chrome.Page.enable();
         this.chrome.Page.frameAttached(this.onFrameAttached);
         this.chrome.Page.frameDetached(this.onFrameDetached);
         this.chrome.Page.frameNavigated(this.onFrameNavigated);
     }
-    private addNetworkListeners() {
-        this.chrome.Network.enable();
+    private async addNetworkListeners():Promise<void> {
+        await this.chrome.Network.enable();
         this.chrome.Network.requestWillBeSent(this.requestWillBeSent);
         this.chrome.Network.responseReceived(this.responseReceived);
     };
-    private addExecutionContextListeners() {
-        this.chrome.Runtime.enable();
+    private async addExecutionContextListeners():Promise<void> {
+        await this.chrome.Runtime.enable();
         this.chrome.Runtime.executionContextCreated(this.executionContextCreated);
     };
-    private addDOMListeners(): void {
+    private async addDOMListeners():Promise<void> {
         this.chrome.on('DOM.attributeRemoved', this.doHandleAttributeRemoved);
         this.chrome.on('DOM.attributeModified', this.doHandleAttributeModified);
         this.chrome.on('DOM.characterDataModified', this.doHandleCharacterDataModified);
@@ -365,7 +367,34 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         // }).catch((err) => {
         //     throw(err);
         // });
-    }
+    };
+    public async getResource(url:string):Promise<CRI.FrameResource> {
+        const resourceTree:CRI.FrameResourceTree = await this.getResourceTree();
+        const {frameTree} = resourceTree;
+        const {resources} = frameTree;
+        for(let i = 0; i<resources.length; i++) {
+            const resource = resources[i];
+            if(resource.url === url) {
+                return resource;
+            }
+        }
+        return null;
+    };
+    public async getResourceContent(frameId:CRI.FrameID, url:string):Promise<CRI.GetResourceContentResponse> {
+        return new Promise<CRI.GetResourceContentResponse>((resolve, reject) => {
+            this.chrome.Page.getResourceContent({frameId, url}, (err, value: CRI.GetResourceContentResponse) => {
+                if (err) { reject(value); }
+                else { resolve(value); }
+            });
+        }).catch((err) => {
+            if(err.code && err.code === -32000) { // No resource with given url
+                throw (err);
+            } else {
+                log.error(err);
+                throw (err);
+            }
+        });
+    };
 
     private async getResourceTree(): Promise<CRI.FrameResourceTree> {
         return new Promise<CRI.FrameResourceTree>((resolve, reject) => {
@@ -405,6 +434,12 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         } else {
             console.log(`No root frame for ${this.getTabId()}`);
         }
+    };
+    public async printNetworkSummary():Promise<void> {
+        const resourceTree:CRI.FrameResourceTree = await this.getResourceTree();
+        const {frameTree} = resourceTree;
+        const {resources} = frameTree;
+        console.log(resources);
     };
     public destroy() {
         this.chrome.close();

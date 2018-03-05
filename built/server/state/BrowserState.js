@@ -18,6 +18,7 @@ const ShareDBDoc_1 = require("../../utils/ShareDBDoc");
 const ArboretumChat_1 = require("../../utils/ArboretumChat");
 const timers = require("timers");
 const ShareDBSharedState_1 = require("../../utils/ShareDBSharedState");
+const css_parser_1 = require("../css_parser");
 const log = ColoredLogger_1.getColoredLogger('red');
 const projectFileURLPath = fileUrl(path_1.join(path_1.resolve(__dirname, '..', '..'), 'browser'));
 class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
@@ -137,7 +138,15 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
     requestResource(url, frameID, tabID) {
         return __awaiter(this, void 0, void 0, function* () {
             const tabState = this.tabs.get(tabID);
-            return tabState.requestResource(url, frameID);
+            const resourceContent = yield tabState.getResourceContent(frameID, url);
+            const resource = yield tabState.getResource(url);
+            if (resource) {
+                const { mimeType } = resource;
+                if (mimeType === 'text/css') {
+                    resourceContent.content = css_parser_1.processCSSURLs(resourceContent.content, url, frameID, tabID);
+                }
+            }
+            return [resource, resourceContent];
         });
     }
     ;
@@ -162,6 +171,12 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
     ;
     getActiveTabId() {
         return this.getTabIds()[0];
+    }
+    ;
+    printNetworkSummary() {
+        this.tabs.forEach((tabState) => {
+            tabState.printNetworkSummary();
+        });
     }
     ;
 }

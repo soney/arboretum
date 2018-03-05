@@ -27,11 +27,18 @@ export abstract class ClientNode {
     public getContentDocument():ClientDocumentNode { return this.contentDocument; };
     public getChild(index:number=0):ClientNode { return this.children[index]; };
     protected getChildren():Array<ClientNode> { return this.children; };
+    public setChildren(children:Array<ClientNode>):void { this.children = children; };
     protected getNodeChildren():Array<ShareDBDOMNode> { return this.sdbNode.children; };
+    public setInlineStyle(style:string):void {};
+    public getAttributes():Array<[string, string]> { return this.sdbNode.attributes; };
+    public setAttribute(name:string, value:string):void {};
+    public removeAttribute(name:string):void {};
+    public insertChild(child: ClientNode, index:number):void { this.children.splice(index, 0, child); };
+    public removeChild(index:number):void { this.children.splice(index, 1); };
     // protected getNodeShadowRoots():Array<ShareDBDOMNode> { return this.sdbNode.shadowRoots; };
     public setCharacterData(characterData:string):void {}
     public setNodeValue(value:string):void {}
-    public abstract getElement():HTMLElement|Text|Comment;
+    public abstract getElement():HTMLElement|SVGElement|Text|Comment;
 };
 
 export class ClientDocumentNode extends ClientNode {
@@ -45,7 +52,7 @@ export class ClientDocumentNode extends ClientNode {
             c.remove();
         }
     };
-    public getElement():HTMLElement|Text|Comment {
+    public getElement():HTMLElement|SVGElement|Text|Comment {
         return this.getChild().getElement();
     };
 };
@@ -56,18 +63,22 @@ export class ClientDocumentTypeNode extends ClientNode {
     }
 };
 export class ClientElementNode extends ClientNode {
-    private element:HTMLElement;
+    private element:HTMLElement|SVGElement;
     constructor(sdbNode:ShareDBDOMNode) {
         super(sdbNode);
-        const {nodeName} = this.sdbNode;
-        this.element = document.createElement(nodeName)
+        const {nodeName, isSVG} = this.sdbNode;
+        if(isSVG) {
+            this.element = document.createElementNS('http://www.w3.org/2000/svg', nodeName);
+        } else {
+            this.element = document.createElement(nodeName)
+        }
         this.initialize();
     };
     private async initialize():Promise<void> {
         const {nodeName} = this.sdbNode;
         this.getAttributes().forEach((attr) => {
             const [name, value] = attr;
-            this.element.setAttribute(name, value);
+            this.setAttribute(name, value);
         });
         if(nodeName === 'IFRAME') {
             const iFrameElement = (this.element as HTMLIFrameElement);
@@ -83,9 +94,39 @@ export class ClientElementNode extends ClientNode {
             });
         }
     };
+    public setChildren(children:Array<ClientNode>):void {
+        for(let i = this.element.children.length-1; i>=0; i--) {
+            const c = this.element.children.item(i);
+            c.remove();
+        }
+        children.forEach((c) => {
+            this.element.appendChild(c.getElement());
+        });
+        super.setChildren(children);
+    };
+    public insertChild(child: ClientNode, index:number):void {
+        if(this.element.children.length>=index) {
+            this.element.insertBefore(child.getElement(), this.element.children.item(index));
+        } else {
+            this.element.appendChild(child.getElement());
+        }
+        super.insertChild(child, index);
+    };
+    public removeChild(index:number):void {
+        this.element.children.item(index).remove();
+        super.removeChild(index);
+    };
+    public setInlineStyle(style:string):void {
+        this.element.setAttribute('style', style);
+    };
+    public setAttribute(name:string, value:string):void {
+        this.element.setAttribute(name, value);
+    };
+    public removeAttribute(name:string):void {
+        this.element.removeAttribute(name);
+    };
     public getNodeContentDocument():ShareDBDOMNode { return this.sdbNode.contentDocument; };
-    private getAttributes():Array<[string, string]> { return this.sdbNode.attributes; };
-    public getElement():HTMLElement {
+    public getElement():HTMLElement|SVGElement {
         return this.element;
     };
     public setNodeValue(value:string):void {

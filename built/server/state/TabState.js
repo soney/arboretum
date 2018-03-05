@@ -317,11 +317,12 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             const { frameTree } = resourceTree;
             const { frame, childFrames, resources } = frameTree;
             this.createFrameState(frame, null, childFrames, resources);
-            this.refreshRoot();
-            this.addFrameListeners();
-            this.addDOMListeners();
-            this.addNetworkListeners();
-            this.addExecutionContextListeners();
+            yield this.refreshRoot();
+            yield this.addFrameListeners();
+            // await this.addNetworkListeners();
+            yield this.addDOMListeners();
+            // this.addNetworkListeners();
+            yield this.addExecutionContextListeners();
         });
     }
     ;
@@ -432,10 +433,10 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
         const { id, parentId } = info;
         const frameState = new FrameState_1.FrameState(this.chrome, info, this, parentFrame, resources);
         this.frames.set(id, frameState);
-        if (!parentId) {
-            // this.setRootFrame(frameState);
-            this.refreshRoot();
-        }
+        // if (!parentId) {
+        // this.setRootFrame(frameState);
+        // this.refreshRoot();
+        // }
         this.updateFrameOnEvents(frameState);
         childFrames.forEach((childFrame) => {
             const { frame, childFrames, resources } = childFrame;
@@ -445,34 +446,42 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
     }
     getTabId() { return this.info.id; }
     addFrameListeners() {
-        this.chrome.Page.enable();
-        this.chrome.Page.frameAttached(this.onFrameAttached);
-        this.chrome.Page.frameDetached(this.onFrameDetached);
-        this.chrome.Page.frameNavigated(this.onFrameNavigated);
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.chrome.Page.enable();
+            this.chrome.Page.frameAttached(this.onFrameAttached);
+            this.chrome.Page.frameDetached(this.onFrameDetached);
+            this.chrome.Page.frameNavigated(this.onFrameNavigated);
+        });
     }
     addNetworkListeners() {
-        this.chrome.Network.enable();
-        this.chrome.Network.requestWillBeSent(this.requestWillBeSent);
-        this.chrome.Network.responseReceived(this.responseReceived);
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.chrome.Network.enable();
+            this.chrome.Network.requestWillBeSent(this.requestWillBeSent);
+            this.chrome.Network.responseReceived(this.responseReceived);
+        });
     }
     ;
     addExecutionContextListeners() {
-        this.chrome.Runtime.enable();
-        this.chrome.Runtime.executionContextCreated(this.executionContextCreated);
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.chrome.Runtime.enable();
+            this.chrome.Runtime.executionContextCreated(this.executionContextCreated);
+        });
     }
     ;
     addDOMListeners() {
-        this.chrome.on('DOM.attributeRemoved', this.doHandleAttributeRemoved);
-        this.chrome.on('DOM.attributeModified', this.doHandleAttributeModified);
-        this.chrome.on('DOM.characterDataModified', this.doHandleCharacterDataModified);
-        this.chrome.on('DOM.childNodeInserted', this.doHandleChildNodeInserted);
-        this.chrome.on('DOM.childNodeRemoved', this.doHandleChildNodeRemoved);
-        this.chrome.on('DOM.setChildNodes', this.doHandleSetChildNodes);
-        this.chrome.on('DOM.childNodeCountUpdated', this.doHandleChildNodeCountUpdated);
-        this.chrome.on('DOM.inlineStyleInvalidated', this.doHandleInlineStyleInvalidated);
-        this.chrome.on('DOM.documentUpdated', this.doHandleDocumentUpdated);
-        this.chrome.on('DOM.shadowRootPopped', this.doHandleShadowRootPopped);
-        this.chrome.on('DOM.shadowRootPushed', this.doHandleShadowRootPushed);
+        return __awaiter(this, void 0, void 0, function* () {
+            this.chrome.on('DOM.attributeRemoved', this.doHandleAttributeRemoved);
+            this.chrome.on('DOM.attributeModified', this.doHandleAttributeModified);
+            this.chrome.on('DOM.characterDataModified', this.doHandleCharacterDataModified);
+            this.chrome.on('DOM.childNodeInserted', this.doHandleChildNodeInserted);
+            this.chrome.on('DOM.childNodeRemoved', this.doHandleChildNodeRemoved);
+            this.chrome.on('DOM.setChildNodes', this.doHandleSetChildNodes);
+            this.chrome.on('DOM.childNodeCountUpdated', this.doHandleChildNodeCountUpdated);
+            this.chrome.on('DOM.inlineStyleInvalidated', this.doHandleInlineStyleInvalidated);
+            this.chrome.on('DOM.documentUpdated', this.doHandleDocumentUpdated);
+            this.chrome.on('DOM.shadowRootPopped', this.doHandleShadowRootPopped);
+            this.chrome.on('DOM.shadowRootPushed', this.doHandleShadowRootPushed);
+        });
     }
     ;
     requestChildNodes(nodeId, depth = 1, pierce = false) {
@@ -622,6 +631,45 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             // });
         });
     }
+    ;
+    getResource(url) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const resourceTree = yield this.getResourceTree();
+            const { frameTree } = resourceTree;
+            const { resources } = frameTree;
+            for (let i = 0; i < resources.length; i++) {
+                const resource = resources[i];
+                if (resource.url === url) {
+                    return resource;
+                }
+            }
+            return null;
+        });
+    }
+    ;
+    getResourceContent(frameId, url) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => {
+                this.chrome.Page.getResourceContent({ frameId, url }, (err, value) => {
+                    if (err) {
+                        reject(value);
+                    }
+                    else {
+                        resolve(value);
+                    }
+                });
+            }).catch((err) => {
+                if (err.code && err.code === -32000) {
+                    throw (err);
+                }
+                else {
+                    log.error(err);
+                    throw (err);
+                }
+            });
+        });
+    }
+    ;
     getResourceTree() {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((resolve, reject) => {
@@ -675,6 +723,15 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
         else {
             console.log(`No root frame for ${this.getTabId()}`);
         }
+    }
+    ;
+    printNetworkSummary() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const resourceTree = yield this.getResourceTree();
+            const { frameTree } = resourceTree;
+            const { resources } = frameTree;
+            console.log(resources);
+        });
     }
     ;
     destroy() {

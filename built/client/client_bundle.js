@@ -33695,27 +33695,64 @@ class ClientTab extends React.Component {
     }
     ;
     handleOp(op) {
-        const { p } = op;
-        const { node, property } = this.traverse(p);
+        const { node, property, path } = this.traverse(op);
         if (node && property) {
             const { oi, od } = op;
-            console.log(op);
             if (property === 'characterData') {
                 node.setNodeValue(oi);
-                // node.setCharacterData
             }
             else if (property === 'nodeValue') {
                 node.setNodeValue(oi);
             }
-            console.log(node);
-            console.log(property);
+            else if (property === 'attributes') {
+                const { li, ld } = op;
+                if (path.length === 1) {
+                    if (ld) {
+                        const [name, value] = ld;
+                        node.removeAttribute(name);
+                    }
+                    else if (li) {
+                        const [name, value] = li;
+                        node.setAttribute(name, value);
+                    }
+                }
+                else if (path.length === 2) {
+                    const attribute = node.getAttributes()[path[0]];
+                    const [name, value] = attribute;
+                    node.setAttribute(name, li);
+                }
+            }
+            else if (property === 'inlineStyle') {
+                node.setInlineStyle(oi);
+            }
+            else if (property === 'children') {
+                if (path.length === 0) {
+                    const children = oi.map((c) => ClientDOMNode_1.createClientNode(c));
+                    node.setChildren(children);
+                }
+                else {
+                    const { li, ld } = op;
+                    const index = path[0];
+                    if (ld) {
+                        node.removeChild(index);
+                    }
+                    else if (li) {
+                        const child = ClientDOMNode_1.createClientNode(li);
+                        node.insertChild(child, index);
+                    }
+                }
+            }
+            else {
+                console.error('Not handled 1', op);
+            }
         }
         else {
-            console.error('Not handled', op);
+            console.error('Not handled 2', op);
         }
     }
     ;
-    traverse(p) {
+    traverse(op) {
+        const { p } = op;
         let node;
         for (let i = 0; i < p.length; i++) {
             const item = p[i];
@@ -33723,15 +33760,28 @@ class ClientTab extends React.Component {
                 node = this.rootElement;
             }
             else if (item === 'children') {
-                const index = p[i + 1];
-                node = node.getChild(index);
-                i++;
+                if (i >= p.length - 2) {
+                    // set children: ends with [...,'children']
+                    // set child: ends with [...,'children', 3]
+                    return { node, property: 'children', path: p.slice(i + 1) };
+                }
+                else {
+                    const index = p[i + 1];
+                    node = node.getChild(index);
+                    i++;
+                }
             }
             else if (item === 'contentDocument') {
                 node = node.getContentDocument();
             }
             else if (item === 'nodeValue') {
-                return { node, property: item };
+                return { node, property: item, path: p.slice(i + 1) };
+            }
+            else if (item === 'attributes') {
+                return { node, property: item, path: p.slice(i + 1) };
+            }
+            else if (item === 'inlineStyle') {
+                return { node, property: item, path: p.slice(i + 1) };
             }
             else if (item === 'shadowRoots') {
                 throw new Error('ShadowRoots not expected to be included');
@@ -33741,7 +33791,7 @@ class ClientTab extends React.Component {
                 console.log(item);
             }
         }
-        return { node: null, property: null };
+        return { node: null, property: null, path: p };
     }
     ;
     render() {
@@ -33804,7 +33854,21 @@ class ClientNode {
     ;
     getChildren() { return this.children; }
     ;
+    setChildren(children) { this.children = children; }
+    ;
     getNodeChildren() { return this.sdbNode.children; }
+    ;
+    setInlineStyle(style) { }
+    ;
+    getAttributes() { return this.sdbNode.attributes; }
+    ;
+    setAttribute(name, value) { }
+    ;
+    removeAttribute(name) { }
+    ;
+    insertChild(child, index) { this.children.splice(index, 0, child); }
+    ;
+    removeChild(index) { this.children.splice(index, 1); }
     ;
     // protected getNodeShadowRoots():Array<ShareDBDOMNode> { return this.sdbNode.shadowRoots; };
     setCharacterData(characterData) { }
@@ -33846,8 +33910,13 @@ exports.ClientDocumentTypeNode = ClientDocumentTypeNode;
 class ClientElementNode extends ClientNode {
     constructor(sdbNode) {
         super(sdbNode);
-        const { nodeName } = this.sdbNode;
-        this.element = document.createElement(nodeName);
+        const { nodeName, isSVG } = this.sdbNode;
+        if (isSVG) {
+            this.element = document.createElementNS('http://www.w3.org/2000/svg', nodeName);
+        }
+        else {
+            this.element = document.createElement(nodeName);
+        }
         this.initialize();
     }
     ;
@@ -33856,7 +33925,7 @@ class ClientElementNode extends ClientNode {
             const { nodeName } = this.sdbNode;
             this.getAttributes().forEach((attr) => {
                 const [name, value] = attr;
-                this.element.setAttribute(name, value);
+                this.setAttribute(name, value);
             });
             if (nodeName === 'IFRAME') {
                 const iFrameElement = this.element;
@@ -33874,9 +33943,45 @@ class ClientElementNode extends ClientNode {
         });
     }
     ;
-    getNodeContentDocument() { return this.sdbNode.contentDocument; }
+    setChildren(children) {
+        for (let i = this.element.children.length - 1; i >= 0; i--) {
+            const c = this.element.children.item(i);
+            c.remove();
+        }
+        children.forEach((c) => {
+            this.element.appendChild(c.getElement());
+        });
+        super.setChildren(children);
+    }
     ;
-    getAttributes() { return this.sdbNode.attributes; }
+    insertChild(child, index) {
+        if (this.element.children.length >= index) {
+            this.element.insertBefore(child.getElement(), this.element.children.item(index));
+        }
+        else {
+            this.element.appendChild(child.getElement());
+        }
+        super.insertChild(child, index);
+    }
+    ;
+    removeChild(index) {
+        this.element.children.item(index).remove();
+        super.removeChild(index);
+    }
+    ;
+    setInlineStyle(style) {
+        this.element.setAttribute('style', style);
+    }
+    ;
+    setAttribute(name, value) {
+        this.element.setAttribute(name, value);
+    }
+    ;
+    removeAttribute(name) {
+        this.element.removeAttribute(name);
+    }
+    ;
+    getNodeContentDocument() { return this.sdbNode.contentDocument; }
     ;
     getElement() {
         return this.element;

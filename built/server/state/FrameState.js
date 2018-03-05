@@ -24,8 +24,6 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
         this.setMainFrameExecuted = false;
         this.refreshingRoot = false;
         this.domParent = null;
-        this.nodeMap = new Map();
-        this.oldNodeMap = new Map();
         this.queuedEvents = [];
         this.executionContext = null;
         // public resourceTracker: ResourceTracker;
@@ -85,31 +83,12 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
         return this.tab.getTabId();
     }
     ;
-    // 	proto._getWrappedDOMNodeWithID = function(id) {
-    // 		return this._nodeMap[id];
-    // 	};
     updateInfo(info) {
         this.info = info;
     }
     ;
     executionContextCreated(context) {
         this.executionContext = context;
-    }
-    ;
-    isRefreshingRoot() { return this.refreshingRoot; }
-    markRefreshingRoot(r) {
-        if (r) {
-            this.refreshingRoot = true;
-        }
-        else {
-            this.refreshingRoot = false;
-            while (this.queuedEvents.length > 0) {
-                var queuedEvent = this.queuedEvents.shift();
-                queuedEvent.promise.resolve(queuedEvent.event).catch((err) => {
-                    log.error(err);
-                });
-            }
-        }
     }
     ;
     destroy() {
@@ -130,19 +109,6 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
     ;
     getRoot() { return this.root; }
     ;
-    // public setRoot(rootNode: CRI.Node): void {
-    //     const oldRoot: DOMState = this.getRoot();
-    //     if (oldRoot) {
-    //         oldRoot.destroy();
-    //     }
-    //     if (rootNode) {
-    //         const rootState = this.getOrCreateDOMState(rootNode);
-    //         log.info(`Set root of frame ${this.getFrameId()} to ${rootState.getNodeId()}`)
-    //         this.root = rootState;
-    //         this.setChildrenRecursive(rootState, rootNode.children);
-    //         this.markRefreshingRoot(false);
-    //     }
-    // };
     getExecutionContext() {
         return this.executionContext;
     }
@@ -164,10 +130,10 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
     recordResponse(response) {
         this.responses.set(response.url, response);
     }
-    requestWillBeSent(resource) {
-        const { url } = resource;
-        this.requests.set(url, resource);
-        log.debug('request will be sent ' + url);
+    requestWillBeSent(event) {
+        const { url } = event;
+        this.requests.set(url, event);
+        log.debug(`Request will be sent ${url}`);
     }
     responseReceived(event) {
         return this.recordResponse(event.response);
@@ -187,15 +153,12 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
         });
     }
     requestResource(url) {
-        let promise;
-        if (this.resourcePromises.has(url)) {
-            promise = this.resourcePromises.get(url);
-        }
-        else {
-            promise = this.doGetResource(url);
-            this.resourcePromises.set(url, promise);
-        }
-        return promise.then((responseBody) => {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.resourcePromises.has(url)) {
+                const resource = this.doGetResource(url);
+                this.resourcePromises.set(url, resource);
+            }
+            const responseBody = yield this.resourcePromises.get(url);
             const resourceInfo = this.responses.get(url);
             const mimeType = resourceInfo ? resourceInfo.mimeType : mime.getType(url);
             let content;
@@ -219,7 +182,7 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
                 url: url
             }, function (err, val) {
                 if (err) {
-                    reject(new Error('Could not find resource "' + url + '"'));
+                    reject(new Error(`Could not find resource '${url}'`));
                 }
                 else {
                     resolve(val);
