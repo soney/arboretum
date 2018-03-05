@@ -1,6 +1,7 @@
 import {join} from 'path';
 import * as fs from 'fs';
 import * as _ from 'underscore';
+import {CanvasImage} from '../../utils/state_interfaces';
 
 const SIMULATE_MOUSE_EVENT:Promise<string> = readFile(join(__dirname, 'injectable_js', 'simulate_mouse_event.js'));
 const GET_ELEMENT_VALUE:Promise<string> = readFile(join(__dirname, 'injectable_js', 'get_element_value.js'));
@@ -50,7 +51,7 @@ function callFNOnElement(chrome:CRI.Chrome, fn_promise:Promise<string>, nodeId:C
 function releaseObject(chrome:CRI.Chrome, objectId:CRI.Runtime.RemoteObjectID):CRI.ReleaseObjectResult {
 	return new Promise<CRI.ReleaseObjectResult>(function(resolve, reject) {
 		chrome.Runtime.releaseObject({
-			objectId: objectId
+			objectId
 		}, function(err, val) {
 			if(err) { reject(val);  }
 			else 	{ resolve(val); }
@@ -179,32 +180,28 @@ export function getUniqueSelector(chrome:CRI.Chrome, nodeId:CRI.NodeID):Promise<
 		return rv.result.value;
 	});
 };
-export function getCanvasImage(chrome:CRI.Chrome, nodeId:CRI.NodeID):Promise<any> {
-	return callFNOnElement(chrome, GET_CANVAS_IMAGE, nodeId).then((rv) => {
-		const {result} = rv;
+export async function getCanvasImage(chrome:CRI.Chrome, nodeId:CRI.NodeID):Promise<{data:Array<number>, width:number, height:number}> {
+	try {
+		const {result} = await callFNOnElement(chrome, GET_CANVAS_IMAGE, nodeId);
 		const {objectId} = result;
 
-		return Promise.all([
-			getObjectProperty(chrome, objectId, 'data'),
-			getObjectProperty(chrome, objectId, 'width'),
-			getObjectProperty(chrome, objectId, 'height'),
-			objectId
-		]);
-	}).then((property_values) => {
-		var dataObjectId = property_values[0].result.objectId;
-		return Promise.all([typedArrayToArray(chrome, dataObjectId), property_values[1], property_values[2], property_values[3], dataObjectId])
-	}).then((property_values) => {
-		return Promise.all([{
-				data: property_values[0].result.value,
-				width: property_values[1].result.value,
-				height: property_values[2].result.value
-			},
-			releaseObject(chrome, property_values[3]),
-			releaseObject(chrome, property_values[4])
-		]);
-	}).then((values) => {
-		return values[0];
-	}).catch((err) => {
+		const propertyValues:Array<CRI.CallFunctionOnResult> = await Promise.all(['data', 'width', 'height'].map((p) => getObjectProperty(chrome, objectId, p)))
+		const [dataResult, widthResult, heightResult] = propertyValues;
+		const dataResultArray:CRI.CallFunctionOnResult = await typedArrayToArray(chrome, dataResult.result.objectId);
+
+		const data:Array<number> = dataResultArray.result.value;
+		const width:number = widthResult.result.value;
+		const height:number = heightResult.result.value;
+
+		await Promise.all([dataResult, dataResultArray, widthResult, heightResult].map(async (x) => {
+			if (x.result.objectId) {
+				await releaseObject(chrome, x.result.objectId);
+			}
+		}));
+
+		return {data, width, height};
+	} catch(err) {
 		console.error(err);
-	});
+		console.error(err.stack);
+	}
 };

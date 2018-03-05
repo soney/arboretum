@@ -31047,6 +31047,7 @@ json.checkList = function(elem) {
 
 json.checkObj = function(elem) {
   if (!isObject(elem)) {
+    debugger;
     throw new Error("Referenced element not an object (it was " + JSON.stringify(elem) + ")");
   }
 };
@@ -31094,6 +31095,7 @@ json.apply = function(snapshot, op) {
 
       parent = elem;
       parentKey = key;
+      if(!elem) { debugger; }
       elem = elem[key];
       key = p;
 
@@ -33725,6 +33727,13 @@ class ClientTab extends React.Component {
             else if (property === 'inlineStyle') {
                 node.setInlineStyle(oi);
             }
+            else if (property === 'inputValue') {
+                node.setInputValue(oi);
+            }
+            else if (property === 'canvasData') {
+                const imageData = new ImageData(new Uint8ClampedArray(oi.data), oi.width, oi.height);
+                node.setCanvasValue(imageData);
+            }
             else if (property === 'children') {
                 if (path.length === 0) {
                     const children = oi.map((c) => ClientDOMNode_1.createClientNode(c));
@@ -33781,6 +33790,12 @@ class ClientTab extends React.Component {
                 return { node, property: item, path: p.slice(i + 1) };
             }
             else if (item === 'inlineStyle') {
+                return { node, property: item, path: p.slice(i + 1) };
+            }
+            else if (item === 'inputValue') {
+                return { node, property: item, path: p.slice(i + 1) };
+            }
+            else if (item === 'canvasData') {
                 return { node, property: item, path: p.slice(i + 1) };
             }
             else if (item === 'shadowRoots') {
@@ -33979,6 +33994,17 @@ class ClientElementNode extends ClientNode {
     ;
     removeAttribute(name) {
         this.element.removeAttribute(name);
+    }
+    ;
+    setInputValue(value) {
+        const inputElement = this.element;
+        inputElement.value = value;
+    }
+    ;
+    setCanvasValue(imageData) {
+        const canvasElement = this.element;
+        const ctx = canvasElement.getContext('2d');
+        ctx.putImageData(imageData, 0, 0);
     }
     ;
     getNodeContentDocument() { return this.sdbNode.contentDocument; }

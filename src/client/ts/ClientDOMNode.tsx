@@ -1,4 +1,4 @@
-import {ShareDBDOMNode, FrameDoc, TabDoc, BrowserDoc} from '../../utils/state_interfaces';
+import {ShareDBDOMNode, FrameDoc, TabDoc, BrowserDoc, CanvasImage} from '../../utils/state_interfaces';
 import {NodeCode} from '../../utils/NodeCode';
 
 export function createClientNode(sdbNode:ShareDBDOMNode) {
@@ -124,6 +124,15 @@ export class ClientElementNode extends ClientNode {
     };
     public removeAttribute(name:string):void {
         this.element.removeAttribute(name);
+    };
+    public setInputValue(value:string):void {
+        const inputElement = this.element as HTMLInputElement | HTMLTextAreaElement;
+        inputElement.value = value;
+    };
+    public setCanvasValue(imageData:ImageData) {
+        const canvasElement = this.element as HTMLCanvasElement
+        const ctx:CanvasRenderingContext2D = canvasElement.getContext('2d');
+        ctx.putImageData(imageData, 0, 0);
     };
     public getNodeContentDocument():ShareDBDOMNode { return this.sdbNode.contentDocument; };
     public getElement():HTMLElement|SVGElement {

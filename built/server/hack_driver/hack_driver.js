@@ -1,4 +1,12 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const path_1 = require("path");
 const fs = require("fs");
@@ -47,7 +55,7 @@ function callFNOnElement(chrome, fn_promise, nodeId, additional_args) {
 function releaseObject(chrome, objectId) {
     return new Promise(function (resolve, reject) {
         chrome.Runtime.releaseObject({
-            objectId: objectId
+            objectId
         }, function (err, val) {
             if (err) {
                 reject(val);
@@ -192,31 +200,27 @@ function getUniqueSelector(chrome, nodeId) {
 exports.getUniqueSelector = getUniqueSelector;
 ;
 function getCanvasImage(chrome, nodeId) {
-    return callFNOnElement(chrome, GET_CANVAS_IMAGE, nodeId).then((rv) => {
-        const { result } = rv;
-        const { objectId } = result;
-        return Promise.all([
-            getObjectProperty(chrome, objectId, 'data'),
-            getObjectProperty(chrome, objectId, 'width'),
-            getObjectProperty(chrome, objectId, 'height'),
-            objectId
-        ]);
-    }).then((property_values) => {
-        var dataObjectId = property_values[0].result.objectId;
-        return Promise.all([typedArrayToArray(chrome, dataObjectId), property_values[1], property_values[2], property_values[3], dataObjectId]);
-    }).then((property_values) => {
-        return Promise.all([{
-                data: property_values[0].result.value,
-                width: property_values[1].result.value,
-                height: property_values[2].result.value
-            },
-            releaseObject(chrome, property_values[3]),
-            releaseObject(chrome, property_values[4])
-        ]);
-    }).then((values) => {
-        return values[0];
-    }).catch((err) => {
-        console.error(err);
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const { result } = yield callFNOnElement(chrome, GET_CANVAS_IMAGE, nodeId);
+            const { objectId } = result;
+            const propertyValues = yield Promise.all(['data', 'width', 'height'].map((p) => getObjectProperty(chrome, objectId, p)));
+            const [dataResult, widthResult, heightResult] = propertyValues;
+            const dataResultArray = yield typedArrayToArray(chrome, dataResult.result.objectId);
+            const data = dataResultArray.result.value;
+            const width = widthResult.result.value;
+            const height = heightResult.result.value;
+            yield Promise.all([dataResult, dataResultArray, widthResult, heightResult].map((x) => __awaiter(this, void 0, void 0, function* () {
+                if (x.result.objectId) {
+                    yield releaseObject(chrome, x.result.objectId);
+                }
+            })));
+            return { data, width, height };
+        }
+        catch (err) {
+            console.error(err);
+            console.error(err.stack);
+        }
     });
 }
 exports.getCanvasImage = getCanvasImage;

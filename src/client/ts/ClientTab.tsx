@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import {ShareDBDOMNode, FrameDoc, TabDoc, BrowserDoc} from '../../utils/state_interfaces';
+import {ShareDBDOMNode, FrameDoc, TabDoc, BrowserDoc, CanvasImage} from '../../utils/state_interfaces';
 import * as ShareDBClient from 'sharedb/lib/client';
 import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
 import {createClientNode, ClientNode, ClientElementNode} from './ClientDOMNode';
@@ -86,6 +86,11 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
                 }
             } else if(property === 'inlineStyle') {
                 node.setInlineStyle(oi);
+            } else if(property === 'inputValue') {
+                (node as ClientElementNode).setInputValue(oi as string);
+            } else if(property === 'canvasData') {
+                const imageData:ImageData = new ImageData(new Uint8ClampedArray(oi.data), oi.width, oi.height);
+                (node as ClientElementNode).setCanvasValue(imageData);
             } else if(property === 'children') {
                 if(path.length === 0) { // set all children
                     const children = oi.map((c) => createClientNode(c))
@@ -131,6 +136,10 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
             } else if(item === 'attributes') {
                 return {node, property:item, path:p.slice(i+1)};
             } else if(item === 'inlineStyle') {
+                return {node, property:item, path:p.slice(i+1)};
+            } else if(item === 'inputValue') {
+                return {node, property:item, path:p.slice(i+1)};
+            } else if(item === 'canvasData') {
                 return {node, property:item, path:p.slice(i+1)};
             } else if(item === 'shadowRoots') {
                 throw new Error('ShadowRoots not expected to be included');

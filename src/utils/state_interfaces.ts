@@ -1,3 +1,5 @@
+export type CanvasImage = {data:Array<number>, width:number, height:number};
+
 export interface BrowserDoc {
     tabs:  { [key:string]: CRI.TabInfo },
     selectedTab: CRI.TabID
@@ -16,6 +18,7 @@ export interface ShareDBDOMNode {
     inlineStyle:string,
     inputValue:string,
     isSVG:boolean
+    canvasData:ImageData
     // shadowRootType:CRI.ShadowRootType,
     // shadowRoots:Array<ShareDBDOMNode>,
 };
