@@ -328,9 +328,10 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
         return this.setNodeValue(characterData);
     };
     private async setNodeValue(value: string): Promise<void> {
+        const previousNodeValue = this.node.nodeValue;
         this.node.nodeValue = value;
 
-        if(this.isAttachedToShareDBDoc()) {
+        if(previousNodeValue !== this.node.nodeValue && this.isAttachedToShareDBDoc()) {
             const p = this.p('nodeValue');
             const doc = this.getShareDBDoc();
             await doc.submitObjectReplaceOp(p, this.processNodeValue(value));

@@ -389,8 +389,9 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
     ;
     setNodeValue(value) {
         return __awaiter(this, void 0, void 0, function* () {
+            const previousNodeValue = this.node.nodeValue;
             this.node.nodeValue = value;
-            if (this.isAttachedToShareDBDoc()) {
+            if (previousNodeValue !== this.node.nodeValue && this.isAttachedToShareDBDoc()) {
                 const p = this.p('nodeValue');
                 const doc = this.getShareDBDoc();
                 yield doc.submitObjectReplaceOp(p, this.processNodeValue(value));

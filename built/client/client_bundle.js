@@ -31047,6 +31047,7 @@ json.checkList = function(elem) {
 
 json.checkObj = function(elem) {
   if (!isObject(elem)) {
+    debugger;
     throw new Error("Referenced element not an object (it was " + JSON.stringify(elem) + ")");
   }
 };
@@ -31094,6 +31095,7 @@ json.apply = function(snapshot, op) {
 
       parent = elem;
       parentKey = key;
+      if(!elem) { debugger; }
       elem = elem[key];
       key = p;
 
@@ -33660,13 +33662,17 @@ class ClientTab extends React.Component {
                     console.log(this.props.frameID);
                 }
                 else {
-                    this.setRoot(this.tabDoc.getData());
+                    const data = this.tabDoc.getData();
+                    this.setRoot(data.root);
                 }
             }
         };
         this.state = {
             tabID: this.props.tabID,
             frameID: this.props.frameID
+        };
+        window['printTab'] = () => {
+            console.log(this.tabDoc.getData());
         };
         // this.setTabID(this.props.tabID);
     }
@@ -33690,21 +33696,21 @@ class ClientTab extends React.Component {
         });
     }
     ;
-    setRoot(data) {
+    setRoot(root) {
         if (this.rootElement) {
             this.rootElement.remove();
             this.rootElement.destroy();
             this.rootElement = null;
         }
-        const { root } = data;
         this.rootElement = ClientDOMNode_1.createClientNode(root);
         const node = ReactDOM.findDOMNode(this);
         node.appendChild(this.rootElement.getElement());
     }
     ;
     handleOp(op) {
-        console.log(op);
         const { node, property, path } = this.traverse(op);
+        console.log(op);
+        console.log(node, property, path);
         if (node && property) {
             const { oi, od } = op;
             if (property === 'characterData') {
@@ -33714,7 +33720,7 @@ class ClientTab extends React.Component {
                 node.setNodeValue(oi);
             }
             else if (property === 'root') {
-                this.setRoot(this.tabDoc.getData());
+                this.setRoot(oi);
             }
             else if (property === 'attributes') {
                 const { li, ld } = op;

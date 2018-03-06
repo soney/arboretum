@@ -24,6 +24,9 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
             tabID:this.props.tabID,
             frameID:this.props.frameID
         };
+        window['printTab'] = () => {
+            console.log(this.tabDoc.getData());
+        };
         // this.setTabID(this.props.tabID);
     };
     private getTabID():CRI.TabID { return this.props.tabID; };
@@ -52,25 +55,26 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
             if(this.props.frameID) {
                 console.log(this.props.frameID);
             } else {
-                this.setRoot(this.tabDoc.getData());
+                const data = this.tabDoc.getData();
+                this.setRoot(data.root);
             }
         }
     };
-    private setRoot(data:TabDoc):void {
+    private setRoot(root:ShareDBDOMNode):void {
         if(this.rootElement) {
             this.rootElement.remove();
             this.rootElement.destroy();
             this.rootElement = null;
         }
-        const {root} = data;
 
         this.rootElement = createClientNode(root);
         const node = ReactDOM.findDOMNode(this);
         node.appendChild(this.rootElement.getElement());
     };
     private handleOp(op:ShareDBClient.Op):void {
-        console.log(op);
         const {node, property, path} = this.traverse(op);
+        console.log(op);
+        console.log(node, property, path);
         if(node && property) {
             const {oi, od} = op;
             if(property === 'characterData') {
@@ -78,7 +82,7 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
             } else if(property === 'nodeValue') {
                 node.setNodeValue(oi);
             } else if(property === 'root') {
-                this.setRoot(this.tabDoc.getData());
+                this.setRoot(oi);
             } else if(property === 'attributes') {
                 const {li, ld} = op;
                 if(path.length === 1) { // insert a new attribute
