@@ -96,7 +96,9 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             if (parent) {
                 try {
                     const { nodes } = event;
+                    // debugger;
                     log.debug(`Set child nodes ${parentId} -> [${nodes.map((node) => node.nodeId).join(', ')}]`);
+                    debugger;
                     parent.setChildrenRecursive(nodes);
                 }
                 catch (err) {

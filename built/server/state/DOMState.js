@@ -85,9 +85,10 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
     ;
     onAttachedToShareDBDoc() {
         return __awaiter(this, void 0, void 0, function* () {
-            // log.debug(`DOM State ${this.getNodeId()} added to ShareDB doc`);
+            // if(this.getNodeId() === 21) { debugger; }
+            log.debug(`DOM State ${this.getNodeId()} added to ShareDB doc`);
             yield this.updateNodeValue();
-            this.getChildren().map((child) => {
+            this.getChildren().forEach((child) => {
                 if (DOMState.shouldIncludeChild(child)) {
                     child.markAttachedToShareDBDoc();
                 }
@@ -439,6 +440,7 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
                         const sdbChild = sdbChildren[i];
                         if (sdbChild.nodeId === nodeId) {
                             yield doc.submitListDeleteOp(this.p('children', i));
+                            child.markDetachedFromShareDBDoc();
                             break;
                         }
                     }
@@ -478,6 +480,7 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
                 const filteredChildren = newChildren.filter((c) => DOMState.shouldIncludeChild(c));
                 const sdbChildren = filteredChildren.map((c) => c.createShareDBNode());
                 yield doc.submitObjectReplaceOp(this.p('children'), sdbChildren);
+                filteredChildren.forEach((c) => c.markAttachedToShareDBDoc());
             }
         });
     }
@@ -715,6 +718,9 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
     }
     ;
     setChildrenRecursive(children = [], shadowRoots = []) {
+        if (this.getNodeId() === 21) {
+            // debugger;
+        }
         const childDOMStates = children.map((child) => {
             const { contentDocument, frameId } = child;
             const contentDocState = contentDocument ? this.tab.getOrCreateDOMState(contentDocument) : null;

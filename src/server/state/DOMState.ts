@@ -72,9 +72,10 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
     public getShadowRoots():Array<DOMState> { return this.getSubNodes('shadowRoots'); };
     public getPseudoElements():Array<DOMState> { return this.getSubNodes('pseudoElements'); };
     protected async onAttachedToShareDBDoc():Promise<void> {
-        // log.debug(`DOM State ${this.getNodeId()} added to ShareDB doc`);
+        // if(this.getNodeId() === 21) { debugger; }
+        log.debug(`DOM State ${this.getNodeId()} added to ShareDB doc`);
         await this.updateNodeValue();
-        this.getChildren().map((child:DOMState) => {
+        this.getChildren().forEach((child:DOMState) => {
             if(DOMState.shouldIncludeChild(child)) {
                 child.markAttachedToShareDBDoc();
             }
@@ -355,7 +356,6 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
             const fcIndex:number = filteredChildren.indexOf(childDomState);
             const doc = this.getShareDBDoc();
             await doc.submitListInsertOp(this.p('children', fcIndex), childDomState.createShareDBNode());
-
             childDomState.markAttachedToShareDBDoc();
         }
     };
@@ -374,6 +374,7 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
                     const sdbChild = sdbChildren[i];
                     if(sdbChild.nodeId === nodeId) {
                         await doc.submitListDeleteOp(this.p('children', i));
+                        child.markDetachedFromShareDBDoc();
                         break;
                     }
                 }
@@ -410,6 +411,7 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
             const filteredChildren:Array<DOMState> = newChildren.filter((c) => DOMState.shouldIncludeChild(c));
             const sdbChildren:Array<ShareDBDOMNode> = filteredChildren.map((c) => c.createShareDBNode());
             await doc.submitObjectReplaceOp(this.p('children'), sdbChildren);
+            filteredChildren.forEach((c) => c.markAttachedToShareDBDoc());
         }
     };
     public async setShadowRoots(newChildren: Array<DOMState>):Promise<void> {
@@ -613,6 +615,9 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
         });
     };
     public setChildrenRecursive(children: Array<CRI.Node>=[], shadowRoots:Array<CRI.Node>=[]):void {
+        if(this.getNodeId() === 21) {
+            // debugger;
+        }
         const childDOMStates:Array<DOMState> = children.map((child: CRI.Node) => {
             const {contentDocument, frameId} = child;
             const contentDocState = contentDocument ? this.tab.getOrCreateDOMState(contentDocument) : null;

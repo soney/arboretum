@@ -13,6 +13,11 @@ export abstract class ShareDBSharedState<E> extends TypedEventEmitter {
 
     protected isAttachedToShareDBDoc():boolean { return this.attachedToShareDBDoc; };
 
+    public async markDetachedFromShareDBDoc():Promise<void> {
+        if(this.isAttachedToShareDBDoc()) {
+            this.attachedToShareDBDoc = false;
+        }
+    };
     public async markAttachedToShareDBDoc():Promise<void> {
         if(!this.isAttachedToShareDBDoc()) {
             this.attachedToShareDBDoc = true;

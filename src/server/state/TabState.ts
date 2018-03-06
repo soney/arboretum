@@ -7,7 +7,7 @@ import { EventEmitter } from 'events';
 import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
 import { parse, format } from 'url';
 import * as ShareDB from 'sharedb';
-import {TabDoc, FrameDoc } from '../../utils/state_interfaces';
+import {TabDoc } from '../../utils/state_interfaces';
 import {ShareDBSharedState} from '../../utils/ShareDBSharedState';
 
 const log = getColoredLogger('yellow');
@@ -416,7 +416,9 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         if (parent) {
             try {
                 const { nodes } = event;
+                // debugger;
                 log.debug(`Set child nodes ${parentId} -> [${nodes.map((node) => node.nodeId).join(', ')}]`);
+                debugger;
                 parent.setChildrenRecursive(nodes);
             } catch(err) {
                 console.error(err);

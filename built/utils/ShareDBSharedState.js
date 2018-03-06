@@ -17,6 +17,14 @@ class ShareDBSharedState extends TypedEventEmitter_1.TypedEventEmitter {
     ;
     isAttachedToShareDBDoc() { return this.attachedToShareDBDoc; }
     ;
+    markDetachedFromShareDBDoc() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.isAttachedToShareDBDoc()) {
+                this.attachedToShareDBDoc = false;
+            }
+        });
+    }
+    ;
     markAttachedToShareDBDoc() {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.isAttachedToShareDBDoc()) {
