@@ -20,7 +20,7 @@ interface PendingFrameEvent {
 export class TabState extends ShareDBSharedState<TabDoc> {
     private tabID: CRI.TabID;
     private frames: Map<CRI.FrameID, FrameState> = new Map<CRI.FrameID, FrameState>();
-    private pendingFrameEvents: Map<CRI.FrameID, Array<PendingFrameEvent>> = new Map<CRI.FrameID, Array<PendingFrameEvent>>();
+    // private pendingFrameEvents: Map<CRI.FrameID, Array<PendingFrameEvent>> = new Map<CRI.FrameID, Array<PendingFrameEvent>>();
     private chrome: CRI.Chrome;
     private chromePromise: Promise<CRI.Chrome>;
     private domRoot:DOMState;
@@ -144,20 +144,14 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         }
     };
     private async refreshRoot(): Promise<CRI.Node> {
-        return this.getDocument(-1, true).then((root: CRI.Node) => {
-            this.setDocument(root);
-            return root;
-        });
+        const root:CRI.Node = await this.getDocument(-1, true);
+        this.setDocument(root);
+        return root;
     };
     private createFrameState(info: CRI.Frame, parentFrame: FrameState = null, childFrames: Array<CRI.FrameTree> = [], resources: Array<CRI.FrameResource> = []): FrameState {
         const { id, parentId } = info;
         const frameState: FrameState = new FrameState(this.chrome, info, this, parentFrame, resources);
         this.frames.set(id, frameState);
-        // if (!parentId) {
-            // this.setRootFrame(frameState);
-            // this.refreshRoot();
-        // }
-        this.updateFrameOnEvents(frameState);
         childFrames.forEach((childFrame) => {
             const { frame, childFrames, resources } = childFrame;
             this.createFrameState(frame, frameState, childFrames, resources);
@@ -171,11 +165,6 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         this.chrome.Page.frameDetached(this.onFrameDetached);
         this.chrome.Page.frameNavigated(this.onFrameNavigated);
     }
-    private async addNetworkListeners():Promise<void> {
-        await this.chrome.Network.enable();
-        this.chrome.Network.requestWillBeSent(this.requestWillBeSent);
-        this.chrome.Network.responseReceived(this.responseReceived);
-    };
     private async addExecutionContextListeners():Promise<void> {
         await this.chrome.Runtime.enable();
         this.chrome.Runtime.executionContextCreated(this.executionContextCreated);
@@ -204,10 +193,6 @@ export class TabState extends ShareDBSharedState<TabDoc> {
             throw (err);
         });
     };
-    public requestResource(url: string, frameId: CRI.FrameID): Promise<any> {
-        const frame = this.getFrame(frameId);
-        return frame.requestResource(url);
-    };
     public getTitle(): string { return this.info.title; };
     public getURL(): string { return this.info.url; };
     private setTitle(title: string): void {
@@ -234,28 +219,6 @@ export class TabState extends ShareDBSharedState<TabDoc> {
             throw(err);
         });
     };
-    // private setRootFrame(frame: FrameState):void {
-    //     if (this.rootFrame) {
-    //         this.frames.forEach((frame: FrameState, id: CRI.FrameID) => {
-    //             if (id !== frame.getFrameId()) {
-    //                 this.destroyFrame(id);
-    //             }
-    //         });
-    //     }
-    //     log.info(`Set main frame to ${frame.getFrameId()}`);
-    //     this.rootFrame = frame;
-    //     frame.markSetMainFrameExecuted(true);
-    //     this.emit('mainFrameChanged');
-    //     /*
-    //     return this.getDocument().then((root: CRI.Node) => {
-    //         this.rootFrame.setRoot(root);
-    //         this.emit('mainFrameChanged');
-    //     }).catch((err) => {
-    //         log.error(err);
-    //         throw (err);
-    //     });
-    //     */
-    // }
     public async navigate(url: string): Promise<CRI.FrameID> {
         const parsedURL = parse(url);
         if (!parsedURL.protocol) { parsedURL.protocol = 'http'; }
@@ -271,23 +234,6 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         });
     }
 
-    private updateFrameOnEvents(frameState: FrameState): void {
-        const frameId = frameState.getFrameId();
-        const pendingFrameEvents = this.pendingFrameEvents.get(frameId);
-
-        if (pendingFrameEvents) {
-            // const resourceTracker = frameState.resourceTracker;
-            pendingFrameEvents.forEach((eventInfo) => {
-                const { type, event } = eventInfo;
-                if (type === 'responseReceived') {
-                    frameState.responseReceived(event);
-                } else if (type === 'requestWillBeSent') {
-                    frameState.requestWillBeSent(event);
-                }
-            });
-            this.pendingFrameEvents.delete(frameId);
-        }
-    };
     private onFrameAttached = (frameInfo: CRI.FrameAttachedEvent): void => {
         const { frameId, parentFrameId } = frameInfo;
         this.createFrameState({
@@ -311,31 +257,6 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         const { frameId } = frameInfo;
         this.destroyFrame(frameId);
     };
-    private requestWillBeSent = (event: CRI.RequestWillBeSentEvent): void => {
-        const { frameId } = event;
-        if (this.hasFrame(frameId)) {
-            const frame = this.getFrame(frameId);
-            frame.requestWillBeSent(event);
-        } else {
-            this.addPendingFrameEvent({
-                frameId: frameId,
-                event: event,
-                type: 'requestWillBeSent'
-            });
-        }
-    }
-    private responseReceived = (event: CRI.ResponseReceivedEvent): void => {
-        const { frameId } = event;
-        if (this.hasFrame(frameId)) {
-            this.getFrame(frameId).responseReceived(event);
-        } else {
-            this.addPendingFrameEvent({
-                frameId: frameId,
-                event: event,
-                type: 'responseReceived'
-            });
-        }
-    }
     private executionContextCreated = (event: CRI.ExecutionContextCreatedEvent): void => {
         const { context } = event;
         const { auxData } = context;
@@ -347,14 +268,14 @@ export class TabState extends ShareDBSharedState<TabDoc> {
             log.error(`Could not find frame ${frameId} for execution context`);
         }
     };
-    private addPendingFrameEvent(eventInfo: PendingFrameEvent): void {
-        const { frameId } = eventInfo;
-        if (this.pendingFrameEvents.has(frameId)) {
-            this.pendingFrameEvents.get(frameId).push(eventInfo);
-        } else {
-            this.pendingFrameEvents.set(frameId, [eventInfo])
-        }
-    }
+    // private addPendingFrameEvent(eventInfo: PendingFrameEvent): void {
+    //     const { frameId } = eventInfo;
+    //     if (this.pendingFrameEvents.has(frameId)) {
+    //         this.pendingFrameEvents.get(frameId).push(eventInfo);
+    //     } else {
+    //         this.pendingFrameEvents.set(frameId, [eventInfo])
+    //     }
+    // }
     public getFrame(id: CRI.FrameID): FrameState { return this.frames.get(id); }
     private hasFrame(id: CRI.FrameID): boolean { return this.frames.has(id); }
     private async getFrameTree(): Promise<CRI.FrameTree> {
@@ -462,6 +383,11 @@ export class TabState extends ShareDBSharedState<TabDoc> {
     };
     private doHandleDocumentUpdated = async (event: CRI.DocumentUpdatedEvent):Promise<void> => {
         log.debug(`Document Updated`);
+        // if(this.domRoot) {
+        //     this.domRoot.destroy();
+        //     this.domRoot = null;
+        // }
+        await this.refreshRoot();
     };
     private doHandleCharacterDataModified = async (event: CRI.CharacterDataModifiedEvent):Promise<void> => {
         const { nodeId } = event;

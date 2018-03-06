@@ -39,6 +39,12 @@ export abstract class ClientNode {
     public setCharacterData(characterData:string):void {}
     public setNodeValue(value:string):void {}
     public abstract getElement():HTMLElement|SVGElement|Text|Comment;
+    public remove():void { }
+    public destroy():void {
+        this.getChildren().forEach((c) => {
+            c.destroy();
+        });
+    };
 };
 
 export class ClientDocumentNode extends ClientNode {
@@ -54,6 +60,9 @@ export class ClientDocumentNode extends ClientNode {
     };
     public getElement():HTMLElement|SVGElement|Text|Comment {
         return this.getChild().getElement();
+    };
+    public remove():void {
+
     };
 };
 export class ClientDocumentTypeNode extends ClientNode {
@@ -141,6 +150,16 @@ export class ClientElementNode extends ClientNode {
     public setNodeValue(value:string):void {
         this.element['value'] = value;
     };
+    public remove():void {
+        super.remove();
+        this.getElement().remove();
+    };
+    public destroy():void {
+        super.destroy();
+        if(this.contentDocument) {
+            this.contentDocument.destroy();
+        }
+    };
 };
 export class ClientTextNode extends ClientNode {
     private element:Text;
@@ -154,7 +173,11 @@ export class ClientTextNode extends ClientNode {
     };
     public setNodeValue(value:string):void {
         this.element.replaceData(0, this.element.length, value);
-    }
+    };
+    public remove():void {
+        super.remove();
+        this.getElement().remove();
+    };
 };
 export class ClientCommentNode extends ClientNode {
     private element:Comment;
@@ -165,6 +188,10 @@ export class ClientCommentNode extends ClientNode {
     };
     public getElement():Comment {
         return this.element;
+    };
+    public remove():void {
+        super.remove();
+        this.getElement().remove();
     };
 };
 function iframeLoaded(element:HTMLIFrameElement):Promise<HTMLIFrameElement> {

@@ -23,7 +23,6 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
         this.info = info;
         this.sdb = sdb;
         this.frames = new Map();
-        this.pendingFrameEvents = new Map();
         this.nodeMap = new Map();
         this.onFrameAttached = (frameInfo) => {
             const { frameId, parentFrameId } = frameInfo;
@@ -48,33 +47,6 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             const { frameId } = frameInfo;
             this.destroyFrame(frameId);
         };
-        this.requestWillBeSent = (event) => {
-            const { frameId } = event;
-            if (this.hasFrame(frameId)) {
-                const frame = this.getFrame(frameId);
-                frame.requestWillBeSent(event);
-            }
-            else {
-                this.addPendingFrameEvent({
-                    frameId: frameId,
-                    event: event,
-                    type: 'requestWillBeSent'
-                });
-            }
-        };
-        this.responseReceived = (event) => {
-            const { frameId } = event;
-            if (this.hasFrame(frameId)) {
-                this.getFrame(frameId).responseReceived(event);
-            }
-            else {
-                this.addPendingFrameEvent({
-                    frameId: frameId,
-                    event: event,
-                    type: 'responseReceived'
-                });
-            }
-        };
         this.executionContextCreated = (event) => {
             const { context } = event;
             const { auxData } = context;
@@ -89,6 +61,11 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
         };
         this.doHandleDocumentUpdated = (event) => __awaiter(this, void 0, void 0, function* () {
             log.debug(`Document Updated`);
+            // if(this.domRoot) {
+            //     this.domRoot.destroy();
+            //     this.domRoot = null;
+            // }
+            yield this.refreshRoot();
         });
         this.doHandleCharacterDataModified = (event) => __awaiter(this, void 0, void 0, function* () {
             const { nodeId } = event;
@@ -422,10 +399,9 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
     ;
     refreshRoot() {
         return __awaiter(this, void 0, void 0, function* () {
-            return this.getDocument(-1, true).then((root) => {
-                this.setDocument(root);
-                return root;
-            });
+            const root = yield this.getDocument(-1, true);
+            this.setDocument(root);
+            return root;
         });
     }
     ;
@@ -433,11 +409,6 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
         const { id, parentId } = info;
         const frameState = new FrameState_1.FrameState(this.chrome, info, this, parentFrame, resources);
         this.frames.set(id, frameState);
-        // if (!parentId) {
-        // this.setRootFrame(frameState);
-        // this.refreshRoot();
-        // }
-        this.updateFrameOnEvents(frameState);
         childFrames.forEach((childFrame) => {
             const { frame, childFrames, resources } = childFrame;
             this.createFrameState(frame, frameState, childFrames, resources);
@@ -453,14 +424,6 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             this.chrome.Page.frameNavigated(this.onFrameNavigated);
         });
     }
-    addNetworkListeners() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.chrome.Network.enable();
-            this.chrome.Network.requestWillBeSent(this.requestWillBeSent);
-            this.chrome.Network.responseReceived(this.responseReceived);
-        });
-    }
-    ;
     addExecutionContextListeners() {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.chrome.Runtime.enable();
@@ -502,11 +465,6 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
         });
     }
     ;
-    requestResource(url, frameId) {
-        const frame = this.getFrame(frameId);
-        return frame.requestResource(url);
-    }
-    ;
     getTitle() { return this.info.title; }
     ;
     getURL() { return this.info.url; }
@@ -545,28 +503,6 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
         });
     }
     ;
-    // private setRootFrame(frame: FrameState):void {
-    //     if (this.rootFrame) {
-    //         this.frames.forEach((frame: FrameState, id: CRI.FrameID) => {
-    //             if (id !== frame.getFrameId()) {
-    //                 this.destroyFrame(id);
-    //             }
-    //         });
-    //     }
-    //     log.info(`Set main frame to ${frame.getFrameId()}`);
-    //     this.rootFrame = frame;
-    //     frame.markSetMainFrameExecuted(true);
-    //     this.emit('mainFrameChanged');
-    //     /*
-    //     return this.getDocument().then((root: CRI.Node) => {
-    //         this.rootFrame.setRoot(root);
-    //         this.emit('mainFrameChanged');
-    //     }).catch((err) => {
-    //         log.error(err);
-    //         throw (err);
-    //     });
-    //     */
-    // }
     navigate(url) {
         return __awaiter(this, void 0, void 0, function* () {
             const parsedURL = url_1.parse(url);
@@ -589,33 +525,14 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             });
         });
     }
-    updateFrameOnEvents(frameState) {
-        const frameId = frameState.getFrameId();
-        const pendingFrameEvents = this.pendingFrameEvents.get(frameId);
-        if (pendingFrameEvents) {
-            // const resourceTracker = frameState.resourceTracker;
-            pendingFrameEvents.forEach((eventInfo) => {
-                const { type, event } = eventInfo;
-                if (type === 'responseReceived') {
-                    frameState.responseReceived(event);
-                }
-                else if (type === 'requestWillBeSent') {
-                    frameState.requestWillBeSent(event);
-                }
-            });
-            this.pendingFrameEvents.delete(frameId);
-        }
-    }
-    ;
-    addPendingFrameEvent(eventInfo) {
-        const { frameId } = eventInfo;
-        if (this.pendingFrameEvents.has(frameId)) {
-            this.pendingFrameEvents.get(frameId).push(eventInfo);
-        }
-        else {
-            this.pendingFrameEvents.set(frameId, [eventInfo]);
-        }
-    }
+    // private addPendingFrameEvent(eventInfo: PendingFrameEvent): void {
+    //     const { frameId } = eventInfo;
+    //     if (this.pendingFrameEvents.has(frameId)) {
+    //         this.pendingFrameEvents.get(frameId).push(eventInfo);
+    //     } else {
+    //         this.pendingFrameEvents.set(frameId, [eventInfo])
+    //     }
+    // }
     getFrame(id) { return this.frames.get(id); }
     hasFrame(id) { return this.frames.has(id); }
     getFrameTree() {

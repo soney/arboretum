@@ -52,14 +52,21 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
             if(this.props.frameID) {
                 console.log(this.props.frameID);
             } else {
-                const data:TabDoc = this.tabDoc.getData();
-                const {root} = data;
-
-                this.rootElement = createClientNode(root);
-                const node = ReactDOM.findDOMNode(this);
-                node.appendChild(this.rootElement.getElement());
+                this.setRoot(this.tabDoc.getData());
             }
         }
+    };
+    private setRoot(data:TabDoc):void {
+        if(this.rootElement) {
+            this.rootElement.remove();
+            this.rootElement.destroy();
+            this.rootElement = null;
+        }
+        const {root} = data;
+
+        this.rootElement = createClientNode(root);
+        const node = ReactDOM.findDOMNode(this);
+        node.appendChild(this.rootElement.getElement());
     };
     private handleOp(op:ShareDBClient.Op):void {
         const {node, property, path} = this.traverse(op);
@@ -69,6 +76,8 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
                 node.setNodeValue(oi);
             } else if(property === 'nodeValue') {
                 node.setNodeValue(oi);
+            } else if(property === 'root') {
+                this.setRoot(this.tabDoc.getData());
             } else if(property === 'attributes') {
                 const {li, ld} = op;
                 if(path.length === 1) { // insert a new attribute
@@ -118,7 +127,11 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
         for(let i=0; i<p.length; i++) {
             const item:string|number = p[i];
             if(item === 'root') {
-                node = this.rootElement;
+                if(p.length === 1) {
+                    return {node, property:'root', path:[] };
+                } else {
+                    node = this.rootElement;
+                }
             } else if(item === 'children') {
                 if(i >= p.length-2) {
                     // set children: ends with [...,'children']

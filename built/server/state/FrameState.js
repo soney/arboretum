@@ -8,11 +8,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const event_manager_1 = require("../event_manager");
 const ColoredLogger_1 = require("../../utils/ColoredLogger");
 const ShareDBSharedState_1 = require("../../utils/ShareDBSharedState");
-const mime = require("mime");
-const css_parser_1 = require("../css_parser");
 const log = ColoredLogger_1.getColoredLogger('green');
 class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
     constructor(chrome, info, tab, parentFrame = null, resources = []) {
@@ -24,19 +21,12 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
         this.setMainFrameExecuted = false;
         this.refreshingRoot = false;
         this.domParent = null;
-        this.queuedEvents = [];
         this.executionContext = null;
-        // public resourceTracker: ResourceTracker;
-        this.requests = new Map();
-        this.responses = new Map();
         this.resourcePromises = new Map();
         this.shareDBFrame = {
             frame: this.info,
             frameID: this.getFrameId()
         };
-        this.eventManager = new event_manager_1.EventManager(this.chrome, this);
-        resources.forEach((resource) => this.recordResponse(resource));
-        // this.resourceTracker = new ResourceTracker(chrome, this, resources);
         log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
     }
     ;
@@ -96,9 +86,6 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
         if (root) {
             root.destroy();
         }
-        // this.resourceTracker.destroy();
-        this.requests.clear();
-        this.responses.clear();
         this.resourcePromises.clear();
         log.debug(`=== DESTROYED FRAME STATE ${this.getFrameId()} ====`);
     }
@@ -127,17 +114,6 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
     ;
     hasRoot() { return !!this.getRoot(); }
     ;
-    recordResponse(response) {
-        this.responses.set(response.url, response);
-    }
-    requestWillBeSent(event) {
-        const { url } = event;
-        this.requests.set(url, event);
-        log.debug(`Request will be sent ${url}`);
-    }
-    responseReceived(event) {
-        return this.recordResponse(event.response);
-    }
     getResponseBody(requestId) {
         return new Promise((resolve, reject) => {
             this.chrome.Network.getResponseBody({
@@ -150,29 +126,6 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
                     resolve(value);
                 }
             });
-        });
-    }
-    requestResource(url) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (!this.resourcePromises.has(url)) {
-                const resource = this.doGetResource(url);
-                this.resourcePromises.set(url, resource);
-            }
-            const responseBody = yield this.resourcePromises.get(url);
-            const resourceInfo = this.responses.get(url);
-            const mimeType = resourceInfo ? resourceInfo.mimeType : mime.getType(url);
-            let content;
-            if (mimeType === 'text/css') {
-                content = css_parser_1.parseCSS(content, url, this.getFrameId(), this.getTabId());
-            }
-            else {
-                content = responseBody.content;
-            }
-            return {
-                mimeType: mimeType,
-                base64Encoded: responseBody.base64Encoded,
-                content: content
-            };
         });
     }
     doGetResource(url) {
@@ -192,9 +145,6 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
             throw (err);
         });
     }
-    // public requestResource(url: string): Promise<any> {
-    //     return this.resourceTracker.getResource(url);
-    // };
     print(level = 0) {
         const root = this.getRoot();
         if (root) {

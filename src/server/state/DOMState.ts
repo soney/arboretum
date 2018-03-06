@@ -201,9 +201,15 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
         this.getChildren().forEach((child: DOMState) => {
             child.destroy();
         });
+        this.getShadowRoots().forEach((sr:DOMState) => {
+            sr.destroy();
+        });
+        if(this.contentDocument) {
+            this.contentDocument.destroy();
+        }
         this.destroyed = true;
         this.emit(this.onDestroyed, {});
-        // log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
+        log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
     }
     public getTab(): TabState { return this.tab; };
     public getNodeId(): CRI.NodeID { return this.node.nodeId; };

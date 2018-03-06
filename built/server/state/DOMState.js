@@ -234,9 +234,15 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         this.getChildren().forEach((child) => {
             child.destroy();
         });
+        this.getShadowRoots().forEach((sr) => {
+            sr.destroy();
+        });
+        if (this.contentDocument) {
+            this.contentDocument.destroy();
+        }
         this.destroyed = true;
         this.emit(this.onDestroyed, {});
-        // log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
+        log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
     }
     getTab() { return this.tab; }
     ;

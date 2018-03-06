@@ -13,25 +13,14 @@ import {parseCSS} from '../css_parser';
 
 const log = getColoredLogger('green');
 
-interface QueuedEvent<E> {
-    event: E,
-    promise: ResolvablePromise<E>,
-    type: string
-}
-
 export class FrameState extends ShareDBSharedState<TabDoc> {
     private setMainFrameExecuted: boolean = false;
     private refreshingRoot: boolean = false;
     private root: DOMState;
     private domParent: DOMState = null;
-    private queuedEvents: Array<QueuedEvent<any>> = [];
     private executionContext: CRI.ExecutionContextDescription = null;
     private shareDBFrame:ShareDBFrame;
 
-    private eventManager: EventManager;
-    // public resourceTracker: ResourceTracker;
-	private requests:Map<string, any> = new Map<string, any>();
-	private responses:Map<string, any> = new Map<string, any>();
 	private resourcePromises:Map<string, Promise<CRI.GetResourceContentResponse>> = new Map<string, Promise<CRI.GetResourceContentResponse>>();
 
     constructor(private chrome, private info: CRI.Frame, private tab: TabState, private parentFrame: FrameState = null, resources: Array<CRI.FrameResource> = []) {
@@ -40,9 +29,6 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
             frame: this.info,
             frameID: this.getFrameId()
         };
-        this.eventManager = new EventManager(this.chrome, this);
-        resources.forEach((resource) => this.recordResponse(resource));
-        // this.resourceTracker = new ResourceTracker(chrome, this, resources);
         log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
     };
     protected async onAttachedToShareDBDoc():Promise<void> {
@@ -88,9 +74,6 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
         if (root) {
             root.destroy();
         }
-        // this.resourceTracker.destroy();
-		this.requests.clear();
-		this.responses.clear();
 		this.resourcePromises.clear();
         log.debug(`=== DESTROYED FRAME STATE ${this.getFrameId()} ====`);
     };
@@ -117,72 +100,37 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
     public setDOMRoot(domState:DOMState):void { this.root = domState; };
     public hasRoot():boolean { return !!this.getRoot(); };
 
-	private recordResponse(response):void {
-		this.responses.set(response.url, response);
-	}
-	public requestWillBeSent(event):void {
-		const {url} = event;
-		this.requests.set(url, event);
-		log.debug(`Request will be sent ${url}`);
-	}
-	public responseReceived(event) {
-		return this.recordResponse(event.response);
-	}
-	public getResponseBody(requestId:CRI.RequestID):Promise<CRI.GetResponseBodyResponse> {
-		return new Promise<CRI.GetResponseBodyResponse>((resolve, reject) => {
-			this.chrome.Network.getResponseBody({
-				requestId: requestId
-			}, function(err, value) {
-				if(err) {
-					reject(value);
-				} else {
-					resolve(value);
-				}
-			});
-		});
-	}
-	public async requestResource(url:string):Promise<{mimeType:string,base64Encoded:boolean,content:string}> {
-		if(!this.resourcePromises.has(url)) {
-			const resource:Promise<CRI.GetResourceContentResponse> = this.doGetResource(url);
-			this.resourcePromises.set(url, resource);
-		}
-        const responseBody = await this.resourcePromises.get(url);
-		const resourceInfo = this.responses.get(url);
-		const mimeType = resourceInfo ? resourceInfo.mimeType : mime.getType(url);
-		let content;
-		if(mimeType === 'text/css') {
-			content = parseCSS(content, url, this.getFrameId(), this.getTabId());
-		} else {
-			content = responseBody.content;
-		}
+    public getResponseBody(requestId:CRI.RequestID):Promise<CRI.GetResponseBodyResponse> {
+        return new Promise<CRI.GetResponseBodyResponse>((resolve, reject) => {
+            this.chrome.Network.getResponseBody({
+                requestId: requestId
+            }, function(err, value) {
+                if(err) {
+                    reject(value);
+                } else {
+                    resolve(value);
+                }
+            });
+        });
+    }
 
-		return {
-			mimeType: mimeType,
-			base64Encoded: responseBody.base64Encoded,
-			content: content
-		};
-	}
+    private doGetResource(url:string):Promise<CRI.GetResourceContentResponse> {
+        return new Promise<CRI.GetResourceContentResponse>((resolve, reject) => {
+            this.chrome.Page.getResourceContent({
+                frameId: this.getFrameId(),
+                url: url
+            }, function(err, val) {
+                if(err) {
+                    reject(new Error(`Could not find resource '${url}'`));
+                } else {
+                    resolve(val);
+                }
+            });
+        }).catch((err) => {
+            throw(err);
+        });
+    }
 
-	private doGetResource(url:string):Promise<CRI.GetResourceContentResponse> {
-		return new Promise<CRI.GetResourceContentResponse>((resolve, reject) => {
-			this.chrome.Page.getResourceContent({
-				frameId: this.getFrameId(),
-				url: url
-			}, function(err, val) {
-				if(err) {
-					reject(new Error(`Could not find resource '${url}'`));
-				} else {
-					resolve(val);
-				}
-			});
-		}).catch((err) => {
-			throw(err);
-		});
-	}
-
-    // public requestResource(url: string): Promise<any> {
-    //     return this.resourceTracker.getResource(url);
-    // };
     public print(level: number = 0): void {
         const root = this.getRoot();
         if(root) {

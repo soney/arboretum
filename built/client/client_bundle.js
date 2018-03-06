@@ -31047,7 +31047,6 @@ json.checkList = function(elem) {
 
 json.checkObj = function(elem) {
   if (!isObject(elem)) {
-    debugger;
     throw new Error("Referenced element not an object (it was " + JSON.stringify(elem) + ")");
   }
 };
@@ -31095,7 +31094,6 @@ json.apply = function(snapshot, op) {
 
       parent = elem;
       parentKey = key;
-      if(!elem) { debugger; }
       elem = elem[key];
       key = p;
 
@@ -33662,11 +33660,7 @@ class ClientTab extends React.Component {
                     console.log(this.props.frameID);
                 }
                 else {
-                    const data = this.tabDoc.getData();
-                    const { root } = data;
-                    this.rootElement = ClientDOMNode_1.createClientNode(root);
-                    const node = ReactDOM.findDOMNode(this);
-                    node.appendChild(this.rootElement.getElement());
+                    this.setRoot(this.tabDoc.getData());
                 }
             }
         };
@@ -33696,6 +33690,18 @@ class ClientTab extends React.Component {
         });
     }
     ;
+    setRoot(data) {
+        if (this.rootElement) {
+            this.rootElement.remove();
+            this.rootElement.destroy();
+            this.rootElement = null;
+        }
+        const { root } = data;
+        this.rootElement = ClientDOMNode_1.createClientNode(root);
+        const node = ReactDOM.findDOMNode(this);
+        node.appendChild(this.rootElement.getElement());
+    }
+    ;
     handleOp(op) {
         const { node, property, path } = this.traverse(op);
         if (node && property) {
@@ -33705,6 +33711,9 @@ class ClientTab extends React.Component {
             }
             else if (property === 'nodeValue') {
                 node.setNodeValue(oi);
+            }
+            else if (property === 'root') {
+                this.setRoot(this.tabDoc.getData());
             }
             else if (property === 'attributes') {
                 const { li, ld } = op;
@@ -33766,7 +33775,12 @@ class ClientTab extends React.Component {
         for (let i = 0; i < p.length; i++) {
             const item = p[i];
             if (item === 'root') {
-                node = this.rootElement;
+                if (p.length === 1) {
+                    return { node, property: 'root', path: [] };
+                }
+                else {
+                    node = this.rootElement;
+                }
             }
             else if (item === 'children') {
                 if (i >= p.length - 2) {
@@ -33888,6 +33902,13 @@ class ClientNode {
     // protected getNodeShadowRoots():Array<ShareDBDOMNode> { return this.sdbNode.shadowRoots; };
     setCharacterData(characterData) { }
     setNodeValue(value) { }
+    remove() { }
+    destroy() {
+        this.getChildren().forEach((c) => {
+            c.destroy();
+        });
+    }
+    ;
 }
 exports.ClientNode = ClientNode;
 ;
@@ -33908,6 +33929,9 @@ class ClientDocumentNode extends ClientNode {
     ;
     getElement() {
         return this.getChild().getElement();
+    }
+    ;
+    remove() {
     }
     ;
 }
@@ -34017,6 +34041,18 @@ class ClientElementNode extends ClientNode {
         this.element['value'] = value;
     }
     ;
+    remove() {
+        super.remove();
+        this.getElement().remove();
+    }
+    ;
+    destroy() {
+        super.destroy();
+        if (this.contentDocument) {
+            this.contentDocument.destroy();
+        }
+    }
+    ;
 }
 exports.ClientElementNode = ClientElementNode;
 ;
@@ -34034,6 +34070,12 @@ class ClientTextNode extends ClientNode {
     setNodeValue(value) {
         this.element.replaceData(0, this.element.length, value);
     }
+    ;
+    remove() {
+        super.remove();
+        this.getElement().remove();
+    }
+    ;
 }
 exports.ClientTextNode = ClientTextNode;
 ;
@@ -34046,6 +34088,11 @@ class ClientCommentNode extends ClientNode {
     ;
     getElement() {
         return this.element;
+    }
+    ;
+    remove() {
+        super.remove();
+        this.getElement().remove();
     }
     ;
 }
