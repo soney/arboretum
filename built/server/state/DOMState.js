@@ -142,7 +142,7 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
             nodeValue: this.processNodeValue(nodeValue),
             attributes: this.computeGroupedAttributes(attributes),
             contentDocument: this.contentDocument ? this.contentDocument.createShareDBNode() : null,
-            childFrame: this.childFrame ? this.childFrame.getShareDBFrame() : null,
+            childFrame: this.childFrame ? this.childFrame.getFrameInfo() : null,
             inlineStyle: this.inlineStyle,
             inputValue: this.inputValue
         };

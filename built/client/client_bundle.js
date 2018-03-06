@@ -33703,6 +33703,7 @@ class ClientTab extends React.Component {
     }
     ;
     handleOp(op) {
+        console.log(op);
         const { node, property, path } = this.traverse(op);
         if (node && property) {
             const { oi, od } = op;

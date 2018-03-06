@@ -69,6 +69,7 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
         node.appendChild(this.rootElement.getElement());
     };
     private handleOp(op:ShareDBClient.Op):void {
+        console.log(op);
         const {node, property, path} = this.traverse(op);
         if(node && property) {
             const {oi, od} = op;

@@ -10,7 +10,7 @@ import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
 import * as _ from 'underscore';
 import * as ShareDB from 'sharedb';
 import * as timers from 'timers';
-import {ShareDBDOMNode, ShareDBFrame, TabDoc, CanvasImage} from '../../utils/state_interfaces';
+import {ShareDBDOMNode, TabDoc, CanvasImage} from '../../utils/state_interfaces';
 import {ShareDBSharedState} from '../../utils/ShareDBSharedState';
 
 const log = getColoredLogger('magenta');
@@ -120,7 +120,7 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
             nodeValue: this.processNodeValue(nodeValue),
             attributes: this.computeGroupedAttributes(attributes),
             contentDocument: this.contentDocument ? this.contentDocument.createShareDBNode() : null,
-            childFrame: this.childFrame ? this.childFrame.getShareDBFrame() : null,
+            childFrame: this.childFrame ? this.childFrame.getFrameInfo() : null,
             inlineStyle: this.inlineStyle,
             inputValue: this.inputValue
         };
