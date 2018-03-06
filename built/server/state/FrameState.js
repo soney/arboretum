@@ -23,10 +23,6 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
         this.domParent = null;
         this.executionContext = null;
         this.resourcePromises = new Map();
-        this.shareDBFrame = {
-            frame: this.info,
-            frameID: this.getFrameId()
-        };
         log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
     }
     ;
@@ -39,11 +35,11 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
         });
     }
     ;
-    getShareDBDoc() { return this.tab.getShareDBDoc(); }
-    ;
-    getShareDBFrame() {
-        return this.shareDBFrame;
+    getFrameInfo() {
+        return this.info;
     }
+    ;
+    getShareDBDoc() { return this.tab.getShareDBDoc(); }
     ;
     getParentFrame() {
         return this.parentFrame;

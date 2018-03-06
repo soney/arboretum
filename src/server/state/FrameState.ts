@@ -5,7 +5,7 @@ import { getColoredLogger, level, setLevel } from '../../utils/ColoredLogger';
 import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
 import * as _ from 'underscore';
 import * as ShareDB from 'sharedb';
-import {TabDoc, ShareDBFrame } from '../../utils/state_interfaces';
+import { TabDoc } from '../../utils/state_interfaces';
 import {ShareDBSharedState} from '../../utils/ShareDBSharedState';
 import {ResolvablePromise} from '../../utils/ResolvablePromise';
 import * as mime from 'mime';
@@ -19,16 +19,11 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
     private root: DOMState;
     private domParent: DOMState = null;
     private executionContext: CRI.ExecutionContextDescription = null;
-    private shareDBFrame:ShareDBFrame;
 
 	private resourcePromises:Map<string, Promise<CRI.GetResourceContentResponse>> = new Map<string, Promise<CRI.GetResourceContentResponse>>();
 
     constructor(private chrome, private info: CRI.Frame, private tab: TabState, private parentFrame: FrameState = null, resources: Array<CRI.FrameResource> = []) {
         super();
-        this.shareDBFrame = {
-            frame: this.info,
-            frameID: this.getFrameId()
-        };
         log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
     };
     protected async onAttachedToShareDBDoc():Promise<void> {
@@ -37,10 +32,10 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
             await this.root.markAttachedToShareDBDoc();
         }
     };
-    public getShareDBDoc():SDBDoc<TabDoc> { return this.tab.getShareDBDoc(); };
-    public getShareDBFrame():ShareDBFrame {
-        return this.shareDBFrame;
+    public getFrameInfo():CRI.Frame {
+        return this.info;
     };
+    public getShareDBDoc():SDBDoc<TabDoc> { return this.tab.getShareDBDoc(); };
     public getParentFrame(): FrameState {
         return this.parentFrame;
     };

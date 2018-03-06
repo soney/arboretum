@@ -1,4 +1,4 @@
-import {ShareDBDOMNode, FrameDoc, TabDoc, BrowserDoc, CanvasImage} from '../../utils/state_interfaces';
+import {ShareDBDOMNode, TabDoc, BrowserDoc, CanvasImage} from '../../utils/state_interfaces';
 import {NodeCode} from '../../utils/NodeCode';
 
 export function createClientNode(sdbNode:ShareDBDOMNode) {
@@ -62,7 +62,7 @@ export class ClientDocumentNode extends ClientNode {
         return this.getChild().getElement();
     };
     public remove():void {
-
+        this.getChild().remove();
     };
 };
 export class ClientDocumentTypeNode extends ClientNode {
@@ -93,10 +93,15 @@ export class ClientElementNode extends ClientNode {
             const iFrameElement = (this.element as HTMLIFrameElement);
             await iframeLoaded(iFrameElement);
 
-            this.contentDocument = new ClientDocumentNode(this.getNodeContentDocument(), iFrameElement.contentDocument);
-            this.contentDocument.removeChildren();
-            const iframeBody = this.contentDocument.getChild();
-            iFrameElement.contentDocument.appendChild(iframeBody.getElement());
+            const nodeContentDocument = this.getNodeContentDocument();
+            if(nodeContentDocument) {
+                this.contentDocument = new ClientDocumentNode(nodeContentDocument, iFrameElement.contentDocument);
+                this.contentDocument.removeChildren();
+                const iframeBody = this.contentDocument.getChild();
+                if(iframeBody) {
+                    iFrameElement.contentDocument.appendChild(iframeBody.getElement());
+                }
+            }
         } else {
             this.getChildren().forEach((child) => {
                 this.element.appendChild(child.getElement());

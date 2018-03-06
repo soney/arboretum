@@ -2,7 +2,7 @@ import * as _ from 'underscore';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
-import {ShareDBDOMNode, FrameDoc, TabDoc, BrowserDoc} from '../../utils/state_interfaces';
+import {ShareDBDOMNode, TabDoc, BrowserDoc} from '../../utils/state_interfaces';
 
 type TabListProps = {
     sdb:SDB

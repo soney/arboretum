@@ -14,7 +14,7 @@ export interface ShareDBDOMNode {
     attributes:Array<[string,string]>,
     children: Array<ShareDBDOMNode>,
     contentDocument:ShareDBDOMNode,
-    childFrame: ShareDBFrame,
+    childFrame: CRI.Frame,
     inlineStyle:string,
     inputValue:string,
     isSVG:boolean
@@ -26,13 +26,4 @@ export interface ShareDBDOMNode {
 export interface TabDoc {
     root:ShareDBDOMNode,
     id:CRI.TabID
-};
-export interface FrameDoc {
-    frameID:CRI.FrameID,
-    root:ShareDBDOMNode
-}
-
-export interface ShareDBFrame {
-    frameID:CRI.FrameID,
-    frame:CRI.Frame
 };

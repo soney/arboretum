@@ -33776,7 +33776,7 @@ class ClientTab extends React.Component {
             const item = p[i];
             if (item === 'root') {
                 if (p.length === 1) {
-                    return { node, property: 'root', path: [] };
+                    return { node: op.oi, property: 'root', path: [] };
                 }
                 else {
                     node = this.rootElement;
@@ -33932,6 +33932,7 @@ class ClientDocumentNode extends ClientNode {
     }
     ;
     remove() {
+        this.getChild().remove();
     }
     ;
 }
@@ -33969,10 +33970,15 @@ class ClientElementNode extends ClientNode {
             if (nodeName === 'IFRAME') {
                 const iFrameElement = this.element;
                 yield iframeLoaded(iFrameElement);
-                this.contentDocument = new ClientDocumentNode(this.getNodeContentDocument(), iFrameElement.contentDocument);
-                this.contentDocument.removeChildren();
-                const iframeBody = this.contentDocument.getChild();
-                iFrameElement.contentDocument.appendChild(iframeBody.getElement());
+                const nodeContentDocument = this.getNodeContentDocument();
+                if (nodeContentDocument) {
+                    this.contentDocument = new ClientDocumentNode(nodeContentDocument, iFrameElement.contentDocument);
+                    this.contentDocument.removeChildren();
+                    const iframeBody = this.contentDocument.getChild();
+                    if (iframeBody) {
+                        iFrameElement.contentDocument.appendChild(iframeBody.getElement());
+                    }
+                }
             }
             else {
                 this.getChildren().forEach((child) => {

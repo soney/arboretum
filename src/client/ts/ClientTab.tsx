@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import {ShareDBDOMNode, FrameDoc, TabDoc, BrowserDoc, CanvasImage} from '../../utils/state_interfaces';
+import {ShareDBDOMNode, TabDoc, BrowserDoc, CanvasImage} from '../../utils/state_interfaces';
 import * as ShareDBClient from 'sharedb/lib/client';
 import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
 import {createClientNode, ClientNode, ClientElementNode} from './ClientDOMNode';
@@ -128,7 +128,7 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
             const item:string|number = p[i];
             if(item === 'root') {
                 if(p.length === 1) {
-                    return {node, property:'root', path:[] };
+                    return {node: op.oi, property:'root', path:[] };
                 } else {
                     node = this.rootElement;
                 }
