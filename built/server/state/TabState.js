@@ -25,7 +25,9 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
         this.frames = new Map();
         this.pendingFrameEvents = new Map();
         this.nodeMap = new Map();
+        this.requests = new Map();
         this.requestWillBeSent = (event) => {
+            console.log('Request', event.request.url);
             const { frameId } = event;
             if (this.hasFrame(frameId)) {
                 const frame = this.getFrame(frameId);
@@ -40,6 +42,7 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             }
         };
         this.responseReceived = (event) => {
+            console.log('Response ', event.response.url);
             const { frameId } = event;
             if (this.hasFrame(frameId)) {
                 this.getFrame(frameId).responseReceived(event);
@@ -124,9 +127,7 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             if (parent) {
                 try {
                     const { nodes } = event;
-                    // debugger;
                     log.debug(`Set child nodes ${parentId} -> [${nodes.map((node) => node.nodeId).join(', ')}]`);
-                    debugger;
                     parent.setChildrenRecursive(nodes);
                 }
                 catch (err) {
@@ -482,6 +483,8 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             yield this.chrome.Network.enable();
             this.chrome.Network.requestWillBeSent(this.requestWillBeSent);
             this.chrome.Network.responseReceived(this.responseReceived);
+            this.chrome.Network.loadingFinished(this.loadingFinished);
+            this.chrome.Network.loadingFailed(this.loadingFailed);
         });
     }
     ;
@@ -509,6 +512,12 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
                 }
             });
         }
+    }
+    ;
+    loadingFinished(event) {
+    }
+    ;
+    loadingFailed(event) {
     }
     ;
     requestChildNodes(nodeId, depth = 1, pierce = false) {
@@ -613,18 +622,40 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
         });
     }
     ;
-    getResource(url) {
+    pluckResourceFromTree(url, resourceTree) {
+        const { resources } = resourceTree;
+        for (let i = 0; i < resources.length; i++) {
+            const resource = resources[i];
+            if (resource.url === url) {
+                return resource;
+            }
+        }
+        for (;;)
+            return null;
+    }
+    ;
+    getResourceFromTree(url) {
         return __awaiter(this, void 0, void 0, function* () {
             const resourceTree = yield this.getResourceTree();
-            const { frameTree } = resourceTree;
-            const { resources } = frameTree;
-            for (let i = 0; i < resources.length; i++) {
-                const resource = resources[i];
-                if (resource.url === url) {
-                    return resource;
-                }
+            return this.pluckResourceFromTree(url, resourceTree);
+        });
+    }
+    ;
+    getResource(url) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const fromTree = yield this.getResourceFromTree(url);
+            if (fromTree) {
+                return fromTree;
             }
-            return null;
+            else {
+                for (let frame in this.frames.values()) {
+                    // const resource:CRI.Page.FrameResource = await frame.getResource(url);
+                    // if(resource) {
+                    // return resource;
+                    // }
+                }
+                return null;
+            }
         });
     }
     ;

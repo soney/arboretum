@@ -23,7 +23,6 @@ declare namespace CRI {
     type ResourcePriority = string;
     type Headers = {};
     type ShadowRootType = 'user-agent' | 'open' | 'closed';
-    type ResourceType = 'Document' | 'Stylesheet' | 'Image' | 'Media' | 'Font' | 'Script' | 'TextTrack' | 'XHR' | 'Fetch' | 'EventSource' | 'WebSocket' | 'Manifest' | 'Other';
     type TransitionType = 'link' | 'typed' | 'auto_bookmark' | 'auto_subframe' | 'manual_subframe' | 'generated' | 'auto_toplevel' | 'form_submit' | 'reload' | 'keyword' | 'keyword_generated' | 'other';
     interface BackendNode {
         nodeType:number,
@@ -156,22 +155,41 @@ declare namespace CRI {
         transitionType?:TransitionType
     }
     namespace Page {
+        type ResourceType = 'Document' | 'Stylesheet' | 'Image' | 'Media' | 'Font' | 'Script' | 'TextTrack' | 'XHR' | 'Fetch' | 'EventSource' | 'WebSocket' | 'Manifest' | 'Other';
+        interface FrameTree {
+            frame:Frame,
+            childFrames:Array<FrameTree>
+        }
         interface NavigateResult {
             frameId:FrameID,
             loaderId:Network.LoaderID,
             errorText?:string
+        }
+        interface FrameResourceTree {
+            frame:Frame,
+            childFrames:Array<FrameResourceTree>,
+            resources:Array<FrameResource>
+        }
+        interface FrameResource {
+            url:string,
+            type:ResourceType,
+            mimeType:string,
+            lastModified:Network.TimeSinceEpoch,
+            contentSize:number,
+            failed:boolean,
+            canceled:boolean
         }
     }
     interface GetFrameTreeOptions{}
     interface Page {
         enable:()=>void;
         disable:()=>void;
-        getResourceTree:(options:GetResourceTreeOptions, callback:(err:any, resources:FrameResourceTree)=>any) => void;
+        getResourceTree:(options:GetResourceTreeOptions, callback:(err:any, resources:Page.FrameResourceTree)=>any) => void;
         frameAttached:(callback:(FrameAttachedEvent)=>void) => void;
         frameDetached:(callback:(FrameDetachedEvent)=>void) => void;
         frameNavigated:(callback:(FrameNavigatedEvent)=>void) => void;
         navigate:(options:NavigateOptions, callback:(err:any, result:Page.NavigateResult)=>any) => void;
-        getFrameTree:(options:GetFrameTreeOptions, callback:(err:any, result:FrameTree)=>void)=>void;
+        getFrameTree:(options:GetFrameTreeOptions, callback:(err:any, result:Page.FrameTree)=>void)=>void;
         getResourceContent:(params:GetResourceContentParams, callback:(err:any, data:GetResourceContentResponse)=>any) => void
     }
     interface ListTabsOptions {
@@ -283,18 +301,6 @@ declare namespace CRI {
         shadowRootPopped:(params:ShadowRootPoppedParams, callback:(value:ShadowRootPoppedEvent)=>void) => void
         shadowRootPushed:(params:ShadowRootPushedParams, callback:(value:ShadowRootPushedEvent)=>void) => void
     }
-    interface FrameResourceTree {
-        frameTree:FrameTree
-    }
-    interface FrameResource {
-        url:string,
-        type:ResourceType,
-        mimeType:string,
-        lastModified:Network.TimeSinceEpoch,
-        contentSize:number,
-        failed:boolean,
-        canceled:boolean
-    }
     namespace Runtime {
         type RemoteObjectID = string;
         interface RemoteObject {
@@ -310,11 +316,6 @@ declare namespace CRI {
         }
     }
 
-    interface FrameTree {
-        frame:Frame,
-        childFrames:Array<FrameTree>,
-        resources:Array<FrameResource>
-    }
     interface Node {
         nodeId:NodeID,
         parentId:NodeID,
@@ -403,14 +404,14 @@ declare namespace CRI {
         wallTime:Network.TimeSinceEpoch,
         initiator:Initiator,
         redirectResponse:Network.Response,
-        type:ResourceType,
+        type:Page.ResourceType,
         frameId:FrameID
     }
     interface ResponseReceivedEvent {
         requestId:RequestID,
         loaderId:Network.LoaderID,
         timestamp:MonotonicTime,
-        type:ResourceType,
+        type:Page.ResourceType,
         response:Network.Response,
         frameId:FrameID
     }
@@ -445,11 +446,26 @@ declare namespace CRI {
         nodeId:NodeID,
         name:string
     }
+    interface LoadingFinishedEvent {
+        requestId: RequestID,
+        timestamp: MonotonicTime,
+        encodedDataLength:number
+    }
+    interface LoadingFailedEvent {
+        requestId: RequestID,
+        timestamp: MonotonicTime,
+        type:Page.ResourceType,
+        errorText:string,
+        canceled?:boolean,
+        blockedReason?:Network.BlockedReason
+    }
     interface Network {
         enable:()=>void,
         requestWillBeSent:(callback:(event:RequestWillBeSentEvent)=>void) => void,
         responseReceived:(callback:(event:ResponseReceivedEvent)=>void) => void
         getResponseBody:(params:GetResponseBodyParams, callback:(err:any, data:GetResponseBodyResponse)=>any) => void
+        loadingFailed:(Callback:(event:LoadingFailedEvent)=>void) => void
+        loadingFinished:(Callback:(event:LoadingFinishedEvent)=>void) => void
     }
     interface GetResponseBodyParams {
         requestId:RequestID
@@ -468,6 +484,7 @@ declare namespace CRI {
     }
 
     namespace Network {
+        type BlockedReason = 'csp' | 'mixed-content' | 'origin' | 'inspector' | 'subresource-filter' | 'other';
         type LoaderID = string;
         type TimeSinceEpoch = number;
         interface Response {

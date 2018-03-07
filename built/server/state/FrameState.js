@@ -12,12 +12,13 @@ const ColoredLogger_1 = require("../../utils/ColoredLogger");
 const ShareDBSharedState_1 = require("../../utils/ShareDBSharedState");
 const log = ColoredLogger_1.getColoredLogger('green');
 class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
-    constructor(chrome, info, tab, parentFrame = null, resources = []) {
+    constructor(chrome, info, tab, parentFrame = null, frameResources = []) {
         super();
         this.chrome = chrome;
         this.info = info;
         this.tab = tab;
         this.parentFrame = parentFrame;
+        this.frameResources = frameResources;
         this.setMainFrameExecuted = false;
         this.refreshingRoot = false;
         this.domParent = null;
@@ -25,7 +26,6 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
         this.requests = new Map();
         this.responses = new Map();
         this.resourcePromises = new Map();
-        resources.forEach((resource) => this.recordResponse(resource));
         log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
     }
     ;
@@ -38,19 +38,15 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
         });
     }
     ;
-    recordResponse(response) {
-        this.responses.set(response.url, response);
-    }
-    ;
     requestWillBeSent(event) {
-        const { request } = event;
+        const { requestId, request } = event;
         const { url } = request;
-        this.requests.set(url, event);
+        this.requests.set(requestId, event);
         log.debug(`Request will be sent ${url}`);
     }
     ;
     responseReceived(event) {
-        return this.recordResponse(event.response);
+        this.responses.set(event.requestId, event);
     }
     ;
     getFrameInfo() {
@@ -130,36 +126,43 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
     ;
     hasRoot() { return !!this.getRoot(); }
     ;
-    getResponseBody(requestId) {
-        return new Promise((resolve, reject) => {
-            this.chrome.Network.getResponseBody({
-                requestId
-            }, function (err, value) {
-                if (err) {
-                    reject(value);
-                }
-                else {
-                    resolve(value);
-                }
-            });
-        });
-    }
-    doGetResource(url) {
-        return new Promise((resolve, reject) => {
-            this.chrome.Page.getResourceContent({
-                url, frameId: this.getFrameId()
-            }, function (err, val) {
-                if (err) {
-                    reject(new Error(`Could not find resource '${url}'`));
-                }
-                else {
-                    resolve(val);
-                }
-            });
-        }).catch((err) => {
-            throw (err);
-        });
-    }
+    // public getResponseBody(requestId:CRI.RequestID):Promise<CRI.GetResponseBodyResponse> {
+    //     return new Promise<CRI.GetResponseBodyResponse>((resolve, reject) => {
+    //         this.chrome.Network.getResponseBody({
+    //             requestId
+    //         }, function(err, value) {
+    //             if(err) {
+    //                 reject(value);
+    //             } else {
+    //                 resolve(value);
+    //             }
+    //         });
+    //     });
+    // };
+    // public getResource(url:string):Promise<CRI.Page.FrameResource> {
+    //     for(let requestId in this.requests) {
+    //         const requestWillBeSentEvent = this.requests.get(requestId);
+    //         const {request} = requestWillBeSentEvent;
+    //         if(request.url === url) {
+    //             // return request;
+    //         }
+    //     }
+    // };
+    // private doGetResource(url:string):Promise<CRI.GetResourceContentResponse> {
+    //     return new Promise<CRI.GetResourceContentResponse>((resolve, reject) => {
+    //         this.chrome.Page.getResourceContent({
+    //             url, frameId: this.getFrameId()
+    //         }, function(err, val) {
+    //             if(err) {
+    //                 reject(new Error(`Could not find resource '${url}'`));
+    //             } else {
+    //                 resolve(val);
+    //             }
+    //         });
+    //     }).catch((err) => {
+    //         throw(err);
+    //     });
+    // }
     print(level = 0) {
         const root = this.getRoot();
         if (root) {

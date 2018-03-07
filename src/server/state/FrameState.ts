@@ -19,14 +19,13 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
     private root: DOMState;
     private domParent: DOMState = null;
     private executionContext: CRI.ExecutionContextDescription = null;
-    private requests:Map<string, CRI.Network.Request> = new Map<string, any>();
-    private responses:Map<string, CRI.Network.Response> = new Map<string, CRI.Network.Response>();
+    private requests:Map<CRI.RequestID, CRI.RequestWillBeSentEvent> = new Map<CRI.RequestID, CRI.RequestWillBeSentEvent>();
+    private responses:Map<CRI.RequestID, CRI.ResponseReceivedEvent> = new Map<CRI.RequestID, CRI.ResponseReceivedEvent>();
 
 	private resourcePromises:Map<string, Promise<CRI.GetResourceContentResponse>> = new Map<string, Promise<CRI.GetResourceContentResponse>>();
 
-    constructor(private chrome, private info: CRI.Frame, private tab: TabState, private parentFrame: FrameState = null, resources: Array<CRI.FrameResource> = []) {
+    constructor(private chrome, private info: CRI.Frame, private tab: TabState, private parentFrame: FrameState = null, private frameResources: Array<CRI.Page.FrameResource> = []) {
         super();
-        resources.forEach((resource) => this.recordResponse(resource));
         log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
     };
     protected async onAttachedToShareDBDoc():Promise<void> {
@@ -36,17 +35,14 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
         }
     };
 
-    private recordResponse(response:CRI.Network.Response):void {
-        this.responses.set(response.url, response);
-    };
     public requestWillBeSent(event:CRI.RequestWillBeSentEvent):void {
-        const {request} = event;
+        const {requestId, request} = event;
         const {url} = request;
-        this.requests.set(url, event);
+        this.requests.set(requestId, event);
         log.debug(`Request will be sent ${url}`);
     };
     public responseReceived(event:CRI.ResponseReceivedEvent) {
-        return this.recordResponse(event.response);
+        this.responses.set(event.requestId, event);
     };
     public getFrameInfo():CRI.Frame {
         return this.info;
@@ -113,35 +109,44 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
     public setDOMRoot(domState:DOMState):void { this.root = domState; };
     public hasRoot():boolean { return !!this.getRoot(); };
 
-    public getResponseBody(requestId:CRI.RequestID):Promise<CRI.GetResponseBodyResponse> {
-        return new Promise<CRI.GetResponseBodyResponse>((resolve, reject) => {
-            this.chrome.Network.getResponseBody({
-                requestId
-            }, function(err, value) {
-                if(err) {
-                    reject(value);
-                } else {
-                    resolve(value);
-                }
-            });
-        });
-    }
+    // public getResponseBody(requestId:CRI.RequestID):Promise<CRI.GetResponseBodyResponse> {
+    //     return new Promise<CRI.GetResponseBodyResponse>((resolve, reject) => {
+    //         this.chrome.Network.getResponseBody({
+    //             requestId
+    //         }, function(err, value) {
+    //             if(err) {
+    //                 reject(value);
+    //             } else {
+    //                 resolve(value);
+    //             }
+    //         });
+    //     });
+    // };
+    // public getResource(url:string):Promise<CRI.Page.FrameResource> {
+    //     for(let requestId in this.requests) {
+    //         const requestWillBeSentEvent = this.requests.get(requestId);
+    //         const {request} = requestWillBeSentEvent;
+    //         if(request.url === url) {
+    //             // return request;
+    //         }
+    //     }
+    // };
 
-    private doGetResource(url:string):Promise<CRI.GetResourceContentResponse> {
-        return new Promise<CRI.GetResourceContentResponse>((resolve, reject) => {
-            this.chrome.Page.getResourceContent({
-                url, frameId: this.getFrameId()
-            }, function(err, val) {
-                if(err) {
-                    reject(new Error(`Could not find resource '${url}'`));
-                } else {
-                    resolve(val);
-                }
-            });
-        }).catch((err) => {
-            throw(err);
-        });
-    }
+    // private doGetResource(url:string):Promise<CRI.GetResourceContentResponse> {
+    //     return new Promise<CRI.GetResourceContentResponse>((resolve, reject) => {
+    //         this.chrome.Page.getResourceContent({
+    //             url, frameId: this.getFrameId()
+    //         }, function(err, val) {
+    //             if(err) {
+    //                 reject(new Error(`Could not find resource '${url}'`));
+    //             } else {
+    //                 resolve(val);
+    //             }
+    //         });
+    //     }).catch((err) => {
+    //         throw(err);
+    //     });
+    // }
 
     public print(level: number = 0): void {
         const root = this.getRoot();
