@@ -61,8 +61,8 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         await this.chromePromise;
         //TODO: Convert getResourceTree call to getFrameTree when supported
         const resourceTree:CRI.Page.FrameResourceTree = await this.getResourceTree();
-        const { frameTree } = resourceTree;
-        const { frame, childFrames, resources } = frameTree;
+        // const { frameTree } = resourceTree;
+        const { frame, childFrames, resources } = resourceTree;
         this.createFrameState(frame, null, childFrames, resources);
         await this.refreshRoot();
 
@@ -149,7 +149,7 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         this.setDocument(root);
         return root;
     };
-    private createFrameState(info: CRI.Frame, parentFrame: FrameState = null, childFrames: Array<CRI.Page.FrameTree> = [], resources: Array<CRI.Page.FrameResource> = []): FrameState {
+    private createFrameState(info: CRI.Frame, parentFrame: FrameState = null, childFrames: Array<CRI.Page.FrameResourceTree> = [], resources: Array<CRI.Page.FrameResource> = []): FrameState {
         const { id, parentId } = info;
         const frameState: FrameState = new FrameState(this.chrome, info, this, parentFrame, resources);
         this.frames.set(id, frameState);
@@ -351,14 +351,20 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         // });
     };
     private pluckResourceFromTree(url:string, resourceTree:CRI.Page.FrameResourceTree):CRI.Page.FrameResource {
-        const {resources} = resourceTree;
+        const {resources, childFrames} = resourceTree;
         for(let i = 0; i<resources.length; i++) {
             const resource:CRI.Page.FrameResource = resources[i];
             if(resource.url === url) {
                 return resource;
             }
         }
-        for()
+
+        for(let j = 0; j<childFrames.length; j++) {
+            const resource:CRI.Page.FrameResource = this.pluckResourceFromTree(url, childFrames[j]);
+            if(resource) {
+                return resource;
+            }
+        }
 
         return null;
     };
@@ -437,8 +443,7 @@ export class TabState extends ShareDBSharedState<TabDoc> {
     };
     public async printNetworkSummary():Promise<void> {
         const resourceTree:CRI.Page.FrameResourceTree = await this.getResourceTree();
-        const {frameTree} = resourceTree;
-        const {resources} = frameTree;
+        const {resources} = resourceTree;
         console.log(resources);
     };
     public destroy() {

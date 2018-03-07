@@ -322,8 +322,8 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             yield this.chromePromise;
             //TODO: Convert getResourceTree call to getFrameTree when supported
             const resourceTree = yield this.getResourceTree();
-            const { frameTree } = resourceTree;
-            const { frame, childFrames, resources } = frameTree;
+            // const { frameTree } = resourceTree;
+            const { frame, childFrames, resources } = resourceTree;
             this.createFrameState(frame, null, childFrames, resources);
             yield this.refreshRoot();
             yield this.addFrameListeners();
@@ -623,15 +623,20 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
     }
     ;
     pluckResourceFromTree(url, resourceTree) {
-        const { resources } = resourceTree;
+        const { resources, childFrames } = resourceTree;
         for (let i = 0; i < resources.length; i++) {
             const resource = resources[i];
             if (resource.url === url) {
                 return resource;
             }
         }
-        for (;;)
-            return null;
+        for (let j = 0; j < childFrames.length; j++) {
+            const resource = this.pluckResourceFromTree(url, childFrames[j]);
+            if (resource) {
+                return resource;
+            }
+        }
+        return null;
     }
     ;
     getResourceFromTree(url) {
@@ -740,8 +745,7 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
     printNetworkSummary() {
         return __awaiter(this, void 0, void 0, function* () {
             const resourceTree = yield this.getResourceTree();
-            const { frameTree } = resourceTree;
-            const { resources } = frameTree;
+            const { resources } = resourceTree;
             console.log(resources);
         });
     }
