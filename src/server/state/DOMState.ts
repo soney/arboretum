@@ -400,25 +400,6 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
             subNode.setParent(this);
         });
     };
-    public async setChildren(newChildren: Array<DOMState>):Promise<void> {
-        this.setSubNodes('children', newChildren);
-        const children = this.getChildren();
-        this.node.children = children.map((c) => c.getNode() );
-        this.node.childNodeCount = this.node.children.length;
-
-        if(this.isAttachedToShareDBDoc()) {
-            const doc = this.getShareDBDoc();
-            const filteredChildren:Array<DOMState> = newChildren.filter((c) => DOMState.shouldIncludeChild(c));
-            const sdbChildren:Array<ShareDBDOMNode> = filteredChildren.map((c) => c.createShareDBNode());
-            await doc.submitObjectReplaceOp(this.p('children'), sdbChildren);
-            filteredChildren.forEach((c) => c.markAttachedToShareDBDoc());
-        }
-    };
-    public async setShadowRoots(newChildren: Array<DOMState>):Promise<void> {
-        this.setSubNodes('shadowRoots', newChildren);
-        const children = this.getShadowRoots();
-        this.node.shadowRoots = children.map((c) => c.getNode() );
-    };
     public async setAttribute(name: string, value: string):Promise<void> {
         const node = this.node;
         const { attributes } = node;
@@ -459,17 +440,20 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
         }
     };
     private transformAttributeValue(attributeName:string, attributeValue:string):string {
-        const tagName = this.getTagName();
-        const tagTransform = urlTransform[tagName.toLowerCase()];
+        const lowercaseTagName:string = this.getTagName().toLowerCase();
+        const tagTransform = urlTransform[lowercaseTagName];
+        const lowercaseAttributeName:string = attributeName.toLowerCase();
+        const baseURL:string = this.getBaseURL();
         let newValue: string = attributeValue;
-        if (_.has(tagTransform, attributeName.toLowerCase())) {
-            const attributeTransofrm = tagTransform[attributeName.toLowerCase()];
-            const url = this.getBaseURL();
-            if (url) {
-                newValue = attributeTransofrm.transform(attributeValue, url, this);
+        if (_.has(tagTransform, lowercaseAttributeName)) {
+            const attributeTransform = tagTransform[lowercaseAttributeName];
+            if (baseURL) {
+                newValue = attributeTransform.transform(attributeValue, baseURL, this);
             } else {
                 log.debug('No base URL')
             }
+        } else if(lowercaseAttributeName === 'style') {
+            newValue = processCSSURLs(attributeValue, baseURL, this.getFrameId(), this.getTabId());
         }
         return newValue;
     };
@@ -614,10 +598,7 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
             })
         });
     };
-    public setChildrenRecursive(children: Array<CRI.Node>=[], shadowRoots:Array<CRI.Node>=[]):void {
-        if(this.getNodeId() === 21) {
-            // debugger;
-        }
+    public async setChildrenRecursive(children: Array<CRI.Node>=[], shadowRoots:Array<CRI.Node>=[]):Promise<void> {
         const childDOMStates:Array<DOMState> = children.map((child: CRI.Node) => {
             const {contentDocument, frameId} = child;
             const contentDocState = contentDocument ? this.tab.getOrCreateDOMState(contentDocument) : null;
@@ -626,7 +607,11 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
             const domState:DOMState = this.tab.getOrCreateDOMState(child, contentDocState, frame, this);
             return domState;
         });
-        this.setChildren(childDOMStates);
+
+        this.setSubNodes('children', childDOMStates);
+        this.node.children = childDOMStates.map((c) => c.getNode() );
+        this.node.childNodeCount = this.node.children.length;
+
 
         childDOMStates.map((domState:DOMState) => {
             const child:CRI.Node = domState.getNode();
@@ -644,7 +629,10 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
             const domState:DOMState = this.tab.getOrCreateDOMState(r, contentDocState, frame, this);
             return domState;
         });
-        this.setShadowRoots(shadowDOMRoots);
+
+        this.setSubNodes('shadowRoots', shadowDOMRoots);
+        this.node.shadowRoots = shadowDOMRoots.map((c) => c.getNode() );
+
         shadowDOMRoots.map((domState:DOMState) => {
             const child:CRI.Node = domState.getNode();
             const {children, shadowRoots} = child;
@@ -657,6 +645,14 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
             const node:CRI.Node = contentDocument.getNode();
             const {children, shadowRoots} = node;
             contentDocument.setChildrenRecursive(children, shadowRoots);
+        }
+
+        if(this.isAttachedToShareDBDoc()) {
+            const doc = this.getShareDBDoc();
+            const filteredChildren:Array<DOMState> = childDOMStates.filter((c) => DOMState.shouldIncludeChild(c));
+            const sdbChildren:Array<ShareDBDOMNode> = filteredChildren.map((c) => c.createShareDBNode());
+            await doc.submitObjectReplaceOp(this.p('children'), sdbChildren);
+            filteredChildren.forEach((c) => c.markAttachedToShareDBDoc());
         }
     };
 }

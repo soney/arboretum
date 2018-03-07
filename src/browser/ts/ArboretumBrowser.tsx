@@ -53,9 +53,6 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
             shareURL: '',
             adminURL: ''
         };
-        setTimeout(() => {
-            this.navigate('file:///home/soney/code/arboretum/test/simple.html');
-        }, 20000)
     };
 
     private goBack = ():void => {

@@ -64,6 +64,12 @@ export class ClientDocumentNode extends ClientNode {
     public remove():void {
         this.getChild().remove();
     };
+    public insertChild(child: ClientNode, index:number):void {
+        super.insertChild(child, index);
+        if(this.document) {
+            this.document.appendChild(child.getElement());
+        }
+    };
 };
 export class ClientDocumentTypeNode extends ClientNode {
     constructor(sdbNode:ShareDBDOMNode) { super(sdbNode); };

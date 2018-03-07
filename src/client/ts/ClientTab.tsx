@@ -24,9 +24,6 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
             tabID:this.props.tabID,
             frameID:this.props.frameID
         };
-        window['printTab'] = () => {
-            console.log(this.tabDoc.getData());
-        };
         // this.setTabID(this.props.tabID);
     };
     private getTabID():CRI.TabID { return this.props.tabID; };
@@ -73,8 +70,6 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
     };
     private handleOp(op:ShareDBClient.Op):void {
         const {node, property, path} = this.traverse(op);
-        console.log(op);
-        console.log(node, property, path);
         if(node && property) {
             const {oi, od} = op;
             if(property === 'characterData') {

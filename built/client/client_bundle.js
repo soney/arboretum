@@ -31047,7 +31047,6 @@ json.checkList = function(elem) {
 
 json.checkObj = function(elem) {
   if (!isObject(elem)) {
-    debugger;
     throw new Error("Referenced element not an object (it was " + JSON.stringify(elem) + ")");
   }
 };
@@ -31095,7 +31094,6 @@ json.apply = function(snapshot, op) {
 
       parent = elem;
       parentKey = key;
-      if(!elem) { debugger; }
       elem = elem[key];
       key = p;
 
@@ -33671,9 +33669,6 @@ class ClientTab extends React.Component {
             tabID: this.props.tabID,
             frameID: this.props.frameID
         };
-        window['printTab'] = () => {
-            console.log(this.tabDoc.getData());
-        };
         // this.setTabID(this.props.tabID);
     }
     ;
@@ -33709,8 +33704,6 @@ class ClientTab extends React.Component {
     ;
     handleOp(op) {
         const { node, property, path } = this.traverse(op);
-        console.log(op);
-        console.log(node, property, path);
         if (node && property) {
             const { oi, od } = op;
             if (property === 'characterData') {
@@ -33940,6 +33933,13 @@ class ClientDocumentNode extends ClientNode {
     ;
     remove() {
         this.getChild().remove();
+    }
+    ;
+    insertChild(child, index) {
+        super.insertChild(child, index);
+        if (this.document) {
+            this.document.appendChild(child.getElement());
+        }
     }
     ;
 }

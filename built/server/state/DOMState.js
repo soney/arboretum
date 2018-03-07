@@ -469,30 +469,6 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         });
     }
     ;
-    setChildren(newChildren) {
-        return __awaiter(this, void 0, void 0, function* () {
-            this.setSubNodes('children', newChildren);
-            const children = this.getChildren();
-            this.node.children = children.map((c) => c.getNode());
-            this.node.childNodeCount = this.node.children.length;
-            if (this.isAttachedToShareDBDoc()) {
-                const doc = this.getShareDBDoc();
-                const filteredChildren = newChildren.filter((c) => DOMState.shouldIncludeChild(c));
-                const sdbChildren = filteredChildren.map((c) => c.createShareDBNode());
-                yield doc.submitObjectReplaceOp(this.p('children'), sdbChildren);
-                filteredChildren.forEach((c) => c.markAttachedToShareDBDoc());
-            }
-        });
-    }
-    ;
-    setShadowRoots(newChildren) {
-        return __awaiter(this, void 0, void 0, function* () {
-            this.setSubNodes('shadowRoots', newChildren);
-            const children = this.getShadowRoots();
-            this.node.shadowRoots = children.map((c) => c.getNode());
-        });
-    }
-    ;
     setAttribute(name, value) {
         return __awaiter(this, void 0, void 0, function* () {
             const node = this.node;
@@ -535,18 +511,22 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
     }
     ;
     transformAttributeValue(attributeName, attributeValue) {
-        const tagName = this.getTagName();
-        const tagTransform = url_transform_1.urlTransform[tagName.toLowerCase()];
+        const lowercaseTagName = this.getTagName().toLowerCase();
+        const tagTransform = url_transform_1.urlTransform[lowercaseTagName];
+        const lowercaseAttributeName = attributeName.toLowerCase();
+        const baseURL = this.getBaseURL();
         let newValue = attributeValue;
-        if (_.has(tagTransform, attributeName.toLowerCase())) {
-            const attributeTransofrm = tagTransform[attributeName.toLowerCase()];
-            const url = this.getBaseURL();
-            if (url) {
-                newValue = attributeTransofrm.transform(attributeValue, url, this);
+        if (_.has(tagTransform, lowercaseAttributeName)) {
+            const attributeTransform = tagTransform[lowercaseAttributeName];
+            if (baseURL) {
+                newValue = attributeTransform.transform(attributeValue, baseURL, this);
             }
             else {
                 log.debug('No base URL');
             }
+        }
+        else if (lowercaseAttributeName === 'style') {
+            newValue = css_parser_1.processCSSURLs(attributeValue, baseURL, this.getFrameId(), this.getTabId());
         }
         return newValue;
     }
@@ -718,44 +698,53 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
     }
     ;
     setChildrenRecursive(children = [], shadowRoots = []) {
-        if (this.getNodeId() === 21) {
-            // debugger;
-        }
-        const childDOMStates = children.map((child) => {
-            const { contentDocument, frameId } = child;
-            const contentDocState = contentDocument ? this.tab.getOrCreateDOMState(contentDocument) : null;
-            const frame = frameId ? this.tab.getFrame(frameId) : null;
-            const domState = this.tab.getOrCreateDOMState(child, contentDocState, frame, this);
-            return domState;
+        return __awaiter(this, void 0, void 0, function* () {
+            const childDOMStates = children.map((child) => {
+                const { contentDocument, frameId } = child;
+                const contentDocState = contentDocument ? this.tab.getOrCreateDOMState(contentDocument) : null;
+                const frame = frameId ? this.tab.getFrame(frameId) : null;
+                const domState = this.tab.getOrCreateDOMState(child, contentDocState, frame, this);
+                return domState;
+            });
+            this.setSubNodes('children', childDOMStates);
+            this.node.children = childDOMStates.map((c) => c.getNode());
+            this.node.childNodeCount = this.node.children.length;
+            childDOMStates.map((domState) => {
+                const child = domState.getNode();
+                const { children, shadowRoots } = child;
+                domState.setChildrenRecursive(children, shadowRoots);
+                return domState;
+            });
+            const shadowDOMNodes = shadowRoots;
+            const shadowDOMRoots = shadowDOMNodes.map((r) => {
+                const { contentDocument, frameId } = r;
+                const contentDocState = contentDocument ? this.tab.getOrCreateDOMState(contentDocument) : null;
+                const frame = frameId ? this.tab.getFrame(frameId) : null;
+                const domState = this.tab.getOrCreateDOMState(r, contentDocState, frame, this);
+                return domState;
+            });
+            this.setSubNodes('shadowRoots', shadowDOMRoots);
+            this.node.shadowRoots = shadowDOMRoots.map((c) => c.getNode());
+            shadowDOMRoots.map((domState) => {
+                const child = domState.getNode();
+                const { children, shadowRoots } = child;
+                domState.setChildrenRecursive(children, shadowRoots);
+                return domState;
+            });
+            const contentDocument = this.getContentDocument();
+            if (contentDocument) {
+                const node = contentDocument.getNode();
+                const { children, shadowRoots } = node;
+                contentDocument.setChildrenRecursive(children, shadowRoots);
+            }
+            if (this.isAttachedToShareDBDoc()) {
+                const doc = this.getShareDBDoc();
+                const filteredChildren = childDOMStates.filter((c) => DOMState.shouldIncludeChild(c));
+                const sdbChildren = filteredChildren.map((c) => c.createShareDBNode());
+                yield doc.submitObjectReplaceOp(this.p('children'), sdbChildren);
+                filteredChildren.forEach((c) => c.markAttachedToShareDBDoc());
+            }
         });
-        this.setChildren(childDOMStates);
-        childDOMStates.map((domState) => {
-            const child = domState.getNode();
-            const { children, shadowRoots } = child;
-            domState.setChildrenRecursive(children, shadowRoots);
-            return domState;
-        });
-        const shadowDOMNodes = shadowRoots;
-        const shadowDOMRoots = shadowDOMNodes.map((r) => {
-            const { contentDocument, frameId } = r;
-            const contentDocState = contentDocument ? this.tab.getOrCreateDOMState(contentDocument) : null;
-            const frame = frameId ? this.tab.getFrame(frameId) : null;
-            const domState = this.tab.getOrCreateDOMState(r, contentDocState, frame, this);
-            return domState;
-        });
-        this.setShadowRoots(shadowDOMRoots);
-        shadowDOMRoots.map((domState) => {
-            const child = domState.getNode();
-            const { children, shadowRoots } = child;
-            domState.setChildrenRecursive(children, shadowRoots);
-            return domState;
-        });
-        const contentDocument = this.getContentDocument();
-        if (contentDocument) {
-            const node = contentDocument.getNode();
-            const { children, shadowRoots } = node;
-            contentDocument.setChildrenRecursive(children, shadowRoots);
-        }
     }
     ;
 }
