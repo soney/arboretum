@@ -22,7 +22,10 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
         this.refreshingRoot = false;
         this.domParent = null;
         this.executionContext = null;
+        this.requests = new Map();
+        this.responses = new Map();
         this.resourcePromises = new Map();
+        resources.forEach((resource) => this.recordResponse(resource));
         log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
     }
     ;
@@ -33,6 +36,20 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
                 yield this.root.markAttachedToShareDBDoc();
             }
         });
+    }
+    ;
+    recordResponse(response) {
+        this.responses.set(response.url, response);
+    }
+    ;
+    requestWillBeSent(event) {
+        const { url } = event;
+        this.requests.set(url, event);
+        log.debug(`Request will be sent ${url}`);
+    }
+    ;
+    responseReceived(event) {
+        return this.recordResponse(event.response);
     }
     ;
     getFrameInfo() {

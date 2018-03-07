@@ -66,7 +66,7 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         await this.refreshRoot();
 
         await this.addFrameListeners();
-        // await this.addNetworkListeners();
+        await this.addNetworkListeners();
         await this.addDOMListeners();
         // this.addNetworkListeners();
         await this.addExecutionContextListeners();
@@ -182,6 +182,36 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         this.chrome.on('DOM.shadowRootPopped', this.doHandleShadowRootPopped);
         this.chrome.on('DOM.shadowRootPushed', this.doHandleShadowRootPushed);
     };
+    private async addNetworkListeners():Promise<void> {
+        await this.chrome.Network.enable();
+        this.chrome.Network.requestWillBeSent(this.requestWillBeSent);
+        this.chrome.Network.responseReceived(this.responseReceived);
+    };
+    private requestWillBeSent = (event: CRI.RequestWillBeSentEvent): void => {
+        const { frameId } = event;
+        if (this.hasFrame(frameId)) {
+            const frame = this.getFrame(frameId);
+            frame.requestWillBeSent(event);
+        } else {
+            this.addPendingFrameEvent({
+                frameId: frameId,
+                event: event,
+                type: 'requestWillBeSent'
+            });
+        }
+    }
+    private responseReceived = (event: CRI.ResponseReceivedEvent): void => {
+        const { frameId } = event;
+        if (this.hasFrame(frameId)) {
+            this.getFrame(frameId).responseReceived(event);
+        } else {
+            this.addPendingFrameEvent({
+                frameId: frameId,
+                event: event,
+                type: 'responseReceived'
+            });
+        }
+    }
     public async requestChildNodes(nodeId: CRI.NodeID, depth: number = 1, pierce=false): Promise<CRI.RequestChildNodesResult> {
         return new Promise<CRI.RequestChildNodesResult>((resolve, reject) => {
             this.chrome.DOM.requestChildNodes({ nodeId, depth, pierce }, (err, val) => {

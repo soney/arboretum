@@ -24,6 +24,33 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
         this.sdb = sdb;
         this.frames = new Map();
         this.nodeMap = new Map();
+        this.requestWillBeSent = (event) => {
+            const { frameId } = event;
+            if (this.hasFrame(frameId)) {
+                const frame = this.getFrame(frameId);
+                frame.requestWillBeSent(event);
+            }
+            else {
+                this.addPendingFrameEvent({
+                    frameId: frameId,
+                    event: event,
+                    type: 'requestWillBeSent'
+                });
+            }
+        };
+        this.responseReceived = (event) => {
+            const { frameId } = event;
+            if (this.hasFrame(frameId)) {
+                this.getFrame(frameId).responseReceived(event);
+            }
+            else {
+                this.addPendingFrameEvent({
+                    frameId: frameId,
+                    event: event,
+                    type: 'responseReceived'
+                });
+            }
+        };
         this.onFrameAttached = (frameInfo) => {
             const { frameId, parentFrameId } = frameInfo;
             this.createFrameState({
@@ -298,7 +325,7 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             this.createFrameState(frame, null, childFrames, resources);
             yield this.refreshRoot();
             yield this.addFrameListeners();
-            // await this.addNetworkListeners();
+            yield this.addNetworkListeners();
             yield this.addDOMListeners();
             // this.addNetworkListeners();
             yield this.addExecutionContextListeners();
@@ -446,6 +473,14 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             this.chrome.on('DOM.documentUpdated', this.doHandleDocumentUpdated);
             this.chrome.on('DOM.shadowRootPopped', this.doHandleShadowRootPopped);
             this.chrome.on('DOM.shadowRootPushed', this.doHandleShadowRootPushed);
+        });
+    }
+    ;
+    addNetworkListeners() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.chrome.Network.enable();
+            this.chrome.Network.requestWillBeSent(this.requestWillBeSent);
+            this.chrome.Network.responseReceived(this.responseReceived);
         });
     }
     ;

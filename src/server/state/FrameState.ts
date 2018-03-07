@@ -19,11 +19,14 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
     private root: DOMState;
     private domParent: DOMState = null;
     private executionContext: CRI.ExecutionContextDescription = null;
+    private requests:Map<string, any> = new Map<string, any>();
+    private responses:Map<string, CRI.FrameResource> = new Map<string, CRI.FrameResource>();
 
 	private resourcePromises:Map<string, Promise<CRI.GetResourceContentResponse>> = new Map<string, Promise<CRI.GetResourceContentResponse>>();
 
     constructor(private chrome, private info: CRI.Frame, private tab: TabState, private parentFrame: FrameState = null, resources: Array<CRI.FrameResource> = []) {
         super();
+        resources.forEach((resource) => this.recordResponse(resource));
         log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
     };
     protected async onAttachedToShareDBDoc():Promise<void> {
@@ -31,6 +34,18 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
         if(this.root) {
             await this.root.markAttachedToShareDBDoc();
         }
+    };
+
+    private recordResponse(response:CRI.FrameResource):void {
+        this.responses.set(response.url, response);
+    };
+    public requestWillBeSent(event:CRI.RequestWillBeSentEvent):void {
+        const {url} = event;
+        this.requests.set(url, event);
+        log.debug(`Request will be sent ${url}`);
+    };
+    public responseReceived(event) {
+        return this.recordResponse(event.response);
     };
     public getFrameInfo():CRI.Frame {
         return this.info;
