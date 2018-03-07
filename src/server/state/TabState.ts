@@ -13,14 +13,14 @@ import {ShareDBSharedState} from '../../utils/ShareDBSharedState';
 const log = getColoredLogger('yellow');
 interface PendingFrameEvent {
     frameId: CRI.FrameID,
-    event: any,
+    event: CRI.RequestWillBeSentEvent | CRI.ResponseReceivedEvent,
     type: string
 };
 
 export class TabState extends ShareDBSharedState<TabDoc> {
     private tabID: CRI.TabID;
     private frames: Map<CRI.FrameID, FrameState> = new Map<CRI.FrameID, FrameState>();
-    // private pendingFrameEvents: Map<CRI.FrameID, Array<PendingFrameEvent>> = new Map<CRI.FrameID, Array<PendingFrameEvent>>();
+    private pendingFrameEvents: Map<CRI.FrameID, Array<PendingFrameEvent>> = new Map<CRI.FrameID, Array<PendingFrameEvent>>();
     private chrome: CRI.Chrome;
     private chromePromise: Promise<CRI.Chrome>;
     private domRoot:DOMState;
@@ -186,6 +186,28 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         await this.chrome.Network.enable();
         this.chrome.Network.requestWillBeSent(this.requestWillBeSent);
         this.chrome.Network.responseReceived(this.responseReceived);
+    };
+    private addPendingFrameEvent(eventInfo:PendingFrameEvent):void {
+        const {frameId} = eventInfo;
+        if(this.pendingFrameEvents.has(frameId)) {
+            this.pendingFrameEvents.get(frameId).push(eventInfo);
+        } else {
+            this.pendingFrameEvents.set(frameId, [eventInfo]);
+        }
+    };
+    private updateFrameOnEvents(frameState:FrameState):void {
+        const frameID:CRI.FrameID = frameState.getFrameId();
+        const pendingFrameEvents = this.pendingFrameEvents.get(frameID);
+        if(pendingFrameEvents) {
+            pendingFrameEvents.forEach((eventInfo) => {
+                const {type, event} = eventInfo;
+                if(type === 'responseReceived') {
+                    frameState.responseReceived(event as CRI.ResponseReceivedEvent);
+                } else if(type === 'requestWillBeSent') {
+                    frameState.requestWillBeSent(event as CRI.RequestWillBeSentEvent);
+                }
+            });
+        }
     };
     private requestWillBeSent = (event: CRI.RequestWillBeSentEvent): void => {
         const { frameId } = event;

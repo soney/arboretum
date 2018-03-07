@@ -23,6 +23,7 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
         this.info = info;
         this.sdb = sdb;
         this.frames = new Map();
+        this.pendingFrameEvents = new Map();
         this.nodeMap = new Map();
         this.requestWillBeSent = (event) => {
             const { frameId } = event;
@@ -482,6 +483,32 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             this.chrome.Network.requestWillBeSent(this.requestWillBeSent);
             this.chrome.Network.responseReceived(this.responseReceived);
         });
+    }
+    ;
+    addPendingFrameEvent(eventInfo) {
+        const { frameId } = eventInfo;
+        if (this.pendingFrameEvents.has(frameId)) {
+            this.pendingFrameEvents.get(frameId).push(eventInfo);
+        }
+        else {
+            this.pendingFrameEvents.set(frameId, [eventInfo]);
+        }
+    }
+    ;
+    updateFrameOnEvents(frameState) {
+        const frameID = frameState.getFrameId();
+        const pendingFrameEvents = this.pendingFrameEvents.get(frameID);
+        if (pendingFrameEvents) {
+            pendingFrameEvents.forEach((eventInfo) => {
+                const { type, event } = eventInfo;
+                if (type === 'responseReceived') {
+                    frameState.responseReceived(event);
+                }
+                else if (type === 'requestWillBeSent') {
+                    frameState.requestWillBeSent(event);
+                }
+            });
+        }
     }
     ;
     requestChildNodes(nodeId, depth = 1, pierce = false) {

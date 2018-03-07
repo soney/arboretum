@@ -20,7 +20,8 @@ declare namespace CRI {
     type UnserializableValue = string;
     type ErrorReason = string;
     type MonotonicTime = number;
-    type Headers = any;
+    type ResourcePriority = string;
+    type Headers = {};
     type ShadowRootType = 'user-agent' | 'open' | 'closed';
     type ResourceType = 'Document' | 'Stylesheet' | 'Image' | 'Media' | 'Font' | 'Script' | 'TextTrack' | 'XHR' | 'Fetch' | 'EventSource' | 'WebSocket' | 'Manifest' | 'Other';
     type TransitionType = 'link' | 'typed' | 'auto_bookmark' | 'auto_subframe' | 'manual_subframe' | 'generated' | 'auto_toplevel' | 'form_submit' | 'reload' | 'keyword' | 'keyword_generated' | 'other';
@@ -401,7 +402,7 @@ declare namespace CRI {
         timestamp:MonotonicTime,
         wallTime:Network.TimeSinceEpoch,
         initiator:Initiator,
-        redirectResponse:Response,
+        redirectResponse:Network.Response,
         type:ResourceType,
         frameId:FrameID
     }
@@ -410,7 +411,7 @@ declare namespace CRI {
         loaderId:Network.LoaderID,
         timestamp:MonotonicTime,
         type:ResourceType,
-        response:Response,
+        response:Network.Response,
         frameId:FrameID
     }
     interface DocumentUpdatedEvent { }
@@ -469,6 +470,85 @@ declare namespace CRI {
     namespace Network {
         type LoaderID = string;
         type TimeSinceEpoch = number;
+        interface Response {
+            url:string,
+            status:number,
+            statusText:string,
+            headers:Headers,
+            headersText:string,
+            mimeType:string,
+            requestHeaders:Headers,
+            requestHeadersText:string,
+            connectionReused:boolean,
+            connectionId:number,
+            remoteIPAddress:string,
+            remotePort:number,
+            fromDiskCache:boolean,
+            fromServiceWorker:boolean,
+            encodedDataLength:number,
+            timing:ResourceTiming,
+            protocl:string,
+            securityState:Security.SecurityState,
+            securityDetails:SecurityDetails
+        }
+        interface Request {
+            url:string,
+            method:string,
+            headers:Headers,
+            postData:string,
+            hasPostData:boolean,
+            mixedContentType:Security.MixedContentType,
+            initialPriority:ResourcePriority,
+            referrerPolicy:string,
+            isLinkPreload:boolean
+        }
+        interface SignedCertificateTimestamp {
+            status:string,
+            origin:string,
+            logDescription:string,
+            logId:string,
+            timestamp:TimeSinceEpoch,
+            hashAlgorithm:string,
+            signatureAlgorithm:string,
+            signatureData:string
+        }
+        interface SecurityDetails {
+            protocol:string,
+            keyExchange:string,
+            keyExchangeGroup:string,
+            cipher:string,
+            mac:string,
+            certificateId:Security.CertificateId,
+            subjectName:string,
+            sanList:Array<string>,
+            issuer:string,
+            validFrom:TimeSinceEpoch,
+            validTo:TimeSinceEpoch,
+            signedCertificateTimestampList:Array<SignedCertificateTimestamp>
+
+        }
+        interface ResourceTiming {
+            proxyStart:number,
+            proxyEnd:number,
+            dnsStart:number,
+            dnsEnd:number,
+            connectStart:number,
+            connectEnd:number,
+            sslStart:number,
+            sslEnd:number,
+            workerStart:number,
+            workerReady:number,
+            sendStart:number,
+            sendEnd:number,
+            pushStart:number,
+            pushEnd:number,
+            receiveHeadersEnd:number
+        }
+    }
+    namespace Security {
+        type CertificateId = number;
+        type SecurityState = 'unknown' | 'neutral' | 'insecure' | 'secure' | 'info';
+        type MixedContentType = 'blockable' | 'optionally-blockable' | 'none';
     }
 
     interface CSSProperty {

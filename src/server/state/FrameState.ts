@@ -19,8 +19,8 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
     private root: DOMState;
     private domParent: DOMState = null;
     private executionContext: CRI.ExecutionContextDescription = null;
-    private requests:Map<string, any> = new Map<string, any>();
-    private responses:Map<string, CRI.FrameResource> = new Map<string, CRI.FrameResource>();
+    private requests:Map<string, CRI.Network.Request> = new Map<string, any>();
+    private responses:Map<string, CRI.Network.Response> = new Map<string, CRI.Network.Response>();
 
 	private resourcePromises:Map<string, Promise<CRI.GetResourceContentResponse>> = new Map<string, Promise<CRI.GetResourceContentResponse>>();
 
@@ -36,15 +36,16 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
         }
     };
 
-    private recordResponse(response:CRI.FrameResource):void {
+    private recordResponse(response:CRI.Network.Response):void {
         this.responses.set(response.url, response);
     };
     public requestWillBeSent(event:CRI.RequestWillBeSentEvent):void {
-        const {url} = event;
+        const {request} = event;
+        const {url} = request;
         this.requests.set(url, event);
         log.debug(`Request will be sent ${url}`);
     };
-    public responseReceived(event) {
+    public responseReceived(event:CRI.ResponseReceivedEvent) {
         return this.recordResponse(event.response);
     };
     public getFrameInfo():CRI.Frame {
@@ -84,6 +85,8 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
         if (root) {
             root.destroy();
         }
+        this.requests.clear();
+        this.responses.clear();
 		this.resourcePromises.clear();
         log.debug(`=== DESTROYED FRAME STATE ${this.getFrameId()} ====`);
     };
@@ -113,7 +116,7 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
     public getResponseBody(requestId:CRI.RequestID):Promise<CRI.GetResponseBodyResponse> {
         return new Promise<CRI.GetResponseBodyResponse>((resolve, reject) => {
             this.chrome.Network.getResponseBody({
-                requestId: requestId
+                requestId
             }, function(err, value) {
                 if(err) {
                     reject(value);
@@ -127,8 +130,7 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
     private doGetResource(url:string):Promise<CRI.GetResourceContentResponse> {
         return new Promise<CRI.GetResourceContentResponse>((resolve, reject) => {
             this.chrome.Page.getResourceContent({
-                frameId: this.getFrameId(),
-                url: url
+                url, frameId: this.getFrameId()
             }, function(err, val) {
                 if(err) {
                     reject(new Error(`Could not find resource '${url}'`));

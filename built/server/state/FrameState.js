@@ -43,7 +43,8 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
     }
     ;
     requestWillBeSent(event) {
-        const { url } = event;
+        const { request } = event;
+        const { url } = request;
         this.requests.set(url, event);
         log.debug(`Request will be sent ${url}`);
     }
@@ -99,6 +100,8 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
         if (root) {
             root.destroy();
         }
+        this.requests.clear();
+        this.responses.clear();
         this.resourcePromises.clear();
         log.debug(`=== DESTROYED FRAME STATE ${this.getFrameId()} ====`);
     }
@@ -130,7 +133,7 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
     getResponseBody(requestId) {
         return new Promise((resolve, reject) => {
             this.chrome.Network.getResponseBody({
-                requestId: requestId
+                requestId
             }, function (err, value) {
                 if (err) {
                     reject(value);
@@ -144,8 +147,7 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
     doGetResource(url) {
         return new Promise((resolve, reject) => {
             this.chrome.Page.getResourceContent({
-                frameId: this.getFrameId(),
-                url: url
+                url, frameId: this.getFrameId()
             }, function (err, val) {
                 if (err) {
                     reject(new Error(`Could not find resource '${url}'`));
