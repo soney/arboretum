@@ -26,8 +26,11 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
         this.pendingFrameEvents = new Map();
         this.nodeMap = new Map();
         this.requests = new Map();
+        this.loadingFinished = (event) => {
+        };
+        this.loadingFailed = (event) => {
+        };
         this.requestWillBeSent = (event) => {
-            console.log('Request', event.request.url);
             const { frameId } = event;
             if (this.hasFrame(frameId)) {
                 const frame = this.getFrame(frameId);
@@ -42,7 +45,6 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             }
         };
         this.responseReceived = (event) => {
-            console.log('Response ', event.response.url);
             const { frameId } = event;
             if (this.hasFrame(frameId)) {
                 this.getFrame(frameId).responseReceived(event);
@@ -322,8 +324,8 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             yield this.chromePromise;
             //TODO: Convert getResourceTree call to getFrameTree when supported
             const resourceTree = yield this.getResourceTree();
-            // const { frameTree } = resourceTree;
-            const { frame, childFrames, resources } = resourceTree;
+            const { frameTree } = resourceTree;
+            const { frame, childFrames, resources } = frameTree;
             this.createFrameState(frame, null, childFrames, resources);
             yield this.refreshRoot();
             yield this.addFrameListeners();
@@ -514,12 +516,6 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
         }
     }
     ;
-    loadingFinished(event) {
-    }
-    ;
-    loadingFailed(event) {
-    }
-    ;
     requestChildNodes(nodeId, depth = 1, pierce = false) {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((resolve, reject) => {
@@ -630,10 +626,12 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
                 return resource;
             }
         }
-        for (let j = 0; j < childFrames.length; j++) {
-            const resource = this.pluckResourceFromTree(url, childFrames[j]);
-            if (resource) {
-                return resource;
+        if (childFrames) {
+            for (let j = 0; j < childFrames.length; j++) {
+                const resource = this.pluckResourceFromTree(url, childFrames[j]);
+                if (resource) {
+                    return resource;
+                }
             }
         }
         return null;
@@ -642,7 +640,7 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
     getResourceFromTree(url) {
         return __awaiter(this, void 0, void 0, function* () {
             const resourceTree = yield this.getResourceTree();
-            return this.pluckResourceFromTree(url, resourceTree);
+            return this.pluckResourceFromTree(url, resourceTree.frameTree);
         });
     }
     ;
@@ -745,7 +743,7 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
     printNetworkSummary() {
         return __awaiter(this, void 0, void 0, function* () {
             const resourceTree = yield this.getResourceTree();
-            const { resources } = resourceTree;
+            const { resources } = resourceTree.frameTree;
             console.log(resources);
         });
     }

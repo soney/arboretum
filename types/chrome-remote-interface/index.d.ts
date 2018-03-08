@@ -149,6 +149,9 @@ declare namespace CRI {
     }
 
     interface GetResourceTreeOptions {}
+    interface GetResourceTreeResponse {
+        frameTree: Page.FrameResourceTree
+    }
     interface NavigateOptions {
         url:string,
         referrer?:string,
@@ -184,7 +187,7 @@ declare namespace CRI {
     interface Page {
         enable:()=>void;
         disable:()=>void;
-        getResourceTree:(options:GetResourceTreeOptions, callback:(err:any, resources:Page.FrameResourceTree)=>any) => void;
+        getResourceTree:(options:GetResourceTreeOptions, callback:(err:any, resources:GetResourceTreeResponse)=>any) => void;
         frameAttached:(callback:(FrameAttachedEvent)=>void) => void;
         frameDetached:(callback:(FrameDetachedEvent)=>void) => void;
         frameNavigated:(callback:(FrameNavigatedEvent)=>void) => void;

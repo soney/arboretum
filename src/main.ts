@@ -100,6 +100,7 @@ expressApp.all('/', async (req, res, next) => {
                 res.send(content);
             }
         } catch (err) {
+            // console.error(err);
             console.error(`Failed to get ${url}. Trying to pipe`);
             try {
                 const {method} = req;

@@ -138,8 +138,8 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
     requestResource(url, frameID, tabID) {
         return __awaiter(this, void 0, void 0, function* () {
             const tabState = this.tabs.get(tabID);
-            const resourceContent = yield tabState.getResourceContent(frameID, url);
             const resource = yield tabState.getResource(url);
+            const resourceContent = yield tabState.getResourceContent(frameID, url);
             if (resource) {
                 const { mimeType } = resource;
                 if (mimeType === 'text/css') {

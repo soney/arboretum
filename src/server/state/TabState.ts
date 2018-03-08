@@ -60,14 +60,14 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         });
         await this.chromePromise;
         //TODO: Convert getResourceTree call to getFrameTree when supported
-        const resourceTree:CRI.Page.FrameResourceTree = await this.getResourceTree();
-        // const { frameTree } = resourceTree;
-        const { frame, childFrames, resources } = resourceTree;
+        const resourceTree:CRI.GetResourceTreeResponse = await this.getResourceTree();
+        const { frameTree } = resourceTree;
+        const { frame, childFrames, resources } = frameTree;
         this.createFrameState(frame, null, childFrames, resources);
         await this.refreshRoot();
 
         await this.addFrameListeners();
-        await this.addNetworkListeners();
+        // await this.addNetworkListeners();
         await this.addDOMListeners();
         // this.addNetworkListeners();
         await this.addExecutionContextListeners();
@@ -212,12 +212,11 @@ export class TabState extends ShareDBSharedState<TabDoc> {
             });
         }
     };
-    private loadingFinished(event:CRI.LoadingFinishedEvent) {
+    private loadingFinished = (event:CRI.LoadingFinishedEvent) => {
     };
-    private loadingFailed(event:CRI.LoadingFailedEvent) {
+    private loadingFailed = (event:CRI.LoadingFailedEvent) => {
     };
     private requestWillBeSent = (event: CRI.RequestWillBeSentEvent): void => {
-        console.log('Request', event.request.url);
         const { frameId } = event;
         if (this.hasFrame(frameId)) {
             const frame = this.getFrame(frameId);
@@ -231,7 +230,6 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         }
     }
     private responseReceived = (event: CRI.ResponseReceivedEvent): void => {
-        console.log('Response ', event.response.url);
         const { frameId } = event;
         if (this.hasFrame(frameId)) {
             this.getFrame(frameId).responseReceived(event);
@@ -359,18 +357,20 @@ export class TabState extends ShareDBSharedState<TabDoc> {
             }
         }
 
-        for(let j = 0; j<childFrames.length; j++) {
-            const resource:CRI.Page.FrameResource = this.pluckResourceFromTree(url, childFrames[j]);
-            if(resource) {
-                return resource;
+        if(childFrames) {
+            for(let j = 0; j<childFrames.length; j++) {
+                const resource:CRI.Page.FrameResource = this.pluckResourceFromTree(url, childFrames[j]);
+                if(resource) {
+                    return resource;
+                }
             }
         }
 
         return null;
     };
     private async getResourceFromTree(url:string):Promise<CRI.Page.FrameResource> {
-        const resourceTree:CRI.Page.FrameResourceTree = await this.getResourceTree();
-        return this.pluckResourceFromTree(url, resourceTree);
+        const resourceTree:CRI.GetResourceTreeResponse = await this.getResourceTree();
+        return this.pluckResourceFromTree(url, resourceTree.frameTree);
     };
     public async getResource(url:string):Promise<CRI.Page.FrameResource> {
         const fromTree:CRI.Page.FrameResource = await this.getResourceFromTree(url);
@@ -402,9 +402,9 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         });
     };
 
-    private async getResourceTree(): Promise<CRI.Page.FrameResourceTree> {
-        return new Promise<CRI.Page.FrameResourceTree>((resolve, reject) => {
-            this.chrome.Page.getResourceTree({}, (err, value: CRI.Page.FrameResourceTree) => {
+    private async getResourceTree(): Promise<CRI.GetResourceTreeResponse> {
+        return new Promise<CRI.GetResourceTreeResponse>((resolve, reject) => {
+            this.chrome.Page.getResourceTree({}, (err, value: CRI.GetResourceTreeResponse) => {
                 if (err) { reject(value); }
                 else { resolve(value); }
             });
@@ -442,8 +442,8 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         }
     };
     public async printNetworkSummary():Promise<void> {
-        const resourceTree:CRI.Page.FrameResourceTree = await this.getResourceTree();
-        const {resources} = resourceTree;
+        const resourceTree:CRI.GetResourceTreeResponse = await this.getResourceTree();
+        const {resources} = resourceTree.frameTree;
         console.log(resources);
     };
     public destroy() {

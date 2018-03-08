@@ -7370,7 +7370,7 @@ const React = __webpack_require__(0);
 const ReactDOM = __webpack_require__(39);
 const ArboretumBrowser_1 = __webpack_require__(48);
 __webpack_require__(78);
-ReactDOM.render(React.createElement(ArboretumBrowser_1.ArboretumBrowser, { serverState: "active", urls: ['http://www.umich.edu/'] }), document.getElementById('arboretum_main'));
+ReactDOM.render(React.createElement(ArboretumBrowser_1.ArboretumBrowser, { serverState: "active", urls: ['file:///home/soney/code/arboretum/test/index.html'] }), document.getElementById('arboretum_main'));
 
 
 /***/ }),
@@ -27442,7 +27442,6 @@ json.checkList = function(elem) {
 
 json.checkObj = function(elem) {
   if (!isObject(elem)) {
-    debugger;
     throw new Error("Referenced element not an object (it was " + JSON.stringify(elem) + ")");
   }
 };
@@ -27490,7 +27489,6 @@ json.apply = function(snapshot, op) {
 
       parent = elem;
       parentKey = key;
-      if(!elem) { debugger; }
       elem = elem[key];
       key = p;
 

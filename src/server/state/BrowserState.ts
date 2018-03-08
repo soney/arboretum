@@ -120,8 +120,9 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
     };
     public async requestResource(url: string, frameID: CRI.FrameID, tabID: CRI.TabID): Promise<[CRI.Page.FrameResource, CRI.GetResourceContentResponse]> {
         const tabState: TabState = this.tabs.get(tabID);
-        const resourceContent:CRI.GetResourceContentResponse = await tabState.getResourceContent(frameID, url);
+        
         const resource:CRI.Page.FrameResource = await tabState.getResource(url);
+        const resourceContent:CRI.GetResourceContentResponse = await tabState.getResourceContent(frameID, url);
         if(resource) {
             const {mimeType} = resource;
             if(mimeType === 'text/css') {

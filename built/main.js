@@ -100,6 +100,7 @@ expressApp.all('/', (req, res, next) => __awaiter(this, void 0, void 0, function
         }
     }
     catch (err) {
+        // console.error(err);
         console.error(`Failed to get ${url}. Trying to pipe`);
         try {
             const { method } = req;

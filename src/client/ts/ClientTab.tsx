@@ -4,6 +4,7 @@ import {ShareDBDOMNode, TabDoc, BrowserDoc, CanvasImage} from '../../utils/state
 import * as ShareDBClient from 'sharedb/lib/client';
 import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
 import {createClientNode, ClientNode, ClientElementNode} from './ClientDOMNode';
+import {NodeSelector} from './NodeSelector';
 
 type ClientTabProps = {
     tabID?:CRI.TabID,
@@ -18,6 +19,7 @@ type ClientTabState = {
 export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
     private tabDoc:SDBDoc<TabDoc>;
     private rootElement:ClientNode;
+    private nodeSelector:NodeSelector = new NodeSelector();
     constructor(props) {
         super(props);
         this.state = {
