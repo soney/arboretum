@@ -1,0 +1,37 @@
+@import "../../utils/ArboretumChat.scss";
+$header_height: 20px;
+$sidebar_width: 250px;
+html, body, #client_main, #arboretum_client {
+    margin: 0px;
+    padding: 0px;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+}
+body {
+    background-color: #333;
+    #arboretum_client {
+        display: flex;
+        flex-direction: column;
+        #client_header {
+            flex: 0 0 $header_height;
+        }
+        #client_body {
+            display: flex;
+            flex: 1 0 100%;
+            #client_sidebar {
+                flex: 0 0 $sidebar_width;
+                display: flex;
+                flex-direction: column;
+            }
+            #client_content {
+                flex: 1;
+                iframe#content {
+                    border: none;
+                    width: 100%;
+                    height: 100%;
+                }
+            }
+        }
+    }
+}

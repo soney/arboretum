@@ -50,6 +50,7 @@ export abstract class ClientNode {
 export class ClientDocumentNode extends ClientNode {
     constructor(sdbNode:ShareDBDOMNode, private document?:Document) {
         super(sdbNode);
+        this.setChildren(this.getChildren());
     };
     public getDocument():Document { return this.document; };
     public removeChildren():void {
@@ -70,6 +71,13 @@ export class ClientDocumentNode extends ClientNode {
             this.document.appendChild(child.getElement());
         }
     };
+    public setChildren(children:Array<ClientNode>):void {
+        super.setChildren(children);
+        this.removeChildren();
+        children.forEach((c) => {
+            this.document.appendChild(c.getElement());
+        });
+    };
 };
 export class ClientDocumentTypeNode extends ClientNode {
     constructor(sdbNode:ShareDBDOMNode) { super(sdbNode); };
@@ -81,12 +89,13 @@ export class ClientElementNode extends ClientNode {
     private element:HTMLElement|SVGElement;
     constructor(sdbNode:ShareDBDOMNode) {
         super(sdbNode);
-        const {nodeName, isSVG} = this.sdbNode;
+        const {nodeName, isSVG, nodeId} = this.sdbNode;
         if(isSVG) {
             this.element = document.createElementNS('http://www.w3.org/2000/svg', nodeName);
         } else {
             this.element = document.createElement(nodeName)
         }
+        this.element.setAttribute('data-arboretum-node-id', `${nodeId}`);
         this.initialize();
     };
     private async initialize():Promise<void> {

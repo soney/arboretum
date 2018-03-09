@@ -51,12 +51,21 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
             this.clientTab.setTabID(this.tabID);
         }
     };
+
     public render():React.ReactNode {
         const {showControls} = this.state;
-        return <div>
-            {showControls ? <TabList sdb={this.sdb} onSelectTab={this.onSelectTab} /> : null}
-            {showControls ? <ArboretumChatBox username="Steve" sdb={this.sdb} /> : null}
-            <ClientTab tabID={this.props.tabID} frameID={this.props.frameID} ref={this.clientTabRef} sdb={this.sdb} />
+        return <div id="arboretum_client">
+            <header id="client_header">
+                <TabList sdb={this.sdb} onSelectTab={this.onSelectTab} />
+            </header>
+            <div id="client_body">
+                <div id="client_sidebar">
+                    <ArboretumChatBox sdb={this.sdb} username="Steve" />
+                </div>
+                <div id="client_content">
+                    <ClientTab tabID={this.props.tabID} frameID={this.props.frameID} ref={this.clientTabRef} sdb={this.sdb} />
+                </div>
+            </div>
         </div>;
     };
 };

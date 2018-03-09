@@ -3,7 +3,7 @@ import * as ReactDOM from 'react-dom';
 import {ShareDBDOMNode, TabDoc, BrowserDoc, CanvasImage} from '../../utils/state_interfaces';
 import * as ShareDBClient from 'sharedb/lib/client';
 import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
-import {createClientNode, ClientNode, ClientElementNode} from './ClientDOMNode';
+import {createClientNode, ClientDocumentNode, ClientNode, ClientElementNode} from './ClientDOMNode';
 import {NodeSelector} from './NodeSelector';
 
 type ClientTabProps = {
@@ -20,6 +20,8 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
     private tabDoc:SDBDoc<TabDoc>;
     private rootElement:ClientNode;
     private nodeSelector:NodeSelector = new NodeSelector();
+    private iframeElement:HTMLIFrameElement;
+
     constructor(props) {
         super(props);
         this.state = {
@@ -66,9 +68,9 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
             this.rootElement = null;
         }
 
-        this.rootElement = createClientNode(root);
-        const node = ReactDOM.findDOMNode(this);
-        node.appendChild(this.rootElement.getElement());
+        this.rootElement = new ClientDocumentNode(root, this.iframeElement.contentDocument);
+        // const node = ReactDOM.findDOMNode(this);
+        // node.appendChild(this.rootElement.getElement());
     };
     private handleOp(op:ShareDBClient.Op):void {
         const {node, property, path} = this.traverse(op);
@@ -165,7 +167,24 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
         }
         return {node:null, property:null, path:p};
     };
+    // private updateIFrameContents():void {
+
+        // ReactDOM.render((
+            // <ClientTab tabID={this.props.tabID} frameID={this.props.frameID} ref={this.clientTabRef} sdb={this.props.sdb} />
+        // ), this.iframeElement.contentDocument.children[0]);
+    // };
+    // public componentDidMount():void {
+        // if(this.iframeElement) { this.updateIFrameContents(); }
+    // };
+    // public componentDidUpdate():void {
+        // if(this.iframeElement) { this.updateIFrameContents(); }
+    // };
+    private contentFrameRef = (el:HTMLIFrameElement):void => {
+        this.iframeElement = el;
+        // console.log(this.iframeElement);
+        // this.updateIFrameContents();
+    };
     public render():React.ReactNode {
-        return <div>{this.state.frameID}</div>
+        return <iframe id='content' ref={this.contentFrameRef} />;
     };
 };

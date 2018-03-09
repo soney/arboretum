@@ -126,7 +126,6 @@ export class NodeSelector {
                     top:    boundingRect.top    + boundingHeight/factor,
                     bottom: boundingRect.bottom - boundingHeight/factor
                 };
-                console.log(smallerRect);
                 if(NodeSelector.inside(smallerRect, this.rect)) {
                     result.push(child);
                 } else {
