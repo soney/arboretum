@@ -1,6 +1,8 @@
 import * as React from 'react';
-import {SDB, SDBDoc} from './ShareDBDoc';
-import {ArboretumChat, Message, User} from './ArboretumChat';
+import {SDB, SDBDoc} from '../ShareDBDoc';
+import {ArboretumChat, Message, User} from '../ArboretumChat';
+
+require('./ArboretumChat.scss');
 
 const ENTER_KEY:number = 13;
 
@@ -113,10 +115,6 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
         const users = this.state.users.map((u) => {
             const isMe = u.id === meUserID;
             const style = {color: u.color};
-            if(isMe) {
-                style['textDecoration'] = 'underline overline';
-                style['fontWeight'] = 'bold';
-            }
             return <span key={u.id} className={`participant ${isMe?'me':''}`} style={style}>{u.displayName}</span>;
         });
         return <div className='chat'>

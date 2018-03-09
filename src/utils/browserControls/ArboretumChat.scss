@@ -1,0 +1,69 @@
+.chat {
+    font-family: system, -apple-system, ".SFNSDisplay-Regular", "Helvetica Neue", Helvetica, "Segoe UI", sans-serif;
+    background-color: #EEE;
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+
+    #task_title {
+        flex: 0 0;
+        box-sizing: border-box;
+        padding: 5px 10px 5px;
+    }
+    #chat-participants {
+        flex: 0 0;
+        border-bottom: 1px solid #CCC;
+        background-color: #DDD;
+        padding: 5px 10px 5px;
+        box-sizing: border-box;
+        .participant {
+            margin: 2px;
+            &.me {
+                font-weight: bold;
+                text-decoration: underline;
+            }
+        }
+    }
+    #chat-lines {
+        flex: 2 0;
+        box-sizing: border-box;
+        padding: 0px 10px 0px;
+        margin: 0px;
+        overflow-y: auto;
+        li {
+            list-style-type: none;
+        }
+        .chat-line {
+            font-size: 0.9em;
+            list-style-type: none;
+            list-style-type: none;
+            margin-top: 2px;
+            padding-top: 2px;
+            margin-bottom: 2px;
+            padding-bottom: 2px;
+            color: #555;
+            .from {
+                font-weight: bold;
+            }
+            .from::after {
+                content: ": ";
+            }
+        }
+    }
+    #chat-form {
+        padding: 0px 2px 0px;
+        flex: 0;
+        textarea#chat-box {
+            box-sizing: border-box;
+            resize: none;
+            flex-grow: 1;
+            width: 100%;
+            font-family: system, -apple-system, ".SFNSDisplay-Regular", "Helvetica Neue", Helvetica, "Segoe UI", sans-serif;
+            padding: 5px 10px 5px;
+        }
+        .form-actions {
+            text-align: right;
+        }
+    }
+}

@@ -2,7 +2,7 @@ import * as $ from 'jquery';
 import * as _ from 'underscore';
 import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
 import {ClientTab} from './ClientTab';
-import {ArboretumChatBox} from '../../utils/ArboretumChatBox';
+import {ArboretumChatBox} from '../../utils/browserControls/ArboretumChatBox';
 import {TabList} from './TabList';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';

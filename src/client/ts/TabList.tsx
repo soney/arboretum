@@ -51,13 +51,9 @@ export class TabList extends React.Component<TabListProps, TabListState> {
     public render():React.ReactNode {
         const tabs:Array<JSX.Element> = this.state.tabs.map((tabInfo:CRI.TabInfo, index) => {
             const {id} = tabInfo;
-            const style = { color: 'blue', cursor: 'pointer' };
-            if(id === this.state.selectedTab) {
-                style['fontWeight'] = 'bold';
-                style['color'] = 'red';
-            }
-            return <li style={style} data-tabid={id} key={id} onClick={this.changeSelectedTab}>{tabInfo.title}</li>
+            const isSelected:boolean = id === this.state.selectedTab;
+            return <li className={'tab' + (isSelected?' selected':'')} data-tabid={id} key={id} onClick={this.changeSelectedTab}>{tabInfo.title}</li>
         });
-        return <ul>{tabs}</ul>
+        return <ul id='tabs'>{tabs}</ul>
     };
 };

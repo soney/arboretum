@@ -1,5 +1,12 @@
-@import "../../utils/ArboretumChat.scss";
-$header_height: 20px;
+// @import "../../utils/browserControls/ArboretumChat.scss";
+// From top to bottom
+@mixin linear-gradient($color-from, $color-to) {
+    background-color: $color-from; // Old browsers
+    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%,$color-from), color-stop(100%,$color-to)); // Chrome, Safari4+
+    background-image: -webkit-linear-gradient(top, $color-from 0%, $color-to 100%);           // Chrome10+, Safari5.1+
+    background-image: linear-gradient(to bottom, $color-from 0%, $color-to 100%);  // W3C
+}
+$header_height: 40px;
 $sidebar_width: 250px;
 html, body, #client_main, #arboretum_client {
     margin: 0px;
@@ -9,23 +16,63 @@ html, body, #client_main, #arboretum_client {
     overflow: hidden;
 }
 body {
+    font-family: system, -apple-system, ".SFNSDisplay-Regular", "Helvetica Neue", Helvetica, "Segoe UI", sans-serif;
     background-color: #333;
     #arboretum_client {
         display: flex;
         flex-direction: column;
         #client_header {
+            max-height: $header_height;
             flex: 0 0 $header_height;
+            @include linear-gradient(#e8e6e8, #d1cfd1);
+
+            #tabs {
+                display: flex;
+                flex: 1;
+                padding: 0px;
+                margin: 0px;
+                overflow: hidden;
+                .tab {
+                    flex: 1;
+                    display: flex;
+                    text-align: center;
+                    border-left: 1px solid #989698;
+                    @include linear-gradient(#b8b6b8, #b0aeb0);
+                    border-left: 1px solid #AAA;
+                    list-style: none;
+                    white-space: nowrap;
+                    border-bottom: 1px solid #aaa;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    color: #333;
+                }
+                &:last-child {
+                    border-right: 1px solid #AAA;
+                }
+                &.not-selected {
+                    background: linear-gradient(to bottom, #BBB 80%, #AAA);
+                    .closeTab {
+                        color: #999;
+                    }
+                }
+                &.tab.selected {
+                    @include linear-gradient(#d4d2d4, #cccacc);
+                    /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/
+                    border-bottom: none;
+                    color: #777;
+                }
+            }
         }
         #client_body {
             display: flex;
-            flex: 1 0 100%;
+            flex: 1 0 calc(100% - #{$header_height});
             #client_sidebar {
                 flex: 0 0 $sidebar_width;
                 display: flex;
                 flex-direction: column;
             }
             #client_content {
-                flex: 1;
+                flex: 1 0 auto;
                 iframe#content {
                     border: none;
                     width: 100%;

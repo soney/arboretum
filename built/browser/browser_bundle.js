@@ -7370,7 +7370,7 @@ const React = __webpack_require__(0);
 const ReactDOM = __webpack_require__(39);
 const ArboretumBrowser_1 = __webpack_require__(48);
 __webpack_require__(78);
-ReactDOM.render(React.createElement(ArboretumBrowser_1.ArboretumBrowser, { serverState: "active", urls: ['file:///home/soney/code/arboretum/test/index.html'] }), document.getElementById('arboretum_main'));
+ReactDOM.render(React.createElement(ArboretumBrowser_1.ArboretumBrowser, { serverState: "active", urls: ['http://www.umich.edu/'] }), document.getElementById('arboretum_main'));
 
 
 /***/ }),
@@ -25155,7 +25155,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(0);
-const ArboretumChatBox_1 = __webpack_require__(52);
+const ArboretumChatBox_1 = __webpack_require__(83);
 const Clipboard = __webpack_require__(56);
 const react_switch_1 = __webpack_require__(57);
 const ENTER_KEY = 13;
@@ -25261,143 +25261,7 @@ exports.BrowserSidebar = BrowserSidebar;
 
 
 /***/ }),
-/* 52 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const React = __webpack_require__(0);
-const ArboretumChat_1 = __webpack_require__(53);
-const ENTER_KEY = 13;
-class ArboretumChatBox extends React.Component {
-    constructor(props) {
-        super(props);
-        this.updateMessagesState = () => __awaiter(this, void 0, void 0, function* () {
-            const messages = yield this.chat.getMessages();
-            this.setState({ messages });
-        });
-        this.updateUsersState = () => __awaiter(this, void 0, void 0, function* () {
-            const users = yield this.chat.getUsers();
-            this.setState({ users });
-        });
-        this.chatKeyDown = (event) => {
-            const { keyCode, ctrlKey, altKey, metaKey, shiftKey } = event;
-            if (keyCode === ENTER_KEY && !(ctrlKey || altKey || metaKey || shiftKey)) {
-                event.preventDefault();
-                const { chatText } = this.state;
-                if (chatText !== '') {
-                    if (this.props.onSendMessage) {
-                        this.props.onSendMessage(chatText);
-                    }
-                    if (this.chat) {
-                        this.chat.addTextMessage(chatText);
-                    }
-                    this.setState({ chatText: '' });
-                }
-            }
-        };
-        this.onTextareaChange = (event) => {
-            this.setState({ chatText: event.target.value });
-        };
-        this.state = {
-            chatText: this.props.chatText || '',
-            messages: [],
-            users: []
-        };
-        if (this.props.sdb) {
-            this.setSDB(this.props.sdb);
-        }
-        window.addEventListener('beforeunload', () => this.leave());
-    }
-    ;
-    setSDB(sdb) {
-        return __awaiter(this, void 0, void 0, function* () {
-            this.sdb = sdb;
-            this.chat = new ArboretumChat_1.ArboretumChat(this.sdb);
-            this.chat.ready(() => __awaiter(this, void 0, void 0, function* () {
-                yield this.chat.join(this.props.username);
-                yield this.updateMessagesState();
-                yield this.updateUsersState();
-                this.chat.messageAdded(this.updateMessagesState);
-                this.chat.userJoined(this.updateUsersState);
-                this.chat.userNotPresent(this.updateUsersState);
-            }));
-        });
-    }
-    ;
-    //https://stackoverflow.com/questions/37620694/how-to-scroll-to-bottom-in-react
-    scrollToBottom() {
-        this.messagesEnd.scrollIntoView({ behavior: "smooth" });
-    }
-    ;
-    componentDidMount() {
-        this.scrollToBottom();
-    }
-    ;
-    leave() {
-        if (this.chat) {
-            this.chat.leave();
-        }
-    }
-    ;
-    componentWillUnmount() {
-        this.leave();
-    }
-    ;
-    componentDidUpdate() {
-        this.scrollToBottom();
-    }
-    ;
-    render() {
-        const messages = this.state.messages.map((m, i) => {
-            const senderStyle = { color: m.sender.color };
-            return React.createElement("li", { key: i, className: 'chat-line' },
-                React.createElement("span", { style: senderStyle, className: 'from' }, m.sender.displayName),
-                React.createElement("span", { className: 'message' }, m.content));
-        });
-        let meUserID;
-        if (this.chat) {
-            const meUser = this.chat.getMe();
-            if (meUser) {
-                meUserID = meUser.id;
-            }
-        }
-        const users = this.state.users.map((u) => {
-            const isMe = u.id === meUserID;
-            const style = { color: u.color };
-            if (isMe) {
-                style['textDecoration'] = 'underline overline';
-                style['fontWeight'] = 'bold';
-            }
-            return React.createElement("span", { key: u.id, className: `participant ${isMe ? 'me' : ''}`, style: style }, u.displayName);
-        });
-        return React.createElement("div", { className: 'chat' },
-            React.createElement("h6", { id: "task_title" },
-                React.createElement("span", { className: "icon icon-chat" }),
-                React.createElement("span", { id: 'task-name' }, "Chat")),
-            React.createElement("div", { id: "chat-participants" }, users),
-            React.createElement("ul", { id: "chat-lines" },
-                messages,
-                React.createElement("li", { style: { float: "left", clear: "both" }, ref: (el) => { this.messagesEnd = el; } })),
-            React.createElement("form", { id: "chat-form" },
-                React.createElement("textarea", { id: "chat-box", className: "form-control", placeholder: "Send a message", onChange: this.onTextareaChange, onKeyDown: this.chatKeyDown, value: this.state.chatText })));
-    }
-    ;
-}
-exports.ArboretumChatBox = ArboretumChatBox;
-;
-
-
-/***/ }),
+/* 52 */,
 /* 53 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -27442,6 +27306,7 @@ json.checkList = function(elem) {
 
 json.checkObj = function(elem) {
   if (!isObject(elem)) {
+    debugger;
     throw new Error("Referenced element not an object (it was " + JSON.stringify(elem) + ")");
   }
 };
@@ -27489,6 +27354,7 @@ json.apply = function(snapshot, op) {
 
       parent = elem;
       parentKey = key;
+      if(!elem) { debugger; }
       elem = elem[key];
       key = p;
 
@@ -29362,7 +29228,7 @@ exports = module.exports = __webpack_require__(80)(true);
 
 
 // module
-exports.push([module.i, "#buttonSpacer {\n  width: 70px;\n  /*border-bottom: 1px solid #AAA;*/\n  /*background: linear-gradient(to bottom, #BBB 80%, #AAA);*/ }\n\n#tabsBar {\n  display: flex;\n  flex-direction: row;\n  font-size: 13px;\n  font-family: sans-serif;\n  margin: 0px;\n  /*padding: 0px 0px 0px 70px;*/\n  padding: 0px;\n  box-sizing: border-box;\n  -webkit-user-select: none;\n  -webkit-app-region: drag;\n  color: #777;\n  /*height: 23px;*/\n  box-sizing: border-box; }\n  #tabsBar #addTab {\n    display: inline-block;\n    margin: 0;\n    background: linear-gradient(to bottom, #BBB 80%, #AAA); }\n\n/*#tabsBar #addTab:hover {\n    color: #fff;\n    background: rgb(99, 190, 229);\n}\n\n#addTab i {\n    font-size: 12.5px\n}*/\n#tabs {\n  display: flex;\n  flex: 1;\n  padding: 0px;\n  margin: 0px;\n  overflow: hidden; }\n\n.tab {\n  flex: 1;\n  display: flex;\n  border-left: 1px solid #AAA;\n  /*border: 1px solid black;*/\n  list-style: none;\n  white-space: nowrap;\n  /*font-size: 3em;*/\n  border-bottom: 1px solid #aaa;\n  color: #BBB;\n  overflow: hidden;\n  text-overflow: ellipsis; }\n\n.tab:last-child {\n  border-right: 1px solid #AAA; }\n\n.tab.not-selected {\n  background: linear-gradient(to bottom, #BBB 80%, #AAA); }\n\n.tab.not-selected .closeTab {\n  color: #999; }\n\n.tab.selected {\n  /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n  border-bottom: none;\n  color: #777; }\n\n.tab .tab-img {\n  opacity: 0.4; }\n\n.tab.selected .tab-img {\n  opacity: 1.0;\n  flex: 2; }\n\n.tab-img {\n  height: 18px;\n  max-width: 28px;\n  margin: 2px;\n  margin-right: 2px;\n  display: none; }\n\n.tab-title {\n  /*flex: 1;*/\n  /*padding: 5px 0px 4px 3px;*/ }\n\n.closeTab {\n  /*float: right;*/\n  /*color: red;*/\n  /*text-shadow: 0 0 1px rgba(50, 1, 1, 1);*/\n  padding: 5px; }\n\n.closeTab i {\n  font-size: 12.5px; }\n\n.closeTab:hover {\n  background: #f57777;\n  color: #FFF; }\n\n.tab .tab-title {\n  /*font-size: 5em;*/\n  color: #777;\n  text-overflow: ellipsis;\n  overflow: hidden; }\n\n.tab.selected .tab-title {\n  color: #555; }\n\ntable#server-controls {\n  flex-shrink: 0; }\n  table#server-controls .nav-group-title {\n    padding: 0px; }\n  table#server-controls thead td {\n    text-align: center; }\n  table#server-controls td {\n    padding-left: 5px;\n    padding-right: 0px;\n    margin: auto;\n    vertical-align: top; }\n  table#server-controls tr:active {\n    color: inherit;\n    background-color: inherit;\n    /* color: #fff; */\n    /* background-color: #116cd6; */ }\n  table#server-controls #control_content td {\n    padding-bottom: 0px; }\n  table#server-controls label {\n    margin-bottom: 0px;\n    padding-bottom: 0px; }\n\n.sidebar {\n  width: 350px;\n  height: 100%;\n  display: flex;\n  flex-direction: column; }\n\n.copy_area input {\n  background-color: #FAFAFA;\n  border: 1px solid #CCC;\n  padding: 2px;\n  font-size: 0.9em;\n  text-align: center;\n  width: 90px; }\n\n.copy_area .copy_area .icon {\n  cursor: pointer;\n  color: #AAA; }\n  .copy_area .copy_area .icon:hover {\n    color: #999; }\n\n#browser-pane {\n  border-left: none; }\n\n#navBar {\n  display: flex; }\n  #navBar input#url {\n    flex: 1;\n    /*margin: 4px 2px 3px 2px;*/\n    /*font-size: 12px;*/\n    /*padding: 0px 0px 0px 0px;*/\n    padding: 3px;\n    /*height: 100%;*/\n    /*height: 20px;*/\n    box-shadow: inset 0px 1px 2px rgba(0, 0, 0, 0.2);\n    border: 0px;\n    border-left: 1px solid #bbb;\n    border-top-left-radius: 3px;\n    border-bottom-left-radius: 3px;\n    color: #808080;\n    outline: 0;\n    background: #FFF;\n    /*font-weight: lighter;*/ }\n\n.chat {\n  background-color: #EEE;\n  flex: 1 0 auto;\n  display: flex;\n  flex-direction: column;\n  height: 100%; }\n  .chat #chat-form {\n    padding: 10px;\n    flex-shrink: 0; }\n    .chat #chat-form textarea#chat-box {\n      resize: none;\n      flex-grow: 1;\n      width: 100%; }\n    .chat #chat-form .form-actions {\n      text-align: right; }\n\n.chat-avatar {\n  /*font-size: 2em;*/\n  cursor: default;\n  padding: 3px; }\n\n#chat-lines {\n  padding: 10px;\n  flex-grow: 2;\n  overflow-y: auto;\n  overflow-x: hidden;\n  word-wrap: break-word;\n  margin: 0px;\n  border-top: 1px solid #EEE;\n  border-bottom: 1px solid #EEE;\n  white-space: pre-line;\n  /*order: 1;*/ }\n  #chat-lines .from {\n    font-weight: bold;\n    color: navy; }\n  #chat-lines .from::after {\n    content: \": \"; }\n  #chat-lines li {\n    list-style-type: none; }\n  #chat-lines .chat-line {\n    list-style-type: none;\n    margin-top: 2px;\n    padding-top: 2px;\n    margin-bottom: 2px;\n    padding-bottom: 2px;\n    border-bottom: 1px solid #EEE;\n    color: #555; }\n    #chat-lines .chat-line.command {\n      color: #AAA; }\n    #chat-lines .chat-line .snippet {\n      border: 1px solid #AAA;\n      width: 100%; }\n\n#chat-participants {\n  padding-left: 10px;\n  padding-right: 10px;\n  margin-top: 2px;\n  padding-top: 2px;\n  margin-bottom: 2px;\n  padding-bottom: 2px;\n  border-bottom: 1px solid #CCC;\n  flex-shrink: 0; }\n  #chat-participants .participant {\n    font-weight: bold; }\n    #chat-participants .participant.me {\n      text-decoration: underline overline; }\n\n#task_title {\n  color: #999;\n  padding: 10px;\n  margin: 0px;\n  margin-top: 0px;\n  margin-bottom: 0px;\n  flex-shrink: 0; }\n\n#task-name {\n  padding-left: 5px; }\n\nhtml {\n  height: 100%; }\n  html .unselected {\n    display: none; }\n  html #content {\n    height: 100%;\n    overflow: hidden; }\n  html .tab_content {\n    height: 100%; }\n  html webview {\n    display: inline-flex;\n    width: 100%;\n    height: 100%; }\n    html webview.hidden {\n      display: none; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/browser/css/src/browser/css/browser-tabs.scss","/home/soney/code/arboretum/src/browser/css/src/browser/css/browser-sidebar.scss","/home/soney/code/arboretum/src/browser/css/src/browser/css/browser-navbar.scss","/home/soney/code/arboretum/src/browser/css/src/utils/ArboretumChat.scss","/home/soney/code/arboretum/src/browser/css/src/browser/css/browser.scss"],"names":[],"mappings":"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","file":"browser.scss","sourcesContent":["#buttonSpacer {\n    width: 70px;\n    /*border-bottom: 1px solid #AAA;*/\n    /*background: linear-gradient(to bottom, #BBB 80%, #AAA);*/\n}\n\n#tabsBar {\n    display: flex;\n    flex-direction: row;\n    font-size: 13px;\n    font-family: sans-serif;\n    margin: 0px;\n    /*padding: 0px 0px 0px 70px;*/\n    padding: 0px;\n    box-sizing: border-box;\n    -webkit-user-select: none;\n    -webkit-app-region: drag;\n\n    color: #777;\n    /*height: 23px;*/\n    box-sizing: border-box;\n    #addTab {\n        display: inline-block;\n        margin: 0;\n        background: linear-gradient(to bottom, #BBB 80%, #AAA);\n    }\n}\n\n\n/*#tabsBar #addTab:hover {\n    color: #fff;\n    background: rgb(99, 190, 229);\n}\n\n#addTab i {\n    font-size: 12.5px\n}*/\n\n#tabs {\n    display: flex;\n    flex: 1;\n    padding: 0px;\n    margin: 0px;\n    overflow: hidden;\n}\n\n.tab {\n    flex: 1;\n    display: flex;\n    border-left: 1px solid #AAA;\n    /*border: 1px solid black;*/\n    list-style: none;\n    white-space: nowrap;\n    /*font-size: 3em;*/\n    border-bottom: 1px solid #aaa;\n    color: #BBB;\n    overflow: hidden;\n    text-overflow: ellipsis;\n}\n.tab:last-child {\n    border-right: 1px solid #AAA;\n}\n.tab.not-selected {\n    background: linear-gradient(to bottom, #BBB 80%, #AAA);\n}\n.tab.not-selected .closeTab {\n    color: #999;\n}\n.tab.selected {\n    /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n    border-bottom: none;\n    color: #777;\n}\n\n.tab .tab-img {\n    opacity: 0.4;\n}\n.tab.selected .tab-img {\n    opacity: 1.0;\n    flex: 2;\n}\n\n.tab-img {\n    height: 18px;\n    max-width: 28px;\n    margin: 2px;\n    margin-right: 2px;\n    display: none;\n}\n\n.tab-title {\n    /*flex: 1;*/\n    /*padding: 5px 0px 4px 3px;*/\n}\n\n.closeTab {\n    /*float: right;*/\n    /*color: red;*/\n    /*text-shadow: 0 0 1px rgba(50, 1, 1, 1);*/\n    padding: 5px;\n}\n\n.closeTab i {\n    font-size: 12.5px\n}\n\n.closeTab:hover {\n    background: rgb(245, 119, 119);\n    color: #FFF;\n}\n\n\n.tab .tab-title {\n    /*font-size: 5em;*/\n    color: #777;\n    text-overflow: ellipsis;\n    overflow: hidden;\n}\n.tab.selected .tab-title {\n    color: #555;\n}\n","table#server-controls {\n    flex-shrink: 0;\n    .nav-group-title {\n        padding: 0px;\n    }\n    thead td {\n        text-align: center;\n    }\n\n    td {\n        padding-left: 5px;\n        padding-right: 0px;\n        margin: auto;\n        vertical-align: top;\n    }\n    tr {\n        &:active {\n            color: inherit;\n            background-color: inherit;\n            /* color: #fff; */\n            /* background-color: #116cd6; */\n        }\n    }\n    #control_content td {\n        padding-bottom: 0px;\n    }\n    label {\n        margin-bottom: 0px;\n        padding-bottom: 0px;\n    }\n}\n\n\n.sidebar {\n    width: 350px;\n    height: 100%;\n    display: flex;\n    flex-direction: column;\n}\n\n\n\n.copy_area {\n    input {\n        background-color: #FAFAFA;\n        border: 1px solid #CCC;\n        padding:2px;\n        font-size: 0.9em;\n        text-align: center;\n        width: 90px;\n    }\n    .copy_area .icon {\n        cursor: pointer;\n        color: #AAA;\n        &:hover {\n            color: #999;\n        }\n    }\n}\n\n\n#browser-pane {\n    border-left: none;\n}\n","#navBar {\n    display: flex;\n    input#url {\n        flex: 1;\n        /*margin: 4px 2px 3px 2px;*/\n        /*font-size: 12px;*/\n        /*padding: 0px 0px 0px 0px;*/\n        padding: 3px;\n        /*height: 100%;*/\n        /*height: 20px;*/\n        box-shadow: inset 0px 1px 2px rgba(0, 0, 0, 0.2);\n        border: 0px;\n        border-left: 1px solid #bbb;\n        border-top-left-radius: 3px;\n        border-bottom-left-radius: 3px;\n        color: #808080;\n        outline: 0;\n        background: #FFF;\n        /*font-weight: lighter;*/\n    }\n}\n",".chat {\n    background-color: #EEE;\n    flex: 1 0 auto;\n    display: flex;\n    flex-direction: column;\n    height: 100%;\n\n    #chat-form {\n        padding: 10px;\n        flex-shrink: 0;\n        textarea#chat-box {\n            resize: none;\n            flex-grow: 1;\n            width: 100%\n        }\n        .form-actions {\n            text-align: right;\n        }\n    }\n}\n\n.chat-avatar {\n    /*font-size: 2em;*/\n    cursor: default;\n    padding: 3px;\n}\n#chat-lines {\n    padding: 10px;\n    flex-grow: 2;\n    overflow-y: auto;\n    overflow-x: hidden;\n    word-wrap: break-word;\n    margin: 0px;\n    border-top: 1px solid #EEE;\n    border-bottom: 1px solid #EEE;\n    white-space: pre-line;\n    /*order: 1;*/\n    .from {\n        font-weight: bold;\n        color: navy;\n    }\n    .from::after {\n        content: \": \";\n    }\n    li {\n        list-style-type: none;\n    }\n    .chat-line {\n        list-style-type: none;\n        margin-top: 2px;\n        padding-top: 2px;\n        margin-bottom: 2px;\n        padding-bottom: 2px;\n        border-bottom: 1px solid #EEE;\n        color: #555;\n        &.command {\n            color: #AAA;\n        }\n        .snippet {\n            border: 1px solid #AAA;\n            width: 100%;\n        }\n    }\n}\n\n#chat-participants {\n    padding-left: 10px;\n    padding-right: 10px;\n    margin-top: 2px;\n    padding-top: 2px;\n    margin-bottom: 2px;\n    padding-bottom: 2px;\n    border-bottom: 1px solid #CCC;\n    flex-shrink:0;\n    .participant {\n        font-weight: bold;\n        &.me {\n            text-decoration: underline overline;\n        }\n    }\n}\n#task_title {\n    color: #999;\n    padding: 10px;\n    margin: 0px;\n    margin-top: 0px;\n    margin-bottom: 0px;\n    flex-shrink: 0;\n}\n\n#task-name {\n    padding-left: 5px;\n}\n","@import \"./browser-tabs\";\n@import \"./browser-sidebar\";\n@import \"./browser-navbar\";\n\n@import \"../../utils/ArboretumChat.scss\";\nhtml {\n    height: 100%;\n\n    .unselected {\n        display: none;\n    }\n    #content {\n        height: 100%;\n        overflow: hidden;\n    }\n\n\n    .tab_content {\n        height: 100%;\n    }\n\n    webview {\n        display: inline-flex;\n        width: 100%;\n        height: 100%;\n\n        &.hidden {\n            display:none;\n        }\n    }\n}\n"],"sourceRoot":""}]);
+exports.push([module.i, "#buttonSpacer {\n  width: 70px;\n  /*border-bottom: 1px solid #AAA;*/\n  /*background: linear-gradient(to bottom, #BBB 80%, #AAA);*/ }\n\n#tabsBar {\n  display: flex;\n  flex-direction: row;\n  font-size: 13px;\n  font-family: sans-serif;\n  margin: 0px;\n  /*padding: 0px 0px 0px 70px;*/\n  padding: 0px;\n  box-sizing: border-box;\n  -webkit-user-select: none;\n  -webkit-app-region: drag;\n  color: #777;\n  /*height: 23px;*/\n  box-sizing: border-box; }\n  #tabsBar #addTab {\n    display: inline-block;\n    margin: 0;\n    background: linear-gradient(to bottom, #BBB 80%, #AAA); }\n\n/*#tabsBar #addTab:hover {\n    color: #fff;\n    background: rgb(99, 190, 229);\n}\n\n#addTab i {\n    font-size: 12.5px\n}*/\n#tabs {\n  display: flex;\n  flex: 1;\n  padding: 0px;\n  margin: 0px;\n  overflow: hidden; }\n\n.tab {\n  flex: 1;\n  display: flex;\n  border-left: 1px solid #AAA;\n  /*border: 1px solid black;*/\n  list-style: none;\n  white-space: nowrap;\n  /*font-size: 3em;*/\n  border-bottom: 1px solid #aaa;\n  color: #BBB;\n  overflow: hidden;\n  text-overflow: ellipsis; }\n\n.tab:last-child {\n  border-right: 1px solid #AAA; }\n\n.tab.not-selected {\n  background: linear-gradient(to bottom, #BBB 80%, #AAA); }\n\n.tab.not-selected .closeTab {\n  color: #999; }\n\n.tab.selected {\n  /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n  border-bottom: none;\n  color: #777; }\n\n.tab .tab-img {\n  opacity: 0.4; }\n\n.tab.selected .tab-img {\n  opacity: 1.0;\n  flex: 2; }\n\n.tab-img {\n  height: 18px;\n  max-width: 28px;\n  margin: 2px;\n  margin-right: 2px;\n  display: none; }\n\n.tab-title {\n  /*flex: 1;*/\n  /*padding: 5px 0px 4px 3px;*/ }\n\n.closeTab {\n  /*float: right;*/\n  /*color: red;*/\n  /*text-shadow: 0 0 1px rgba(50, 1, 1, 1);*/\n  padding: 5px; }\n\n.closeTab i {\n  font-size: 12.5px; }\n\n.closeTab:hover {\n  background: #f57777;\n  color: #FFF; }\n\n.tab .tab-title {\n  /*font-size: 5em;*/\n  color: #777;\n  text-overflow: ellipsis;\n  overflow: hidden; }\n\n.tab.selected .tab-title {\n  color: #555; }\n\ntable#server-controls {\n  flex-shrink: 0; }\n  table#server-controls .nav-group-title {\n    padding: 0px; }\n  table#server-controls thead td {\n    text-align: center; }\n  table#server-controls td {\n    padding-left: 5px;\n    padding-right: 0px;\n    margin: auto;\n    vertical-align: top; }\n  table#server-controls tr:active {\n    color: inherit;\n    background-color: inherit;\n    /* color: #fff; */\n    /* background-color: #116cd6; */ }\n  table#server-controls #control_content td {\n    padding-bottom: 0px; }\n  table#server-controls label {\n    margin-bottom: 0px;\n    padding-bottom: 0px; }\n\n.sidebar {\n  width: 350px;\n  height: 100%;\n  display: flex;\n  flex-direction: column; }\n\n.copy_area input {\n  background-color: #FAFAFA;\n  border: 1px solid #CCC;\n  padding: 2px;\n  font-size: 0.9em;\n  text-align: center;\n  width: 90px; }\n\n.copy_area .copy_area .icon {\n  cursor: pointer;\n  color: #AAA; }\n  .copy_area .copy_area .icon:hover {\n    color: #999; }\n\n#browser-pane {\n  border-left: none; }\n\n#navBar {\n  display: flex; }\n  #navBar input#url {\n    flex: 1;\n    /*margin: 4px 2px 3px 2px;*/\n    /*font-size: 12px;*/\n    /*padding: 0px 0px 0px 0px;*/\n    padding: 3px;\n    /*height: 100%;*/\n    /*height: 20px;*/\n    box-shadow: inset 0px 1px 2px rgba(0, 0, 0, 0.2);\n    border: 0px;\n    border-left: 1px solid #bbb;\n    border-top-left-radius: 3px;\n    border-bottom-left-radius: 3px;\n    color: #808080;\n    outline: 0;\n    background: #FFF;\n    /*font-weight: lighter;*/ }\n\nhtml {\n  height: 100%; }\n  html .unselected {\n    display: none; }\n  html #content {\n    height: 100%;\n    overflow: hidden; }\n  html .tab_content {\n    height: 100%; }\n  html webview {\n    display: inline-flex;\n    width: 100%;\n    height: 100%; }\n    html webview.hidden {\n      display: none; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/browser/css/src/browser/css/browser-tabs.scss","/home/soney/code/arboretum/src/browser/css/src/browser/css/browser-sidebar.scss","/home/soney/code/arboretum/src/browser/css/src/browser/css/browser-navbar.scss","/home/soney/code/arboretum/src/browser/css/src/browser/css/browser.scss"],"names":[],"mappings":"AAAA;EACI,YAAW;EACX,kCAAkC;EAClC,2DAA2D,EAC9D;;AAED;EACI,cAAa;EACb,oBAAmB;EACnB,gBAAe;EACf,wBAAuB;EACvB,YAAW;EACX,8BAA8B;EAC9B,aAAY;EACZ,uBAAsB;EACtB,0BAAyB;EACzB,yBAAwB;EAExB,YAAW;EACX,iBAAiB;EACjB,uBAAsB,EAMzB;EApBD;IAgBQ,sBAAqB;IACrB,UAAS;IACT,uDAAsD,EACzD;;AAIL;;;;;;;GAOG;AAEH;EACI,cAAa;EACb,QAAO;EACP,aAAY;EACZ,YAAW;EACX,iBAAgB,EACnB;;AAED;EACI,QAAO;EACP,cAAa;EACb,4BAA2B;EAC3B,4BAA4B;EAC5B,iBAAgB;EAChB,oBAAmB;EACnB,mBAAmB;EACnB,8BAA6B;EAC7B,YAAW;EACX,iBAAgB;EAChB,wBAAuB,EAC1B;;AACD;EACI,6BAA4B,EAC/B;;AACD;EACI,uDAAsD,EACzD;;AACD;EACI,YAAW,EACd;;AACD;EACI,8DAA8D;EAC9D,oBAAmB;EACnB,YAAW,EACd;;AAED;EACI,aAAY,EACf;;AACD;EACI,aAAY;EACZ,QAAO,EACV;;AAED;EACI,aAAY;EACZ,gBAAe;EACf,YAAW;EACX,kBAAiB;EACjB,cAAa,EAChB;;AAED;EACI,YAAY;EACZ,6BAA6B,EAChC;;AAED;EACI,iBAAiB;EACjB,eAAe;EACf,2CAA2C;EAC3C,aAAY,EACf;;AAED;EACI,kBACJ,EAAE;;AAEF;EACI,oBAA8B;EAC9B,YAAW,EACd;;AAGD;EACI,mBAAmB;EACnB,YAAW;EACX,wBAAuB;EACvB,iBAAgB,EACnB;;AACD;EACI,YAAW,EACd;;ACxHD;EACI,eAAc,EA6BjB;EA9BD;IAGQ,aAAY,EACf;EAJL;IAMQ,mBAAkB,EACrB;EAPL;IAUQ,kBAAiB;IACjB,mBAAkB;IAClB,aAAY;IACZ,oBAAmB,EACtB;EAdL;IAiBY,eAAc;IACd,0BAAyB;IACzB,kBAAkB;IAClB,gCAAgC,EACnC;EArBT;IAwBQ,oBAAmB,EACtB;EAzBL;IA2BQ,mBAAkB;IAClB,oBAAmB,EACtB;;AAIL;EACI,aAAY;EACZ,aAAY;EACZ,cAAa;EACb,uBAAsB,EACzB;;AAID;EAEQ,0BAAyB;EACzB,uBAAsB;EACtB,aAAW;EACX,iBAAgB;EAChB,mBAAkB;EAClB,YAAW,EACd;;AARL;EAUQ,gBAAe;EACf,YAAW,EAId;EAfL;IAaY,YAAW,EACd;;AAKT;EACI,kBAAiB,EACpB;;AC/DD;EACI,cAAa,EAmBhB;EApBD;IAGQ,QAAO;IACP,4BAA4B;IAC5B,oBAAoB;IACpB,6BAA6B;IAC7B,aAAY;IACZ,iBAAiB;IACjB,iBAAiB;IACjB,iDAAgD;IAChD,YAAW;IACX,4BAA2B;IAC3B,4BAA2B;IAC3B,+BAA8B;IAC9B,eAAc;IACd,WAAU;IACV,iBAAgB;IAChB,yBAAyB,EAC5B;;ACdL;EACI,aAAY,EAwBf;EAzBD;IAIQ,cAAa,EAChB;EALL;IAOQ,aAAY;IACZ,iBAAgB,EACnB;EATL;IAaQ,aAAY,EACf;EAdL;IAiBQ,qBAAoB;IACpB,YAAW;IACX,aAAY,EAKf;IAxBL;MAsBY,cAAY,EACf","file":"browser.scss","sourcesContent":["#buttonSpacer {\n    width: 70px;\n    /*border-bottom: 1px solid #AAA;*/\n    /*background: linear-gradient(to bottom, #BBB 80%, #AAA);*/\n}\n\n#tabsBar {\n    display: flex;\n    flex-direction: row;\n    font-size: 13px;\n    font-family: sans-serif;\n    margin: 0px;\n    /*padding: 0px 0px 0px 70px;*/\n    padding: 0px;\n    box-sizing: border-box;\n    -webkit-user-select: none;\n    -webkit-app-region: drag;\n\n    color: #777;\n    /*height: 23px;*/\n    box-sizing: border-box;\n    #addTab {\n        display: inline-block;\n        margin: 0;\n        background: linear-gradient(to bottom, #BBB 80%, #AAA);\n    }\n}\n\n\n/*#tabsBar #addTab:hover {\n    color: #fff;\n    background: rgb(99, 190, 229);\n}\n\n#addTab i {\n    font-size: 12.5px\n}*/\n\n#tabs {\n    display: flex;\n    flex: 1;\n    padding: 0px;\n    margin: 0px;\n    overflow: hidden;\n}\n\n.tab {\n    flex: 1;\n    display: flex;\n    border-left: 1px solid #AAA;\n    /*border: 1px solid black;*/\n    list-style: none;\n    white-space: nowrap;\n    /*font-size: 3em;*/\n    border-bottom: 1px solid #aaa;\n    color: #BBB;\n    overflow: hidden;\n    text-overflow: ellipsis;\n}\n.tab:last-child {\n    border-right: 1px solid #AAA;\n}\n.tab.not-selected {\n    background: linear-gradient(to bottom, #BBB 80%, #AAA);\n}\n.tab.not-selected .closeTab {\n    color: #999;\n}\n.tab.selected {\n    /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n    border-bottom: none;\n    color: #777;\n}\n\n.tab .tab-img {\n    opacity: 0.4;\n}\n.tab.selected .tab-img {\n    opacity: 1.0;\n    flex: 2;\n}\n\n.tab-img {\n    height: 18px;\n    max-width: 28px;\n    margin: 2px;\n    margin-right: 2px;\n    display: none;\n}\n\n.tab-title {\n    /*flex: 1;*/\n    /*padding: 5px 0px 4px 3px;*/\n}\n\n.closeTab {\n    /*float: right;*/\n    /*color: red;*/\n    /*text-shadow: 0 0 1px rgba(50, 1, 1, 1);*/\n    padding: 5px;\n}\n\n.closeTab i {\n    font-size: 12.5px\n}\n\n.closeTab:hover {\n    background: rgb(245, 119, 119);\n    color: #FFF;\n}\n\n\n.tab .tab-title {\n    /*font-size: 5em;*/\n    color: #777;\n    text-overflow: ellipsis;\n    overflow: hidden;\n}\n.tab.selected .tab-title {\n    color: #555;\n}\n","table#server-controls {\n    flex-shrink: 0;\n    .nav-group-title {\n        padding: 0px;\n    }\n    thead td {\n        text-align: center;\n    }\n\n    td {\n        padding-left: 5px;\n        padding-right: 0px;\n        margin: auto;\n        vertical-align: top;\n    }\n    tr {\n        &:active {\n            color: inherit;\n            background-color: inherit;\n            /* color: #fff; */\n            /* background-color: #116cd6; */\n        }\n    }\n    #control_content td {\n        padding-bottom: 0px;\n    }\n    label {\n        margin-bottom: 0px;\n        padding-bottom: 0px;\n    }\n}\n\n\n.sidebar {\n    width: 350px;\n    height: 100%;\n    display: flex;\n    flex-direction: column;\n}\n\n\n\n.copy_area {\n    input {\n        background-color: #FAFAFA;\n        border: 1px solid #CCC;\n        padding:2px;\n        font-size: 0.9em;\n        text-align: center;\n        width: 90px;\n    }\n    .copy_area .icon {\n        cursor: pointer;\n        color: #AAA;\n        &:hover {\n            color: #999;\n        }\n    }\n}\n\n\n#browser-pane {\n    border-left: none;\n}\n","#navBar {\n    display: flex;\n    input#url {\n        flex: 1;\n        /*margin: 4px 2px 3px 2px;*/\n        /*font-size: 12px;*/\n        /*padding: 0px 0px 0px 0px;*/\n        padding: 3px;\n        /*height: 100%;*/\n        /*height: 20px;*/\n        box-shadow: inset 0px 1px 2px rgba(0, 0, 0, 0.2);\n        border: 0px;\n        border-left: 1px solid #bbb;\n        border-top-left-radius: 3px;\n        border-bottom-left-radius: 3px;\n        color: #808080;\n        outline: 0;\n        background: #FFF;\n        /*font-weight: lighter;*/\n    }\n}\n","@import \"./browser-tabs\";\n@import \"./browser-sidebar\";\n@import \"./browser-navbar\";\n\n// @import \"../../utils/browserControls/ArboretumChat.scss\";\nhtml {\n    height: 100%;\n\n    .unselected {\n        display: none;\n    }\n    #content {\n        height: 100%;\n        overflow: hidden;\n    }\n\n\n    .tab_content {\n        height: 100%;\n    }\n\n    webview {\n        display: inline-flex;\n        width: 100%;\n        height: 100%;\n\n        &.hidden {\n            display:none;\n        }\n    }\n}\n"],"sourceRoot":""}]);
 
 // exports
 
@@ -29924,6 +29790,204 @@ module.exports = function (css) {
 	// send back the fixed css
 	return fixedCss;
 };
+
+
+/***/ }),
+/* 83 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const React = __webpack_require__(0);
+const ArboretumChat_1 = __webpack_require__(53);
+__webpack_require__(84);
+const ENTER_KEY = 13;
+class ArboretumChatBox extends React.Component {
+    constructor(props) {
+        super(props);
+        this.updateMessagesState = () => __awaiter(this, void 0, void 0, function* () {
+            const messages = yield this.chat.getMessages();
+            this.setState({ messages });
+        });
+        this.updateUsersState = () => __awaiter(this, void 0, void 0, function* () {
+            const users = yield this.chat.getUsers();
+            this.setState({ users });
+        });
+        this.chatKeyDown = (event) => {
+            const { keyCode, ctrlKey, altKey, metaKey, shiftKey } = event;
+            if (keyCode === ENTER_KEY && !(ctrlKey || altKey || metaKey || shiftKey)) {
+                event.preventDefault();
+                const { chatText } = this.state;
+                if (chatText !== '') {
+                    if (this.props.onSendMessage) {
+                        this.props.onSendMessage(chatText);
+                    }
+                    if (this.chat) {
+                        this.chat.addTextMessage(chatText);
+                    }
+                    this.setState({ chatText: '' });
+                }
+            }
+        };
+        this.onTextareaChange = (event) => {
+            this.setState({ chatText: event.target.value });
+        };
+        this.state = {
+            chatText: this.props.chatText || '',
+            messages: [],
+            users: []
+        };
+        if (this.props.sdb) {
+            this.setSDB(this.props.sdb);
+        }
+        window.addEventListener('beforeunload', () => this.leave());
+    }
+    ;
+    setSDB(sdb) {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.sdb = sdb;
+            this.chat = new ArboretumChat_1.ArboretumChat(this.sdb);
+            this.chat.ready(() => __awaiter(this, void 0, void 0, function* () {
+                yield this.chat.join(this.props.username);
+                yield this.updateMessagesState();
+                yield this.updateUsersState();
+                this.chat.messageAdded(this.updateMessagesState);
+                this.chat.userJoined(this.updateUsersState);
+                this.chat.userNotPresent(this.updateUsersState);
+            }));
+        });
+    }
+    ;
+    //https://stackoverflow.com/questions/37620694/how-to-scroll-to-bottom-in-react
+    scrollToBottom() {
+        this.messagesEnd.scrollIntoView({ behavior: "smooth" });
+    }
+    ;
+    componentDidMount() {
+        this.scrollToBottom();
+    }
+    ;
+    leave() {
+        if (this.chat) {
+            this.chat.leave();
+        }
+    }
+    ;
+    componentWillUnmount() {
+        this.leave();
+    }
+    ;
+    componentDidUpdate() {
+        this.scrollToBottom();
+    }
+    ;
+    render() {
+        const messages = this.state.messages.map((m, i) => {
+            const senderStyle = { color: m.sender.color };
+            return React.createElement("li", { key: i, className: 'chat-line' },
+                React.createElement("span", { style: senderStyle, className: 'from' }, m.sender.displayName),
+                React.createElement("span", { className: 'message' }, m.content));
+        });
+        let meUserID;
+        if (this.chat) {
+            const meUser = this.chat.getMe();
+            if (meUser) {
+                meUserID = meUser.id;
+            }
+        }
+        const users = this.state.users.map((u) => {
+            const isMe = u.id === meUserID;
+            const style = { color: u.color };
+            return React.createElement("span", { key: u.id, className: `participant ${isMe ? 'me' : ''}`, style: style }, u.displayName);
+        });
+        return React.createElement("div", { className: 'chat' },
+            React.createElement("h6", { id: "task_title" },
+                React.createElement("span", { className: "icon icon-chat" }),
+                React.createElement("span", { id: 'task-name' }, "Chat")),
+            React.createElement("div", { id: "chat-participants" }, users),
+            React.createElement("ul", { id: "chat-lines" },
+                messages,
+                React.createElement("li", { style: { float: "left", clear: "both" }, ref: (el) => { this.messagesEnd = el; } })),
+            React.createElement("form", { id: "chat-form" },
+                React.createElement("textarea", { id: "chat-box", className: "form-control", placeholder: "Send a message", onChange: this.onTextareaChange, onKeyDown: this.chatKeyDown, value: this.state.chatText })));
+    }
+    ;
+}
+exports.ArboretumChatBox = ArboretumChatBox;
+;
+
+
+/***/ }),
+/* 84 */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+var content = __webpack_require__(85);
+
+if(typeof content === 'string') content = [[module.i, content, '']];
+
+var transform;
+var insertInto;
+
+
+
+var options = {"hmr":true}
+
+options.transform = transform
+options.insertInto = undefined;
+
+var update = __webpack_require__(81)(content, options);
+
+if(content.locals) module.exports = content.locals;
+
+if(false) {
+	module.hot.accept("!!../../../node_modules/css-loader/index.js??ref--2-1!../../../node_modules/sass-loader/lib/loader.js??ref--2-2!./ArboretumChat.scss", function() {
+		var newContent = require("!!../../../node_modules/css-loader/index.js??ref--2-1!../../../node_modules/sass-loader/lib/loader.js??ref--2-2!./ArboretumChat.scss");
+
+		if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+
+		var locals = (function(a, b) {
+			var key, idx = 0;
+
+			for(key in a) {
+				if(!b || a[key] !== b[key]) return false;
+				idx++;
+			}
+
+			for(key in b) idx--;
+
+			return idx === 0;
+		}(content.locals, newContent.locals));
+
+		if(!locals) throw new Error('Aborting CSS HMR due to changed css-modules locals.');
+
+		update(newContent);
+	});
+
+	module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 85 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(80)(true);
+// imports
+
+
+// module
+exports.push([module.i, ".chat {\n  font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n  background-color: #EEE;\n  flex: 1 0 auto;\n  display: flex;\n  flex-direction: column;\n  height: 100%; }\n  .chat #task_title {\n    flex: 0 0;\n    box-sizing: border-box;\n    padding: 5px 10px 5px; }\n  .chat #chat-participants {\n    flex: 0 0;\n    border-bottom: 1px solid #CCC;\n    background-color: #DDD;\n    padding: 5px 10px 5px;\n    box-sizing: border-box; }\n    .chat #chat-participants .participant {\n      margin: 2px; }\n      .chat #chat-participants .participant.me {\n        font-weight: bold;\n        text-decoration: underline; }\n  .chat #chat-lines {\n    flex: 2 0;\n    box-sizing: border-box;\n    padding: 0px 10px 0px;\n    margin: 0px;\n    overflow-y: auto; }\n    .chat #chat-lines li {\n      list-style-type: none; }\n    .chat #chat-lines .chat-line {\n      font-size: 0.9em;\n      list-style-type: none;\n      list-style-type: none;\n      margin-top: 2px;\n      padding-top: 2px;\n      margin-bottom: 2px;\n      padding-bottom: 2px;\n      color: #555; }\n      .chat #chat-lines .chat-line .from {\n        font-weight: bold; }\n      .chat #chat-lines .chat-line .from::after {\n        content: \": \"; }\n  .chat #chat-form {\n    padding: 0px 2px 0px;\n    flex: 0; }\n    .chat #chat-form textarea#chat-box {\n      box-sizing: border-box;\n      resize: none;\n      flex-grow: 1;\n      width: 100%;\n      font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n      padding: 5px 10px 5px; }\n    .chat #chat-form .form-actions {\n      text-align: right; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/utils/browserControls/src/utils/browserControls/ArboretumChat.scss"],"names":[],"mappings":"AAAA;EACI,gHAA+G;EAC/G,uBAAsB;EACtB,eAAc;EACd,cAAa;EACb,uBAAsB;EACtB,aAAY,EA8Df;EApED;IASQ,UAAS;IACT,uBAAsB;IACtB,sBAAqB,EACxB;EAZL;IAcQ,UAAS;IACT,8BAA6B;IAC7B,uBAAsB;IACtB,sBAAqB;IACrB,uBAAsB,EAQzB;IA1BL;MAoBY,YAAW,EAKd;MAzBT;QAsBgB,kBAAiB;QACjB,2BAA0B,EAC7B;EAxBb;IA4BQ,UAAS;IACT,uBAAsB;IACtB,sBAAqB;IACrB,YAAW;IACX,iBAAgB,EAoBnB;IApDL;MAkCY,sBAAqB,EACxB;IAnCT;MAqCY,iBAAgB;MAChB,sBAAqB;MACrB,sBAAqB;MACrB,gBAAe;MACf,iBAAgB;MAChB,mBAAkB;MAClB,oBAAmB;MACnB,YAAW,EAOd;MAnDT;QA8CgB,kBAAiB,EACpB;MA/Cb;QAiDgB,cAAa,EAChB;EAlDb;IAsDQ,qBAAoB;IACpB,QAAO,EAYV;IAnEL;MAyDY,uBAAsB;MACtB,aAAY;MACZ,aAAY;MACZ,YAAW;MACX,gHAA+G;MAC/G,sBAAqB,EACxB;IA/DT;MAiEY,kBAAiB,EACpB","file":"ArboretumChat.scss","sourcesContent":[".chat {\n    font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n    background-color: #EEE;\n    flex: 1 0 auto;\n    display: flex;\n    flex-direction: column;\n    height: 100%;\n\n    #task_title {\n        flex: 0 0;\n        box-sizing: border-box;\n        padding: 5px 10px 5px;\n    }\n    #chat-participants {\n        flex: 0 0;\n        border-bottom: 1px solid #CCC;\n        background-color: #DDD;\n        padding: 5px 10px 5px;\n        box-sizing: border-box;\n        .participant {\n            margin: 2px;\n            &.me {\n                font-weight: bold;\n                text-decoration: underline;\n            }\n        }\n    }\n    #chat-lines {\n        flex: 2 0;\n        box-sizing: border-box;\n        padding: 0px 10px 0px;\n        margin: 0px;\n        overflow-y: auto;\n        li {\n            list-style-type: none;\n        }\n        .chat-line {\n            font-size: 0.9em;\n            list-style-type: none;\n            list-style-type: none;\n            margin-top: 2px;\n            padding-top: 2px;\n            margin-bottom: 2px;\n            padding-bottom: 2px;\n            color: #555;\n            .from {\n                font-weight: bold;\n            }\n            .from::after {\n                content: \": \";\n            }\n        }\n    }\n    #chat-form {\n        padding: 0px 2px 0px;\n        flex: 0;\n        textarea#chat-box {\n            box-sizing: border-box;\n            resize: none;\n            flex-grow: 1;\n            width: 100%;\n            font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n            padding: 5px 10px 5px;\n        }\n        .form-actions {\n            text-align: right;\n        }\n    }\n}\n"],"sourceRoot":""}]);
+
+// exports
 
 
 /***/ })

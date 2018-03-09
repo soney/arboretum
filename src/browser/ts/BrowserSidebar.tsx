@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {ArboretumChatBox} from '../../utils/ArboretumChatBox';
+import {ArboretumChatBox} from '../../utils/browserControls/ArboretumChatBox';
 import * as Clipboard from 'clipboard';
 import Switch from 'react-switch';
 import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
