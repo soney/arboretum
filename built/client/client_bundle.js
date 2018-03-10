@@ -60,7 +60,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 52);
+/******/ 	return __webpack_require__(__webpack_require__.s = 54);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -255,6 +255,21 @@ process.umask = function() { return 0; };
 
 /***/ }),
 /* 1 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(process) {
+
+if (process.env.NODE_ENV === 'production') {
+  module.exports = __webpack_require__(55);
+} else {
+  module.exports = __webpack_require__(56);
+}
+
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
+
+/***/ }),
+/* 2 */
 /***/ (function(module, exports) {
 
 var g;
@@ -281,25 +296,10 @@ module.exports = g;
 
 
 /***/ }),
-/* 2 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/* WEBPACK VAR INJECTION */(function(process) {
-
-if (process.env.NODE_ENV === 'production') {
-  module.exports = __webpack_require__(53);
-} else {
-  module.exports = __webpack_require__(54);
-}
-
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
-
-/***/ }),
 /* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var makeError = __webpack_require__(68);
+var makeError = __webpack_require__(70);
 
 function ShareDBError(code, message) {
   ShareDBError.super.call(this, message);
@@ -365,7 +365,7 @@ var util = __webpack_require__(9);
 util.inherits = __webpack_require__(8);
 /*</replacement>*/
 
-var Readable = __webpack_require__(44);
+var Readable = __webpack_require__(46);
 var Writable = __webpack_require__(19);
 
 util.inherits(Duplex, Readable);
@@ -488,7 +488,7 @@ module.exports = emptyFunction;
 /***/ (function(module, exports, __webpack_require__) {
 
 
-exports.defaultType = __webpack_require__(32).type;
+exports.defaultType = __webpack_require__(34).type;
 
 exports.map = {};
 
@@ -655,7 +655,7 @@ function objectToString(o) {
   return Object.prototype.toString.call(o);
 }
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(46).Buffer))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(48).Buffer))
 
 /***/ }),
 /* 10 */
@@ -1159,7 +1159,7 @@ function nextTick(fn, arg1, arg2, arg3) {
 /***/ (function(module, exports, __webpack_require__) {
 
 /* eslint-disable node/no-deprecated-api */
-var buffer = __webpack_require__(46)
+var buffer = __webpack_require__(48)
 var Buffer = buffer.Buffer
 
 // alternative to using Object.keys for old browsers
@@ -1355,13 +1355,13 @@ module.exports = warning;
 /* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(44);
+exports = module.exports = __webpack_require__(46);
 exports.Stream = exports;
 exports.Readable = exports;
 exports.Writable = __webpack_require__(19);
 exports.Duplex = __webpack_require__(4);
-exports.Transform = __webpack_require__(49);
-exports.PassThrough = __webpack_require__(86);
+exports.Transform = __webpack_require__(51);
+exports.PassThrough = __webpack_require__(88);
 
 
 /***/ }),
@@ -1441,12 +1441,12 @@ util.inherits = __webpack_require__(8);
 
 /*<replacement>*/
 var internalUtil = {
-  deprecate: __webpack_require__(85)
+  deprecate: __webpack_require__(87)
 };
 /*</replacement>*/
 
 /*<replacement>*/
-var Stream = __webpack_require__(45);
+var Stream = __webpack_require__(47);
 /*</replacement>*/
 
 /*<replacement>*/
@@ -1462,7 +1462,7 @@ function _isUint8Array(obj) {
 
 /*</replacement>*/
 
-var destroyImpl = __webpack_require__(47);
+var destroyImpl = __webpack_require__(49);
 
 util.inherits(Writable, Stream);
 
@@ -2046,7 +2046,7 @@ Writable.prototype._destroy = function (err, cb) {
   this.end();
   cb(err);
 };
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0), __webpack_require__(36).setImmediate, __webpack_require__(1)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0), __webpack_require__(38).setImmediate, __webpack_require__(2)))
 
 /***/ }),
 /* 20 */
@@ -2209,7 +2209,7 @@ exports.transform = function(type, op, appliedOp) {
 /* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var json0 = __webpack_require__(32).type;
+var json0 = __webpack_require__(34).type;
 
 exports.projectSnapshot = projectSnapshot;
 exports.projectOp = projectOp;
@@ -3884,6 +3884,470 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;//     Underscor
 
 /***/ }),
 /* 23 */
+/***/ (function(module, exports) {
+
+/*
+	MIT License http://www.opensource.org/licenses/mit-license.php
+	Author Tobias Koppers @sokra
+*/
+// css base code, injected by the css-loader
+module.exports = function(useSourceMap) {
+	var list = [];
+
+	// return the list of modules as css string
+	list.toString = function toString() {
+		return this.map(function (item) {
+			var content = cssWithMappingToString(item, useSourceMap);
+			if(item[2]) {
+				return "@media " + item[2] + "{" + content + "}";
+			} else {
+				return content;
+			}
+		}).join("");
+	};
+
+	// import a list of modules into the list
+	list.i = function(modules, mediaQuery) {
+		if(typeof modules === "string")
+			modules = [[null, modules, ""]];
+		var alreadyImportedModules = {};
+		for(var i = 0; i < this.length; i++) {
+			var id = this[i][0];
+			if(typeof id === "number")
+				alreadyImportedModules[id] = true;
+		}
+		for(i = 0; i < modules.length; i++) {
+			var item = modules[i];
+			// skip already imported module
+			// this implementation is not 100% perfect for weird media query combinations
+			//  when a module is imported multiple times with different media queries.
+			//  I hope this will never occur (Hey this way we have smaller bundles)
+			if(typeof item[0] !== "number" || !alreadyImportedModules[item[0]]) {
+				if(mediaQuery && !item[2]) {
+					item[2] = mediaQuery;
+				} else if(mediaQuery) {
+					item[2] = "(" + item[2] + ") and (" + mediaQuery + ")";
+				}
+				list.push(item);
+			}
+		}
+	};
+	return list;
+};
+
+function cssWithMappingToString(item, useSourceMap) {
+	var content = item[1] || '';
+	var cssMapping = item[3];
+	if (!cssMapping) {
+		return content;
+	}
+
+	if (useSourceMap && typeof btoa === 'function') {
+		var sourceMapping = toComment(cssMapping);
+		var sourceURLs = cssMapping.sources.map(function (source) {
+			return '/*# sourceURL=' + cssMapping.sourceRoot + source + ' */'
+		});
+
+		return [content].concat(sourceURLs).concat([sourceMapping]).join('\n');
+	}
+
+	return [content].join('\n');
+}
+
+// Adapted from convert-source-map (MIT)
+function toComment(sourceMap) {
+	// eslint-disable-next-line no-undef
+	var base64 = btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap))));
+	var data = 'sourceMappingURL=data:application/json;charset=utf-8;base64,' + base64;
+
+	return '/*# ' + data + ' */';
+}
+
+
+/***/ }),
+/* 24 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/*
+	MIT License http://www.opensource.org/licenses/mit-license.php
+	Author Tobias Koppers @sokra
+*/
+
+var stylesInDom = {};
+
+var	memoize = function (fn) {
+	var memo;
+
+	return function () {
+		if (typeof memo === "undefined") memo = fn.apply(this, arguments);
+		return memo;
+	};
+};
+
+var isOldIE = memoize(function () {
+	// Test for IE <= 9 as proposed by Browserhacks
+	// @see http://browserhacks.com/#hack-e71d8692f65334173fee715c222cb805
+	// Tests for existence of standard globals is to allow style-loader
+	// to operate correctly into non-standard environments
+	// @see https://github.com/webpack-contrib/style-loader/issues/177
+	return window && document && document.all && !window.atob;
+});
+
+var getTarget = function (target) {
+  return document.querySelector(target);
+};
+
+var getElement = (function (fn) {
+	var memo = {};
+
+	return function(target) {
+                // If passing function in options, then use it for resolve "head" element.
+                // Useful for Shadow Root style i.e
+                // {
+                //   insertInto: function () { return document.querySelector("#foo").shadowRoot }
+                // }
+                if (typeof target === 'function') {
+                        return target();
+                }
+                if (typeof memo[target] === "undefined") {
+			var styleTarget = getTarget.call(this, target);
+			// Special case to return head of iframe instead of iframe itself
+			if (window.HTMLIFrameElement && styleTarget instanceof window.HTMLIFrameElement) {
+				try {
+					// This will throw an exception if access to iframe is blocked
+					// due to cross-origin restrictions
+					styleTarget = styleTarget.contentDocument.head;
+				} catch(e) {
+					styleTarget = null;
+				}
+			}
+			memo[target] = styleTarget;
+		}
+		return memo[target]
+	};
+})();
+
+var singleton = null;
+var	singletonCounter = 0;
+var	stylesInsertedAtTop = [];
+
+var	fixUrls = __webpack_require__(107);
+
+module.exports = function(list, options) {
+	if (typeof DEBUG !== "undefined" && DEBUG) {
+		if (typeof document !== "object") throw new Error("The style-loader cannot be used in a non-browser environment");
+	}
+
+	options = options || {};
+
+	options.attrs = typeof options.attrs === "object" ? options.attrs : {};
+
+	// Force single-tag solution on IE6-9, which has a hard limit on the # of <style>
+	// tags it will allow on a page
+	if (!options.singleton && typeof options.singleton !== "boolean") options.singleton = isOldIE();
+
+	// By default, add <style> tags to the <head> element
+        if (!options.insertInto) options.insertInto = "head";
+
+	// By default, add <style> tags to the bottom of the target
+	if (!options.insertAt) options.insertAt = "bottom";
+
+	var styles = listToStyles(list, options);
+
+	addStylesToDom(styles, options);
+
+	return function update (newList) {
+		var mayRemove = [];
+
+		for (var i = 0; i < styles.length; i++) {
+			var item = styles[i];
+			var domStyle = stylesInDom[item.id];
+
+			domStyle.refs--;
+			mayRemove.push(domStyle);
+		}
+
+		if(newList) {
+			var newStyles = listToStyles(newList, options);
+			addStylesToDom(newStyles, options);
+		}
+
+		for (var i = 0; i < mayRemove.length; i++) {
+			var domStyle = mayRemove[i];
+
+			if(domStyle.refs === 0) {
+				for (var j = 0; j < domStyle.parts.length; j++) domStyle.parts[j]();
+
+				delete stylesInDom[domStyle.id];
+			}
+		}
+	};
+};
+
+function addStylesToDom (styles, options) {
+	for (var i = 0; i < styles.length; i++) {
+		var item = styles[i];
+		var domStyle = stylesInDom[item.id];
+
+		if(domStyle) {
+			domStyle.refs++;
+
+			for(var j = 0; j < domStyle.parts.length; j++) {
+				domStyle.parts[j](item.parts[j]);
+			}
+
+			for(; j < item.parts.length; j++) {
+				domStyle.parts.push(addStyle(item.parts[j], options));
+			}
+		} else {
+			var parts = [];
+
+			for(var j = 0; j < item.parts.length; j++) {
+				parts.push(addStyle(item.parts[j], options));
+			}
+
+			stylesInDom[item.id] = {id: item.id, refs: 1, parts: parts};
+		}
+	}
+}
+
+function listToStyles (list, options) {
+	var styles = [];
+	var newStyles = {};
+
+	for (var i = 0; i < list.length; i++) {
+		var item = list[i];
+		var id = options.base ? item[0] + options.base : item[0];
+		var css = item[1];
+		var media = item[2];
+		var sourceMap = item[3];
+		var part = {css: css, media: media, sourceMap: sourceMap};
+
+		if(!newStyles[id]) styles.push(newStyles[id] = {id: id, parts: [part]});
+		else newStyles[id].parts.push(part);
+	}
+
+	return styles;
+}
+
+function insertStyleElement (options, style) {
+	var target = getElement(options.insertInto)
+
+	if (!target) {
+		throw new Error("Couldn't find a style target. This probably means that the value for the 'insertInto' parameter is invalid.");
+	}
+
+	var lastStyleElementInsertedAtTop = stylesInsertedAtTop[stylesInsertedAtTop.length - 1];
+
+	if (options.insertAt === "top") {
+		if (!lastStyleElementInsertedAtTop) {
+			target.insertBefore(style, target.firstChild);
+		} else if (lastStyleElementInsertedAtTop.nextSibling) {
+			target.insertBefore(style, lastStyleElementInsertedAtTop.nextSibling);
+		} else {
+			target.appendChild(style);
+		}
+		stylesInsertedAtTop.push(style);
+	} else if (options.insertAt === "bottom") {
+		target.appendChild(style);
+	} else if (typeof options.insertAt === "object" && options.insertAt.before) {
+		var nextSibling = getElement(options.insertInto + " " + options.insertAt.before);
+		target.insertBefore(style, nextSibling);
+	} else {
+		throw new Error("[Style Loader]\n\n Invalid value for parameter 'insertAt' ('options.insertAt') found.\n Must be 'top', 'bottom', or Object.\n (https://github.com/webpack-contrib/style-loader#insertat)\n");
+	}
+}
+
+function removeStyleElement (style) {
+	if (style.parentNode === null) return false;
+	style.parentNode.removeChild(style);
+
+	var idx = stylesInsertedAtTop.indexOf(style);
+	if(idx >= 0) {
+		stylesInsertedAtTop.splice(idx, 1);
+	}
+}
+
+function createStyleElement (options) {
+	var style = document.createElement("style");
+
+	options.attrs.type = "text/css";
+
+	addAttrs(style, options.attrs);
+	insertStyleElement(options, style);
+
+	return style;
+}
+
+function createLinkElement (options) {
+	var link = document.createElement("link");
+
+	options.attrs.type = "text/css";
+	options.attrs.rel = "stylesheet";
+
+	addAttrs(link, options.attrs);
+	insertStyleElement(options, link);
+
+	return link;
+}
+
+function addAttrs (el, attrs) {
+	Object.keys(attrs).forEach(function (key) {
+		el.setAttribute(key, attrs[key]);
+	});
+}
+
+function addStyle (obj, options) {
+	var style, update, remove, result;
+
+	// If a transform function was defined, run it on the css
+	if (options.transform && obj.css) {
+	    result = options.transform(obj.css);
+
+	    if (result) {
+	    	// If transform returns a value, use that instead of the original css.
+	    	// This allows running runtime transformations on the css.
+	    	obj.css = result;
+	    } else {
+	    	// If the transform function returns a falsy value, don't add this css.
+	    	// This allows conditional loading of css
+	    	return function() {
+	    		// noop
+	    	};
+	    }
+	}
+
+	if (options.singleton) {
+		var styleIndex = singletonCounter++;
+
+		style = singleton || (singleton = createStyleElement(options));
+
+		update = applyToSingletonTag.bind(null, style, styleIndex, false);
+		remove = applyToSingletonTag.bind(null, style, styleIndex, true);
+
+	} else if (
+		obj.sourceMap &&
+		typeof URL === "function" &&
+		typeof URL.createObjectURL === "function" &&
+		typeof URL.revokeObjectURL === "function" &&
+		typeof Blob === "function" &&
+		typeof btoa === "function"
+	) {
+		style = createLinkElement(options);
+		update = updateLink.bind(null, style, options);
+		remove = function () {
+			removeStyleElement(style);
+
+			if(style.href) URL.revokeObjectURL(style.href);
+		};
+	} else {
+		style = createStyleElement(options);
+		update = applyToTag.bind(null, style);
+		remove = function () {
+			removeStyleElement(style);
+		};
+	}
+
+	update(obj);
+
+	return function updateStyle (newObj) {
+		if (newObj) {
+			if (
+				newObj.css === obj.css &&
+				newObj.media === obj.media &&
+				newObj.sourceMap === obj.sourceMap
+			) {
+				return;
+			}
+
+			update(obj = newObj);
+		} else {
+			remove();
+		}
+	};
+}
+
+var replaceText = (function () {
+	var textStore = [];
+
+	return function (index, replacement) {
+		textStore[index] = replacement;
+
+		return textStore.filter(Boolean).join('\n');
+	};
+})();
+
+function applyToSingletonTag (style, index, remove, obj) {
+	var css = remove ? "" : obj.css;
+
+	if (style.styleSheet) {
+		style.styleSheet.cssText = replaceText(index, css);
+	} else {
+		var cssNode = document.createTextNode(css);
+		var childNodes = style.childNodes;
+
+		if (childNodes[index]) style.removeChild(childNodes[index]);
+
+		if (childNodes.length) {
+			style.insertBefore(cssNode, childNodes[index]);
+		} else {
+			style.appendChild(cssNode);
+		}
+	}
+}
+
+function applyToTag (style, obj) {
+	var css = obj.css;
+	var media = obj.media;
+
+	if(media) {
+		style.setAttribute("media", media)
+	}
+
+	if(style.styleSheet) {
+		style.styleSheet.cssText = css;
+	} else {
+		while(style.firstChild) {
+			style.removeChild(style.firstChild);
+		}
+
+		style.appendChild(document.createTextNode(css));
+	}
+}
+
+function updateLink (link, options, obj) {
+	var css = obj.css;
+	var sourceMap = obj.sourceMap;
+
+	/*
+		If convertToAbsoluteUrls isn't defined, but sourcemaps are enabled
+		and there is no publicPath defined then lets turn convertToAbsoluteUrls
+		on by default.  Otherwise default to the convertToAbsoluteUrls option
+		directly
+	*/
+	var autoFixUrls = options.convertToAbsoluteUrls === undefined && sourceMap;
+
+	if (options.convertToAbsoluteUrls || autoFixUrls) {
+		css = fixUrls(css);
+	}
+
+	if (sourceMap) {
+		// http://stackoverflow.com/a/26603875
+		css += "\n/*# sourceMappingURL=data:application/json;base64," + btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))) + " */";
+	}
+
+	var blob = new Blob([css], { type: "text/css" });
+
+	var oldSrc = link.href;
+
+	link.href = URL.createObjectURL(blob);
+
+	if(oldSrc) URL.revokeObjectURL(oldSrc);
+}
+
+
+/***/ }),
+/* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -3899,7 +4363,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;//     Underscor
 if (process.env.NODE_ENV !== 'production') {
   var invariant = __webpack_require__(16);
   var warning = __webpack_require__(17);
-  var ReactPropTypesSecret = __webpack_require__(55);
+  var ReactPropTypesSecret = __webpack_require__(57);
   var loggedTypeFailures = {};
 }
 
@@ -3950,7 +4414,7 @@ module.exports = checkPropTypes;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 24 */
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -3989,7 +4453,7 @@ var ExecutionEnvironment = {
 module.exports = ExecutionEnvironment;
 
 /***/ }),
-/* 25 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4070,7 +4534,7 @@ module.exports = EventListener;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 26 */
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4112,7 +4576,7 @@ function getActiveElement(doc) /*?DOMElement*/{
 module.exports = getActiveElement;
 
 /***/ }),
-/* 27 */
+/* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4183,7 +4647,7 @@ function shallowEqual(objA, objB) {
 module.exports = shallowEqual;
 
 /***/ }),
-/* 28 */
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4198,7 +4662,7 @@ module.exports = shallowEqual;
  * 
  */
 
-var isTextNode = __webpack_require__(58);
+var isTextNode = __webpack_require__(60);
 
 /*eslint-disable no-bitwise */
 
@@ -4226,7 +4690,7 @@ function containsNode(outerNode, innerNode) {
 module.exports = containsNode;
 
 /***/ }),
-/* 29 */
+/* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4256,11 +4720,11 @@ function focusNode(node) {
 module.exports = focusNode;
 
 /***/ }),
-/* 30 */
+/* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(process) {var Doc = __webpack_require__(31);
-var Query = __webpack_require__(34);
+/* WEBPACK VAR INJECTION */(function(process) {var Doc = __webpack_require__(33);
+var Query = __webpack_require__(36);
 var emitter = __webpack_require__(12);
 var ShareDBError = __webpack_require__(3);
 var types = __webpack_require__(6);
@@ -4841,7 +5305,7 @@ Connection.prototype._firstQuery = function(fn) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 31 */
+/* 33 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(process) {var emitter = __webpack_require__(12);
@@ -5758,7 +6222,7 @@ function callEach(callbacks, err) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 32 */
+/* 34 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // Only the JSON type is exported, because the text type is deprecated
@@ -5766,12 +6230,12 @@ function callEach(callbacks, err) {
 // into a separate module that json0 can depend on).
 
 module.exports = {
-  type: __webpack_require__(69)
+  type: __webpack_require__(71)
 };
 
 
 /***/ }),
-/* 33 */
+/* 35 */
 /***/ (function(module, exports) {
 
 // These methods let you build a transform function from a transformComponent
@@ -5855,7 +6319,7 @@ function bootstrapTransform(type, transformComponent, checkValidOp, append) {
 
 
 /***/ }),
-/* 34 */
+/* 36 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(process) {var emitter = __webpack_require__(12);
@@ -6061,7 +6525,7 @@ Query.prototype._handleExtra = function(extra) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 35 */
+/* 37 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global, setImmediate, process) {var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
@@ -7331,10 +7795,10 @@ Query.prototype._handleExtra = function(extra) {
 
 }());
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1), __webpack_require__(36).setImmediate, __webpack_require__(0)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2), __webpack_require__(38).setImmediate, __webpack_require__(0)))
 
 /***/ }),
-/* 36 */
+/* 38 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global) {var apply = Function.prototype.apply;
@@ -7387,7 +7851,7 @@ exports._unrefActive = exports.active = function(item) {
 };
 
 // setimmediate attaches itself to the global object
-__webpack_require__(73);
+__webpack_require__(75);
 // On some exotic environments, it's not clear which object `setimmeidate` was
 // able to install onto.  Search each possibility in the same order as the
 // `setimmediate` library.
@@ -7398,13 +7862,13 @@ exports.clearImmediate = (typeof self !== "undefined" && self.clearImmediate) ||
                          (typeof global !== "undefined" && global.clearImmediate) ||
                          (this && this.clearImmediate);
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 37 */
+/* 39 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(process) {var hat = __webpack_require__(74);
+/* WEBPACK VAR INJECTION */(function(process) {var hat = __webpack_require__(76);
 var util = __webpack_require__(7);
 var types = __webpack_require__(6);
 
@@ -7992,10 +8456,10 @@ Agent.prototype._createOp = function(request) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 38 */
+/* 40 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(process) {var DB = __webpack_require__(39);
+/* WEBPACK VAR INJECTION */(function(process) {var DB = __webpack_require__(41);
 
 // In-memory ShareDB database
 //
@@ -8183,10 +8647,10 @@ function clone(obj) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 39 */
+/* 41 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var async = __webpack_require__(35);
+var async = __webpack_require__(37);
 var ShareDBError = __webpack_require__(3);
 
 function DB(options) {
@@ -8293,10 +8757,10 @@ DB.prototype.skipPoll = function() {
 
 
 /***/ }),
-/* 40 */
+/* 42 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(process) {var PubSub = __webpack_require__(41);
+/* WEBPACK VAR INJECTION */(function(process) {var PubSub = __webpack_require__(43);
 
 // In-memory ShareDB pub/sub
 //
@@ -8338,10 +8802,10 @@ MemoryPubSub.prototype._publish = function(channels, data, callback) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 41 */
+/* 43 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(process) {var OpStream = __webpack_require__(75);
+/* WEBPACK VAR INJECTION */(function(process) {var OpStream = __webpack_require__(77);
 var ShareDBError = __webpack_require__(3);
 var util = __webpack_require__(7);
 
@@ -8468,7 +8932,7 @@ function shallowCopy(object) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 42 */
+/* 44 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global, process) {// Copyright Joyent, Inc. and other Node contributors.
@@ -8996,7 +9460,7 @@ function isPrimitive(arg) {
 }
 exports.isPrimitive = isPrimitive;
 
-exports.isBuffer = __webpack_require__(76);
+exports.isBuffer = __webpack_require__(78);
 
 function objectToString(o) {
   return Object.prototype.toString.call(o);
@@ -9040,7 +9504,7 @@ exports.log = function() {
  *     prototype.
  * @param {function} superCtor Constructor function to inherit prototype from.
  */
-exports.inherits = __webpack_require__(77);
+exports.inherits = __webpack_require__(79);
 
 exports._extend = function(origin, add) {
   // Don't do anything if add isn't an object
@@ -9058,10 +9522,10 @@ function hasOwnProperty(obj, prop) {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 }
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1), __webpack_require__(0)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2), __webpack_require__(0)))
 
 /***/ }),
-/* 43 */
+/* 45 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // Copyright Joyent, Inc. and other Node contributors.
@@ -9092,10 +9556,10 @@ var inherits = __webpack_require__(8);
 
 inherits(Stream, EE);
 Stream.Readable = __webpack_require__(18);
-Stream.Writable = __webpack_require__(87);
-Stream.Duplex = __webpack_require__(88);
-Stream.Transform = __webpack_require__(89);
-Stream.PassThrough = __webpack_require__(90);
+Stream.Writable = __webpack_require__(89);
+Stream.Duplex = __webpack_require__(90);
+Stream.Transform = __webpack_require__(91);
+Stream.PassThrough = __webpack_require__(92);
 
 // Backwards-compat with node 0.4.x
 Stream.Stream = Stream;
@@ -9194,7 +9658,7 @@ Stream.prototype.pipe = function(dest, options) {
 
 
 /***/ }),
-/* 44 */
+/* 46 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9229,7 +9693,7 @@ var processNextTick = __webpack_require__(14).nextTick;
 module.exports = Readable;
 
 /*<replacement>*/
-var isArray = __webpack_require__(78);
+var isArray = __webpack_require__(80);
 /*</replacement>*/
 
 /*<replacement>*/
@@ -9247,7 +9711,7 @@ var EElistenerCount = function (emitter, type) {
 /*</replacement>*/
 
 /*<replacement>*/
-var Stream = __webpack_require__(45);
+var Stream = __webpack_require__(47);
 /*</replacement>*/
 
 /*<replacement>*/
@@ -9269,7 +9733,7 @@ util.inherits = __webpack_require__(8);
 /*</replacement>*/
 
 /*<replacement>*/
-var debugUtil = __webpack_require__(82);
+var debugUtil = __webpack_require__(84);
 var debug = void 0;
 if (debugUtil && debugUtil.debuglog) {
   debug = debugUtil.debuglog('stream');
@@ -9278,8 +9742,8 @@ if (debugUtil && debugUtil.debuglog) {
 }
 /*</replacement>*/
 
-var BufferList = __webpack_require__(83);
-var destroyImpl = __webpack_require__(47);
+var BufferList = __webpack_require__(85);
+var destroyImpl = __webpack_require__(49);
 var StringDecoder;
 
 util.inherits(Readable, Stream);
@@ -9369,7 +9833,7 @@ function ReadableState(options, stream) {
   this.decoder = null;
   this.encoding = null;
   if (options.encoding) {
-    if (!StringDecoder) StringDecoder = __webpack_require__(48).StringDecoder;
+    if (!StringDecoder) StringDecoder = __webpack_require__(50).StringDecoder;
     this.decoder = new StringDecoder(options.encoding);
     this.encoding = options.encoding;
   }
@@ -9525,7 +9989,7 @@ Readable.prototype.isPaused = function () {
 
 // backwards compatibility.
 Readable.prototype.setEncoding = function (enc) {
-  if (!StringDecoder) StringDecoder = __webpack_require__(48).StringDecoder;
+  if (!StringDecoder) StringDecoder = __webpack_require__(50).StringDecoder;
   this._readableState.decoder = new StringDecoder(enc);
   this._readableState.encoding = enc;
   return this;
@@ -10213,17 +10677,17 @@ function indexOf(xs, x) {
   }
   return -1;
 }
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1), __webpack_require__(0)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2), __webpack_require__(0)))
 
 /***/ }),
-/* 45 */
+/* 47 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__(13).EventEmitter;
 
 
 /***/ }),
-/* 46 */
+/* 48 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -10237,9 +10701,9 @@ module.exports = __webpack_require__(13).EventEmitter;
 
 
 
-var base64 = __webpack_require__(79)
-var ieee754 = __webpack_require__(80)
-var isArray = __webpack_require__(81)
+var base64 = __webpack_require__(81)
+var ieee754 = __webpack_require__(82)
+var isArray = __webpack_require__(83)
 
 exports.Buffer = Buffer
 exports.SlowBuffer = SlowBuffer
@@ -12017,10 +12481,10 @@ function isnan (val) {
   return val !== val // eslint-disable-line no-self-compare
 }
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 47 */
+/* 49 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12100,7 +12564,7 @@ module.exports = {
 };
 
 /***/ }),
-/* 48 */
+/* 50 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12378,7 +12842,7 @@ function simpleEnd(buf) {
 }
 
 /***/ }),
-/* 49 */
+/* 51 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12598,11 +13062,11 @@ function done(stream, er, data) {
 }
 
 /***/ }),
-/* 50 */
+/* 52 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var arraydiff = __webpack_require__(91);
-var deepEquals = __webpack_require__(92);
+var arraydiff = __webpack_require__(93);
+var deepEquals = __webpack_require__(94);
 var ShareDBError = __webpack_require__(3);
 var util = __webpack_require__(7);
 
@@ -12901,7 +13365,7 @@ function mapDiff(idsDiff, snapshotMap) {
 
 
 /***/ }),
-/* 51 */
+/* 53 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var ot = __webpack_require__(20);
@@ -13155,22 +13619,22 @@ SubmitRequest.prototype.maxRetriesError = function() {
 
 
 /***/ }),
-/* 52 */
+/* 54 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const React = __webpack_require__(2);
-const ReactDOM = __webpack_require__(56);
-const ArboretumClient_1 = __webpack_require__(65);
-__webpack_require__(104);
+const React = __webpack_require__(1);
+const ReactDOM = __webpack_require__(58);
+const ArboretumClient_1 = __webpack_require__(67);
+__webpack_require__(112);
 const { userID, frameID, tabID, viewType } = window['clientOptions'];
 ReactDOM.render(React.createElement(ArboretumClient_1.ArboretumClient, { userID: userID, frameID: frameID, tabID: tabID, viewType: viewType }), document.getElementById('client_main'));
 
 
 /***/ }),
-/* 53 */
+/* 55 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13198,7 +13662,7 @@ isValidElement:K,version:"16.2.0",__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_F
 
 
 /***/ }),
-/* 54 */
+/* 56 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13224,7 +13688,7 @@ var emptyObject = __webpack_require__(11);
 var invariant = __webpack_require__(16);
 var warning = __webpack_require__(17);
 var emptyFunction = __webpack_require__(5);
-var checkPropTypes = __webpack_require__(23);
+var checkPropTypes = __webpack_require__(25);
 
 // TODO: this is special because it gets imported during build.
 
@@ -14563,7 +15027,7 @@ module.exports = react;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 55 */
+/* 57 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14582,7 +15046,7 @@ module.exports = ReactPropTypesSecret;
 
 
 /***/ }),
-/* 56 */
+/* 58 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14620,15 +15084,15 @@ if (process.env.NODE_ENV === 'production') {
   // DCE check should happen before ReactDOM bundle executes so that
   // DevTools can report bad minification during injection.
   checkDCE();
-  module.exports = __webpack_require__(57);
+  module.exports = __webpack_require__(59);
 } else {
-  module.exports = __webpack_require__(60);
+  module.exports = __webpack_require__(62);
 }
 
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 57 */
+/* 59 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14644,7 +15108,7 @@ if (process.env.NODE_ENV === 'production') {
 /*
  Modernizr 3.0.0pre (Custom Build) | MIT
 */
-var aa=__webpack_require__(2),l=__webpack_require__(24),B=__webpack_require__(10),C=__webpack_require__(5),ba=__webpack_require__(25),da=__webpack_require__(26),ea=__webpack_require__(27),fa=__webpack_require__(28),ia=__webpack_require__(29),D=__webpack_require__(11);
+var aa=__webpack_require__(1),l=__webpack_require__(26),B=__webpack_require__(10),C=__webpack_require__(5),ba=__webpack_require__(27),da=__webpack_require__(28),ea=__webpack_require__(29),fa=__webpack_require__(30),ia=__webpack_require__(31),D=__webpack_require__(11);
 function E(a){for(var b=arguments.length-1,c="Minified React error #"+a+"; visit http://facebook.github.io/react/docs/error-decoder.html?invariant\x3d"+a,d=0;d<b;d++)c+="\x26args[]\x3d"+encodeURIComponent(arguments[d+1]);b=Error(c+" for the full message or use the non-minified dev environment for full errors and additional helpful warnings.");b.name="Invariant Violation";b.framesToPop=1;throw b;}aa?void 0:E("227");
 var oa={children:!0,dangerouslySetInnerHTML:!0,defaultValue:!0,defaultChecked:!0,innerHTML:!0,suppressContentEditableWarning:!0,suppressHydrationWarning:!0,style:!0};function pa(a,b){return(a&b)===b}
 var ta={MUST_USE_PROPERTY:1,HAS_BOOLEAN_VALUE:4,HAS_NUMERIC_VALUE:8,HAS_POSITIVE_NUMERIC_VALUE:24,HAS_OVERLOADED_BOOLEAN_VALUE:32,HAS_STRING_BOOLEAN_VALUE:64,injectDOMPropertyConfig:function(a){var b=ta,c=a.Properties||{},d=a.DOMAttributeNamespaces||{},e=a.DOMAttributeNames||{};a=a.DOMMutationMethods||{};for(var f in c){ua.hasOwnProperty(f)?E("48",f):void 0;var g=f.toLowerCase(),h=c[f];g={attributeName:g,attributeNamespace:null,propertyName:f,mutationMethod:null,mustUseProperty:pa(h,b.MUST_USE_PROPERTY),
@@ -14864,7 +15328,7 @@ Z.injectIntoDevTools({findFiberByHostInstance:pb,bundleType:0,version:"16.2.0",r
 
 
 /***/ }),
-/* 58 */
+/* 60 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14879,7 +15343,7 @@ Z.injectIntoDevTools({findFiberByHostInstance:pb,bundleType:0,version:"16.2.0",r
  * @typechecks
  */
 
-var isNode = __webpack_require__(59);
+var isNode = __webpack_require__(61);
 
 /**
  * @param {*} object The object to check.
@@ -14892,7 +15356,7 @@ function isTextNode(object) {
 module.exports = isTextNode;
 
 /***/ }),
-/* 59 */
+/* 61 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14920,7 +15384,7 @@ function isNode(object) {
 module.exports = isNode;
 
 /***/ }),
-/* 60 */
+/* 62 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14941,21 +15405,21 @@ if (process.env.NODE_ENV !== "production") {
   (function() {
 'use strict';
 
-var React = __webpack_require__(2);
+var React = __webpack_require__(1);
 var invariant = __webpack_require__(16);
 var warning = __webpack_require__(17);
-var ExecutionEnvironment = __webpack_require__(24);
+var ExecutionEnvironment = __webpack_require__(26);
 var _assign = __webpack_require__(10);
 var emptyFunction = __webpack_require__(5);
-var EventListener = __webpack_require__(25);
-var getActiveElement = __webpack_require__(26);
-var shallowEqual = __webpack_require__(27);
-var containsNode = __webpack_require__(28);
-var focusNode = __webpack_require__(29);
+var EventListener = __webpack_require__(27);
+var getActiveElement = __webpack_require__(28);
+var shallowEqual = __webpack_require__(29);
+var containsNode = __webpack_require__(30);
+var focusNode = __webpack_require__(31);
 var emptyObject = __webpack_require__(11);
-var checkPropTypes = __webpack_require__(23);
-var hyphenateStyleName = __webpack_require__(61);
-var camelizeStyleName = __webpack_require__(63);
+var checkPropTypes = __webpack_require__(25);
+var hyphenateStyleName = __webpack_require__(63);
+var camelizeStyleName = __webpack_require__(65);
 
 /**
  * WARNING: DO NOT manually require this module.
@@ -30322,7 +30786,7 @@ module.exports = reactDom;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 61 */
+/* 63 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -30337,7 +30801,7 @@ module.exports = reactDom;
 
 
 
-var hyphenate = __webpack_require__(62);
+var hyphenate = __webpack_require__(64);
 
 var msPattern = /^ms-/;
 
@@ -30364,7 +30828,7 @@ function hyphenateStyleName(string) {
 module.exports = hyphenateStyleName;
 
 /***/ }),
-/* 62 */
+/* 64 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -30400,7 +30864,7 @@ function hyphenate(string) {
 module.exports = hyphenate;
 
 /***/ }),
-/* 63 */
+/* 65 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -30415,7 +30879,7 @@ module.exports = hyphenate;
 
 
 
-var camelize = __webpack_require__(64);
+var camelize = __webpack_require__(66);
 
 var msPattern = /^-ms-/;
 
@@ -30443,7 +30907,7 @@ function camelizeStyleName(string) {
 module.exports = camelizeStyleName;
 
 /***/ }),
-/* 64 */
+/* 66 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -30478,17 +30942,18 @@ function camelize(string) {
 module.exports = camelize;
 
 /***/ }),
-/* 65 */
+/* 67 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const ShareDBDoc_1 = __webpack_require__(66);
-const ClientTab_1 = __webpack_require__(94);
-const ArboretumChatBox_1 = __webpack_require__(109);
-const TabList_1 = __webpack_require__(103);
-const React = __webpack_require__(2);
+const ShareDBDoc_1 = __webpack_require__(68);
+const ClientTab_1 = __webpack_require__(96);
+const ArboretumChatBox_1 = __webpack_require__(101);
+const BrowserNavigationBar_1 = __webpack_require__(108);
+const TabList_1 = __webpack_require__(111);
+const React = __webpack_require__(1);
 class ArboretumClient extends React.Component {
     constructor(props) {
         super(props);
@@ -30504,6 +30969,18 @@ class ArboretumClient extends React.Component {
                 this.clientTab.setTabID(this.tabID);
             }
         };
+        this.goBack = () => {
+            console.log('back');
+        };
+        this.goForward = () => {
+            console.log('forward');
+        };
+        this.reload = () => {
+            console.log('reload');
+        };
+        this.navigate = (url) => {
+            console.log('navigate to ', url);
+        };
         this.state = {
             showControls: !this.props.frameID
         };
@@ -30517,14 +30994,16 @@ class ArboretumClient extends React.Component {
     ;
     render() {
         const { showControls } = this.state;
-        return React.createElement("div", { id: "arboretum_client" },
-            React.createElement("header", { id: "client_header" },
-                React.createElement(TabList_1.TabList, { sdb: this.sdb, onSelectTab: this.onSelectTab })),
-            React.createElement("div", { id: "client_body" },
-                React.createElement("div", { id: "client_sidebar" },
-                    React.createElement(ArboretumChatBox_1.ArboretumChatBox, { sdb: this.sdb, username: "Steve" })),
-                React.createElement("div", { id: "client_content" },
-                    React.createElement(ClientTab_1.ClientTab, { tabID: this.props.tabID, frameID: this.props.frameID, ref: this.clientTabRef, sdb: this.sdb }))));
+        return React.createElement("div", { className: "window", id: "arboretum_client" },
+            React.createElement(TabList_1.TabList, { sdb: this.sdb, onSelectTab: this.onSelectTab }),
+            React.createElement("header", null,
+                React.createElement(BrowserNavigationBar_1.BrowserNavigationBar, { onBack: this.goBack, onForward: this.goForward, onReload: this.reload, showSidebarToggle: false, onNavigate: this.navigate })),
+            React.createElement("div", { className: "window-content" },
+                React.createElement("div", { className: "pane-group", id: "client_body" },
+                    React.createElement("div", { className: "pane-sm sidebar", id: "client_sidebar" },
+                        React.createElement(ArboretumChatBox_1.ArboretumChatBox, { sdb: this.sdb, username: "Steve" })),
+                    React.createElement("div", { className: "pane", id: "client_content" },
+                        React.createElement(ClientTab_1.ClientTab, { tabID: this.props.tabID, frameID: this.props.frameID, ref: this.clientTabRef, sdb: this.sdb })))));
     }
     ;
 }
@@ -30536,7 +31015,7 @@ exports.ArboretumClient = ArboretumClient;
 
 
 /***/ }),
-/* 66 */
+/* 68 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -30550,8 +31029,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const ShareDBClient = __webpack_require__(67);
-const ShareDB = __webpack_require__(71);
+const ShareDBClient = __webpack_require__(69);
+const ShareDB = __webpack_require__(73);
 class SDB {
     constructor(client, connection) {
         this.docs = new Map();
@@ -30771,18 +31250,18 @@ exports.SDBDoc = SDBDoc;
 
 
 /***/ }),
-/* 67 */
+/* 69 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports.Connection = __webpack_require__(30);
-exports.Doc = __webpack_require__(31);
+exports.Connection = __webpack_require__(32);
+exports.Doc = __webpack_require__(33);
 exports.Error = __webpack_require__(3);
-exports.Query = __webpack_require__(34);
+exports.Query = __webpack_require__(36);
 exports.types = __webpack_require__(6);
 
 
 /***/ }),
-/* 68 */
+/* 70 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -30931,7 +31410,7 @@ exports.BaseError = BaseError
 
 
 /***/ }),
-/* 69 */
+/* 71 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /*
@@ -31048,7 +31527,6 @@ json.checkList = function(elem) {
 
 json.checkObj = function(elem) {
   if (!isObject(elem)) {
-    debugger;
     throw new Error("Referenced element not an object (it was " + JSON.stringify(elem) + ")");
   }
 };
@@ -31096,7 +31574,6 @@ json.apply = function(snapshot, op) {
 
       parent = elem;
       parentKey = key;
-      if(!elem) { debugger; }
       elem = elem[key];
       key = p;
 
@@ -31591,19 +32068,19 @@ json.transformComponent = function(dest, c, otherC, type) {
   return dest;
 };
 
-__webpack_require__(33)(json, json.transformComponent, json.checkValidOp, json.append);
+__webpack_require__(35)(json, json.transformComponent, json.checkValidOp, json.append);
 
 /**
  * Register a subtype for string operations, using the text0 type.
  */
-var text = __webpack_require__(70);
+var text = __webpack_require__(72);
 
 json.registerSubtype(text);
 module.exports = json;
 
 
 /***/ }),
-/* 70 */
+/* 72 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // DEPRECATED!
@@ -31861,45 +32338,45 @@ text.invert = function(op) {
   return op;
 };
 
-__webpack_require__(33)(text, transformComponent, checkValidOp, append);
+__webpack_require__(35)(text, transformComponent, checkValidOp, append);
 
 
 /***/ }),
-/* 71 */
+/* 73 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var Backend = __webpack_require__(72);
+var Backend = __webpack_require__(74);
 module.exports = Backend;
 
-Backend.Agent = __webpack_require__(37);
+Backend.Agent = __webpack_require__(39);
 Backend.Backend = Backend;
-Backend.DB = __webpack_require__(39);
+Backend.DB = __webpack_require__(41);
 Backend.Error = __webpack_require__(3);
-Backend.MemoryDB = __webpack_require__(38);
-Backend.MemoryPubSub = __webpack_require__(40);
+Backend.MemoryDB = __webpack_require__(40);
+Backend.MemoryPubSub = __webpack_require__(42);
 Backend.ot = __webpack_require__(20);
 Backend.projections = __webpack_require__(21);
-Backend.PubSub = __webpack_require__(41);
-Backend.QueryEmitter = __webpack_require__(50);
-Backend.SubmitRequest = __webpack_require__(51);
+Backend.PubSub = __webpack_require__(43);
+Backend.QueryEmitter = __webpack_require__(52);
+Backend.SubmitRequest = __webpack_require__(53);
 Backend.types = __webpack_require__(6);
 
 
 /***/ }),
-/* 72 */
+/* 74 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var async = __webpack_require__(35);
-var Agent = __webpack_require__(37);
-var Connection = __webpack_require__(30);
+var async = __webpack_require__(37);
+var Agent = __webpack_require__(39);
+var Connection = __webpack_require__(32);
 var emitter = __webpack_require__(12);
-var MemoryDB = __webpack_require__(38);
-var MemoryPubSub = __webpack_require__(40);
+var MemoryDB = __webpack_require__(40);
+var MemoryPubSub = __webpack_require__(42);
 var ot = __webpack_require__(20);
 var projections = __webpack_require__(21);
-var QueryEmitter = __webpack_require__(50);
-var StreamSocket = __webpack_require__(93);
-var SubmitRequest = __webpack_require__(51);
+var QueryEmitter = __webpack_require__(52);
+var StreamSocket = __webpack_require__(95);
+var SubmitRequest = __webpack_require__(53);
 
 function Backend(options) {
   if (!(this instanceof Backend)) return new Backend(options);
@@ -32416,7 +32893,7 @@ function pluckIds(snapshots) {
 
 
 /***/ }),
-/* 73 */
+/* 75 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global, process) {(function (global, undefined) {
@@ -32606,10 +33083,10 @@ function pluckIds(snapshots) {
     attachTo.clearImmediate = clearImmediate;
 }(typeof self === "undefined" ? typeof global === "undefined" ? this : global : self));
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1), __webpack_require__(0)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2), __webpack_require__(0)))
 
 /***/ }),
-/* 74 */
+/* 76 */
 /***/ (function(module, exports) {
 
 var hat = module.exports = function (bits, base) {
@@ -32677,11 +33154,11 @@ hat.rack = function (bits, base, expandBy) {
 
 
 /***/ }),
-/* 75 */
+/* 77 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var inherits = __webpack_require__(42).inherits;
-var Readable = __webpack_require__(43).Readable;
+var inherits = __webpack_require__(44).inherits;
+var Readable = __webpack_require__(45).Readable;
 var util = __webpack_require__(7);
 
 // Stream of operations. Subscribe returns one of these
@@ -32742,7 +33219,7 @@ OpStream.prototype.destroy = function() {
 
 
 /***/ }),
-/* 76 */
+/* 78 */
 /***/ (function(module, exports) {
 
 module.exports = function isBuffer(arg) {
@@ -32753,7 +33230,7 @@ module.exports = function isBuffer(arg) {
 }
 
 /***/ }),
-/* 77 */
+/* 79 */
 /***/ (function(module, exports) {
 
 if (typeof Object.create === 'function') {
@@ -32782,7 +33259,7 @@ if (typeof Object.create === 'function') {
 
 
 /***/ }),
-/* 78 */
+/* 80 */
 /***/ (function(module, exports) {
 
 var toString = {}.toString;
@@ -32793,7 +33270,7 @@ module.exports = Array.isArray || function (arr) {
 
 
 /***/ }),
-/* 79 */
+/* 81 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -32914,7 +33391,7 @@ function fromByteArray (uint8) {
 
 
 /***/ }),
-/* 80 */
+/* 82 */
 /***/ (function(module, exports) {
 
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
@@ -33004,7 +33481,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
 
 /***/ }),
-/* 81 */
+/* 83 */
 /***/ (function(module, exports) {
 
 var toString = {}.toString;
@@ -33015,13 +33492,13 @@ module.exports = Array.isArray || function (arr) {
 
 
 /***/ }),
-/* 82 */
+/* 84 */
 /***/ (function(module, exports) {
 
 /* (ignored) */
 
 /***/ }),
-/* 83 */
+/* 85 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -33030,7 +33507,7 @@ module.exports = Array.isArray || function (arr) {
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var Buffer = __webpack_require__(15).Buffer;
-var util = __webpack_require__(84);
+var util = __webpack_require__(86);
 
 function copyBuffer(src, target, offset) {
   src.copy(target, offset);
@@ -33106,13 +33583,13 @@ if (util && util.inspect && util.inspect.custom) {
 }
 
 /***/ }),
-/* 84 */
+/* 86 */
 /***/ (function(module, exports) {
 
 /* (ignored) */
 
 /***/ }),
-/* 85 */
+/* 87 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global) {
@@ -33183,10 +33660,10 @@ function config (name) {
   return String(val).toLowerCase() === 'true';
 }
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 86 */
+/* 88 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -33219,7 +33696,7 @@ function config (name) {
 
 module.exports = PassThrough;
 
-var Transform = __webpack_require__(49);
+var Transform = __webpack_require__(51);
 
 /*<replacement>*/
 var util = __webpack_require__(9);
@@ -33239,35 +33716,35 @@ PassThrough.prototype._transform = function (chunk, encoding, cb) {
 };
 
 /***/ }),
-/* 87 */
+/* 89 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__(19);
 
 
 /***/ }),
-/* 88 */
+/* 90 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__(4);
 
 
 /***/ }),
-/* 89 */
+/* 91 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__(18).Transform
 
 
 /***/ }),
-/* 90 */
+/* 92 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__(18).PassThrough
 
 
 /***/ }),
-/* 91 */
+/* 93 */
 /***/ (function(module, exports) {
 
 module.exports = arrayDiff;
@@ -33454,7 +33931,7 @@ function arrayDiff(before, after, equalFn) {
 
 
 /***/ }),
-/* 92 */
+/* 94 */
 /***/ (function(module, exports) {
 
 var pSlice = Array.prototype.slice;
@@ -33562,11 +34039,11 @@ function objEquiv(a, b) {
 
 
 /***/ }),
-/* 93 */
+/* 95 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(process) {var Duplex = __webpack_require__(43).Duplex;
-var inherits = __webpack_require__(42).inherits;
+/* WEBPACK VAR INJECTION */(function(process) {var Duplex = __webpack_require__(45).Duplex;
+var inherits = __webpack_require__(44).inherits;
 var util = __webpack_require__(7);
 
 function StreamSocket() {
@@ -33631,7 +34108,7 @@ ServerStream.prototype._write = function(chunk, encoding, callback) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 94 */
+/* 96 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -33645,9 +34122,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const React = __webpack_require__(2);
-const ClientDOMNode_1 = __webpack_require__(95);
-const NodeSelector_1 = __webpack_require__(97);
+const React = __webpack_require__(1);
+const ClientDOMNode_1 = __webpack_require__(97);
+const NodeSelector_1 = __webpack_require__(99);
 class ClientTab extends React.Component {
     constructor(props) {
         super(props);
@@ -33853,7 +34330,7 @@ exports.ClientTab = ClientTab;
 
 
 /***/ }),
-/* 95 */
+/* 97 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -33867,7 +34344,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const NodeCode_1 = __webpack_require__(96);
+const NodeCode_1 = __webpack_require__(98);
 function createClientNode(sdbNode) {
     const { nodeType } = sdbNode;
     if (nodeType === NodeCode_1.NodeCode.DOCUMENT_NODE) {
@@ -33986,6 +34463,11 @@ exports.ClientDocumentTypeNode = ClientDocumentTypeNode;
 class ClientElementNode extends ClientNode {
     constructor(sdbNode) {
         super(sdbNode);
+        this.onClick = (event) => {
+            if (this.element === event.target) {
+                console.log(this);
+            }
+        };
         const { nodeName, isSVG, nodeId } = this.sdbNode;
         if (isSVG) {
             this.element = document.createElementNS('http://www.w3.org/2000/svg', nodeName);
@@ -34022,7 +34504,16 @@ class ClientElementNode extends ClientNode {
                     this.element.appendChild(child.getElement());
                 });
             }
+            this.addEventListeners();
         });
+    }
+    ;
+    addEventListeners() {
+        this.element.addEventListener('click', this.onClick);
+    }
+    ;
+    removeEventListeners() {
+        this.element.removeEventListener('click', this.onClick);
     }
     ;
     setChildren(children) {
@@ -34091,6 +34582,7 @@ class ClientElementNode extends ClientNode {
     ;
     destroy() {
         super.destroy();
+        this.removeEventListeners();
         if (this.contentDocument) {
             this.contentDocument.destroy();
         }
@@ -34151,7 +34643,7 @@ function iframeLoaded(element) {
 
 
 /***/ }),
-/* 96 */
+/* 98 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -34176,13 +34668,13 @@ var NodeCode;
 
 
 /***/ }),
-/* 97 */
+/* 99 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const $ = __webpack_require__(98);
+const $ = __webpack_require__(100);
 const _ = __webpack_require__(22);
 var SelectionState;
 (function (SelectionState) {
@@ -34586,7 +35078,7 @@ function nodeListToArray(nodeList) {
 
 
 /***/ }),
-/* 98 */
+/* 100 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
@@ -44957,8 +45449,7 @@ return jQuery;
 
 
 /***/ }),
-/* 99 */,
-/* 100 */
+/* 101 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -44972,8 +45463,142 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const TypedEventEmitter_1 = __webpack_require__(101);
-const guid_1 = __webpack_require__(102);
+const React = __webpack_require__(1);
+const ArboretumChat_1 = __webpack_require__(102);
+__webpack_require__(105);
+const ENTER_KEY = 13;
+class ArboretumChatBox extends React.Component {
+    constructor(props) {
+        super(props);
+        this.updateMessagesState = () => __awaiter(this, void 0, void 0, function* () {
+            const messages = yield this.chat.getMessages();
+            this.setState({ messages });
+        });
+        this.updateUsersState = () => __awaiter(this, void 0, void 0, function* () {
+            const users = yield this.chat.getUsers();
+            this.setState({ users });
+        });
+        this.chatKeyDown = (event) => {
+            const { keyCode, ctrlKey, altKey, metaKey, shiftKey } = event;
+            if (keyCode === ENTER_KEY && !(ctrlKey || altKey || metaKey || shiftKey)) {
+                event.preventDefault();
+                const { chatText } = this.state;
+                if (chatText !== '') {
+                    if (this.props.onSendMessage) {
+                        this.props.onSendMessage(chatText);
+                    }
+                    if (this.chat) {
+                        this.chat.addTextMessage(chatText);
+                    }
+                    this.setState({ chatText: '' });
+                }
+            }
+        };
+        this.onTextareaChange = (event) => {
+            this.setState({ chatText: event.target.value });
+        };
+        this.state = {
+            chatText: this.props.chatText || '',
+            messages: [],
+            users: []
+        };
+        if (this.props.sdb) {
+            this.setSDB(this.props.sdb);
+        }
+        window.addEventListener('beforeunload', () => this.leave());
+    }
+    ;
+    setSDB(sdb) {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.sdb = sdb;
+            this.chat = new ArboretumChat_1.ArboretumChat(this.sdb);
+            this.chat.ready(() => __awaiter(this, void 0, void 0, function* () {
+                yield this.chat.join(this.props.username);
+                yield this.updateMessagesState();
+                yield this.updateUsersState();
+                this.chat.messageAdded(this.updateMessagesState);
+                this.chat.userJoined(this.updateUsersState);
+                this.chat.userNotPresent(this.updateUsersState);
+            }));
+        });
+    }
+    ;
+    //https://stackoverflow.com/questions/37620694/how-to-scroll-to-bottom-in-react
+    scrollToBottom() {
+        this.messagesEnd.scrollIntoView({ behavior: "smooth" });
+    }
+    ;
+    componentDidMount() {
+        this.scrollToBottom();
+    }
+    ;
+    leave() {
+        if (this.chat) {
+            this.chat.leave();
+        }
+    }
+    ;
+    componentWillUnmount() {
+        this.leave();
+    }
+    ;
+    componentDidUpdate() {
+        this.scrollToBottom();
+    }
+    ;
+    render() {
+        const messages = this.state.messages.map((m, i) => {
+            const senderStyle = { color: m.sender.color };
+            return React.createElement("li", { key: i, className: 'chat-line' },
+                React.createElement("span", { style: senderStyle, className: 'from' }, m.sender.displayName),
+                React.createElement("span", { className: 'message' }, m.content));
+        });
+        let meUserID;
+        if (this.chat) {
+            const meUser = this.chat.getMe();
+            if (meUser) {
+                meUserID = meUser.id;
+            }
+        }
+        const users = this.state.users.map((u) => {
+            const isMe = u.id === meUserID;
+            const style = { color: u.color };
+            return React.createElement("span", { key: u.id, className: `participant ${isMe ? 'me' : ''}`, style: style }, u.displayName);
+        });
+        return React.createElement("div", { className: 'chat' },
+            React.createElement("h6", { id: "task_title" },
+                React.createElement("span", { className: "icon icon-chat" }),
+                React.createElement("span", { id: 'task-name' }, "Chat")),
+            React.createElement("div", { id: "chat-participants" }, users),
+            React.createElement("ul", { id: "chat-lines" },
+                messages,
+                React.createElement("li", { style: { float: "left", clear: "both" }, ref: (el) => { this.messagesEnd = el; } })),
+            React.createElement("form", { id: "chat-form" },
+                React.createElement("textarea", { id: "chat-box", className: "form-control", placeholder: "Send a message", onChange: this.onTextareaChange, onKeyDown: this.chatKeyDown, value: this.state.chatText })));
+    }
+    ;
+}
+exports.ArboretumChatBox = ArboretumChatBox;
+;
+
+
+/***/ }),
+/* 102 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const TypedEventEmitter_1 = __webpack_require__(103);
+const guid_1 = __webpack_require__(104);
 const _ = __webpack_require__(22);
 exports.userColors = [
     ['#A80000', '#B05E0D', '#C19C00', '#107C10', '#038387', '#004E8C', '#5C126B']
@@ -45163,7 +45788,7 @@ exports.ArboretumChat = ArboretumChat;
 
 
 /***/ }),
-/* 101 */
+/* 103 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -45283,7 +45908,7 @@ exports.TypedListener = TypedListener;
 
 
 /***/ }),
-/* 102 */
+/* 104 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -45310,80 +45935,11 @@ exports.guidIndex = guidIndex;
 
 
 /***/ }),
-/* 103 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const _ = __webpack_require__(22);
-const React = __webpack_require__(2);
-class TabList extends React.Component {
-    constructor(props) {
-        super(props);
-        this.onBrowserDocUpdated = () => __awaiter(this, void 0, void 0, function* () {
-            const data = this.browserDoc.getData();
-            const { tabs, selectedTab } = data;
-            yield new Promise((resolve, reject) => {
-                this.setState({ tabs: _.values(tabs) }, resolve);
-            });
-            if (selectedTab) {
-                this.selectTab(selectedTab);
-            }
-        });
-        this.changeSelectedTab = (event) => {
-            const target = event.target;
-            this.selectTab(target.getAttribute('data-tabid'));
-            event.preventDefault();
-            event.stopPropagation();
-        };
-        this.state = {
-            tabs: [],
-            selectedTab: null
-        };
-        this.browserDoc = this.props.sdb.get('arboretum', 'browser');
-        this.initialize();
-    }
-    ;
-    initialize() {
-        this.browserDoc.subscribe(this.onBrowserDocUpdated);
-    }
-    ;
-    selectTab(selectedTab) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.setState({ selectedTab });
-            this.props.onSelectTab(selectedTab);
-        });
-    }
-    ;
-    render() {
-        const tabs = this.state.tabs.map((tabInfo, index) => {
-            const { id } = tabInfo;
-            const isSelected = id === this.state.selectedTab;
-            return React.createElement("li", { className: 'tab' + (isSelected ? ' selected' : ''), "data-tabid": id, key: id, onClick: this.changeSelectedTab }, tabInfo.title);
-        });
-        return React.createElement("ul", { id: 'tabs' }, tabs);
-    }
-    ;
-}
-exports.TabList = TabList;
-;
-
-
-/***/ }),
-/* 104 */
+/* 105 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
-var content = __webpack_require__(105);
+var content = __webpack_require__(106);
 
 if(typeof content === 'string') content = [[module.i, content, '']];
 
@@ -45397,13 +45953,13 @@ var options = {"hmr":true}
 options.transform = transform
 options.insertInto = undefined;
 
-var update = __webpack_require__(107)(content, options);
+var update = __webpack_require__(24)(content, options);
 
 if(content.locals) module.exports = content.locals;
 
 if(false) {
-	module.hot.accept("!!../../../node_modules/css-loader/index.js??ref--2-1!../../../node_modules/sass-loader/lib/loader.js??ref--2-2!./client.scss", function() {
-		var newContent = require("!!../../../node_modules/css-loader/index.js??ref--2-1!../../../node_modules/sass-loader/lib/loader.js??ref--2-2!./client.scss");
+	module.hot.accept("!!../../../node_modules/css-loader/index.js??ref--2-1!../../../node_modules/sass-loader/lib/loader.js??ref--2-2!./ArboretumChat.scss", function() {
+		var newContent = require("!!../../../node_modules/css-loader/index.js??ref--2-1!../../../node_modules/sass-loader/lib/loader.js??ref--2-2!./ArboretumChat.scss");
 
 		if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
 
@@ -45429,485 +45985,21 @@ if(false) {
 }
 
 /***/ }),
-/* 105 */
+/* 106 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(106)(true);
+exports = module.exports = __webpack_require__(23)(true);
 // imports
 
 
 // module
-exports.push([module.i, "html, body, #client_main, #arboretum_client {\n  margin: 0px;\n  padding: 0px;\n  height: 100%;\n  width: 100%;\n  overflow: hidden; }\n\nbody {\n  font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n  background-color: #333; }\n  body #arboretum_client {\n    display: flex;\n    flex-direction: column; }\n    body #arboretum_client #client_header {\n      max-height: 40px;\n      flex: 0 0 40px;\n      background-color: #e8e6e8;\n      background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #e8e6e8), color-stop(100%, #d1cfd1));\n      background-image: -webkit-linear-gradient(top, #e8e6e8 0%, #d1cfd1 100%);\n      background-image: linear-gradient(to bottom, #e8e6e8 0%, #d1cfd1 100%); }\n      body #arboretum_client #client_header #tabs {\n        display: flex;\n        flex: 1;\n        padding: 0px;\n        margin: 0px;\n        overflow: hidden; }\n        body #arboretum_client #client_header #tabs .tab {\n          flex: 1;\n          display: flex;\n          text-align: center;\n          border-left: 1px solid #989698;\n          background-color: #b8b6b8;\n          background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #b8b6b8), color-stop(100%, #b0aeb0));\n          background-image: -webkit-linear-gradient(top, #b8b6b8 0%, #b0aeb0 100%);\n          background-image: linear-gradient(to bottom, #b8b6b8 0%, #b0aeb0 100%);\n          border-left: 1px solid #AAA;\n          list-style: none;\n          white-space: nowrap;\n          border-bottom: 1px solid #aaa;\n          overflow: hidden;\n          text-overflow: ellipsis;\n          color: #333; }\n        body #arboretum_client #client_header #tabs:last-child {\n          border-right: 1px solid #AAA; }\n        body #arboretum_client #client_header #tabs.not-selected {\n          background: linear-gradient(to bottom, #BBB 80%, #AAA); }\n          body #arboretum_client #client_header #tabs.not-selected .closeTab {\n            color: #999; }\n        body #arboretum_client #client_header #tabs.tab.selected {\n          background-color: #d4d2d4;\n          background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #d4d2d4), color-stop(100%, #cccacc));\n          background-image: -webkit-linear-gradient(top, #d4d2d4 0%, #cccacc 100%);\n          background-image: linear-gradient(to bottom, #d4d2d4 0%, #cccacc 100%);\n          /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n          border-bottom: none;\n          color: #777; }\n    body #arboretum_client #client_body {\n      display: flex;\n      flex: 1 0 calc(100% - 40px); }\n      body #arboretum_client #client_body #client_sidebar {\n        flex: 0 0 250px;\n        display: flex;\n        flex-direction: column; }\n      body #arboretum_client #client_body #client_content {\n        flex: 1 0 auto; }\n        body #arboretum_client #client_body #client_content iframe#content {\n          border: none;\n          width: 100%;\n          height: 100%; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/client/css/src/client/css/client.scss"],"names":[],"mappings":"AAUA;EACI,YAAW;EACX,aAAY;EACZ,aAAY;EACZ,YAAW;EACX,iBAAgB,EACnB;;AACD;EACI,gHAA+G;EAC/G,uBAAsB,EAgEzB;EAlED;IAIQ,cAAa;IACb,uBAAsB,EA4DzB;IAjEL;MAOY,iBAhBQ;MAiBR,eAjBQ;MALhB,0BAuBwC;MAtBxC,sHAAyH;MACzH,yEAA8E;MAC9E,uEAA4E,EA0DvE;MA/CT;QAYgB,cAAa;QACb,QAAO;QACP,aAAY;QACZ,YAAW;QACX,iBAAgB,EA8BnB;QA9Cb;UAkBoB,QAAO;UACP,cAAa;UACb,mBAAkB;UAClB,+BAA8B;UAnC9C,0BAoCgD;UAnChD,sHAAyH;UACzH,yEAA8E;UAC9E,uEAA4E;UAkC5D,4BAA2B;UAC3B,iBAAgB;UAChB,oBAAmB;UACnB,8BAA6B;UAC7B,iBAAgB;UAChB,wBAAuB;UACvB,YAAW,EACd;QA9BjB;UAgCoB,6BAA4B,EAC/B;QAjCjB;UAmCoB,uDAAsD,EAIzD;UAvCjB;YAqCwB,YAAW,EACd;QAtCrB;UAdI,0BAuDgD;UAtDhD,sHAAyH;UACzH,yEAA8E;UAC9E,uEAA4E;UAqD5D,8DAA8D;UAC9D,oBAAmB;UACnB,YAAW,EACd;IA7CjB;MAiDY,cAAa;MACb,4BAAwC,EAc3C;MAhET;QAoDgB,gBA5DK;QA6DL,cAAa;QACb,uBAAsB,EACzB;MAvDb;QAyDgB,eAAc,EAMjB;QA/Db;UA2DoB,aAAY;UACZ,YAAW;UACX,aAAY,EACf","file":"client.scss","sourcesContent":["// @import \"../../utils/browserControls/ArboretumChat.scss\";\n// From top to bottom\n@mixin linear-gradient($color-from, $color-to) {\n    background-color: $color-from; // Old browsers\n    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%,$color-from), color-stop(100%,$color-to)); // Chrome, Safari4+\n    background-image: -webkit-linear-gradient(top, $color-from 0%, $color-to 100%);           // Chrome10+, Safari5.1+\n    background-image: linear-gradient(to bottom, $color-from 0%, $color-to 100%);  // W3C\n}\n$header_height: 40px;\n$sidebar_width: 250px;\nhtml, body, #client_main, #arboretum_client {\n    margin: 0px;\n    padding: 0px;\n    height: 100%;\n    width: 100%;\n    overflow: hidden;\n}\nbody {\n    font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n    background-color: #333;\n    #arboretum_client {\n        display: flex;\n        flex-direction: column;\n        #client_header {\n            max-height: $header_height;\n            flex: 0 0 $header_height;\n            @include linear-gradient(#e8e6e8, #d1cfd1);\n\n            #tabs {\n                display: flex;\n                flex: 1;\n                padding: 0px;\n                margin: 0px;\n                overflow: hidden;\n                .tab {\n                    flex: 1;\n                    display: flex;\n                    text-align: center;\n                    border-left: 1px solid #989698;\n                    @include linear-gradient(#b8b6b8, #b0aeb0);\n                    border-left: 1px solid #AAA;\n                    list-style: none;\n                    white-space: nowrap;\n                    border-bottom: 1px solid #aaa;\n                    overflow: hidden;\n                    text-overflow: ellipsis;\n                    color: #333;\n                }\n                &:last-child {\n                    border-right: 1px solid #AAA;\n                }\n                &.not-selected {\n                    background: linear-gradient(to bottom, #BBB 80%, #AAA);\n                    .closeTab {\n                        color: #999;\n                    }\n                }\n                &.tab.selected {\n                    @include linear-gradient(#d4d2d4, #cccacc);\n                    /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n                    border-bottom: none;\n                    color: #777;\n                }\n            }\n        }\n        #client_body {\n            display: flex;\n            flex: 1 0 calc(100% - #{$header_height});\n            #client_sidebar {\n                flex: 0 0 $sidebar_width;\n                display: flex;\n                flex-direction: column;\n            }\n            #client_content {\n                flex: 1 0 auto;\n                iframe#content {\n                    border: none;\n                    width: 100%;\n                    height: 100%;\n                }\n            }\n        }\n    }\n}\n"],"sourceRoot":""}]);
+exports.push([module.i, ".chat {\n  font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n  flex: 1 0 auto;\n  display: flex;\n  flex-direction: column;\n  height: 100%; }\n  .chat #task_title {\n    flex: 0 0;\n    box-sizing: border-box;\n    padding: 5px 10px 5px;\n    margin: 0px; }\n  .chat #chat-participants {\n    flex: 0 0;\n    border-bottom: 1px solid #CCC;\n    padding: 5px 10px 5px;\n    box-sizing: border-box; }\n    .chat #chat-participants .participant {\n      margin: 2px; }\n      .chat #chat-participants .participant.me {\n        font-weight: bold;\n        text-decoration: underline; }\n  .chat #chat-lines {\n    flex: 2 0;\n    box-sizing: border-box;\n    padding: 0px 10px 0px;\n    margin: 0px;\n    overflow-y: auto; }\n    .chat #chat-lines li {\n      list-style-type: none; }\n    .chat #chat-lines .chat-line {\n      font-size: 0.9em;\n      list-style-type: none;\n      list-style-type: none;\n      margin-top: 2px;\n      padding-top: 2px;\n      margin-bottom: 2px;\n      padding-bottom: 2px;\n      color: #555; }\n      .chat #chat-lines .chat-line .from {\n        font-weight: bold; }\n      .chat #chat-lines .chat-line .from::after {\n        content: \": \"; }\n  .chat #chat-form {\n    padding: 0px 2px 0px;\n    flex: 0; }\n    .chat #chat-form textarea#chat-box {\n      box-sizing: border-box;\n      resize: none;\n      flex-grow: 1;\n      width: 100%;\n      font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n      padding: 5px 10px 5px; }\n    .chat #chat-form .form-actions {\n      text-align: right; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/utils/browserControls/src/utils/browserControls/ArboretumChat.scss"],"names":[],"mappings":"AAAA;EACI,gHAA+G;EAC/G,eAAc;EACd,cAAa;EACb,uBAAsB;EACtB,aAAY,EA8Df;EAnED;IAQQ,UAAS;IACT,uBAAsB;IACtB,sBAAqB;IACrB,YAAW,EACd;EAZL;IAcQ,UAAS;IACT,8BAA6B;IAC7B,sBAAqB;IACrB,uBAAsB,EAQzB;IAzBL;MAmBY,YAAW,EAKd;MAxBT;QAqBgB,kBAAiB;QACjB,2BAA0B,EAC7B;EAvBb;IA2BQ,UAAS;IACT,uBAAsB;IACtB,sBAAqB;IACrB,YAAW;IACX,iBAAgB,EAoBnB;IAnDL;MAiCY,sBAAqB,EACxB;IAlCT;MAoCY,iBAAgB;MAChB,sBAAqB;MACrB,sBAAqB;MACrB,gBAAe;MACf,iBAAgB;MAChB,mBAAkB;MAClB,oBAAmB;MACnB,YAAW,EAOd;MAlDT;QA6CgB,kBAAiB,EACpB;MA9Cb;QAgDgB,cAAa,EAChB;EAjDb;IAqDQ,qBAAoB;IACpB,QAAO,EAYV;IAlEL;MAwDY,uBAAsB;MACtB,aAAY;MACZ,aAAY;MACZ,YAAW;MACX,gHAA+G;MAC/G,sBAAqB,EACxB;IA9DT;MAgEY,kBAAiB,EACpB","file":"ArboretumChat.scss","sourcesContent":[".chat {\n    font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n    flex: 1 0 auto;\n    display: flex;\n    flex-direction: column;\n    height: 100%;\n\n    #task_title {\n        flex: 0 0;\n        box-sizing: border-box;\n        padding: 5px 10px 5px;\n        margin: 0px;\n    }\n    #chat-participants {\n        flex: 0 0;\n        border-bottom: 1px solid #CCC;\n        padding: 5px 10px 5px;\n        box-sizing: border-box;\n        .participant {\n            margin: 2px;\n            &.me {\n                font-weight: bold;\n                text-decoration: underline;\n            }\n        }\n    }\n    #chat-lines {\n        flex: 2 0;\n        box-sizing: border-box;\n        padding: 0px 10px 0px;\n        margin: 0px;\n        overflow-y: auto;\n        li {\n            list-style-type: none;\n        }\n        .chat-line {\n            font-size: 0.9em;\n            list-style-type: none;\n            list-style-type: none;\n            margin-top: 2px;\n            padding-top: 2px;\n            margin-bottom: 2px;\n            padding-bottom: 2px;\n            color: #555;\n            .from {\n                font-weight: bold;\n            }\n            .from::after {\n                content: \": \";\n            }\n        }\n    }\n    #chat-form {\n        padding: 0px 2px 0px;\n        flex: 0;\n        textarea#chat-box {\n            box-sizing: border-box;\n            resize: none;\n            flex-grow: 1;\n            width: 100%;\n            font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n            padding: 5px 10px 5px;\n        }\n        .form-actions {\n            text-align: right;\n        }\n    }\n}\n"],"sourceRoot":""}]);
 
 // exports
 
 
 /***/ }),
-/* 106 */
-/***/ (function(module, exports) {
-
-/*
-	MIT License http://www.opensource.org/licenses/mit-license.php
-	Author Tobias Koppers @sokra
-*/
-// css base code, injected by the css-loader
-module.exports = function(useSourceMap) {
-	var list = [];
-
-	// return the list of modules as css string
-	list.toString = function toString() {
-		return this.map(function (item) {
-			var content = cssWithMappingToString(item, useSourceMap);
-			if(item[2]) {
-				return "@media " + item[2] + "{" + content + "}";
-			} else {
-				return content;
-			}
-		}).join("");
-	};
-
-	// import a list of modules into the list
-	list.i = function(modules, mediaQuery) {
-		if(typeof modules === "string")
-			modules = [[null, modules, ""]];
-		var alreadyImportedModules = {};
-		for(var i = 0; i < this.length; i++) {
-			var id = this[i][0];
-			if(typeof id === "number")
-				alreadyImportedModules[id] = true;
-		}
-		for(i = 0; i < modules.length; i++) {
-			var item = modules[i];
-			// skip already imported module
-			// this implementation is not 100% perfect for weird media query combinations
-			//  when a module is imported multiple times with different media queries.
-			//  I hope this will never occur (Hey this way we have smaller bundles)
-			if(typeof item[0] !== "number" || !alreadyImportedModules[item[0]]) {
-				if(mediaQuery && !item[2]) {
-					item[2] = mediaQuery;
-				} else if(mediaQuery) {
-					item[2] = "(" + item[2] + ") and (" + mediaQuery + ")";
-				}
-				list.push(item);
-			}
-		}
-	};
-	return list;
-};
-
-function cssWithMappingToString(item, useSourceMap) {
-	var content = item[1] || '';
-	var cssMapping = item[3];
-	if (!cssMapping) {
-		return content;
-	}
-
-	if (useSourceMap && typeof btoa === 'function') {
-		var sourceMapping = toComment(cssMapping);
-		var sourceURLs = cssMapping.sources.map(function (source) {
-			return '/*# sourceURL=' + cssMapping.sourceRoot + source + ' */'
-		});
-
-		return [content].concat(sourceURLs).concat([sourceMapping]).join('\n');
-	}
-
-	return [content].join('\n');
-}
-
-// Adapted from convert-source-map (MIT)
-function toComment(sourceMap) {
-	// eslint-disable-next-line no-undef
-	var base64 = btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap))));
-	var data = 'sourceMappingURL=data:application/json;charset=utf-8;base64,' + base64;
-
-	return '/*# ' + data + ' */';
-}
-
-
-/***/ }),
 /* 107 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/*
-	MIT License http://www.opensource.org/licenses/mit-license.php
-	Author Tobias Koppers @sokra
-*/
-
-var stylesInDom = {};
-
-var	memoize = function (fn) {
-	var memo;
-
-	return function () {
-		if (typeof memo === "undefined") memo = fn.apply(this, arguments);
-		return memo;
-	};
-};
-
-var isOldIE = memoize(function () {
-	// Test for IE <= 9 as proposed by Browserhacks
-	// @see http://browserhacks.com/#hack-e71d8692f65334173fee715c222cb805
-	// Tests for existence of standard globals is to allow style-loader
-	// to operate correctly into non-standard environments
-	// @see https://github.com/webpack-contrib/style-loader/issues/177
-	return window && document && document.all && !window.atob;
-});
-
-var getTarget = function (target) {
-  return document.querySelector(target);
-};
-
-var getElement = (function (fn) {
-	var memo = {};
-
-	return function(target) {
-                // If passing function in options, then use it for resolve "head" element.
-                // Useful for Shadow Root style i.e
-                // {
-                //   insertInto: function () { return document.querySelector("#foo").shadowRoot }
-                // }
-                if (typeof target === 'function') {
-                        return target();
-                }
-                if (typeof memo[target] === "undefined") {
-			var styleTarget = getTarget.call(this, target);
-			// Special case to return head of iframe instead of iframe itself
-			if (window.HTMLIFrameElement && styleTarget instanceof window.HTMLIFrameElement) {
-				try {
-					// This will throw an exception if access to iframe is blocked
-					// due to cross-origin restrictions
-					styleTarget = styleTarget.contentDocument.head;
-				} catch(e) {
-					styleTarget = null;
-				}
-			}
-			memo[target] = styleTarget;
-		}
-		return memo[target]
-	};
-})();
-
-var singleton = null;
-var	singletonCounter = 0;
-var	stylesInsertedAtTop = [];
-
-var	fixUrls = __webpack_require__(108);
-
-module.exports = function(list, options) {
-	if (typeof DEBUG !== "undefined" && DEBUG) {
-		if (typeof document !== "object") throw new Error("The style-loader cannot be used in a non-browser environment");
-	}
-
-	options = options || {};
-
-	options.attrs = typeof options.attrs === "object" ? options.attrs : {};
-
-	// Force single-tag solution on IE6-9, which has a hard limit on the # of <style>
-	// tags it will allow on a page
-	if (!options.singleton && typeof options.singleton !== "boolean") options.singleton = isOldIE();
-
-	// By default, add <style> tags to the <head> element
-        if (!options.insertInto) options.insertInto = "head";
-
-	// By default, add <style> tags to the bottom of the target
-	if (!options.insertAt) options.insertAt = "bottom";
-
-	var styles = listToStyles(list, options);
-
-	addStylesToDom(styles, options);
-
-	return function update (newList) {
-		var mayRemove = [];
-
-		for (var i = 0; i < styles.length; i++) {
-			var item = styles[i];
-			var domStyle = stylesInDom[item.id];
-
-			domStyle.refs--;
-			mayRemove.push(domStyle);
-		}
-
-		if(newList) {
-			var newStyles = listToStyles(newList, options);
-			addStylesToDom(newStyles, options);
-		}
-
-		for (var i = 0; i < mayRemove.length; i++) {
-			var domStyle = mayRemove[i];
-
-			if(domStyle.refs === 0) {
-				for (var j = 0; j < domStyle.parts.length; j++) domStyle.parts[j]();
-
-				delete stylesInDom[domStyle.id];
-			}
-		}
-	};
-};
-
-function addStylesToDom (styles, options) {
-	for (var i = 0; i < styles.length; i++) {
-		var item = styles[i];
-		var domStyle = stylesInDom[item.id];
-
-		if(domStyle) {
-			domStyle.refs++;
-
-			for(var j = 0; j < domStyle.parts.length; j++) {
-				domStyle.parts[j](item.parts[j]);
-			}
-
-			for(; j < item.parts.length; j++) {
-				domStyle.parts.push(addStyle(item.parts[j], options));
-			}
-		} else {
-			var parts = [];
-
-			for(var j = 0; j < item.parts.length; j++) {
-				parts.push(addStyle(item.parts[j], options));
-			}
-
-			stylesInDom[item.id] = {id: item.id, refs: 1, parts: parts};
-		}
-	}
-}
-
-function listToStyles (list, options) {
-	var styles = [];
-	var newStyles = {};
-
-	for (var i = 0; i < list.length; i++) {
-		var item = list[i];
-		var id = options.base ? item[0] + options.base : item[0];
-		var css = item[1];
-		var media = item[2];
-		var sourceMap = item[3];
-		var part = {css: css, media: media, sourceMap: sourceMap};
-
-		if(!newStyles[id]) styles.push(newStyles[id] = {id: id, parts: [part]});
-		else newStyles[id].parts.push(part);
-	}
-
-	return styles;
-}
-
-function insertStyleElement (options, style) {
-	var target = getElement(options.insertInto)
-
-	if (!target) {
-		throw new Error("Couldn't find a style target. This probably means that the value for the 'insertInto' parameter is invalid.");
-	}
-
-	var lastStyleElementInsertedAtTop = stylesInsertedAtTop[stylesInsertedAtTop.length - 1];
-
-	if (options.insertAt === "top") {
-		if (!lastStyleElementInsertedAtTop) {
-			target.insertBefore(style, target.firstChild);
-		} else if (lastStyleElementInsertedAtTop.nextSibling) {
-			target.insertBefore(style, lastStyleElementInsertedAtTop.nextSibling);
-		} else {
-			target.appendChild(style);
-		}
-		stylesInsertedAtTop.push(style);
-	} else if (options.insertAt === "bottom") {
-		target.appendChild(style);
-	} else if (typeof options.insertAt === "object" && options.insertAt.before) {
-		var nextSibling = getElement(options.insertInto + " " + options.insertAt.before);
-		target.insertBefore(style, nextSibling);
-	} else {
-		throw new Error("[Style Loader]\n\n Invalid value for parameter 'insertAt' ('options.insertAt') found.\n Must be 'top', 'bottom', or Object.\n (https://github.com/webpack-contrib/style-loader#insertat)\n");
-	}
-}
-
-function removeStyleElement (style) {
-	if (style.parentNode === null) return false;
-	style.parentNode.removeChild(style);
-
-	var idx = stylesInsertedAtTop.indexOf(style);
-	if(idx >= 0) {
-		stylesInsertedAtTop.splice(idx, 1);
-	}
-}
-
-function createStyleElement (options) {
-	var style = document.createElement("style");
-
-	options.attrs.type = "text/css";
-
-	addAttrs(style, options.attrs);
-	insertStyleElement(options, style);
-
-	return style;
-}
-
-function createLinkElement (options) {
-	var link = document.createElement("link");
-
-	options.attrs.type = "text/css";
-	options.attrs.rel = "stylesheet";
-
-	addAttrs(link, options.attrs);
-	insertStyleElement(options, link);
-
-	return link;
-}
-
-function addAttrs (el, attrs) {
-	Object.keys(attrs).forEach(function (key) {
-		el.setAttribute(key, attrs[key]);
-	});
-}
-
-function addStyle (obj, options) {
-	var style, update, remove, result;
-
-	// If a transform function was defined, run it on the css
-	if (options.transform && obj.css) {
-	    result = options.transform(obj.css);
-
-	    if (result) {
-	    	// If transform returns a value, use that instead of the original css.
-	    	// This allows running runtime transformations on the css.
-	    	obj.css = result;
-	    } else {
-	    	// If the transform function returns a falsy value, don't add this css.
-	    	// This allows conditional loading of css
-	    	return function() {
-	    		// noop
-	    	};
-	    }
-	}
-
-	if (options.singleton) {
-		var styleIndex = singletonCounter++;
-
-		style = singleton || (singleton = createStyleElement(options));
-
-		update = applyToSingletonTag.bind(null, style, styleIndex, false);
-		remove = applyToSingletonTag.bind(null, style, styleIndex, true);
-
-	} else if (
-		obj.sourceMap &&
-		typeof URL === "function" &&
-		typeof URL.createObjectURL === "function" &&
-		typeof URL.revokeObjectURL === "function" &&
-		typeof Blob === "function" &&
-		typeof btoa === "function"
-	) {
-		style = createLinkElement(options);
-		update = updateLink.bind(null, style, options);
-		remove = function () {
-			removeStyleElement(style);
-
-			if(style.href) URL.revokeObjectURL(style.href);
-		};
-	} else {
-		style = createStyleElement(options);
-		update = applyToTag.bind(null, style);
-		remove = function () {
-			removeStyleElement(style);
-		};
-	}
-
-	update(obj);
-
-	return function updateStyle (newObj) {
-		if (newObj) {
-			if (
-				newObj.css === obj.css &&
-				newObj.media === obj.media &&
-				newObj.sourceMap === obj.sourceMap
-			) {
-				return;
-			}
-
-			update(obj = newObj);
-		} else {
-			remove();
-		}
-	};
-}
-
-var replaceText = (function () {
-	var textStore = [];
-
-	return function (index, replacement) {
-		textStore[index] = replacement;
-
-		return textStore.filter(Boolean).join('\n');
-	};
-})();
-
-function applyToSingletonTag (style, index, remove, obj) {
-	var css = remove ? "" : obj.css;
-
-	if (style.styleSheet) {
-		style.styleSheet.cssText = replaceText(index, css);
-	} else {
-		var cssNode = document.createTextNode(css);
-		var childNodes = style.childNodes;
-
-		if (childNodes[index]) style.removeChild(childNodes[index]);
-
-		if (childNodes.length) {
-			style.insertBefore(cssNode, childNodes[index]);
-		} else {
-			style.appendChild(cssNode);
-		}
-	}
-}
-
-function applyToTag (style, obj) {
-	var css = obj.css;
-	var media = obj.media;
-
-	if(media) {
-		style.setAttribute("media", media)
-	}
-
-	if(style.styleSheet) {
-		style.styleSheet.cssText = css;
-	} else {
-		while(style.firstChild) {
-			style.removeChild(style.firstChild);
-		}
-
-		style.appendChild(document.createTextNode(css));
-	}
-}
-
-function updateLink (link, options, obj) {
-	var css = obj.css;
-	var sourceMap = obj.sourceMap;
-
-	/*
-		If convertToAbsoluteUrls isn't defined, but sourcemaps are enabled
-		and there is no publicPath defined then lets turn convertToAbsoluteUrls
-		on by default.  Otherwise default to the convertToAbsoluteUrls option
-		directly
-	*/
-	var autoFixUrls = options.convertToAbsoluteUrls === undefined && sourceMap;
-
-	if (options.convertToAbsoluteUrls || autoFixUrls) {
-		css = fixUrls(css);
-	}
-
-	if (sourceMap) {
-		// http://stackoverflow.com/a/26603875
-		css += "\n/*# sourceMappingURL=data:application/json;base64," + btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))) + " */";
-	}
-
-	var blob = new Blob([css], { type: "text/css" });
-
-	var oldSrc = link.href;
-
-	link.href = URL.createObjectURL(blob);
-
-	if(oldSrc) URL.revokeObjectURL(oldSrc);
-}
-
-
-/***/ }),
-/* 108 */
 /***/ (function(module, exports) {
 
 
@@ -46002,145 +46094,92 @@ module.exports = function (css) {
 
 
 /***/ }),
-/* 109 */
+/* 108 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-const React = __webpack_require__(2);
-const ArboretumChat_1 = __webpack_require__(100);
-__webpack_require__(110);
+const React = __webpack_require__(1);
+__webpack_require__(109);
 const ENTER_KEY = 13;
-class ArboretumChatBox extends React.Component {
+class BrowserNavigationBar extends React.Component {
     constructor(props) {
         super(props);
-        this.updateMessagesState = () => __awaiter(this, void 0, void 0, function* () {
-            const messages = yield this.chat.getMessages();
-            this.setState({ messages });
-        });
-        this.updateUsersState = () => __awaiter(this, void 0, void 0, function* () {
-            const users = yield this.chat.getUsers();
-            this.setState({ users });
-        });
-        this.chatKeyDown = (event) => {
-            const { keyCode, ctrlKey, altKey, metaKey, shiftKey } = event;
-            if (keyCode === ENTER_KEY && !(ctrlKey || altKey || metaKey || shiftKey)) {
-                event.preventDefault();
-                const { chatText } = this.state;
-                if (chatText !== '') {
-                    if (this.props.onSendMessage) {
-                        this.props.onSendMessage(chatText);
-                    }
-                    if (this.chat) {
-                        this.chat.addTextMessage(chatText);
-                    }
-                    this.setState({ chatText: '' });
+        this.handleURLChange = (event) => {
+            this.setState({ urlText: event.target.value });
+        };
+        this.backClicked = () => {
+            if (this.props.onBack) {
+                this.props.onBack();
+            }
+        };
+        this.forwardClicked = () => {
+            if (this.props.onForward) {
+                this.props.onForward();
+            }
+        };
+        this.reloadClicked = () => {
+            if (this.props.onReload) {
+                this.props.onReload();
+            }
+        };
+        this.toggleSidebarClicked = () => {
+            if (this.props.onToggleSidebar) {
+                this.props.onToggleSidebar();
+            }
+        };
+        this.urlKeyDown = (event) => {
+            const { keyCode } = event;
+            if (keyCode === ENTER_KEY) {
+                const { urlText } = this.state;
+                if (this.props.onNavigate) {
+                    this.props.onNavigate(urlText);
                 }
             }
         };
-        this.onTextareaChange = (event) => {
-            this.setState({ chatText: event.target.value });
+        this.onURLBarFocus = (event) => {
+            this.setState({ urlBarFocused: true });
+        };
+        this.onURLBarBlur = (event) => {
+            this.setState({ urlBarFocused: false });
         };
         this.state = {
-            chatText: this.props.chatText || '',
-            messages: [],
-            users: []
+            urlText: '',
+            canGoBack: false,
+            canGoForward: false,
+            isLoading: false,
+            urlBarFocused: false
         };
-        if (this.props.sdb) {
-            this.setSDB(this.props.sdb);
-        }
-        window.addEventListener('beforeunload', () => this.leave());
-    }
-    ;
-    setSDB(sdb) {
-        return __awaiter(this, void 0, void 0, function* () {
-            this.sdb = sdb;
-            this.chat = new ArboretumChat_1.ArboretumChat(this.sdb);
-            this.chat.ready(() => __awaiter(this, void 0, void 0, function* () {
-                yield this.chat.join(this.props.username);
-                yield this.updateMessagesState();
-                yield this.updateUsersState();
-                this.chat.messageAdded(this.updateMessagesState);
-                this.chat.userJoined(this.updateUsersState);
-                this.chat.userNotPresent(this.updateUsersState);
-            }));
-        });
-    }
-    ;
-    //https://stackoverflow.com/questions/37620694/how-to-scroll-to-bottom-in-react
-    scrollToBottom() {
-        this.messagesEnd.scrollIntoView({ behavior: "smooth" });
-    }
-    ;
-    componentDidMount() {
-        this.scrollToBottom();
-    }
-    ;
-    leave() {
-        if (this.chat) {
-            this.chat.leave();
-        }
-    }
-    ;
-    componentWillUnmount() {
-        this.leave();
-    }
-    ;
-    componentDidUpdate() {
-        this.scrollToBottom();
     }
     ;
     render() {
-        const messages = this.state.messages.map((m, i) => {
-            const senderStyle = { color: m.sender.color };
-            return React.createElement("li", { key: i, className: 'chat-line' },
-                React.createElement("span", { style: senderStyle, className: 'from' }, m.sender.displayName),
-                React.createElement("span", { className: 'message' }, m.content));
-        });
-        let meUserID;
-        if (this.chat) {
-            const meUser = this.chat.getMe();
-            if (meUser) {
-                meUserID = meUser.id;
-            }
-        }
-        const users = this.state.users.map((u) => {
-            const isMe = u.id === meUserID;
-            const style = { color: u.color };
-            return React.createElement("span", { key: u.id, className: `participant ${isMe ? 'me' : ''}`, style: style }, u.displayName);
-        });
-        return React.createElement("div", { className: 'chat' },
-            React.createElement("h6", { id: "task_title" },
-                React.createElement("span", { className: "icon icon-chat" }),
-                React.createElement("span", { id: 'task-name' }, "Chat")),
-            React.createElement("div", { id: "chat-participants" }, users),
-            React.createElement("ul", { id: "chat-lines" },
-                messages,
-                React.createElement("li", { style: { float: "left", clear: "both" }, ref: (el) => { this.messagesEnd = el; } })),
-            React.createElement("form", { id: "chat-form" },
-                React.createElement("textarea", { id: "chat-box", className: "form-control", placeholder: "Send a message", onChange: this.onTextareaChange, onKeyDown: this.chatKeyDown, value: this.state.chatText })));
+        const toggleSidebarButton = this.props.showSidebarToggle ? React.createElement("button", { onClick: this.toggleSidebarClicked, className: 'btn btn-default btn-mini', id: 'task' },
+            React.createElement("span", { className: 'icon icon-publish' })) : null;
+        return React.createElement("div", { className: "toolbar toolbar-header", id: "navBar" },
+            React.createElement("div", { className: "toolbar-actions" },
+                React.createElement("div", { className: "btn-group" },
+                    React.createElement("button", { disabled: !this.state.canGoBack, onClick: this.backClicked, className: 'btn btn-default btn-mini', id: 'back' },
+                        React.createElement("span", { className: 'icon icon-left-open-big' })),
+                    React.createElement("button", { disabled: !this.state.canGoForward, onClick: this.forwardClicked, className: 'btn btn-default btn-mini', id: 'forward' },
+                        React.createElement("span", { className: 'icon icon-right-open-big' }))),
+                React.createElement("button", { onClick: this.reloadClicked, className: 'btn btn-default btn-mini', id: 'reload' },
+                    React.createElement("span", { className: `icon ${this.state.isLoading ? 'icon-cancel' : 'icon-ccw'}` })),
+                toggleSidebarButton),
+            React.createElement("input", { value: this.state.urlText, onChange: this.handleURLChange, onKeyDown: this.urlKeyDown, onFocus: this.onURLBarFocus, onBlur: this.onURLBarBlur, id: 'url', type: "text", placeholder: "Enter URL or Term to Search" }));
     }
     ;
 }
-exports.ArboretumChatBox = ArboretumChatBox;
+exports.BrowserNavigationBar = BrowserNavigationBar;
 ;
 
 
 /***/ }),
-/* 110 */
+/* 109 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
-var content = __webpack_require__(111);
+var content = __webpack_require__(110);
 
 if(typeof content === 'string') content = [[module.i, content, '']];
 
@@ -46154,13 +46193,13 @@ var options = {"hmr":true}
 options.transform = transform
 options.insertInto = undefined;
 
-var update = __webpack_require__(107)(content, options);
+var update = __webpack_require__(24)(content, options);
 
 if(content.locals) module.exports = content.locals;
 
 if(false) {
-	module.hot.accept("!!../../../node_modules/css-loader/index.js??ref--2-1!../../../node_modules/sass-loader/lib/loader.js??ref--2-2!./ArboretumChat.scss", function() {
-		var newContent = require("!!../../../node_modules/css-loader/index.js??ref--2-1!../../../node_modules/sass-loader/lib/loader.js??ref--2-2!./ArboretumChat.scss");
+	module.hot.accept("!!../../../node_modules/css-loader/index.js??ref--2-1!../../../node_modules/sass-loader/lib/loader.js??ref--2-2!./BrowserNavigationBar.scss", function() {
+		var newContent = require("!!../../../node_modules/css-loader/index.js??ref--2-1!../../../node_modules/sass-loader/lib/loader.js??ref--2-2!./BrowserNavigationBar.scss");
 
 		if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
 
@@ -46186,15 +46225,148 @@ if(false) {
 }
 
 /***/ }),
-/* 111 */
+/* 110 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(106)(true);
+exports = module.exports = __webpack_require__(23)(true);
 // imports
 
 
 // module
-exports.push([module.i, ".chat {\n  font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n  background-color: #EEE;\n  flex: 1 0 auto;\n  display: flex;\n  flex-direction: column;\n  height: 100%; }\n  .chat #task_title {\n    flex: 0 0;\n    box-sizing: border-box;\n    padding: 5px 10px 5px; }\n  .chat #chat-participants {\n    flex: 0 0;\n    border-bottom: 1px solid #CCC;\n    background-color: #DDD;\n    padding: 5px 10px 5px;\n    box-sizing: border-box; }\n    .chat #chat-participants .participant {\n      margin: 2px; }\n      .chat #chat-participants .participant.me {\n        font-weight: bold;\n        text-decoration: underline; }\n  .chat #chat-lines {\n    flex: 2 0;\n    box-sizing: border-box;\n    padding: 0px 10px 0px;\n    margin: 0px;\n    overflow-y: auto; }\n    .chat #chat-lines li {\n      list-style-type: none; }\n    .chat #chat-lines .chat-line {\n      font-size: 0.9em;\n      list-style-type: none;\n      list-style-type: none;\n      margin-top: 2px;\n      padding-top: 2px;\n      margin-bottom: 2px;\n      padding-bottom: 2px;\n      color: #555; }\n      .chat #chat-lines .chat-line .from {\n        font-weight: bold; }\n      .chat #chat-lines .chat-line .from::after {\n        content: \": \"; }\n  .chat #chat-form {\n    padding: 0px 2px 0px;\n    flex: 0; }\n    .chat #chat-form textarea#chat-box {\n      box-sizing: border-box;\n      resize: none;\n      flex-grow: 1;\n      width: 100%;\n      font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n      padding: 5px 10px 5px; }\n    .chat #chat-form .form-actions {\n      text-align: right; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/utils/browserControls/src/utils/browserControls/ArboretumChat.scss"],"names":[],"mappings":"AAAA;EACI,gHAA+G;EAC/G,uBAAsB;EACtB,eAAc;EACd,cAAa;EACb,uBAAsB;EACtB,aAAY,EA8Df;EApED;IASQ,UAAS;IACT,uBAAsB;IACtB,sBAAqB,EACxB;EAZL;IAcQ,UAAS;IACT,8BAA6B;IAC7B,uBAAsB;IACtB,sBAAqB;IACrB,uBAAsB,EAQzB;IA1BL;MAoBY,YAAW,EAKd;MAzBT;QAsBgB,kBAAiB;QACjB,2BAA0B,EAC7B;EAxBb;IA4BQ,UAAS;IACT,uBAAsB;IACtB,sBAAqB;IACrB,YAAW;IACX,iBAAgB,EAoBnB;IApDL;MAkCY,sBAAqB,EACxB;IAnCT;MAqCY,iBAAgB;MAChB,sBAAqB;MACrB,sBAAqB;MACrB,gBAAe;MACf,iBAAgB;MAChB,mBAAkB;MAClB,oBAAmB;MACnB,YAAW,EAOd;MAnDT;QA8CgB,kBAAiB,EACpB;MA/Cb;QAiDgB,cAAa,EAChB;EAlDb;IAsDQ,qBAAoB;IACpB,QAAO,EAYV;IAnEL;MAyDY,uBAAsB;MACtB,aAAY;MACZ,aAAY;MACZ,YAAW;MACX,gHAA+G;MAC/G,sBAAqB,EACxB;IA/DT;MAiEY,kBAAiB,EACpB","file":"ArboretumChat.scss","sourcesContent":[".chat {\n    font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n    background-color: #EEE;\n    flex: 1 0 auto;\n    display: flex;\n    flex-direction: column;\n    height: 100%;\n\n    #task_title {\n        flex: 0 0;\n        box-sizing: border-box;\n        padding: 5px 10px 5px;\n    }\n    #chat-participants {\n        flex: 0 0;\n        border-bottom: 1px solid #CCC;\n        background-color: #DDD;\n        padding: 5px 10px 5px;\n        box-sizing: border-box;\n        .participant {\n            margin: 2px;\n            &.me {\n                font-weight: bold;\n                text-decoration: underline;\n            }\n        }\n    }\n    #chat-lines {\n        flex: 2 0;\n        box-sizing: border-box;\n        padding: 0px 10px 0px;\n        margin: 0px;\n        overflow-y: auto;\n        li {\n            list-style-type: none;\n        }\n        .chat-line {\n            font-size: 0.9em;\n            list-style-type: none;\n            list-style-type: none;\n            margin-top: 2px;\n            padding-top: 2px;\n            margin-bottom: 2px;\n            padding-bottom: 2px;\n            color: #555;\n            .from {\n                font-weight: bold;\n            }\n            .from::after {\n                content: \": \";\n            }\n        }\n    }\n    #chat-form {\n        padding: 0px 2px 0px;\n        flex: 0;\n        textarea#chat-box {\n            box-sizing: border-box;\n            resize: none;\n            flex-grow: 1;\n            width: 100%;\n            font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n            padding: 5px 10px 5px;\n        }\n        .form-actions {\n            text-align: right;\n        }\n    }\n}\n"],"sourceRoot":""}]);
+exports.push([module.i, "#navBar {\n  display: flex; }\n  #navBar input#url {\n    flex: 1;\n    /*margin: 4px 2px 3px 2px;*/\n    /*font-size: 12px;*/\n    /*padding: 0px 0px 0px 0px;*/\n    padding: 3px;\n    /*height: 100%;*/\n    /*height: 20px;*/\n    box-shadow: inset 0px 1px 2px rgba(0, 0, 0, 0.2);\n    border: 0px;\n    border-left: 1px solid #bbb;\n    border-top-left-radius: 3px;\n    border-bottom-left-radius: 3px;\n    color: #808080;\n    outline: 0;\n    background: #FFF;\n    /*font-weight: lighter;*/ }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/utils/browserControls/src/utils/browserControls/BrowserNavigationBar.scss"],"names":[],"mappings":"AAAA;EACI,cAAa,EAmBhB;EApBD;IAGQ,QAAO;IACP,4BAA4B;IAC5B,oBAAoB;IACpB,6BAA6B;IAC7B,aAAY;IACZ,iBAAiB;IACjB,iBAAiB;IACjB,iDAAgD;IAChD,YAAW;IACX,4BAA2B;IAC3B,4BAA2B;IAC3B,+BAA8B;IAC9B,eAAc;IACd,WAAU;IACV,iBAAgB;IAChB,yBAAyB,EAC5B","file":"BrowserNavigationBar.scss","sourcesContent":["#navBar {\n    display: flex;\n    input#url {\n        flex: 1;\n        /*margin: 4px 2px 3px 2px;*/\n        /*font-size: 12px;*/\n        /*padding: 0px 0px 0px 0px;*/\n        padding: 3px;\n        /*height: 100%;*/\n        /*height: 20px;*/\n        box-shadow: inset 0px 1px 2px rgba(0, 0, 0, 0.2);\n        border: 0px;\n        border-left: 1px solid #bbb;\n        border-top-left-radius: 3px;\n        border-bottom-left-radius: 3px;\n        color: #808080;\n        outline: 0;\n        background: #FFF;\n        /*font-weight: lighter;*/\n    }\n}\n"],"sourceRoot":""}]);
+
+// exports
+
+
+/***/ }),
+/* 111 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const _ = __webpack_require__(22);
+const React = __webpack_require__(1);
+class TabList extends React.Component {
+    constructor(props) {
+        super(props);
+        this.onBrowserDocUpdated = () => __awaiter(this, void 0, void 0, function* () {
+            const data = this.browserDoc.getData();
+            const { tabs, selectedTab } = data;
+            yield new Promise((resolve, reject) => {
+                this.setState({ tabs: _.values(tabs) }, resolve);
+            });
+            if (selectedTab) {
+                this.selectTab(selectedTab);
+            }
+        });
+        this.changeSelectedTab = (event) => {
+            const target = event.target;
+            this.selectTab(target.getAttribute('data-tabid'));
+            event.preventDefault();
+            event.stopPropagation();
+        };
+        this.state = {
+            tabs: [],
+            selectedTab: null
+        };
+        this.browserDoc = this.props.sdb.get('arboretum', 'browser');
+        this.initialize();
+    }
+    ;
+    initialize() {
+        this.browserDoc.subscribe(this.onBrowserDocUpdated);
+    }
+    ;
+    selectTab(selectedTab) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.setState({ selectedTab });
+            this.props.onSelectTab(selectedTab);
+        });
+    }
+    ;
+    render() {
+        const tabs = this.state.tabs.map((tabInfo, index) => {
+            const { id } = tabInfo;
+            const isSelected = id === this.state.selectedTab;
+            return React.createElement("div", { className: 'tab-item' + (isSelected ? ' active' : ''), "data-tabid": id, key: id, onClick: this.changeSelectedTab }, tabInfo.title);
+        });
+        return React.createElement("div", { className: "tab-group" }, tabs);
+    }
+    ;
+}
+exports.TabList = TabList;
+;
+
+
+/***/ }),
+/* 112 */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+var content = __webpack_require__(113);
+
+if(typeof content === 'string') content = [[module.i, content, '']];
+
+var transform;
+var insertInto;
+
+
+
+var options = {"hmr":true}
+
+options.transform = transform
+options.insertInto = undefined;
+
+var update = __webpack_require__(24)(content, options);
+
+if(content.locals) module.exports = content.locals;
+
+if(false) {
+	module.hot.accept("!!../../../node_modules/css-loader/index.js??ref--2-1!../../../node_modules/sass-loader/lib/loader.js??ref--2-2!./client.scss", function() {
+		var newContent = require("!!../../../node_modules/css-loader/index.js??ref--2-1!../../../node_modules/sass-loader/lib/loader.js??ref--2-2!./client.scss");
+
+		if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+
+		var locals = (function(a, b) {
+			var key, idx = 0;
+
+			for(key in a) {
+				if(!b || a[key] !== b[key]) return false;
+				idx++;
+			}
+
+			for(key in b) idx--;
+
+			return idx === 0;
+		}(content.locals, newContent.locals));
+
+		if(!locals) throw new Error('Aborting CSS HMR due to changed css-modules locals.');
+
+		update(newContent);
+	});
+
+	module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 113 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(23)(true);
+// imports
+
+
+// module
+exports.push([module.i, "html, body, #client_main, #arboretum_client {\n  margin: 0px;\n  padding: 0px;\n  height: 100%;\n  width: 100%;\n  overflow: hidden; }\n\nbody {\n  font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n  background-color: #333; }\n  body #arboretum_client #client_header {\n    max-height: 40px;\n    background-color: #e8e6e8;\n    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #e8e6e8), color-stop(100%, #d1cfd1));\n    background-image: -webkit-linear-gradient(top, #e8e6e8 0%, #d1cfd1 100%);\n    background-image: linear-gradient(to bottom, #e8e6e8 0%, #d1cfd1 100%); }\n    body #arboretum_client #client_header #tabs {\n      padding: 0px;\n      margin: 0px;\n      overflow: hidden; }\n      body #arboretum_client #client_header #tabs .tab {\n        text-align: center;\n        border-left: 1px solid #989698;\n        background-color: #b8b6b8;\n        background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #b8b6b8), color-stop(100%, #b0aeb0));\n        background-image: -webkit-linear-gradient(top, #b8b6b8 0%, #b0aeb0 100%);\n        background-image: linear-gradient(to bottom, #b8b6b8 0%, #b0aeb0 100%);\n        border-left: 1px solid #AAA;\n        list-style: none;\n        white-space: nowrap;\n        border-bottom: 1px solid #aaa;\n        overflow: hidden;\n        text-overflow: ellipsis;\n        color: #333; }\n      body #arboretum_client #client_header #tabs:last-child {\n        border-right: 1px solid #AAA; }\n      body #arboretum_client #client_header #tabs.not-selected {\n        background: linear-gradient(to bottom, #BBB 80%, #AAA); }\n        body #arboretum_client #client_header #tabs.not-selected .closeTab {\n          color: #999; }\n      body #arboretum_client #client_header #tabs.tab.selected {\n        background-color: #d4d2d4;\n        background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #d4d2d4), color-stop(100%, #cccacc));\n        background-image: -webkit-linear-gradient(top, #d4d2d4 0%, #cccacc 100%);\n        background-image: linear-gradient(to bottom, #d4d2d4 0%, #cccacc 100%);\n        /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n        border-bottom: none;\n        color: #777; }\n  body #arboretum_client #client_body #client_content {\n    overflow: hidden; }\n    body #arboretum_client #client_body #client_content iframe#content {\n      border: none;\n      width: 100%;\n      height: 100%; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/client/css/src/client/css/client.scss"],"names":[],"mappings":"AAUA;EACI,YAAW;EACX,aAAY;EACZ,aAAY;EACZ,YAAW;EACX,iBAAgB,EACnB;;AACD;EACI,gHAA+G;EAC/G,uBAAsB,EAoDzB;EAtDD;IAKY,iBAdQ;IALhB,0BAoBwC;IAnBxC,sHAAyH;IACzH,yEAA8E;IAC9E,uEAA4E,EAmDvE;IAxCT;MASgB,aAAY;MACZ,YAAW;MACX,iBAAgB,EA4BnB;MAvCb;QAaoB,mBAAkB;QAClB,+BAA8B;QA5B9C,0BA6BgD;QA5BhD,sHAAyH;QACzH,yEAA8E;QAC9E,uEAA4E;QA2B5D,4BAA2B;QAC3B,iBAAgB;QAChB,oBAAmB;QACnB,8BAA6B;QAC7B,iBAAgB;QAChB,wBAAuB;QACvB,YAAW,EACd;MAvBjB;QAyBoB,6BAA4B,EAC/B;MA1BjB;QA4BoB,uDAAsD,EAIzD;QAhCjB;UA8BwB,YAAW,EACd;MA/BrB;QAdI,0BAgDgD;QA/ChD,sHAAyH;QACzH,yEAA8E;QAC9E,uEAA4E;QA8C5D,8DAA8D;QAC9D,oBAAmB;QACnB,YAAW,EACd;EAtCjB;IA6CgB,iBAAe,EAMlB;IAnDb;MA+CoB,aAAY;MACZ,YAAW;MACX,aAAY,EACf","file":"client.scss","sourcesContent":["// @import \"../../utils/browserControls/ArboretumChat.scss\";\n// From top to bottom\n@mixin linear-gradient($color-from, $color-to) {\n    background-color: $color-from; // Old browsers\n    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%,$color-from), color-stop(100%,$color-to)); // Chrome, Safari4+\n    background-image: -webkit-linear-gradient(top, $color-from 0%, $color-to 100%);           // Chrome10+, Safari5.1+\n    background-image: linear-gradient(to bottom, $color-from 0%, $color-to 100%);  // W3C\n}\n$header_height: 40px;\n$sidebar_width: 250px;\nhtml, body, #client_main, #arboretum_client {\n    margin: 0px;\n    padding: 0px;\n    height: 100%;\n    width: 100%;\n    overflow: hidden;\n}\nbody {\n    font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n    background-color: #333;\n    #arboretum_client {\n        #client_header {\n            max-height: $header_height;\n            @include linear-gradient(#e8e6e8, #d1cfd1);\n\n            #tabs {\n                padding: 0px;\n                margin: 0px;\n                overflow: hidden;\n                .tab {\n                    text-align: center;\n                    border-left: 1px solid #989698;\n                    @include linear-gradient(#b8b6b8, #b0aeb0);\n                    border-left: 1px solid #AAA;\n                    list-style: none;\n                    white-space: nowrap;\n                    border-bottom: 1px solid #aaa;\n                    overflow: hidden;\n                    text-overflow: ellipsis;\n                    color: #333;\n                }\n                &:last-child {\n                    border-right: 1px solid #AAA;\n                }\n                &.not-selected {\n                    background: linear-gradient(to bottom, #BBB 80%, #AAA);\n                    .closeTab {\n                        color: #999;\n                    }\n                }\n                &.tab.selected {\n                    @include linear-gradient(#d4d2d4, #cccacc);\n                    /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n                    border-bottom: none;\n                    color: #777;\n                }\n            }\n        }\n        #client_body {\n            #client_sidebar {\n            }\n            #client_content {\n                overflow:hidden;\n                iframe#content {\n                    border: none;\n                    width: 100%;\n                    height: 100%;\n                }\n            }\n        }\n    }\n}\n"],"sourceRoot":""}]);
 
 // exports
 

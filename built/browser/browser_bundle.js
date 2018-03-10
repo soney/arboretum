@@ -60,7 +60,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 36);
+/******/ 	return __webpack_require__(__webpack_require__.s = 38);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -71,9 +71,9 @@
 
 
 if (process.env.NODE_ENV === 'production') {
-  module.exports = __webpack_require__(37);
+  module.exports = __webpack_require__(39);
 } else {
-  module.exports = __webpack_require__(38);
+  module.exports = __webpack_require__(40);
 }
 
 
@@ -123,7 +123,7 @@ module.exports = emptyFunction;
 /* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var makeError = __webpack_require__(68);
+var makeError = __webpack_require__(75);
 
 function ShareDBError(code, message) {
   ShareDBError.super.call(this, message);
@@ -140,7 +140,7 @@ module.exports = ShareDBError;
 /***/ (function(module, exports, __webpack_require__) {
 
 
-exports.defaultType = __webpack_require__(23).type;
+exports.defaultType = __webpack_require__(25).type;
 
 exports.map = {};
 
@@ -417,7 +417,7 @@ module.exports = warning;
 /* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var EventEmitter = __webpack_require__(67).EventEmitter;
+var EventEmitter = __webpack_require__(74).EventEmitter;
 
 exports.EventEmitter = EventEmitter;
 exports.mixin = mixin;
@@ -2073,6 +2073,388 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;//     Underscor
 /* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
+/*
+	MIT License http://www.opensource.org/licenses/mit-license.php
+	Author Tobias Koppers @sokra
+*/
+
+var stylesInDom = {};
+
+var	memoize = function (fn) {
+	var memo;
+
+	return function () {
+		if (typeof memo === "undefined") memo = fn.apply(this, arguments);
+		return memo;
+	};
+};
+
+var isOldIE = memoize(function () {
+	// Test for IE <= 9 as proposed by Browserhacks
+	// @see http://browserhacks.com/#hack-e71d8692f65334173fee715c222cb805
+	// Tests for existence of standard globals is to allow style-loader
+	// to operate correctly into non-standard environments
+	// @see https://github.com/webpack-contrib/style-loader/issues/177
+	return window && document && document.all && !window.atob;
+});
+
+var getTarget = function (target) {
+  return document.querySelector(target);
+};
+
+var getElement = (function (fn) {
+	var memo = {};
+
+	return function(target) {
+                // If passing function in options, then use it for resolve "head" element.
+                // Useful for Shadow Root style i.e
+                // {
+                //   insertInto: function () { return document.querySelector("#foo").shadowRoot }
+                // }
+                if (typeof target === 'function') {
+                        return target();
+                }
+                if (typeof memo[target] === "undefined") {
+			var styleTarget = getTarget.call(this, target);
+			// Special case to return head of iframe instead of iframe itself
+			if (window.HTMLIFrameElement && styleTarget instanceof window.HTMLIFrameElement) {
+				try {
+					// This will throw an exception if access to iframe is blocked
+					// due to cross-origin restrictions
+					styleTarget = styleTarget.contentDocument.head;
+				} catch(e) {
+					styleTarget = null;
+				}
+			}
+			memo[target] = styleTarget;
+		}
+		return memo[target]
+	};
+})();
+
+var singleton = null;
+var	singletonCounter = 0;
+var	stylesInsertedAtTop = [];
+
+var	fixUrls = __webpack_require__(59);
+
+module.exports = function(list, options) {
+	if (typeof DEBUG !== "undefined" && DEBUG) {
+		if (typeof document !== "object") throw new Error("The style-loader cannot be used in a non-browser environment");
+	}
+
+	options = options || {};
+
+	options.attrs = typeof options.attrs === "object" ? options.attrs : {};
+
+	// Force single-tag solution on IE6-9, which has a hard limit on the # of <style>
+	// tags it will allow on a page
+	if (!options.singleton && typeof options.singleton !== "boolean") options.singleton = isOldIE();
+
+	// By default, add <style> tags to the <head> element
+        if (!options.insertInto) options.insertInto = "head";
+
+	// By default, add <style> tags to the bottom of the target
+	if (!options.insertAt) options.insertAt = "bottom";
+
+	var styles = listToStyles(list, options);
+
+	addStylesToDom(styles, options);
+
+	return function update (newList) {
+		var mayRemove = [];
+
+		for (var i = 0; i < styles.length; i++) {
+			var item = styles[i];
+			var domStyle = stylesInDom[item.id];
+
+			domStyle.refs--;
+			mayRemove.push(domStyle);
+		}
+
+		if(newList) {
+			var newStyles = listToStyles(newList, options);
+			addStylesToDom(newStyles, options);
+		}
+
+		for (var i = 0; i < mayRemove.length; i++) {
+			var domStyle = mayRemove[i];
+
+			if(domStyle.refs === 0) {
+				for (var j = 0; j < domStyle.parts.length; j++) domStyle.parts[j]();
+
+				delete stylesInDom[domStyle.id];
+			}
+		}
+	};
+};
+
+function addStylesToDom (styles, options) {
+	for (var i = 0; i < styles.length; i++) {
+		var item = styles[i];
+		var domStyle = stylesInDom[item.id];
+
+		if(domStyle) {
+			domStyle.refs++;
+
+			for(var j = 0; j < domStyle.parts.length; j++) {
+				domStyle.parts[j](item.parts[j]);
+			}
+
+			for(; j < item.parts.length; j++) {
+				domStyle.parts.push(addStyle(item.parts[j], options));
+			}
+		} else {
+			var parts = [];
+
+			for(var j = 0; j < item.parts.length; j++) {
+				parts.push(addStyle(item.parts[j], options));
+			}
+
+			stylesInDom[item.id] = {id: item.id, refs: 1, parts: parts};
+		}
+	}
+}
+
+function listToStyles (list, options) {
+	var styles = [];
+	var newStyles = {};
+
+	for (var i = 0; i < list.length; i++) {
+		var item = list[i];
+		var id = options.base ? item[0] + options.base : item[0];
+		var css = item[1];
+		var media = item[2];
+		var sourceMap = item[3];
+		var part = {css: css, media: media, sourceMap: sourceMap};
+
+		if(!newStyles[id]) styles.push(newStyles[id] = {id: id, parts: [part]});
+		else newStyles[id].parts.push(part);
+	}
+
+	return styles;
+}
+
+function insertStyleElement (options, style) {
+	var target = getElement(options.insertInto)
+
+	if (!target) {
+		throw new Error("Couldn't find a style target. This probably means that the value for the 'insertInto' parameter is invalid.");
+	}
+
+	var lastStyleElementInsertedAtTop = stylesInsertedAtTop[stylesInsertedAtTop.length - 1];
+
+	if (options.insertAt === "top") {
+		if (!lastStyleElementInsertedAtTop) {
+			target.insertBefore(style, target.firstChild);
+		} else if (lastStyleElementInsertedAtTop.nextSibling) {
+			target.insertBefore(style, lastStyleElementInsertedAtTop.nextSibling);
+		} else {
+			target.appendChild(style);
+		}
+		stylesInsertedAtTop.push(style);
+	} else if (options.insertAt === "bottom") {
+		target.appendChild(style);
+	} else if (typeof options.insertAt === "object" && options.insertAt.before) {
+		var nextSibling = getElement(options.insertInto + " " + options.insertAt.before);
+		target.insertBefore(style, nextSibling);
+	} else {
+		throw new Error("[Style Loader]\n\n Invalid value for parameter 'insertAt' ('options.insertAt') found.\n Must be 'top', 'bottom', or Object.\n (https://github.com/webpack-contrib/style-loader#insertat)\n");
+	}
+}
+
+function removeStyleElement (style) {
+	if (style.parentNode === null) return false;
+	style.parentNode.removeChild(style);
+
+	var idx = stylesInsertedAtTop.indexOf(style);
+	if(idx >= 0) {
+		stylesInsertedAtTop.splice(idx, 1);
+	}
+}
+
+function createStyleElement (options) {
+	var style = document.createElement("style");
+
+	options.attrs.type = "text/css";
+
+	addAttrs(style, options.attrs);
+	insertStyleElement(options, style);
+
+	return style;
+}
+
+function createLinkElement (options) {
+	var link = document.createElement("link");
+
+	options.attrs.type = "text/css";
+	options.attrs.rel = "stylesheet";
+
+	addAttrs(link, options.attrs);
+	insertStyleElement(options, link);
+
+	return link;
+}
+
+function addAttrs (el, attrs) {
+	Object.keys(attrs).forEach(function (key) {
+		el.setAttribute(key, attrs[key]);
+	});
+}
+
+function addStyle (obj, options) {
+	var style, update, remove, result;
+
+	// If a transform function was defined, run it on the css
+	if (options.transform && obj.css) {
+	    result = options.transform(obj.css);
+
+	    if (result) {
+	    	// If transform returns a value, use that instead of the original css.
+	    	// This allows running runtime transformations on the css.
+	    	obj.css = result;
+	    } else {
+	    	// If the transform function returns a falsy value, don't add this css.
+	    	// This allows conditional loading of css
+	    	return function() {
+	    		// noop
+	    	};
+	    }
+	}
+
+	if (options.singleton) {
+		var styleIndex = singletonCounter++;
+
+		style = singleton || (singleton = createStyleElement(options));
+
+		update = applyToSingletonTag.bind(null, style, styleIndex, false);
+		remove = applyToSingletonTag.bind(null, style, styleIndex, true);
+
+	} else if (
+		obj.sourceMap &&
+		typeof URL === "function" &&
+		typeof URL.createObjectURL === "function" &&
+		typeof URL.revokeObjectURL === "function" &&
+		typeof Blob === "function" &&
+		typeof btoa === "function"
+	) {
+		style = createLinkElement(options);
+		update = updateLink.bind(null, style, options);
+		remove = function () {
+			removeStyleElement(style);
+
+			if(style.href) URL.revokeObjectURL(style.href);
+		};
+	} else {
+		style = createStyleElement(options);
+		update = applyToTag.bind(null, style);
+		remove = function () {
+			removeStyleElement(style);
+		};
+	}
+
+	update(obj);
+
+	return function updateStyle (newObj) {
+		if (newObj) {
+			if (
+				newObj.css === obj.css &&
+				newObj.media === obj.media &&
+				newObj.sourceMap === obj.sourceMap
+			) {
+				return;
+			}
+
+			update(obj = newObj);
+		} else {
+			remove();
+		}
+	};
+}
+
+var replaceText = (function () {
+	var textStore = [];
+
+	return function (index, replacement) {
+		textStore[index] = replacement;
+
+		return textStore.filter(Boolean).join('\n');
+	};
+})();
+
+function applyToSingletonTag (style, index, remove, obj) {
+	var css = remove ? "" : obj.css;
+
+	if (style.styleSheet) {
+		style.styleSheet.cssText = replaceText(index, css);
+	} else {
+		var cssNode = document.createTextNode(css);
+		var childNodes = style.childNodes;
+
+		if (childNodes[index]) style.removeChild(childNodes[index]);
+
+		if (childNodes.length) {
+			style.insertBefore(cssNode, childNodes[index]);
+		} else {
+			style.appendChild(cssNode);
+		}
+	}
+}
+
+function applyToTag (style, obj) {
+	var css = obj.css;
+	var media = obj.media;
+
+	if(media) {
+		style.setAttribute("media", media)
+	}
+
+	if(style.styleSheet) {
+		style.styleSheet.cssText = css;
+	} else {
+		while(style.firstChild) {
+			style.removeChild(style.firstChild);
+		}
+
+		style.appendChild(document.createTextNode(css));
+	}
+}
+
+function updateLink (link, options, obj) {
+	var css = obj.css;
+	var sourceMap = obj.sourceMap;
+
+	/*
+		If convertToAbsoluteUrls isn't defined, but sourcemaps are enabled
+		and there is no publicPath defined then lets turn convertToAbsoluteUrls
+		on by default.  Otherwise default to the convertToAbsoluteUrls option
+		directly
+	*/
+	var autoFixUrls = options.convertToAbsoluteUrls === undefined && sourceMap;
+
+	if (options.convertToAbsoluteUrls || autoFixUrls) {
+		css = fixUrls(css);
+	}
+
+	if (sourceMap) {
+		// http://stackoverflow.com/a/26603875
+		css += "\n/*# sourceMappingURL=data:application/json;base64," + btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))) + " */";
+	}
+
+	var blob = new Blob([css], { type: "text/css" });
+
+	var oldSrc = link.href;
+
+	link.href = URL.createObjectURL(blob);
+
+	if(oldSrc) URL.revokeObjectURL(oldSrc);
+}
+
+
+/***/ }),
+/* 14 */
+/***/ (function(module, exports, __webpack_require__) {
+
 // This contains the master OT functions for the database. They look like
 // ot-types style operational transform functions, but they're a bit different.
 // These functions understand versions and can deal with out of bound create &
@@ -2227,10 +2609,10 @@ exports.transform = function(type, op, appliedOp) {
 
 
 /***/ }),
-/* 14 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var json0 = __webpack_require__(23).type;
+var json0 = __webpack_require__(25).type;
 
 exports.projectSnapshot = projectSnapshot;
 exports.projectOp = projectOp;
@@ -2349,7 +2731,7 @@ function projectData(fields, data) {
 
 
 /***/ }),
-/* 15 */
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2388,7 +2770,7 @@ var ExecutionEnvironment = {
 module.exports = ExecutionEnvironment;
 
 /***/ }),
-/* 16 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2468,7 +2850,7 @@ var EventListener = {
 module.exports = EventListener;
 
 /***/ }),
-/* 17 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2510,7 +2892,7 @@ function getActiveElement(doc) /*?DOMElement*/{
 module.exports = getActiveElement;
 
 /***/ }),
-/* 18 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2581,7 +2963,7 @@ function shallowEqual(objA, objB) {
 module.exports = shallowEqual;
 
 /***/ }),
-/* 19 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2596,7 +2978,7 @@ module.exports = shallowEqual;
  * 
  */
 
-var isTextNode = __webpack_require__(41);
+var isTextNode = __webpack_require__(43);
 
 /*eslint-disable no-bitwise */
 
@@ -2624,7 +3006,7 @@ function containsNode(outerNode, innerNode) {
 module.exports = containsNode;
 
 /***/ }),
-/* 20 */
+/* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2654,11 +3036,93 @@ function focusNode(node) {
 module.exports = focusNode;
 
 /***/ }),
-/* 21 */
+/* 22 */
+/***/ (function(module, exports) {
+
+/*
+	MIT License http://www.opensource.org/licenses/mit-license.php
+	Author Tobias Koppers @sokra
+*/
+// css base code, injected by the css-loader
+module.exports = function(useSourceMap) {
+	var list = [];
+
+	// return the list of modules as css string
+	list.toString = function toString() {
+		return this.map(function (item) {
+			var content = cssWithMappingToString(item, useSourceMap);
+			if(item[2]) {
+				return "@media " + item[2] + "{" + content + "}";
+			} else {
+				return content;
+			}
+		}).join("");
+	};
+
+	// import a list of modules into the list
+	list.i = function(modules, mediaQuery) {
+		if(typeof modules === "string")
+			modules = [[null, modules, ""]];
+		var alreadyImportedModules = {};
+		for(var i = 0; i < this.length; i++) {
+			var id = this[i][0];
+			if(typeof id === "number")
+				alreadyImportedModules[id] = true;
+		}
+		for(i = 0; i < modules.length; i++) {
+			var item = modules[i];
+			// skip already imported module
+			// this implementation is not 100% perfect for weird media query combinations
+			//  when a module is imported multiple times with different media queries.
+			//  I hope this will never occur (Hey this way we have smaller bundles)
+			if(typeof item[0] !== "number" || !alreadyImportedModules[item[0]]) {
+				if(mediaQuery && !item[2]) {
+					item[2] = mediaQuery;
+				} else if(mediaQuery) {
+					item[2] = "(" + item[2] + ") and (" + mediaQuery + ")";
+				}
+				list.push(item);
+			}
+		}
+	};
+	return list;
+};
+
+function cssWithMappingToString(item, useSourceMap) {
+	var content = item[1] || '';
+	var cssMapping = item[3];
+	if (!cssMapping) {
+		return content;
+	}
+
+	if (useSourceMap && typeof btoa === 'function') {
+		var sourceMapping = toComment(cssMapping);
+		var sourceURLs = cssMapping.sources.map(function (source) {
+			return '/*# sourceURL=' + cssMapping.sourceRoot + source + ' */'
+		});
+
+		return [content].concat(sourceURLs).concat([sourceMapping]).join('\n');
+	}
+
+	return [content].join('\n');
+}
+
+// Adapted from convert-source-map (MIT)
+function toComment(sourceMap) {
+	// eslint-disable-next-line no-undef
+	var base64 = btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap))));
+	var data = 'sourceMappingURL=data:application/json;charset=utf-8;base64,' + base64;
+
+	return '/*# ' + data + ' */';
+}
+
+
+/***/ }),
+/* 23 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var Doc = __webpack_require__(22);
-var Query = __webpack_require__(25);
+var Doc = __webpack_require__(24);
+var Query = __webpack_require__(27);
 var emitter = __webpack_require__(9);
 var ShareDBError = __webpack_require__(2);
 var types = __webpack_require__(3);
@@ -3238,7 +3702,7 @@ Connection.prototype._firstQuery = function(fn) {
 
 
 /***/ }),
-/* 22 */
+/* 24 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var emitter = __webpack_require__(9);
@@ -4154,7 +4618,7 @@ function callEach(callbacks, err) {
 
 
 /***/ }),
-/* 23 */
+/* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // Only the JSON type is exported, because the text type is deprecated
@@ -4162,12 +4626,12 @@ function callEach(callbacks, err) {
 // into a separate module that json0 can depend on).
 
 module.exports = {
-  type: __webpack_require__(69)
+  type: __webpack_require__(76)
 };
 
 
 /***/ }),
-/* 24 */
+/* 26 */
 /***/ (function(module, exports) {
 
 // These methods let you build a transform function from a transformComponent
@@ -4251,7 +4715,7 @@ function bootstrapTransform(type, transformComponent, checkValidOp, append) {
 
 
 /***/ }),
-/* 25 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var emitter = __webpack_require__(9);
@@ -4456,7 +4920,7 @@ Query.prototype._handleExtra = function(extra) {
 
 
 /***/ }),
-/* 26 */
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
@@ -5728,10 +6192,10 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
 
 
 /***/ }),
-/* 27 */
+/* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var hat = __webpack_require__(73);
+var hat = __webpack_require__(80);
 var util = __webpack_require__(4);
 var types = __webpack_require__(3);
 
@@ -6318,10 +6782,10 @@ Agent.prototype._createOp = function(request) {
 
 
 /***/ }),
-/* 28 */
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var DB = __webpack_require__(29);
+var DB = __webpack_require__(31);
 
 // In-memory ShareDB database
 //
@@ -6508,10 +6972,10 @@ function clone(obj) {
 
 
 /***/ }),
-/* 29 */
+/* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var async = __webpack_require__(26);
+var async = __webpack_require__(28);
 var ShareDBError = __webpack_require__(2);
 
 function DB(options) {
@@ -6618,10 +7082,10 @@ DB.prototype.skipPoll = function() {
 
 
 /***/ }),
-/* 30 */
+/* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var PubSub = __webpack_require__(31);
+var PubSub = __webpack_require__(33);
 
 // In-memory ShareDB pub/sub
 //
@@ -6662,10 +7126,10 @@ MemoryPubSub.prototype._publish = function(channels, data, callback) {
 
 
 /***/ }),
-/* 31 */
+/* 33 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var OpStream = __webpack_require__(74);
+var OpStream = __webpack_require__(81);
 var ShareDBError = __webpack_require__(2);
 var util = __webpack_require__(4);
 
@@ -6791,23 +7255,23 @@ function shallowCopy(object) {
 
 
 /***/ }),
-/* 32 */
+/* 34 */
 /***/ (function(module, exports) {
 
 module.exports = require("util");
 
 /***/ }),
-/* 33 */
+/* 35 */
 /***/ (function(module, exports) {
 
 module.exports = require("stream");
 
 /***/ }),
-/* 34 */
+/* 36 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var arraydiff = __webpack_require__(75);
-var deepEquals = __webpack_require__(76);
+var arraydiff = __webpack_require__(82);
+var deepEquals = __webpack_require__(83);
 var ShareDBError = __webpack_require__(2);
 var util = __webpack_require__(4);
 
@@ -7106,11 +7570,11 @@ function mapDiff(idsDiff, snapshotMap) {
 
 
 /***/ }),
-/* 35 */
+/* 37 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var ot = __webpack_require__(13);
-var projections = __webpack_require__(14);
+var ot = __webpack_require__(14);
+var projections = __webpack_require__(15);
 
 function SubmitRequest(backend, agent, index, id, op, options) {
   this.backend = backend;
@@ -7360,21 +7824,21 @@ SubmitRequest.prototype.maxRetriesError = function() {
 
 
 /***/ }),
-/* 36 */
+/* 38 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(0);
-const ReactDOM = __webpack_require__(39);
-const ArboretumBrowser_1 = __webpack_require__(48);
-__webpack_require__(78);
+const ReactDOM = __webpack_require__(41);
+const ArboretumBrowser_1 = __webpack_require__(50);
+__webpack_require__(85);
 ReactDOM.render(React.createElement(ArboretumBrowser_1.ArboretumBrowser, { serverState: "active", urls: ['http://www.umich.edu/'] }), document.getElementById('arboretum_main'));
 
 
 /***/ }),
-/* 37 */
+/* 39 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7402,7 +7866,7 @@ isValidElement:K,version:"16.2.0",__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_F
 
 
 /***/ }),
-/* 38 */
+/* 40 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8766,7 +9230,7 @@ module.exports = react;
 
 
 /***/ }),
-/* 39 */
+/* 41 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8804,14 +9268,14 @@ if (process.env.NODE_ENV === 'production') {
   // DCE check should happen before ReactDOM bundle executes so that
   // DevTools can report bad minification during injection.
   checkDCE();
-  module.exports = __webpack_require__(40);
+  module.exports = __webpack_require__(42);
 } else {
-  module.exports = __webpack_require__(43);
+  module.exports = __webpack_require__(45);
 }
 
 
 /***/ }),
-/* 40 */
+/* 42 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8827,7 +9291,7 @@ if (process.env.NODE_ENV === 'production') {
 /*
  Modernizr 3.0.0pre (Custom Build) | MIT
 */
-var aa=__webpack_require__(0),l=__webpack_require__(15),B=__webpack_require__(5),C=__webpack_require__(1),ba=__webpack_require__(16),da=__webpack_require__(17),ea=__webpack_require__(18),fa=__webpack_require__(19),ia=__webpack_require__(20),D=__webpack_require__(7);
+var aa=__webpack_require__(0),l=__webpack_require__(16),B=__webpack_require__(5),C=__webpack_require__(1),ba=__webpack_require__(17),da=__webpack_require__(18),ea=__webpack_require__(19),fa=__webpack_require__(20),ia=__webpack_require__(21),D=__webpack_require__(7);
 function E(a){for(var b=arguments.length-1,c="Minified React error #"+a+"; visit http://facebook.github.io/react/docs/error-decoder.html?invariant\x3d"+a,d=0;d<b;d++)c+="\x26args[]\x3d"+encodeURIComponent(arguments[d+1]);b=Error(c+" for the full message or use the non-minified dev environment for full errors and additional helpful warnings.");b.name="Invariant Violation";b.framesToPop=1;throw b;}aa?void 0:E("227");
 var oa={children:!0,dangerouslySetInnerHTML:!0,defaultValue:!0,defaultChecked:!0,innerHTML:!0,suppressContentEditableWarning:!0,suppressHydrationWarning:!0,style:!0};function pa(a,b){return(a&b)===b}
 var ta={MUST_USE_PROPERTY:1,HAS_BOOLEAN_VALUE:4,HAS_NUMERIC_VALUE:8,HAS_POSITIVE_NUMERIC_VALUE:24,HAS_OVERLOADED_BOOLEAN_VALUE:32,HAS_STRING_BOOLEAN_VALUE:64,injectDOMPropertyConfig:function(a){var b=ta,c=a.Properties||{},d=a.DOMAttributeNamespaces||{},e=a.DOMAttributeNames||{};a=a.DOMMutationMethods||{};for(var f in c){ua.hasOwnProperty(f)?E("48",f):void 0;var g=f.toLowerCase(),h=c[f];g={attributeName:g,attributeNamespace:null,propertyName:f,mutationMethod:null,mustUseProperty:pa(h,b.MUST_USE_PROPERTY),
@@ -9047,7 +9511,7 @@ Z.injectIntoDevTools({findFiberByHostInstance:pb,bundleType:0,version:"16.2.0",r
 
 
 /***/ }),
-/* 41 */
+/* 43 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9062,7 +9526,7 @@ Z.injectIntoDevTools({findFiberByHostInstance:pb,bundleType:0,version:"16.2.0",r
  * @typechecks
  */
 
-var isNode = __webpack_require__(42);
+var isNode = __webpack_require__(44);
 
 /**
  * @param {*} object The object to check.
@@ -9075,7 +9539,7 @@ function isTextNode(object) {
 module.exports = isTextNode;
 
 /***/ }),
-/* 42 */
+/* 44 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9103,7 +9567,7 @@ function isNode(object) {
 module.exports = isNode;
 
 /***/ }),
-/* 43 */
+/* 45 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9127,18 +9591,18 @@ if (process.env.NODE_ENV !== "production") {
 var React = __webpack_require__(0);
 var invariant = __webpack_require__(6);
 var warning = __webpack_require__(8);
-var ExecutionEnvironment = __webpack_require__(15);
+var ExecutionEnvironment = __webpack_require__(16);
 var _assign = __webpack_require__(5);
 var emptyFunction = __webpack_require__(1);
-var EventListener = __webpack_require__(16);
-var getActiveElement = __webpack_require__(17);
-var shallowEqual = __webpack_require__(18);
-var containsNode = __webpack_require__(19);
-var focusNode = __webpack_require__(20);
+var EventListener = __webpack_require__(17);
+var getActiveElement = __webpack_require__(18);
+var shallowEqual = __webpack_require__(19);
+var containsNode = __webpack_require__(20);
+var focusNode = __webpack_require__(21);
 var emptyObject = __webpack_require__(7);
 var checkPropTypes = __webpack_require__(10);
-var hyphenateStyleName = __webpack_require__(44);
-var camelizeStyleName = __webpack_require__(46);
+var hyphenateStyleName = __webpack_require__(46);
+var camelizeStyleName = __webpack_require__(48);
 
 /**
  * WARNING: DO NOT manually require this module.
@@ -24504,7 +24968,7 @@ module.exports = reactDom;
 
 
 /***/ }),
-/* 44 */
+/* 46 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -24519,7 +24983,7 @@ module.exports = reactDom;
 
 
 
-var hyphenate = __webpack_require__(45);
+var hyphenate = __webpack_require__(47);
 
 var msPattern = /^ms-/;
 
@@ -24546,7 +25010,7 @@ function hyphenateStyleName(string) {
 module.exports = hyphenateStyleName;
 
 /***/ }),
-/* 45 */
+/* 47 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -24582,7 +25046,7 @@ function hyphenate(string) {
 module.exports = hyphenate;
 
 /***/ }),
-/* 46 */
+/* 48 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -24597,7 +25061,7 @@ module.exports = hyphenate;
 
 
 
-var camelize = __webpack_require__(47);
+var camelize = __webpack_require__(49);
 
 var msPattern = /^-ms-/;
 
@@ -24625,7 +25089,7 @@ function camelizeStyleName(string) {
 module.exports = camelizeStyleName;
 
 /***/ }),
-/* 47 */
+/* 49 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -24660,7 +25124,7 @@ function camelize(string) {
 module.exports = camelize;
 
 /***/ }),
-/* 48 */
+/* 50 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -24675,13 +25139,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(0);
-const BrowserNavigationBar_1 = __webpack_require__(49);
-const BrowserTab_1 = __webpack_require__(50);
-const BrowserSidebar_1 = __webpack_require__(51);
-const electron_1 = __webpack_require__(63);
-const url = __webpack_require__(64);
+const BrowserTab_1 = __webpack_require__(51);
+const BrowserSidebar_1 = __webpack_require__(52);
+const BrowserNavigationBar_1 = __webpack_require__(67);
+const electron_1 = __webpack_require__(70);
+const url = __webpack_require__(71);
 const _ = __webpack_require__(12);
-const ShareDBDoc_1 = __webpack_require__(65);
+const ShareDBDoc_1 = __webpack_require__(72);
 class ArboretumBrowser extends React.Component {
     constructor(props) {
         super(props);
@@ -24930,7 +25394,7 @@ class ArboretumBrowser extends React.Component {
                     tabs,
                     React.createElement("div", { onClick: this.addTab, className: "tab-item tab-item-fixed", id: 'addTab' },
                         React.createElement("span", { className: "icon icon-plus" }))),
-                React.createElement(BrowserNavigationBar_1.BrowserNavigationBar, { ref: this.navBarRef, onBack: this.goBack, onForward: this.goForward, onReload: this.reload, onToggleSidebar: this.toggleSidebar, onNavigate: this.navigate })),
+                React.createElement(BrowserNavigationBar_1.BrowserNavigationBar, { ref: this.navBarRef, onBack: this.goBack, onForward: this.goForward, onReload: this.reload, showSidebarToggle: false, onToggleSidebar: this.toggleSidebar, onNavigate: this.navigate })),
             React.createElement("div", { className: "window-content" },
                 React.createElement("div", { className: "pane-group" },
                     React.createElement(BrowserSidebar_1.BrowserSidebar, { shareURL: this.state.shareURL, adminURL: this.state.adminURL, ref: this.sidebarRef, setServerActive: this.setServerActive, isVisible: this.state.showingSidebar, serverActive: this.state.serverActive, onPostTask: this.postTask }),
@@ -24944,87 +25408,7 @@ exports.ArboretumBrowser = ArboretumBrowser;
 
 
 /***/ }),
-/* 49 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const React = __webpack_require__(0);
-const ENTER_KEY = 13;
-class BrowserNavigationBar extends React.Component {
-    constructor(props) {
-        super(props);
-        this.handleURLChange = (event) => {
-            this.setState({ urlText: event.target.value });
-        };
-        this.backClicked = () => {
-            if (this.props.onBack) {
-                this.props.onBack();
-            }
-        };
-        this.forwardClicked = () => {
-            if (this.props.onForward) {
-                this.props.onForward();
-            }
-        };
-        this.reloadClicked = () => {
-            if (this.props.onReload) {
-                this.props.onReload();
-            }
-        };
-        this.toggleSidebarClicked = () => {
-            if (this.props.onToggleSidebar) {
-                this.props.onToggleSidebar();
-            }
-        };
-        this.urlKeyDown = (event) => {
-            const { keyCode } = event;
-            if (keyCode === ENTER_KEY) {
-                const { urlText } = this.state;
-                if (this.props.onNavigate) {
-                    this.props.onNavigate(urlText);
-                }
-            }
-        };
-        this.onURLBarFocus = (event) => {
-            this.setState({ urlBarFocused: true });
-        };
-        this.onURLBarBlur = (event) => {
-            this.setState({ urlBarFocused: false });
-        };
-        this.state = {
-            urlText: '',
-            canGoBack: false,
-            canGoForward: false,
-            isLoading: false,
-            urlBarFocused: false
-        };
-    }
-    ;
-    render() {
-        return React.createElement("div", { id: "navBar" },
-            React.createElement("div", { className: "toolbar-actions" },
-                React.createElement("div", { className: "btn-group" },
-                    React.createElement("button", { disabled: !this.state.canGoBack, onClick: this.backClicked, className: 'btn btn-default btn-mini', id: 'back' },
-                        React.createElement("span", { className: 'icon icon-left-open-big' })),
-                    React.createElement("button", { disabled: !this.state.canGoForward, onClick: this.forwardClicked, className: 'btn btn-default btn-mini', id: 'forward' },
-                        React.createElement("span", { className: 'icon icon-right-open-big' }))),
-                React.createElement("div", { className: "btn-group" },
-                    React.createElement("button", { onClick: this.reloadClicked, className: 'btn btn-default btn-mini', id: 'reload' },
-                        React.createElement("span", { className: `icon ${this.state.isLoading ? 'icon-cancel' : 'icon-ccw'}` })),
-                    React.createElement("button", { onClick: this.toggleSidebarClicked, className: 'btn btn-default btn-mini', id: 'task' },
-                        React.createElement("span", { className: 'icon icon-publish' })))),
-            React.createElement("input", { value: this.state.urlText, onChange: this.handleURLChange, onKeyDown: this.urlKeyDown, onFocus: this.onURLBarFocus, onBlur: this.onURLBarBlur, id: 'url', type: "text", placeholder: "Enter URL or Term to Search" }));
-    }
-    ;
-}
-exports.BrowserNavigationBar = BrowserNavigationBar;
-;
-
-
-/***/ }),
-/* 50 */
+/* 51 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -25140,7 +25524,7 @@ exports.BrowserTab = BrowserTab;
 
 
 /***/ }),
-/* 51 */
+/* 52 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -25155,9 +25539,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(0);
-const ArboretumChatBox_1 = __webpack_require__(83);
-const Clipboard = __webpack_require__(56);
-const react_switch_1 = __webpack_require__(57);
+const ArboretumChatBox_1 = __webpack_require__(53);
+const Clipboard = __webpack_require__(60);
+const react_switch_1 = __webpack_require__(61);
 const ENTER_KEY = 13;
 ;
 class BrowserSidebar extends React.Component {
@@ -25261,7 +25645,6 @@ exports.BrowserSidebar = BrowserSidebar;
 
 
 /***/ }),
-/* 52 */,
 /* 53 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -25276,8 +25659,142 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const TypedEventEmitter_1 = __webpack_require__(54);
-const guid_1 = __webpack_require__(55);
+const React = __webpack_require__(0);
+const ArboretumChat_1 = __webpack_require__(54);
+__webpack_require__(57);
+const ENTER_KEY = 13;
+class ArboretumChatBox extends React.Component {
+    constructor(props) {
+        super(props);
+        this.updateMessagesState = () => __awaiter(this, void 0, void 0, function* () {
+            const messages = yield this.chat.getMessages();
+            this.setState({ messages });
+        });
+        this.updateUsersState = () => __awaiter(this, void 0, void 0, function* () {
+            const users = yield this.chat.getUsers();
+            this.setState({ users });
+        });
+        this.chatKeyDown = (event) => {
+            const { keyCode, ctrlKey, altKey, metaKey, shiftKey } = event;
+            if (keyCode === ENTER_KEY && !(ctrlKey || altKey || metaKey || shiftKey)) {
+                event.preventDefault();
+                const { chatText } = this.state;
+                if (chatText !== '') {
+                    if (this.props.onSendMessage) {
+                        this.props.onSendMessage(chatText);
+                    }
+                    if (this.chat) {
+                        this.chat.addTextMessage(chatText);
+                    }
+                    this.setState({ chatText: '' });
+                }
+            }
+        };
+        this.onTextareaChange = (event) => {
+            this.setState({ chatText: event.target.value });
+        };
+        this.state = {
+            chatText: this.props.chatText || '',
+            messages: [],
+            users: []
+        };
+        if (this.props.sdb) {
+            this.setSDB(this.props.sdb);
+        }
+        window.addEventListener('beforeunload', () => this.leave());
+    }
+    ;
+    setSDB(sdb) {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.sdb = sdb;
+            this.chat = new ArboretumChat_1.ArboretumChat(this.sdb);
+            this.chat.ready(() => __awaiter(this, void 0, void 0, function* () {
+                yield this.chat.join(this.props.username);
+                yield this.updateMessagesState();
+                yield this.updateUsersState();
+                this.chat.messageAdded(this.updateMessagesState);
+                this.chat.userJoined(this.updateUsersState);
+                this.chat.userNotPresent(this.updateUsersState);
+            }));
+        });
+    }
+    ;
+    //https://stackoverflow.com/questions/37620694/how-to-scroll-to-bottom-in-react
+    scrollToBottom() {
+        this.messagesEnd.scrollIntoView({ behavior: "smooth" });
+    }
+    ;
+    componentDidMount() {
+        this.scrollToBottom();
+    }
+    ;
+    leave() {
+        if (this.chat) {
+            this.chat.leave();
+        }
+    }
+    ;
+    componentWillUnmount() {
+        this.leave();
+    }
+    ;
+    componentDidUpdate() {
+        this.scrollToBottom();
+    }
+    ;
+    render() {
+        const messages = this.state.messages.map((m, i) => {
+            const senderStyle = { color: m.sender.color };
+            return React.createElement("li", { key: i, className: 'chat-line' },
+                React.createElement("span", { style: senderStyle, className: 'from' }, m.sender.displayName),
+                React.createElement("span", { className: 'message' }, m.content));
+        });
+        let meUserID;
+        if (this.chat) {
+            const meUser = this.chat.getMe();
+            if (meUser) {
+                meUserID = meUser.id;
+            }
+        }
+        const users = this.state.users.map((u) => {
+            const isMe = u.id === meUserID;
+            const style = { color: u.color };
+            return React.createElement("span", { key: u.id, className: `participant ${isMe ? 'me' : ''}`, style: style }, u.displayName);
+        });
+        return React.createElement("div", { className: 'chat' },
+            React.createElement("h6", { id: "task_title" },
+                React.createElement("span", { className: "icon icon-chat" }),
+                React.createElement("span", { id: 'task-name' }, "Chat")),
+            React.createElement("div", { id: "chat-participants" }, users),
+            React.createElement("ul", { id: "chat-lines" },
+                messages,
+                React.createElement("li", { style: { float: "left", clear: "both" }, ref: (el) => { this.messagesEnd = el; } })),
+            React.createElement("form", { id: "chat-form" },
+                React.createElement("textarea", { id: "chat-box", className: "form-control", placeholder: "Send a message", onChange: this.onTextareaChange, onKeyDown: this.chatKeyDown, value: this.state.chatText })));
+    }
+    ;
+}
+exports.ArboretumChatBox = ArboretumChatBox;
+;
+
+
+/***/ }),
+/* 54 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const TypedEventEmitter_1 = __webpack_require__(55);
+const guid_1 = __webpack_require__(56);
 const _ = __webpack_require__(12);
 exports.userColors = [
     ['#A80000', '#B05E0D', '#C19C00', '#107C10', '#038387', '#004E8C', '#5C126B']
@@ -25467,7 +25984,7 @@ exports.ArboretumChat = ArboretumChat;
 
 
 /***/ }),
-/* 54 */
+/* 55 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -25587,7 +26104,7 @@ exports.TypedListener = TypedListener;
 
 
 /***/ }),
-/* 55 */
+/* 56 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -25614,13 +26131,172 @@ exports.guidIndex = guidIndex;
 
 
 /***/ }),
-/* 56 */
+/* 57 */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+var content = __webpack_require__(58);
+
+if(typeof content === 'string') content = [[module.i, content, '']];
+
+var transform;
+var insertInto;
+
+
+
+var options = {"hmr":true}
+
+options.transform = transform
+options.insertInto = undefined;
+
+var update = __webpack_require__(13)(content, options);
+
+if(content.locals) module.exports = content.locals;
+
+if(false) {
+	module.hot.accept("!!../../../node_modules/css-loader/index.js??ref--2-1!../../../node_modules/sass-loader/lib/loader.js??ref--2-2!./ArboretumChat.scss", function() {
+		var newContent = require("!!../../../node_modules/css-loader/index.js??ref--2-1!../../../node_modules/sass-loader/lib/loader.js??ref--2-2!./ArboretumChat.scss");
+
+		if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+
+		var locals = (function(a, b) {
+			var key, idx = 0;
+
+			for(key in a) {
+				if(!b || a[key] !== b[key]) return false;
+				idx++;
+			}
+
+			for(key in b) idx--;
+
+			return idx === 0;
+		}(content.locals, newContent.locals));
+
+		if(!locals) throw new Error('Aborting CSS HMR due to changed css-modules locals.');
+
+		update(newContent);
+	});
+
+	module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 58 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(22)(true);
+// imports
+
+
+// module
+exports.push([module.i, ".chat {\n  font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n  flex: 1 0 auto;\n  display: flex;\n  flex-direction: column;\n  height: 100%; }\n  .chat #task_title {\n    flex: 0 0;\n    box-sizing: border-box;\n    padding: 5px 10px 5px;\n    margin: 0px; }\n  .chat #chat-participants {\n    flex: 0 0;\n    border-bottom: 1px solid #CCC;\n    padding: 5px 10px 5px;\n    box-sizing: border-box; }\n    .chat #chat-participants .participant {\n      margin: 2px; }\n      .chat #chat-participants .participant.me {\n        font-weight: bold;\n        text-decoration: underline; }\n  .chat #chat-lines {\n    flex: 2 0;\n    box-sizing: border-box;\n    padding: 0px 10px 0px;\n    margin: 0px;\n    overflow-y: auto; }\n    .chat #chat-lines li {\n      list-style-type: none; }\n    .chat #chat-lines .chat-line {\n      font-size: 0.9em;\n      list-style-type: none;\n      list-style-type: none;\n      margin-top: 2px;\n      padding-top: 2px;\n      margin-bottom: 2px;\n      padding-bottom: 2px;\n      color: #555; }\n      .chat #chat-lines .chat-line .from {\n        font-weight: bold; }\n      .chat #chat-lines .chat-line .from::after {\n        content: \": \"; }\n  .chat #chat-form {\n    padding: 0px 2px 0px;\n    flex: 0; }\n    .chat #chat-form textarea#chat-box {\n      box-sizing: border-box;\n      resize: none;\n      flex-grow: 1;\n      width: 100%;\n      font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n      padding: 5px 10px 5px; }\n    .chat #chat-form .form-actions {\n      text-align: right; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/utils/browserControls/src/utils/browserControls/ArboretumChat.scss"],"names":[],"mappings":"AAAA;EACI,gHAA+G;EAC/G,eAAc;EACd,cAAa;EACb,uBAAsB;EACtB,aAAY,EA8Df;EAnED;IAQQ,UAAS;IACT,uBAAsB;IACtB,sBAAqB;IACrB,YAAW,EACd;EAZL;IAcQ,UAAS;IACT,8BAA6B;IAC7B,sBAAqB;IACrB,uBAAsB,EAQzB;IAzBL;MAmBY,YAAW,EAKd;MAxBT;QAqBgB,kBAAiB;QACjB,2BAA0B,EAC7B;EAvBb;IA2BQ,UAAS;IACT,uBAAsB;IACtB,sBAAqB;IACrB,YAAW;IACX,iBAAgB,EAoBnB;IAnDL;MAiCY,sBAAqB,EACxB;IAlCT;MAoCY,iBAAgB;MAChB,sBAAqB;MACrB,sBAAqB;MACrB,gBAAe;MACf,iBAAgB;MAChB,mBAAkB;MAClB,oBAAmB;MACnB,YAAW,EAOd;MAlDT;QA6CgB,kBAAiB,EACpB;MA9Cb;QAgDgB,cAAa,EAChB;EAjDb;IAqDQ,qBAAoB;IACpB,QAAO,EAYV;IAlEL;MAwDY,uBAAsB;MACtB,aAAY;MACZ,aAAY;MACZ,YAAW;MACX,gHAA+G;MAC/G,sBAAqB,EACxB;IA9DT;MAgEY,kBAAiB,EACpB","file":"ArboretumChat.scss","sourcesContent":[".chat {\n    font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n    flex: 1 0 auto;\n    display: flex;\n    flex-direction: column;\n    height: 100%;\n\n    #task_title {\n        flex: 0 0;\n        box-sizing: border-box;\n        padding: 5px 10px 5px;\n        margin: 0px;\n    }\n    #chat-participants {\n        flex: 0 0;\n        border-bottom: 1px solid #CCC;\n        padding: 5px 10px 5px;\n        box-sizing: border-box;\n        .participant {\n            margin: 2px;\n            &.me {\n                font-weight: bold;\n                text-decoration: underline;\n            }\n        }\n    }\n    #chat-lines {\n        flex: 2 0;\n        box-sizing: border-box;\n        padding: 0px 10px 0px;\n        margin: 0px;\n        overflow-y: auto;\n        li {\n            list-style-type: none;\n        }\n        .chat-line {\n            font-size: 0.9em;\n            list-style-type: none;\n            list-style-type: none;\n            margin-top: 2px;\n            padding-top: 2px;\n            margin-bottom: 2px;\n            padding-bottom: 2px;\n            color: #555;\n            .from {\n                font-weight: bold;\n            }\n            .from::after {\n                content: \": \";\n            }\n        }\n    }\n    #chat-form {\n        padding: 0px 2px 0px;\n        flex: 0;\n        textarea#chat-box {\n            box-sizing: border-box;\n            resize: none;\n            flex-grow: 1;\n            width: 100%;\n            font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n            padding: 5px 10px 5px;\n        }\n        .form-actions {\n            text-align: right;\n        }\n    }\n}\n"],"sourceRoot":""}]);
+
+// exports
+
+
+/***/ }),
+/* 59 */
+/***/ (function(module, exports) {
+
+
+/**
+ * When source maps are enabled, `style-loader` uses a link element with a data-uri to
+ * embed the css on the page. This breaks all relative urls because now they are relative to a
+ * bundle instead of the current page.
+ *
+ * One solution is to only use full urls, but that may be impossible.
+ *
+ * Instead, this function "fixes" the relative urls to be absolute according to the current page location.
+ *
+ * A rudimentary test suite is located at `test/fixUrls.js` and can be run via the `npm test` command.
+ *
+ */
+
+module.exports = function (css) {
+  // get current location
+  var location = typeof window !== "undefined" && window.location;
+
+  if (!location) {
+    throw new Error("fixUrls requires window.location");
+  }
+
+	// blank or null?
+	if (!css || typeof css !== "string") {
+	  return css;
+  }
+
+  var baseUrl = location.protocol + "//" + location.host;
+  var currentDir = baseUrl + location.pathname.replace(/\/[^\/]*$/, "/");
+
+	// convert each url(...)
+	/*
+	This regular expression is just a way to recursively match brackets within
+	a string.
+
+	 /url\s*\(  = Match on the word "url" with any whitespace after it and then a parens
+	   (  = Start a capturing group
+	     (?:  = Start a non-capturing group
+	         [^)(]  = Match anything that isn't a parentheses
+	         |  = OR
+	         \(  = Match a start parentheses
+	             (?:  = Start another non-capturing groups
+	                 [^)(]+  = Match anything that isn't a parentheses
+	                 |  = OR
+	                 \(  = Match a start parentheses
+	                     [^)(]*  = Match anything that isn't a parentheses
+	                 \)  = Match a end parentheses
+	             )  = End Group
+              *\) = Match anything and then a close parens
+          )  = Close non-capturing group
+          *  = Match anything
+       )  = Close capturing group
+	 \)  = Match a close parens
+
+	 /gi  = Get all matches, not the first.  Be case insensitive.
+	 */
+	var fixedCss = css.replace(/url\s*\(((?:[^)(]|\((?:[^)(]+|\([^)(]*\))*\))*)\)/gi, function(fullMatch, origUrl) {
+		// strip quotes (if they exist)
+		var unquotedOrigUrl = origUrl
+			.trim()
+			.replace(/^"(.*)"$/, function(o, $1){ return $1; })
+			.replace(/^'(.*)'$/, function(o, $1){ return $1; });
+
+		// already a full url? no change
+		if (/^(#|data:|http:\/\/|https:\/\/|file:\/\/\/)/i.test(unquotedOrigUrl)) {
+		  return fullMatch;
+		}
+
+		// convert the url to a full url
+		var newUrl;
+
+		if (unquotedOrigUrl.indexOf("//") === 0) {
+		  	//TODO: should we add protocol?
+			newUrl = unquotedOrigUrl;
+		} else if (unquotedOrigUrl.indexOf("/") === 0) {
+			// path should be relative to the base url
+			newUrl = baseUrl + unquotedOrigUrl; // already starts with '/'
+		} else {
+			// path should be relative to current directory
+			newUrl = currentDir + unquotedOrigUrl.replace(/^\.\//, ""); // Strip leading './'
+		}
+
+		// send back the fixed url(...)
+		return "url(" + JSON.stringify(newUrl) + ")";
+	});
+
+	// send back the fixed css
+	return fixedCss;
+};
+
+
+/***/ }),
+/* 60 */
 /***/ (function(module, exports) {
 
 module.exports = require("clipboard");
 
 /***/ }),
-/* 57 */
+/* 61 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -25636,13 +26312,13 @@ var _react = __webpack_require__(0);
 
 var _react2 = _interopRequireDefault(_react);
 
-var _propTypes = __webpack_require__(58);
+var _propTypes = __webpack_require__(62);
 
 var _propTypes2 = _interopRequireDefault(_propTypes);
 
-var _icons = __webpack_require__(61);
+var _icons = __webpack_require__(65);
 
-var _getBackgroundColor = __webpack_require__(62);
+var _getBackgroundColor = __webpack_require__(66);
 
 var _getBackgroundColor2 = _interopRequireDefault(_getBackgroundColor);
 
@@ -26005,7 +26681,7 @@ Switch.defaultProps = {
 exports.default = Switch;
 
 /***/ }),
-/* 58 */
+/* 62 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /**
@@ -26030,16 +26706,16 @@ if (process.env.NODE_ENV !== 'production') {
   // By explicitly using `prop-types` you are opting into new development behavior.
   // http://fb.me/prop-types-in-prod
   var throwOnDirectAccess = true;
-  module.exports = __webpack_require__(59)(isValidElement, throwOnDirectAccess);
+  module.exports = __webpack_require__(63)(isValidElement, throwOnDirectAccess);
 } else {
   // By explicitly using `prop-types` you are opting into new production behavior.
   // http://fb.me/prop-types-in-prod
-  module.exports = __webpack_require__(60)();
+  module.exports = __webpack_require__(64)();
 }
 
 
 /***/ }),
-/* 59 */
+/* 63 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -26588,7 +27264,7 @@ module.exports = function(isValidElement, throwOnDirectAccess) {
 
 
 /***/ }),
-/* 60 */
+/* 64 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -26653,7 +27329,7 @@ module.exports = function() {
 
 
 /***/ }),
-/* 61 */
+/* 65 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -26725,7 +27401,7 @@ var checkedIcon = exports.checkedIcon = _react2.default.createElement(
 );
 
 /***/ }),
-/* 62 */
+/* 66 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -26776,19 +27452,164 @@ function getBackgroundColor(pos, checkedPos, uncheckedPos, offColor, onColor) {
 }
 
 /***/ }),
-/* 63 */
+/* 67 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const React = __webpack_require__(0);
+__webpack_require__(68);
+const ENTER_KEY = 13;
+class BrowserNavigationBar extends React.Component {
+    constructor(props) {
+        super(props);
+        this.handleURLChange = (event) => {
+            this.setState({ urlText: event.target.value });
+        };
+        this.backClicked = () => {
+            if (this.props.onBack) {
+                this.props.onBack();
+            }
+        };
+        this.forwardClicked = () => {
+            if (this.props.onForward) {
+                this.props.onForward();
+            }
+        };
+        this.reloadClicked = () => {
+            if (this.props.onReload) {
+                this.props.onReload();
+            }
+        };
+        this.toggleSidebarClicked = () => {
+            if (this.props.onToggleSidebar) {
+                this.props.onToggleSidebar();
+            }
+        };
+        this.urlKeyDown = (event) => {
+            const { keyCode } = event;
+            if (keyCode === ENTER_KEY) {
+                const { urlText } = this.state;
+                if (this.props.onNavigate) {
+                    this.props.onNavigate(urlText);
+                }
+            }
+        };
+        this.onURLBarFocus = (event) => {
+            this.setState({ urlBarFocused: true });
+        };
+        this.onURLBarBlur = (event) => {
+            this.setState({ urlBarFocused: false });
+        };
+        this.state = {
+            urlText: '',
+            canGoBack: false,
+            canGoForward: false,
+            isLoading: false,
+            urlBarFocused: false
+        };
+    }
+    ;
+    render() {
+        const toggleSidebarButton = this.props.showSidebarToggle ? React.createElement("button", { onClick: this.toggleSidebarClicked, className: 'btn btn-default btn-mini', id: 'task' },
+            React.createElement("span", { className: 'icon icon-publish' })) : null;
+        return React.createElement("div", { className: "toolbar toolbar-header", id: "navBar" },
+            React.createElement("div", { className: "toolbar-actions" },
+                React.createElement("div", { className: "btn-group" },
+                    React.createElement("button", { disabled: !this.state.canGoBack, onClick: this.backClicked, className: 'btn btn-default btn-mini', id: 'back' },
+                        React.createElement("span", { className: 'icon icon-left-open-big' })),
+                    React.createElement("button", { disabled: !this.state.canGoForward, onClick: this.forwardClicked, className: 'btn btn-default btn-mini', id: 'forward' },
+                        React.createElement("span", { className: 'icon icon-right-open-big' }))),
+                React.createElement("button", { onClick: this.reloadClicked, className: 'btn btn-default btn-mini', id: 'reload' },
+                    React.createElement("span", { className: `icon ${this.state.isLoading ? 'icon-cancel' : 'icon-ccw'}` })),
+                toggleSidebarButton),
+            React.createElement("input", { value: this.state.urlText, onChange: this.handleURLChange, onKeyDown: this.urlKeyDown, onFocus: this.onURLBarFocus, onBlur: this.onURLBarBlur, id: 'url', type: "text", placeholder: "Enter URL or Term to Search" }));
+    }
+    ;
+}
+exports.BrowserNavigationBar = BrowserNavigationBar;
+;
+
+
+/***/ }),
+/* 68 */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+var content = __webpack_require__(69);
+
+if(typeof content === 'string') content = [[module.i, content, '']];
+
+var transform;
+var insertInto;
+
+
+
+var options = {"hmr":true}
+
+options.transform = transform
+options.insertInto = undefined;
+
+var update = __webpack_require__(13)(content, options);
+
+if(content.locals) module.exports = content.locals;
+
+if(false) {
+	module.hot.accept("!!../../../node_modules/css-loader/index.js??ref--2-1!../../../node_modules/sass-loader/lib/loader.js??ref--2-2!./BrowserNavigationBar.scss", function() {
+		var newContent = require("!!../../../node_modules/css-loader/index.js??ref--2-1!../../../node_modules/sass-loader/lib/loader.js??ref--2-2!./BrowserNavigationBar.scss");
+
+		if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+
+		var locals = (function(a, b) {
+			var key, idx = 0;
+
+			for(key in a) {
+				if(!b || a[key] !== b[key]) return false;
+				idx++;
+			}
+
+			for(key in b) idx--;
+
+			return idx === 0;
+		}(content.locals, newContent.locals));
+
+		if(!locals) throw new Error('Aborting CSS HMR due to changed css-modules locals.');
+
+		update(newContent);
+	});
+
+	module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 69 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(22)(true);
+// imports
+
+
+// module
+exports.push([module.i, "#navBar {\n  display: flex; }\n  #navBar input#url {\n    flex: 1;\n    /*margin: 4px 2px 3px 2px;*/\n    /*font-size: 12px;*/\n    /*padding: 0px 0px 0px 0px;*/\n    padding: 3px;\n    /*height: 100%;*/\n    /*height: 20px;*/\n    box-shadow: inset 0px 1px 2px rgba(0, 0, 0, 0.2);\n    border: 0px;\n    border-left: 1px solid #bbb;\n    border-top-left-radius: 3px;\n    border-bottom-left-radius: 3px;\n    color: #808080;\n    outline: 0;\n    background: #FFF;\n    /*font-weight: lighter;*/ }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/utils/browserControls/src/utils/browserControls/BrowserNavigationBar.scss"],"names":[],"mappings":"AAAA;EACI,cAAa,EAmBhB;EApBD;IAGQ,QAAO;IACP,4BAA4B;IAC5B,oBAAoB;IACpB,6BAA6B;IAC7B,aAAY;IACZ,iBAAiB;IACjB,iBAAiB;IACjB,iDAAgD;IAChD,YAAW;IACX,4BAA2B;IAC3B,4BAA2B;IAC3B,+BAA8B;IAC9B,eAAc;IACd,WAAU;IACV,iBAAgB;IAChB,yBAAyB,EAC5B","file":"BrowserNavigationBar.scss","sourcesContent":["#navBar {\n    display: flex;\n    input#url {\n        flex: 1;\n        /*margin: 4px 2px 3px 2px;*/\n        /*font-size: 12px;*/\n        /*padding: 0px 0px 0px 0px;*/\n        padding: 3px;\n        /*height: 100%;*/\n        /*height: 20px;*/\n        box-shadow: inset 0px 1px 2px rgba(0, 0, 0, 0.2);\n        border: 0px;\n        border-left: 1px solid #bbb;\n        border-top-left-radius: 3px;\n        border-bottom-left-radius: 3px;\n        color: #808080;\n        outline: 0;\n        background: #FFF;\n        /*font-weight: lighter;*/\n    }\n}\n"],"sourceRoot":""}]);
+
+// exports
+
+
+/***/ }),
+/* 70 */
 /***/ (function(module, exports) {
 
 module.exports = require("electron");
 
 /***/ }),
-/* 64 */
+/* 71 */
 /***/ (function(module, exports) {
 
 module.exports = require("url");
 
 /***/ }),
-/* 65 */
+/* 72 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -26802,8 +27623,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const ShareDBClient = __webpack_require__(66);
-const ShareDB = __webpack_require__(71);
+const ShareDBClient = __webpack_require__(73);
+const ShareDB = __webpack_require__(78);
 class SDB {
     constructor(client, connection) {
         this.docs = new Map();
@@ -27023,24 +27844,24 @@ exports.SDBDoc = SDBDoc;
 
 
 /***/ }),
-/* 66 */
+/* 73 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports.Connection = __webpack_require__(21);
-exports.Doc = __webpack_require__(22);
+exports.Connection = __webpack_require__(23);
+exports.Doc = __webpack_require__(24);
 exports.Error = __webpack_require__(2);
-exports.Query = __webpack_require__(25);
+exports.Query = __webpack_require__(27);
 exports.types = __webpack_require__(3);
 
 
 /***/ }),
-/* 67 */
+/* 74 */
 /***/ (function(module, exports) {
 
 module.exports = require("events");
 
 /***/ }),
-/* 68 */
+/* 75 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -27189,7 +28010,7 @@ exports.BaseError = BaseError
 
 
 /***/ }),
-/* 69 */
+/* 76 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /*
@@ -27306,7 +28127,6 @@ json.checkList = function(elem) {
 
 json.checkObj = function(elem) {
   if (!isObject(elem)) {
-    debugger;
     throw new Error("Referenced element not an object (it was " + JSON.stringify(elem) + ")");
   }
 };
@@ -27354,7 +28174,6 @@ json.apply = function(snapshot, op) {
 
       parent = elem;
       parentKey = key;
-      if(!elem) { debugger; }
       elem = elem[key];
       key = p;
 
@@ -27849,19 +28668,19 @@ json.transformComponent = function(dest, c, otherC, type) {
   return dest;
 };
 
-__webpack_require__(24)(json, json.transformComponent, json.checkValidOp, json.append);
+__webpack_require__(26)(json, json.transformComponent, json.checkValidOp, json.append);
 
 /**
  * Register a subtype for string operations, using the text0 type.
  */
-var text = __webpack_require__(70);
+var text = __webpack_require__(77);
 
 json.registerSubtype(text);
 module.exports = json;
 
 
 /***/ }),
-/* 70 */
+/* 77 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // DEPRECATED!
@@ -28119,45 +28938,45 @@ text.invert = function(op) {
   return op;
 };
 
-__webpack_require__(24)(text, transformComponent, checkValidOp, append);
+__webpack_require__(26)(text, transformComponent, checkValidOp, append);
 
 
 /***/ }),
-/* 71 */
+/* 78 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var Backend = __webpack_require__(72);
+var Backend = __webpack_require__(79);
 module.exports = Backend;
 
-Backend.Agent = __webpack_require__(27);
+Backend.Agent = __webpack_require__(29);
 Backend.Backend = Backend;
-Backend.DB = __webpack_require__(29);
+Backend.DB = __webpack_require__(31);
 Backend.Error = __webpack_require__(2);
-Backend.MemoryDB = __webpack_require__(28);
-Backend.MemoryPubSub = __webpack_require__(30);
-Backend.ot = __webpack_require__(13);
-Backend.projections = __webpack_require__(14);
-Backend.PubSub = __webpack_require__(31);
-Backend.QueryEmitter = __webpack_require__(34);
-Backend.SubmitRequest = __webpack_require__(35);
+Backend.MemoryDB = __webpack_require__(30);
+Backend.MemoryPubSub = __webpack_require__(32);
+Backend.ot = __webpack_require__(14);
+Backend.projections = __webpack_require__(15);
+Backend.PubSub = __webpack_require__(33);
+Backend.QueryEmitter = __webpack_require__(36);
+Backend.SubmitRequest = __webpack_require__(37);
 Backend.types = __webpack_require__(3);
 
 
 /***/ }),
-/* 72 */
+/* 79 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var async = __webpack_require__(26);
-var Agent = __webpack_require__(27);
-var Connection = __webpack_require__(21);
+var async = __webpack_require__(28);
+var Agent = __webpack_require__(29);
+var Connection = __webpack_require__(23);
 var emitter = __webpack_require__(9);
-var MemoryDB = __webpack_require__(28);
-var MemoryPubSub = __webpack_require__(30);
-var ot = __webpack_require__(13);
-var projections = __webpack_require__(14);
-var QueryEmitter = __webpack_require__(34);
-var StreamSocket = __webpack_require__(77);
-var SubmitRequest = __webpack_require__(35);
+var MemoryDB = __webpack_require__(30);
+var MemoryPubSub = __webpack_require__(32);
+var ot = __webpack_require__(14);
+var projections = __webpack_require__(15);
+var QueryEmitter = __webpack_require__(36);
+var StreamSocket = __webpack_require__(84);
+var SubmitRequest = __webpack_require__(37);
 
 function Backend(options) {
   if (!(this instanceof Backend)) return new Backend(options);
@@ -28674,7 +29493,7 @@ function pluckIds(snapshots) {
 
 
 /***/ }),
-/* 73 */
+/* 80 */
 /***/ (function(module, exports) {
 
 var hat = module.exports = function (bits, base) {
@@ -28742,11 +29561,11 @@ hat.rack = function (bits, base, expandBy) {
 
 
 /***/ }),
-/* 74 */
+/* 81 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var inherits = __webpack_require__(32).inherits;
-var Readable = __webpack_require__(33).Readable;
+var inherits = __webpack_require__(34).inherits;
+var Readable = __webpack_require__(35).Readable;
 var util = __webpack_require__(4);
 
 // Stream of operations. Subscribe returns one of these
@@ -28807,7 +29626,7 @@ OpStream.prototype.destroy = function() {
 
 
 /***/ }),
-/* 75 */
+/* 82 */
 /***/ (function(module, exports) {
 
 module.exports = arrayDiff;
@@ -28994,7 +29813,7 @@ function arrayDiff(before, after, equalFn) {
 
 
 /***/ }),
-/* 76 */
+/* 83 */
 /***/ (function(module, exports) {
 
 var pSlice = Array.prototype.slice;
@@ -29102,11 +29921,11 @@ function objEquiv(a, b) {
 
 
 /***/ }),
-/* 77 */
+/* 84 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var Duplex = __webpack_require__(33).Duplex;
-var inherits = __webpack_require__(32).inherits;
+var Duplex = __webpack_require__(35).Duplex;
+var inherits = __webpack_require__(34).inherits;
 var util = __webpack_require__(4);
 
 function StreamSocket() {
@@ -29170,11 +29989,11 @@ ServerStream.prototype._write = function(chunk, encoding, callback) {
 
 
 /***/ }),
-/* 78 */
+/* 85 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
-var content = __webpack_require__(79);
+var content = __webpack_require__(86);
 
 if(typeof content === 'string') content = [[module.i, content, '']];
 
@@ -29188,7 +30007,7 @@ var options = {"hmr":true}
 options.transform = transform
 options.insertInto = undefined;
 
-var update = __webpack_require__(81)(content, options);
+var update = __webpack_require__(13)(content, options);
 
 if(content.locals) module.exports = content.locals;
 
@@ -29220,772 +30039,15 @@ if(false) {
 }
 
 /***/ }),
-/* 79 */
+/* 86 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(80)(true);
+exports = module.exports = __webpack_require__(22)(true);
 // imports
 
 
 // module
-exports.push([module.i, "#buttonSpacer {\n  width: 70px;\n  /*border-bottom: 1px solid #AAA;*/\n  /*background: linear-gradient(to bottom, #BBB 80%, #AAA);*/ }\n\n#tabsBar {\n  display: flex;\n  flex-direction: row;\n  font-size: 13px;\n  font-family: sans-serif;\n  margin: 0px;\n  /*padding: 0px 0px 0px 70px;*/\n  padding: 0px;\n  box-sizing: border-box;\n  -webkit-user-select: none;\n  -webkit-app-region: drag;\n  color: #777;\n  /*height: 23px;*/\n  box-sizing: border-box; }\n  #tabsBar #addTab {\n    display: inline-block;\n    margin: 0;\n    background: linear-gradient(to bottom, #BBB 80%, #AAA); }\n\n/*#tabsBar #addTab:hover {\n    color: #fff;\n    background: rgb(99, 190, 229);\n}\n\n#addTab i {\n    font-size: 12.5px\n}*/\n#tabs {\n  display: flex;\n  flex: 1;\n  padding: 0px;\n  margin: 0px;\n  overflow: hidden; }\n\n.tab {\n  flex: 1;\n  display: flex;\n  border-left: 1px solid #AAA;\n  /*border: 1px solid black;*/\n  list-style: none;\n  white-space: nowrap;\n  /*font-size: 3em;*/\n  border-bottom: 1px solid #aaa;\n  color: #BBB;\n  overflow: hidden;\n  text-overflow: ellipsis; }\n\n.tab:last-child {\n  border-right: 1px solid #AAA; }\n\n.tab.not-selected {\n  background: linear-gradient(to bottom, #BBB 80%, #AAA); }\n\n.tab.not-selected .closeTab {\n  color: #999; }\n\n.tab.selected {\n  /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n  border-bottom: none;\n  color: #777; }\n\n.tab .tab-img {\n  opacity: 0.4; }\n\n.tab.selected .tab-img {\n  opacity: 1.0;\n  flex: 2; }\n\n.tab-img {\n  height: 18px;\n  max-width: 28px;\n  margin: 2px;\n  margin-right: 2px;\n  display: none; }\n\n.tab-title {\n  /*flex: 1;*/\n  /*padding: 5px 0px 4px 3px;*/ }\n\n.closeTab {\n  /*float: right;*/\n  /*color: red;*/\n  /*text-shadow: 0 0 1px rgba(50, 1, 1, 1);*/\n  padding: 5px; }\n\n.closeTab i {\n  font-size: 12.5px; }\n\n.closeTab:hover {\n  background: #f57777;\n  color: #FFF; }\n\n.tab .tab-title {\n  /*font-size: 5em;*/\n  color: #777;\n  text-overflow: ellipsis;\n  overflow: hidden; }\n\n.tab.selected .tab-title {\n  color: #555; }\n\ntable#server-controls {\n  flex-shrink: 0; }\n  table#server-controls .nav-group-title {\n    padding: 0px; }\n  table#server-controls thead td {\n    text-align: center; }\n  table#server-controls td {\n    padding-left: 5px;\n    padding-right: 0px;\n    margin: auto;\n    vertical-align: top; }\n  table#server-controls tr:active {\n    color: inherit;\n    background-color: inherit;\n    /* color: #fff; */\n    /* background-color: #116cd6; */ }\n  table#server-controls #control_content td {\n    padding-bottom: 0px; }\n  table#server-controls label {\n    margin-bottom: 0px;\n    padding-bottom: 0px; }\n\n.sidebar {\n  width: 350px;\n  height: 100%;\n  display: flex;\n  flex-direction: column; }\n\n.copy_area input {\n  background-color: #FAFAFA;\n  border: 1px solid #CCC;\n  padding: 2px;\n  font-size: 0.9em;\n  text-align: center;\n  width: 90px; }\n\n.copy_area .copy_area .icon {\n  cursor: pointer;\n  color: #AAA; }\n  .copy_area .copy_area .icon:hover {\n    color: #999; }\n\n#browser-pane {\n  border-left: none; }\n\n#navBar {\n  display: flex; }\n  #navBar input#url {\n    flex: 1;\n    /*margin: 4px 2px 3px 2px;*/\n    /*font-size: 12px;*/\n    /*padding: 0px 0px 0px 0px;*/\n    padding: 3px;\n    /*height: 100%;*/\n    /*height: 20px;*/\n    box-shadow: inset 0px 1px 2px rgba(0, 0, 0, 0.2);\n    border: 0px;\n    border-left: 1px solid #bbb;\n    border-top-left-radius: 3px;\n    border-bottom-left-radius: 3px;\n    color: #808080;\n    outline: 0;\n    background: #FFF;\n    /*font-weight: lighter;*/ }\n\nhtml {\n  height: 100%; }\n  html .unselected {\n    display: none; }\n  html #content {\n    height: 100%;\n    overflow: hidden; }\n  html .tab_content {\n    height: 100%; }\n  html webview {\n    display: inline-flex;\n    width: 100%;\n    height: 100%; }\n    html webview.hidden {\n      display: none; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/browser/css/src/browser/css/browser-tabs.scss","/home/soney/code/arboretum/src/browser/css/src/browser/css/browser-sidebar.scss","/home/soney/code/arboretum/src/browser/css/src/browser/css/browser-navbar.scss","/home/soney/code/arboretum/src/browser/css/src/browser/css/browser.scss"],"names":[],"mappings":"AAAA;EACI,YAAW;EACX,kCAAkC;EAClC,2DAA2D,EAC9D;;AAED;EACI,cAAa;EACb,oBAAmB;EACnB,gBAAe;EACf,wBAAuB;EACvB,YAAW;EACX,8BAA8B;EAC9B,aAAY;EACZ,uBAAsB;EACtB,0BAAyB;EACzB,yBAAwB;EAExB,YAAW;EACX,iBAAiB;EACjB,uBAAsB,EAMzB;EApBD;IAgBQ,sBAAqB;IACrB,UAAS;IACT,uDAAsD,EACzD;;AAIL;;;;;;;GAOG;AAEH;EACI,cAAa;EACb,QAAO;EACP,aAAY;EACZ,YAAW;EACX,iBAAgB,EACnB;;AAED;EACI,QAAO;EACP,cAAa;EACb,4BAA2B;EAC3B,4BAA4B;EAC5B,iBAAgB;EAChB,oBAAmB;EACnB,mBAAmB;EACnB,8BAA6B;EAC7B,YAAW;EACX,iBAAgB;EAChB,wBAAuB,EAC1B;;AACD;EACI,6BAA4B,EAC/B;;AACD;EACI,uDAAsD,EACzD;;AACD;EACI,YAAW,EACd;;AACD;EACI,8DAA8D;EAC9D,oBAAmB;EACnB,YAAW,EACd;;AAED;EACI,aAAY,EACf;;AACD;EACI,aAAY;EACZ,QAAO,EACV;;AAED;EACI,aAAY;EACZ,gBAAe;EACf,YAAW;EACX,kBAAiB;EACjB,cAAa,EAChB;;AAED;EACI,YAAY;EACZ,6BAA6B,EAChC;;AAED;EACI,iBAAiB;EACjB,eAAe;EACf,2CAA2C;EAC3C,aAAY,EACf;;AAED;EACI,kBACJ,EAAE;;AAEF;EACI,oBAA8B;EAC9B,YAAW,EACd;;AAGD;EACI,mBAAmB;EACnB,YAAW;EACX,wBAAuB;EACvB,iBAAgB,EACnB;;AACD;EACI,YAAW,EACd;;ACxHD;EACI,eAAc,EA6BjB;EA9BD;IAGQ,aAAY,EACf;EAJL;IAMQ,mBAAkB,EACrB;EAPL;IAUQ,kBAAiB;IACjB,mBAAkB;IAClB,aAAY;IACZ,oBAAmB,EACtB;EAdL;IAiBY,eAAc;IACd,0BAAyB;IACzB,kBAAkB;IAClB,gCAAgC,EACnC;EArBT;IAwBQ,oBAAmB,EACtB;EAzBL;IA2BQ,mBAAkB;IAClB,oBAAmB,EACtB;;AAIL;EACI,aAAY;EACZ,aAAY;EACZ,cAAa;EACb,uBAAsB,EACzB;;AAID;EAEQ,0BAAyB;EACzB,uBAAsB;EACtB,aAAW;EACX,iBAAgB;EAChB,mBAAkB;EAClB,YAAW,EACd;;AARL;EAUQ,gBAAe;EACf,YAAW,EAId;EAfL;IAaY,YAAW,EACd;;AAKT;EACI,kBAAiB,EACpB;;AC/DD;EACI,cAAa,EAmBhB;EApBD;IAGQ,QAAO;IACP,4BAA4B;IAC5B,oBAAoB;IACpB,6BAA6B;IAC7B,aAAY;IACZ,iBAAiB;IACjB,iBAAiB;IACjB,iDAAgD;IAChD,YAAW;IACX,4BAA2B;IAC3B,4BAA2B;IAC3B,+BAA8B;IAC9B,eAAc;IACd,WAAU;IACV,iBAAgB;IAChB,yBAAyB,EAC5B;;ACdL;EACI,aAAY,EAwBf;EAzBD;IAIQ,cAAa,EAChB;EALL;IAOQ,aAAY;IACZ,iBAAgB,EACnB;EATL;IAaQ,aAAY,EACf;EAdL;IAiBQ,qBAAoB;IACpB,YAAW;IACX,aAAY,EAKf;IAxBL;MAsBY,cAAY,EACf","file":"browser.scss","sourcesContent":["#buttonSpacer {\n    width: 70px;\n    /*border-bottom: 1px solid #AAA;*/\n    /*background: linear-gradient(to bottom, #BBB 80%, #AAA);*/\n}\n\n#tabsBar {\n    display: flex;\n    flex-direction: row;\n    font-size: 13px;\n    font-family: sans-serif;\n    margin: 0px;\n    /*padding: 0px 0px 0px 70px;*/\n    padding: 0px;\n    box-sizing: border-box;\n    -webkit-user-select: none;\n    -webkit-app-region: drag;\n\n    color: #777;\n    /*height: 23px;*/\n    box-sizing: border-box;\n    #addTab {\n        display: inline-block;\n        margin: 0;\n        background: linear-gradient(to bottom, #BBB 80%, #AAA);\n    }\n}\n\n\n/*#tabsBar #addTab:hover {\n    color: #fff;\n    background: rgb(99, 190, 229);\n}\n\n#addTab i {\n    font-size: 12.5px\n}*/\n\n#tabs {\n    display: flex;\n    flex: 1;\n    padding: 0px;\n    margin: 0px;\n    overflow: hidden;\n}\n\n.tab {\n    flex: 1;\n    display: flex;\n    border-left: 1px solid #AAA;\n    /*border: 1px solid black;*/\n    list-style: none;\n    white-space: nowrap;\n    /*font-size: 3em;*/\n    border-bottom: 1px solid #aaa;\n    color: #BBB;\n    overflow: hidden;\n    text-overflow: ellipsis;\n}\n.tab:last-child {\n    border-right: 1px solid #AAA;\n}\n.tab.not-selected {\n    background: linear-gradient(to bottom, #BBB 80%, #AAA);\n}\n.tab.not-selected .closeTab {\n    color: #999;\n}\n.tab.selected {\n    /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n    border-bottom: none;\n    color: #777;\n}\n\n.tab .tab-img {\n    opacity: 0.4;\n}\n.tab.selected .tab-img {\n    opacity: 1.0;\n    flex: 2;\n}\n\n.tab-img {\n    height: 18px;\n    max-width: 28px;\n    margin: 2px;\n    margin-right: 2px;\n    display: none;\n}\n\n.tab-title {\n    /*flex: 1;*/\n    /*padding: 5px 0px 4px 3px;*/\n}\n\n.closeTab {\n    /*float: right;*/\n    /*color: red;*/\n    /*text-shadow: 0 0 1px rgba(50, 1, 1, 1);*/\n    padding: 5px;\n}\n\n.closeTab i {\n    font-size: 12.5px\n}\n\n.closeTab:hover {\n    background: rgb(245, 119, 119);\n    color: #FFF;\n}\n\n\n.tab .tab-title {\n    /*font-size: 5em;*/\n    color: #777;\n    text-overflow: ellipsis;\n    overflow: hidden;\n}\n.tab.selected .tab-title {\n    color: #555;\n}\n","table#server-controls {\n    flex-shrink: 0;\n    .nav-group-title {\n        padding: 0px;\n    }\n    thead td {\n        text-align: center;\n    }\n\n    td {\n        padding-left: 5px;\n        padding-right: 0px;\n        margin: auto;\n        vertical-align: top;\n    }\n    tr {\n        &:active {\n            color: inherit;\n            background-color: inherit;\n            /* color: #fff; */\n            /* background-color: #116cd6; */\n        }\n    }\n    #control_content td {\n        padding-bottom: 0px;\n    }\n    label {\n        margin-bottom: 0px;\n        padding-bottom: 0px;\n    }\n}\n\n\n.sidebar {\n    width: 350px;\n    height: 100%;\n    display: flex;\n    flex-direction: column;\n}\n\n\n\n.copy_area {\n    input {\n        background-color: #FAFAFA;\n        border: 1px solid #CCC;\n        padding:2px;\n        font-size: 0.9em;\n        text-align: center;\n        width: 90px;\n    }\n    .copy_area .icon {\n        cursor: pointer;\n        color: #AAA;\n        &:hover {\n            color: #999;\n        }\n    }\n}\n\n\n#browser-pane {\n    border-left: none;\n}\n","#navBar {\n    display: flex;\n    input#url {\n        flex: 1;\n        /*margin: 4px 2px 3px 2px;*/\n        /*font-size: 12px;*/\n        /*padding: 0px 0px 0px 0px;*/\n        padding: 3px;\n        /*height: 100%;*/\n        /*height: 20px;*/\n        box-shadow: inset 0px 1px 2px rgba(0, 0, 0, 0.2);\n        border: 0px;\n        border-left: 1px solid #bbb;\n        border-top-left-radius: 3px;\n        border-bottom-left-radius: 3px;\n        color: #808080;\n        outline: 0;\n        background: #FFF;\n        /*font-weight: lighter;*/\n    }\n}\n","@import \"./browser-tabs\";\n@import \"./browser-sidebar\";\n@import \"./browser-navbar\";\n\n// @import \"../../utils/browserControls/ArboretumChat.scss\";\nhtml {\n    height: 100%;\n\n    .unselected {\n        display: none;\n    }\n    #content {\n        height: 100%;\n        overflow: hidden;\n    }\n\n\n    .tab_content {\n        height: 100%;\n    }\n\n    webview {\n        display: inline-flex;\n        width: 100%;\n        height: 100%;\n\n        &.hidden {\n            display:none;\n        }\n    }\n}\n"],"sourceRoot":""}]);
-
-// exports
-
-
-/***/ }),
-/* 80 */
-/***/ (function(module, exports) {
-
-/*
-	MIT License http://www.opensource.org/licenses/mit-license.php
-	Author Tobias Koppers @sokra
-*/
-// css base code, injected by the css-loader
-module.exports = function(useSourceMap) {
-	var list = [];
-
-	// return the list of modules as css string
-	list.toString = function toString() {
-		return this.map(function (item) {
-			var content = cssWithMappingToString(item, useSourceMap);
-			if(item[2]) {
-				return "@media " + item[2] + "{" + content + "}";
-			} else {
-				return content;
-			}
-		}).join("");
-	};
-
-	// import a list of modules into the list
-	list.i = function(modules, mediaQuery) {
-		if(typeof modules === "string")
-			modules = [[null, modules, ""]];
-		var alreadyImportedModules = {};
-		for(var i = 0; i < this.length; i++) {
-			var id = this[i][0];
-			if(typeof id === "number")
-				alreadyImportedModules[id] = true;
-		}
-		for(i = 0; i < modules.length; i++) {
-			var item = modules[i];
-			// skip already imported module
-			// this implementation is not 100% perfect for weird media query combinations
-			//  when a module is imported multiple times with different media queries.
-			//  I hope this will never occur (Hey this way we have smaller bundles)
-			if(typeof item[0] !== "number" || !alreadyImportedModules[item[0]]) {
-				if(mediaQuery && !item[2]) {
-					item[2] = mediaQuery;
-				} else if(mediaQuery) {
-					item[2] = "(" + item[2] + ") and (" + mediaQuery + ")";
-				}
-				list.push(item);
-			}
-		}
-	};
-	return list;
-};
-
-function cssWithMappingToString(item, useSourceMap) {
-	var content = item[1] || '';
-	var cssMapping = item[3];
-	if (!cssMapping) {
-		return content;
-	}
-
-	if (useSourceMap && typeof btoa === 'function') {
-		var sourceMapping = toComment(cssMapping);
-		var sourceURLs = cssMapping.sources.map(function (source) {
-			return '/*# sourceURL=' + cssMapping.sourceRoot + source + ' */'
-		});
-
-		return [content].concat(sourceURLs).concat([sourceMapping]).join('\n');
-	}
-
-	return [content].join('\n');
-}
-
-// Adapted from convert-source-map (MIT)
-function toComment(sourceMap) {
-	// eslint-disable-next-line no-undef
-	var base64 = btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap))));
-	var data = 'sourceMappingURL=data:application/json;charset=utf-8;base64,' + base64;
-
-	return '/*# ' + data + ' */';
-}
-
-
-/***/ }),
-/* 81 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/*
-	MIT License http://www.opensource.org/licenses/mit-license.php
-	Author Tobias Koppers @sokra
-*/
-
-var stylesInDom = {};
-
-var	memoize = function (fn) {
-	var memo;
-
-	return function () {
-		if (typeof memo === "undefined") memo = fn.apply(this, arguments);
-		return memo;
-	};
-};
-
-var isOldIE = memoize(function () {
-	// Test for IE <= 9 as proposed by Browserhacks
-	// @see http://browserhacks.com/#hack-e71d8692f65334173fee715c222cb805
-	// Tests for existence of standard globals is to allow style-loader
-	// to operate correctly into non-standard environments
-	// @see https://github.com/webpack-contrib/style-loader/issues/177
-	return window && document && document.all && !window.atob;
-});
-
-var getTarget = function (target) {
-  return document.querySelector(target);
-};
-
-var getElement = (function (fn) {
-	var memo = {};
-
-	return function(target) {
-                // If passing function in options, then use it for resolve "head" element.
-                // Useful for Shadow Root style i.e
-                // {
-                //   insertInto: function () { return document.querySelector("#foo").shadowRoot }
-                // }
-                if (typeof target === 'function') {
-                        return target();
-                }
-                if (typeof memo[target] === "undefined") {
-			var styleTarget = getTarget.call(this, target);
-			// Special case to return head of iframe instead of iframe itself
-			if (window.HTMLIFrameElement && styleTarget instanceof window.HTMLIFrameElement) {
-				try {
-					// This will throw an exception if access to iframe is blocked
-					// due to cross-origin restrictions
-					styleTarget = styleTarget.contentDocument.head;
-				} catch(e) {
-					styleTarget = null;
-				}
-			}
-			memo[target] = styleTarget;
-		}
-		return memo[target]
-	};
-})();
-
-var singleton = null;
-var	singletonCounter = 0;
-var	stylesInsertedAtTop = [];
-
-var	fixUrls = __webpack_require__(82);
-
-module.exports = function(list, options) {
-	if (typeof DEBUG !== "undefined" && DEBUG) {
-		if (typeof document !== "object") throw new Error("The style-loader cannot be used in a non-browser environment");
-	}
-
-	options = options || {};
-
-	options.attrs = typeof options.attrs === "object" ? options.attrs : {};
-
-	// Force single-tag solution on IE6-9, which has a hard limit on the # of <style>
-	// tags it will allow on a page
-	if (!options.singleton && typeof options.singleton !== "boolean") options.singleton = isOldIE();
-
-	// By default, add <style> tags to the <head> element
-        if (!options.insertInto) options.insertInto = "head";
-
-	// By default, add <style> tags to the bottom of the target
-	if (!options.insertAt) options.insertAt = "bottom";
-
-	var styles = listToStyles(list, options);
-
-	addStylesToDom(styles, options);
-
-	return function update (newList) {
-		var mayRemove = [];
-
-		for (var i = 0; i < styles.length; i++) {
-			var item = styles[i];
-			var domStyle = stylesInDom[item.id];
-
-			domStyle.refs--;
-			mayRemove.push(domStyle);
-		}
-
-		if(newList) {
-			var newStyles = listToStyles(newList, options);
-			addStylesToDom(newStyles, options);
-		}
-
-		for (var i = 0; i < mayRemove.length; i++) {
-			var domStyle = mayRemove[i];
-
-			if(domStyle.refs === 0) {
-				for (var j = 0; j < domStyle.parts.length; j++) domStyle.parts[j]();
-
-				delete stylesInDom[domStyle.id];
-			}
-		}
-	};
-};
-
-function addStylesToDom (styles, options) {
-	for (var i = 0; i < styles.length; i++) {
-		var item = styles[i];
-		var domStyle = stylesInDom[item.id];
-
-		if(domStyle) {
-			domStyle.refs++;
-
-			for(var j = 0; j < domStyle.parts.length; j++) {
-				domStyle.parts[j](item.parts[j]);
-			}
-
-			for(; j < item.parts.length; j++) {
-				domStyle.parts.push(addStyle(item.parts[j], options));
-			}
-		} else {
-			var parts = [];
-
-			for(var j = 0; j < item.parts.length; j++) {
-				parts.push(addStyle(item.parts[j], options));
-			}
-
-			stylesInDom[item.id] = {id: item.id, refs: 1, parts: parts};
-		}
-	}
-}
-
-function listToStyles (list, options) {
-	var styles = [];
-	var newStyles = {};
-
-	for (var i = 0; i < list.length; i++) {
-		var item = list[i];
-		var id = options.base ? item[0] + options.base : item[0];
-		var css = item[1];
-		var media = item[2];
-		var sourceMap = item[3];
-		var part = {css: css, media: media, sourceMap: sourceMap};
-
-		if(!newStyles[id]) styles.push(newStyles[id] = {id: id, parts: [part]});
-		else newStyles[id].parts.push(part);
-	}
-
-	return styles;
-}
-
-function insertStyleElement (options, style) {
-	var target = getElement(options.insertInto)
-
-	if (!target) {
-		throw new Error("Couldn't find a style target. This probably means that the value for the 'insertInto' parameter is invalid.");
-	}
-
-	var lastStyleElementInsertedAtTop = stylesInsertedAtTop[stylesInsertedAtTop.length - 1];
-
-	if (options.insertAt === "top") {
-		if (!lastStyleElementInsertedAtTop) {
-			target.insertBefore(style, target.firstChild);
-		} else if (lastStyleElementInsertedAtTop.nextSibling) {
-			target.insertBefore(style, lastStyleElementInsertedAtTop.nextSibling);
-		} else {
-			target.appendChild(style);
-		}
-		stylesInsertedAtTop.push(style);
-	} else if (options.insertAt === "bottom") {
-		target.appendChild(style);
-	} else if (typeof options.insertAt === "object" && options.insertAt.before) {
-		var nextSibling = getElement(options.insertInto + " " + options.insertAt.before);
-		target.insertBefore(style, nextSibling);
-	} else {
-		throw new Error("[Style Loader]\n\n Invalid value for parameter 'insertAt' ('options.insertAt') found.\n Must be 'top', 'bottom', or Object.\n (https://github.com/webpack-contrib/style-loader#insertat)\n");
-	}
-}
-
-function removeStyleElement (style) {
-	if (style.parentNode === null) return false;
-	style.parentNode.removeChild(style);
-
-	var idx = stylesInsertedAtTop.indexOf(style);
-	if(idx >= 0) {
-		stylesInsertedAtTop.splice(idx, 1);
-	}
-}
-
-function createStyleElement (options) {
-	var style = document.createElement("style");
-
-	options.attrs.type = "text/css";
-
-	addAttrs(style, options.attrs);
-	insertStyleElement(options, style);
-
-	return style;
-}
-
-function createLinkElement (options) {
-	var link = document.createElement("link");
-
-	options.attrs.type = "text/css";
-	options.attrs.rel = "stylesheet";
-
-	addAttrs(link, options.attrs);
-	insertStyleElement(options, link);
-
-	return link;
-}
-
-function addAttrs (el, attrs) {
-	Object.keys(attrs).forEach(function (key) {
-		el.setAttribute(key, attrs[key]);
-	});
-}
-
-function addStyle (obj, options) {
-	var style, update, remove, result;
-
-	// If a transform function was defined, run it on the css
-	if (options.transform && obj.css) {
-	    result = options.transform(obj.css);
-
-	    if (result) {
-	    	// If transform returns a value, use that instead of the original css.
-	    	// This allows running runtime transformations on the css.
-	    	obj.css = result;
-	    } else {
-	    	// If the transform function returns a falsy value, don't add this css.
-	    	// This allows conditional loading of css
-	    	return function() {
-	    		// noop
-	    	};
-	    }
-	}
-
-	if (options.singleton) {
-		var styleIndex = singletonCounter++;
-
-		style = singleton || (singleton = createStyleElement(options));
-
-		update = applyToSingletonTag.bind(null, style, styleIndex, false);
-		remove = applyToSingletonTag.bind(null, style, styleIndex, true);
-
-	} else if (
-		obj.sourceMap &&
-		typeof URL === "function" &&
-		typeof URL.createObjectURL === "function" &&
-		typeof URL.revokeObjectURL === "function" &&
-		typeof Blob === "function" &&
-		typeof btoa === "function"
-	) {
-		style = createLinkElement(options);
-		update = updateLink.bind(null, style, options);
-		remove = function () {
-			removeStyleElement(style);
-
-			if(style.href) URL.revokeObjectURL(style.href);
-		};
-	} else {
-		style = createStyleElement(options);
-		update = applyToTag.bind(null, style);
-		remove = function () {
-			removeStyleElement(style);
-		};
-	}
-
-	update(obj);
-
-	return function updateStyle (newObj) {
-		if (newObj) {
-			if (
-				newObj.css === obj.css &&
-				newObj.media === obj.media &&
-				newObj.sourceMap === obj.sourceMap
-			) {
-				return;
-			}
-
-			update(obj = newObj);
-		} else {
-			remove();
-		}
-	};
-}
-
-var replaceText = (function () {
-	var textStore = [];
-
-	return function (index, replacement) {
-		textStore[index] = replacement;
-
-		return textStore.filter(Boolean).join('\n');
-	};
-})();
-
-function applyToSingletonTag (style, index, remove, obj) {
-	var css = remove ? "" : obj.css;
-
-	if (style.styleSheet) {
-		style.styleSheet.cssText = replaceText(index, css);
-	} else {
-		var cssNode = document.createTextNode(css);
-		var childNodes = style.childNodes;
-
-		if (childNodes[index]) style.removeChild(childNodes[index]);
-
-		if (childNodes.length) {
-			style.insertBefore(cssNode, childNodes[index]);
-		} else {
-			style.appendChild(cssNode);
-		}
-	}
-}
-
-function applyToTag (style, obj) {
-	var css = obj.css;
-	var media = obj.media;
-
-	if(media) {
-		style.setAttribute("media", media)
-	}
-
-	if(style.styleSheet) {
-		style.styleSheet.cssText = css;
-	} else {
-		while(style.firstChild) {
-			style.removeChild(style.firstChild);
-		}
-
-		style.appendChild(document.createTextNode(css));
-	}
-}
-
-function updateLink (link, options, obj) {
-	var css = obj.css;
-	var sourceMap = obj.sourceMap;
-
-	/*
-		If convertToAbsoluteUrls isn't defined, but sourcemaps are enabled
-		and there is no publicPath defined then lets turn convertToAbsoluteUrls
-		on by default.  Otherwise default to the convertToAbsoluteUrls option
-		directly
-	*/
-	var autoFixUrls = options.convertToAbsoluteUrls === undefined && sourceMap;
-
-	if (options.convertToAbsoluteUrls || autoFixUrls) {
-		css = fixUrls(css);
-	}
-
-	if (sourceMap) {
-		// http://stackoverflow.com/a/26603875
-		css += "\n/*# sourceMappingURL=data:application/json;base64," + btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))) + " */";
-	}
-
-	var blob = new Blob([css], { type: "text/css" });
-
-	var oldSrc = link.href;
-
-	link.href = URL.createObjectURL(blob);
-
-	if(oldSrc) URL.revokeObjectURL(oldSrc);
-}
-
-
-/***/ }),
-/* 82 */
-/***/ (function(module, exports) {
-
-
-/**
- * When source maps are enabled, `style-loader` uses a link element with a data-uri to
- * embed the css on the page. This breaks all relative urls because now they are relative to a
- * bundle instead of the current page.
- *
- * One solution is to only use full urls, but that may be impossible.
- *
- * Instead, this function "fixes" the relative urls to be absolute according to the current page location.
- *
- * A rudimentary test suite is located at `test/fixUrls.js` and can be run via the `npm test` command.
- *
- */
-
-module.exports = function (css) {
-  // get current location
-  var location = typeof window !== "undefined" && window.location;
-
-  if (!location) {
-    throw new Error("fixUrls requires window.location");
-  }
-
-	// blank or null?
-	if (!css || typeof css !== "string") {
-	  return css;
-  }
-
-  var baseUrl = location.protocol + "//" + location.host;
-  var currentDir = baseUrl + location.pathname.replace(/\/[^\/]*$/, "/");
-
-	// convert each url(...)
-	/*
-	This regular expression is just a way to recursively match brackets within
-	a string.
-
-	 /url\s*\(  = Match on the word "url" with any whitespace after it and then a parens
-	   (  = Start a capturing group
-	     (?:  = Start a non-capturing group
-	         [^)(]  = Match anything that isn't a parentheses
-	         |  = OR
-	         \(  = Match a start parentheses
-	             (?:  = Start another non-capturing groups
-	                 [^)(]+  = Match anything that isn't a parentheses
-	                 |  = OR
-	                 \(  = Match a start parentheses
-	                     [^)(]*  = Match anything that isn't a parentheses
-	                 \)  = Match a end parentheses
-	             )  = End Group
-              *\) = Match anything and then a close parens
-          )  = Close non-capturing group
-          *  = Match anything
-       )  = Close capturing group
-	 \)  = Match a close parens
-
-	 /gi  = Get all matches, not the first.  Be case insensitive.
-	 */
-	var fixedCss = css.replace(/url\s*\(((?:[^)(]|\((?:[^)(]+|\([^)(]*\))*\))*)\)/gi, function(fullMatch, origUrl) {
-		// strip quotes (if they exist)
-		var unquotedOrigUrl = origUrl
-			.trim()
-			.replace(/^"(.*)"$/, function(o, $1){ return $1; })
-			.replace(/^'(.*)'$/, function(o, $1){ return $1; });
-
-		// already a full url? no change
-		if (/^(#|data:|http:\/\/|https:\/\/|file:\/\/\/)/i.test(unquotedOrigUrl)) {
-		  return fullMatch;
-		}
-
-		// convert the url to a full url
-		var newUrl;
-
-		if (unquotedOrigUrl.indexOf("//") === 0) {
-		  	//TODO: should we add protocol?
-			newUrl = unquotedOrigUrl;
-		} else if (unquotedOrigUrl.indexOf("/") === 0) {
-			// path should be relative to the base url
-			newUrl = baseUrl + unquotedOrigUrl; // already starts with '/'
-		} else {
-			// path should be relative to current directory
-			newUrl = currentDir + unquotedOrigUrl.replace(/^\.\//, ""); // Strip leading './'
-		}
-
-		// send back the fixed url(...)
-		return "url(" + JSON.stringify(newUrl) + ")";
-	});
-
-	// send back the fixed css
-	return fixedCss;
-};
-
-
-/***/ }),
-/* 83 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const React = __webpack_require__(0);
-const ArboretumChat_1 = __webpack_require__(53);
-__webpack_require__(84);
-const ENTER_KEY = 13;
-class ArboretumChatBox extends React.Component {
-    constructor(props) {
-        super(props);
-        this.updateMessagesState = () => __awaiter(this, void 0, void 0, function* () {
-            const messages = yield this.chat.getMessages();
-            this.setState({ messages });
-        });
-        this.updateUsersState = () => __awaiter(this, void 0, void 0, function* () {
-            const users = yield this.chat.getUsers();
-            this.setState({ users });
-        });
-        this.chatKeyDown = (event) => {
-            const { keyCode, ctrlKey, altKey, metaKey, shiftKey } = event;
-            if (keyCode === ENTER_KEY && !(ctrlKey || altKey || metaKey || shiftKey)) {
-                event.preventDefault();
-                const { chatText } = this.state;
-                if (chatText !== '') {
-                    if (this.props.onSendMessage) {
-                        this.props.onSendMessage(chatText);
-                    }
-                    if (this.chat) {
-                        this.chat.addTextMessage(chatText);
-                    }
-                    this.setState({ chatText: '' });
-                }
-            }
-        };
-        this.onTextareaChange = (event) => {
-            this.setState({ chatText: event.target.value });
-        };
-        this.state = {
-            chatText: this.props.chatText || '',
-            messages: [],
-            users: []
-        };
-        if (this.props.sdb) {
-            this.setSDB(this.props.sdb);
-        }
-        window.addEventListener('beforeunload', () => this.leave());
-    }
-    ;
-    setSDB(sdb) {
-        return __awaiter(this, void 0, void 0, function* () {
-            this.sdb = sdb;
-            this.chat = new ArboretumChat_1.ArboretumChat(this.sdb);
-            this.chat.ready(() => __awaiter(this, void 0, void 0, function* () {
-                yield this.chat.join(this.props.username);
-                yield this.updateMessagesState();
-                yield this.updateUsersState();
-                this.chat.messageAdded(this.updateMessagesState);
-                this.chat.userJoined(this.updateUsersState);
-                this.chat.userNotPresent(this.updateUsersState);
-            }));
-        });
-    }
-    ;
-    //https://stackoverflow.com/questions/37620694/how-to-scroll-to-bottom-in-react
-    scrollToBottom() {
-        this.messagesEnd.scrollIntoView({ behavior: "smooth" });
-    }
-    ;
-    componentDidMount() {
-        this.scrollToBottom();
-    }
-    ;
-    leave() {
-        if (this.chat) {
-            this.chat.leave();
-        }
-    }
-    ;
-    componentWillUnmount() {
-        this.leave();
-    }
-    ;
-    componentDidUpdate() {
-        this.scrollToBottom();
-    }
-    ;
-    render() {
-        const messages = this.state.messages.map((m, i) => {
-            const senderStyle = { color: m.sender.color };
-            return React.createElement("li", { key: i, className: 'chat-line' },
-                React.createElement("span", { style: senderStyle, className: 'from' }, m.sender.displayName),
-                React.createElement("span", { className: 'message' }, m.content));
-        });
-        let meUserID;
-        if (this.chat) {
-            const meUser = this.chat.getMe();
-            if (meUser) {
-                meUserID = meUser.id;
-            }
-        }
-        const users = this.state.users.map((u) => {
-            const isMe = u.id === meUserID;
-            const style = { color: u.color };
-            return React.createElement("span", { key: u.id, className: `participant ${isMe ? 'me' : ''}`, style: style }, u.displayName);
-        });
-        return React.createElement("div", { className: 'chat' },
-            React.createElement("h6", { id: "task_title" },
-                React.createElement("span", { className: "icon icon-chat" }),
-                React.createElement("span", { id: 'task-name' }, "Chat")),
-            React.createElement("div", { id: "chat-participants" }, users),
-            React.createElement("ul", { id: "chat-lines" },
-                messages,
-                React.createElement("li", { style: { float: "left", clear: "both" }, ref: (el) => { this.messagesEnd = el; } })),
-            React.createElement("form", { id: "chat-form" },
-                React.createElement("textarea", { id: "chat-box", className: "form-control", placeholder: "Send a message", onChange: this.onTextareaChange, onKeyDown: this.chatKeyDown, value: this.state.chatText })));
-    }
-    ;
-}
-exports.ArboretumChatBox = ArboretumChatBox;
-;
-
-
-/***/ }),
-/* 84 */
-/***/ (function(module, exports, __webpack_require__) {
-
-
-var content = __webpack_require__(85);
-
-if(typeof content === 'string') content = [[module.i, content, '']];
-
-var transform;
-var insertInto;
-
-
-
-var options = {"hmr":true}
-
-options.transform = transform
-options.insertInto = undefined;
-
-var update = __webpack_require__(81)(content, options);
-
-if(content.locals) module.exports = content.locals;
-
-if(false) {
-	module.hot.accept("!!../../../node_modules/css-loader/index.js??ref--2-1!../../../node_modules/sass-loader/lib/loader.js??ref--2-2!./ArboretumChat.scss", function() {
-		var newContent = require("!!../../../node_modules/css-loader/index.js??ref--2-1!../../../node_modules/sass-loader/lib/loader.js??ref--2-2!./ArboretumChat.scss");
-
-		if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-
-		var locals = (function(a, b) {
-			var key, idx = 0;
-
-			for(key in a) {
-				if(!b || a[key] !== b[key]) return false;
-				idx++;
-			}
-
-			for(key in b) idx--;
-
-			return idx === 0;
-		}(content.locals, newContent.locals));
-
-		if(!locals) throw new Error('Aborting CSS HMR due to changed css-modules locals.');
-
-		update(newContent);
-	});
-
-	module.hot.dispose(function() { update(); });
-}
-
-/***/ }),
-/* 85 */
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(80)(true);
-// imports
-
-
-// module
-exports.push([module.i, ".chat {\n  font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n  background-color: #EEE;\n  flex: 1 0 auto;\n  display: flex;\n  flex-direction: column;\n  height: 100%; }\n  .chat #task_title {\n    flex: 0 0;\n    box-sizing: border-box;\n    padding: 5px 10px 5px; }\n  .chat #chat-participants {\n    flex: 0 0;\n    border-bottom: 1px solid #CCC;\n    background-color: #DDD;\n    padding: 5px 10px 5px;\n    box-sizing: border-box; }\n    .chat #chat-participants .participant {\n      margin: 2px; }\n      .chat #chat-participants .participant.me {\n        font-weight: bold;\n        text-decoration: underline; }\n  .chat #chat-lines {\n    flex: 2 0;\n    box-sizing: border-box;\n    padding: 0px 10px 0px;\n    margin: 0px;\n    overflow-y: auto; }\n    .chat #chat-lines li {\n      list-style-type: none; }\n    .chat #chat-lines .chat-line {\n      font-size: 0.9em;\n      list-style-type: none;\n      list-style-type: none;\n      margin-top: 2px;\n      padding-top: 2px;\n      margin-bottom: 2px;\n      padding-bottom: 2px;\n      color: #555; }\n      .chat #chat-lines .chat-line .from {\n        font-weight: bold; }\n      .chat #chat-lines .chat-line .from::after {\n        content: \": \"; }\n  .chat #chat-form {\n    padding: 0px 2px 0px;\n    flex: 0; }\n    .chat #chat-form textarea#chat-box {\n      box-sizing: border-box;\n      resize: none;\n      flex-grow: 1;\n      width: 100%;\n      font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n      padding: 5px 10px 5px; }\n    .chat #chat-form .form-actions {\n      text-align: right; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/utils/browserControls/src/utils/browserControls/ArboretumChat.scss"],"names":[],"mappings":"AAAA;EACI,gHAA+G;EAC/G,uBAAsB;EACtB,eAAc;EACd,cAAa;EACb,uBAAsB;EACtB,aAAY,EA8Df;EApED;IASQ,UAAS;IACT,uBAAsB;IACtB,sBAAqB,EACxB;EAZL;IAcQ,UAAS;IACT,8BAA6B;IAC7B,uBAAsB;IACtB,sBAAqB;IACrB,uBAAsB,EAQzB;IA1BL;MAoBY,YAAW,EAKd;MAzBT;QAsBgB,kBAAiB;QACjB,2BAA0B,EAC7B;EAxBb;IA4BQ,UAAS;IACT,uBAAsB;IACtB,sBAAqB;IACrB,YAAW;IACX,iBAAgB,EAoBnB;IApDL;MAkCY,sBAAqB,EACxB;IAnCT;MAqCY,iBAAgB;MAChB,sBAAqB;MACrB,sBAAqB;MACrB,gBAAe;MACf,iBAAgB;MAChB,mBAAkB;MAClB,oBAAmB;MACnB,YAAW,EAOd;MAnDT;QA8CgB,kBAAiB,EACpB;MA/Cb;QAiDgB,cAAa,EAChB;EAlDb;IAsDQ,qBAAoB;IACpB,QAAO,EAYV;IAnEL;MAyDY,uBAAsB;MACtB,aAAY;MACZ,aAAY;MACZ,YAAW;MACX,gHAA+G;MAC/G,sBAAqB,EACxB;IA/DT;MAiEY,kBAAiB,EACpB","file":"ArboretumChat.scss","sourcesContent":[".chat {\n    font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n    background-color: #EEE;\n    flex: 1 0 auto;\n    display: flex;\n    flex-direction: column;\n    height: 100%;\n\n    #task_title {\n        flex: 0 0;\n        box-sizing: border-box;\n        padding: 5px 10px 5px;\n    }\n    #chat-participants {\n        flex: 0 0;\n        border-bottom: 1px solid #CCC;\n        background-color: #DDD;\n        padding: 5px 10px 5px;\n        box-sizing: border-box;\n        .participant {\n            margin: 2px;\n            &.me {\n                font-weight: bold;\n                text-decoration: underline;\n            }\n        }\n    }\n    #chat-lines {\n        flex: 2 0;\n        box-sizing: border-box;\n        padding: 0px 10px 0px;\n        margin: 0px;\n        overflow-y: auto;\n        li {\n            list-style-type: none;\n        }\n        .chat-line {\n            font-size: 0.9em;\n            list-style-type: none;\n            list-style-type: none;\n            margin-top: 2px;\n            padding-top: 2px;\n            margin-bottom: 2px;\n            padding-bottom: 2px;\n            color: #555;\n            .from {\n                font-weight: bold;\n            }\n            .from::after {\n                content: \": \";\n            }\n        }\n    }\n    #chat-form {\n        padding: 0px 2px 0px;\n        flex: 0;\n        textarea#chat-box {\n            box-sizing: border-box;\n            resize: none;\n            flex-grow: 1;\n            width: 100%;\n            font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n            padding: 5px 10px 5px;\n        }\n        .form-actions {\n            text-align: right;\n        }\n    }\n}\n"],"sourceRoot":""}]);
+exports.push([module.i, "#buttonSpacer {\n  width: 70px;\n  /*border-bottom: 1px solid #AAA;*/\n  /*background: linear-gradient(to bottom, #BBB 80%, #AAA);*/ }\n\n#tabsBar {\n  display: flex;\n  flex-direction: row;\n  font-size: 13px;\n  font-family: sans-serif;\n  margin: 0px;\n  /*padding: 0px 0px 0px 70px;*/\n  padding: 0px;\n  box-sizing: border-box;\n  -webkit-user-select: none;\n  -webkit-app-region: drag;\n  color: #777;\n  /*height: 23px;*/\n  box-sizing: border-box; }\n  #tabsBar #addTab {\n    display: inline-block;\n    margin: 0;\n    background: linear-gradient(to bottom, #BBB 80%, #AAA); }\n\n/*#tabsBar #addTab:hover {\n    color: #fff;\n    background: rgb(99, 190, 229);\n}\n\n#addTab i {\n    font-size: 12.5px\n}*/\n#tabs {\n  display: flex;\n  flex: 1;\n  padding: 0px;\n  margin: 0px;\n  overflow: hidden; }\n\n.tab {\n  flex: 1;\n  display: flex;\n  border-left: 1px solid #AAA;\n  /*border: 1px solid black;*/\n  list-style: none;\n  white-space: nowrap;\n  /*font-size: 3em;*/\n  border-bottom: 1px solid #aaa;\n  color: #BBB;\n  overflow: hidden;\n  text-overflow: ellipsis; }\n\n.tab:last-child {\n  border-right: 1px solid #AAA; }\n\n.tab.not-selected {\n  background: linear-gradient(to bottom, #BBB 80%, #AAA); }\n\n.tab.not-selected .closeTab {\n  color: #999; }\n\n.tab.selected {\n  /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n  border-bottom: none;\n  color: #777; }\n\n.tab .tab-img {\n  opacity: 0.4; }\n\n.tab.selected .tab-img {\n  opacity: 1.0;\n  flex: 2; }\n\n.tab-img {\n  height: 18px;\n  max-width: 28px;\n  margin: 2px;\n  margin-right: 2px;\n  display: none; }\n\n.tab-title {\n  /*flex: 1;*/\n  /*padding: 5px 0px 4px 3px;*/ }\n\n.closeTab {\n  /*float: right;*/\n  /*color: red;*/\n  /*text-shadow: 0 0 1px rgba(50, 1, 1, 1);*/\n  padding: 5px; }\n\n.closeTab i {\n  font-size: 12.5px; }\n\n.closeTab:hover {\n  background: #f57777;\n  color: #FFF; }\n\n.tab .tab-title {\n  /*font-size: 5em;*/\n  color: #777;\n  text-overflow: ellipsis;\n  overflow: hidden; }\n\n.tab.selected .tab-title {\n  color: #555; }\n\ntable#server-controls {\n  flex-shrink: 0; }\n  table#server-controls .nav-group-title {\n    padding: 0px; }\n  table#server-controls thead td {\n    text-align: center; }\n  table#server-controls td {\n    padding-left: 5px;\n    padding-right: 0px;\n    margin: auto;\n    vertical-align: top; }\n  table#server-controls tr:active {\n    color: inherit;\n    background-color: inherit;\n    /* color: #fff; */\n    /* background-color: #116cd6; */ }\n  table#server-controls #control_content td {\n    padding-bottom: 0px; }\n  table#server-controls label {\n    margin-bottom: 0px;\n    padding-bottom: 0px; }\n\n.sidebar {\n  width: 350px;\n  height: 100%;\n  display: flex;\n  flex-direction: column; }\n\n.copy_area input {\n  background-color: #FAFAFA;\n  border: 1px solid #CCC;\n  padding: 2px;\n  font-size: 0.9em;\n  text-align: center;\n  width: 90px; }\n\n.copy_area .copy_area .icon {\n  cursor: pointer;\n  color: #AAA; }\n  .copy_area .copy_area .icon:hover {\n    color: #999; }\n\n#browser-pane {\n  border-left: none; }\n\nhtml {\n  height: 100%; }\n  html .unselected {\n    display: none; }\n  html #content {\n    height: 100%;\n    overflow: hidden; }\n  html .tab_content {\n    height: 100%; }\n  html webview {\n    display: inline-flex;\n    width: 100%;\n    height: 100%; }\n    html webview.hidden {\n      display: none; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/browser/css/src/browser/css/browser-tabs.scss","/home/soney/code/arboretum/src/browser/css/src/browser/css/browser-sidebar.scss","/home/soney/code/arboretum/src/browser/css/src/browser/css/browser.scss"],"names":[],"mappings":"AAAA;EACI,YAAW;EACX,kCAAkC;EAClC,2DAA2D,EAC9D;;AAED;EACI,cAAa;EACb,oBAAmB;EACnB,gBAAe;EACf,wBAAuB;EACvB,YAAW;EACX,8BAA8B;EAC9B,aAAY;EACZ,uBAAsB;EACtB,0BAAyB;EACzB,yBAAwB;EAExB,YAAW;EACX,iBAAiB;EACjB,uBAAsB,EAMzB;EApBD;IAgBQ,sBAAqB;IACrB,UAAS;IACT,uDAAsD,EACzD;;AAIL;;;;;;;GAOG;AAEH;EACI,cAAa;EACb,QAAO;EACP,aAAY;EACZ,YAAW;EACX,iBAAgB,EACnB;;AAED;EACI,QAAO;EACP,cAAa;EACb,4BAA2B;EAC3B,4BAA4B;EAC5B,iBAAgB;EAChB,oBAAmB;EACnB,mBAAmB;EACnB,8BAA6B;EAC7B,YAAW;EACX,iBAAgB;EAChB,wBAAuB,EAC1B;;AACD;EACI,6BAA4B,EAC/B;;AACD;EACI,uDAAsD,EACzD;;AACD;EACI,YAAW,EACd;;AACD;EACI,8DAA8D;EAC9D,oBAAmB;EACnB,YAAW,EACd;;AAED;EACI,aAAY,EACf;;AACD;EACI,aAAY;EACZ,QAAO,EACV;;AAED;EACI,aAAY;EACZ,gBAAe;EACf,YAAW;EACX,kBAAiB;EACjB,cAAa,EAChB;;AAED;EACI,YAAY;EACZ,6BAA6B,EAChC;;AAED;EACI,iBAAiB;EACjB,eAAe;EACf,2CAA2C;EAC3C,aAAY,EACf;;AAED;EACI,kBACJ,EAAE;;AAEF;EACI,oBAA8B;EAC9B,YAAW,EACd;;AAGD;EACI,mBAAmB;EACnB,YAAW;EACX,wBAAuB;EACvB,iBAAgB,EACnB;;AACD;EACI,YAAW,EACd;;ACxHD;EACI,eAAc,EA6BjB;EA9BD;IAGQ,aAAY,EACf;EAJL;IAMQ,mBAAkB,EACrB;EAPL;IAUQ,kBAAiB;IACjB,mBAAkB;IAClB,aAAY;IACZ,oBAAmB,EACtB;EAdL;IAiBY,eAAc;IACd,0BAAyB;IACzB,kBAAkB;IAClB,gCAAgC,EACnC;EArBT;IAwBQ,oBAAmB,EACtB;EAzBL;IA2BQ,mBAAkB;IAClB,oBAAmB,EACtB;;AAIL;EACI,aAAY;EACZ,aAAY;EACZ,cAAa;EACb,uBAAsB,EACzB;;AAID;EAEQ,0BAAyB;EACzB,uBAAsB;EACtB,aAAW;EACX,iBAAgB;EAChB,mBAAkB;EAClB,YAAW,EACd;;AARL;EAUQ,gBAAe;EACf,YAAW,EAId;EAfL;IAaY,YAAW,EACd;;AAKT;EACI,kBAAiB,EACpB;;AC3DD;EACI,aAAY,EAwBf;EAzBD;IAIQ,cAAa,EAChB;EALL;IAOQ,aAAY;IACZ,iBAAgB,EACnB;EATL;IAaQ,aAAY,EACf;EAdL;IAiBQ,qBAAoB;IACpB,YAAW;IACX,aAAY,EAKf;IAxBL;MAsBY,cAAY,EACf","file":"browser.scss","sourcesContent":["#buttonSpacer {\n    width: 70px;\n    /*border-bottom: 1px solid #AAA;*/\n    /*background: linear-gradient(to bottom, #BBB 80%, #AAA);*/\n}\n\n#tabsBar {\n    display: flex;\n    flex-direction: row;\n    font-size: 13px;\n    font-family: sans-serif;\n    margin: 0px;\n    /*padding: 0px 0px 0px 70px;*/\n    padding: 0px;\n    box-sizing: border-box;\n    -webkit-user-select: none;\n    -webkit-app-region: drag;\n\n    color: #777;\n    /*height: 23px;*/\n    box-sizing: border-box;\n    #addTab {\n        display: inline-block;\n        margin: 0;\n        background: linear-gradient(to bottom, #BBB 80%, #AAA);\n    }\n}\n\n\n/*#tabsBar #addTab:hover {\n    color: #fff;\n    background: rgb(99, 190, 229);\n}\n\n#addTab i {\n    font-size: 12.5px\n}*/\n\n#tabs {\n    display: flex;\n    flex: 1;\n    padding: 0px;\n    margin: 0px;\n    overflow: hidden;\n}\n\n.tab {\n    flex: 1;\n    display: flex;\n    border-left: 1px solid #AAA;\n    /*border: 1px solid black;*/\n    list-style: none;\n    white-space: nowrap;\n    /*font-size: 3em;*/\n    border-bottom: 1px solid #aaa;\n    color: #BBB;\n    overflow: hidden;\n    text-overflow: ellipsis;\n}\n.tab:last-child {\n    border-right: 1px solid #AAA;\n}\n.tab.not-selected {\n    background: linear-gradient(to bottom, #BBB 80%, #AAA);\n}\n.tab.not-selected .closeTab {\n    color: #999;\n}\n.tab.selected {\n    /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n    border-bottom: none;\n    color: #777;\n}\n\n.tab .tab-img {\n    opacity: 0.4;\n}\n.tab.selected .tab-img {\n    opacity: 1.0;\n    flex: 2;\n}\n\n.tab-img {\n    height: 18px;\n    max-width: 28px;\n    margin: 2px;\n    margin-right: 2px;\n    display: none;\n}\n\n.tab-title {\n    /*flex: 1;*/\n    /*padding: 5px 0px 4px 3px;*/\n}\n\n.closeTab {\n    /*float: right;*/\n    /*color: red;*/\n    /*text-shadow: 0 0 1px rgba(50, 1, 1, 1);*/\n    padding: 5px;\n}\n\n.closeTab i {\n    font-size: 12.5px\n}\n\n.closeTab:hover {\n    background: rgb(245, 119, 119);\n    color: #FFF;\n}\n\n\n.tab .tab-title {\n    /*font-size: 5em;*/\n    color: #777;\n    text-overflow: ellipsis;\n    overflow: hidden;\n}\n.tab.selected .tab-title {\n    color: #555;\n}\n","table#server-controls {\n    flex-shrink: 0;\n    .nav-group-title {\n        padding: 0px;\n    }\n    thead td {\n        text-align: center;\n    }\n\n    td {\n        padding-left: 5px;\n        padding-right: 0px;\n        margin: auto;\n        vertical-align: top;\n    }\n    tr {\n        &:active {\n            color: inherit;\n            background-color: inherit;\n            /* color: #fff; */\n            /* background-color: #116cd6; */\n        }\n    }\n    #control_content td {\n        padding-bottom: 0px;\n    }\n    label {\n        margin-bottom: 0px;\n        padding-bottom: 0px;\n    }\n}\n\n\n.sidebar {\n    width: 350px;\n    height: 100%;\n    display: flex;\n    flex-direction: column;\n}\n\n\n\n.copy_area {\n    input {\n        background-color: #FAFAFA;\n        border: 1px solid #CCC;\n        padding:2px;\n        font-size: 0.9em;\n        text-align: center;\n        width: 90px;\n    }\n    .copy_area .icon {\n        cursor: pointer;\n        color: #AAA;\n        &:hover {\n            color: #999;\n        }\n    }\n}\n\n\n#browser-pane {\n    border-left: none;\n}\n","@import \"./browser-tabs\";\n@import \"./browser-sidebar\";\n\n// @import \"../../utils/browserControls/ArboretumChat.scss\";\nhtml {\n    height: 100%;\n\n    .unselected {\n        display: none;\n    }\n    #content {\n        height: 100%;\n        overflow: hidden;\n    }\n\n\n    .tab_content {\n        height: 100%;\n    }\n\n    webview {\n        display: inline-flex;\n        width: 100%;\n        height: 100%;\n\n        &.hidden {\n            display:none;\n        }\n    }\n}\n"],"sourceRoot":""}]);
 
 // exports
 

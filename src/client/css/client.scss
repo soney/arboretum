@@ -19,22 +19,15 @@ body {
     font-family: system, -apple-system, ".SFNSDisplay-Regular", "Helvetica Neue", Helvetica, "Segoe UI", sans-serif;
     background-color: #333;
     #arboretum_client {
-        display: flex;
-        flex-direction: column;
         #client_header {
             max-height: $header_height;
-            flex: 0 0 $header_height;
             @include linear-gradient(#e8e6e8, #d1cfd1);
 
             #tabs {
-                display: flex;
-                flex: 1;
                 padding: 0px;
                 margin: 0px;
                 overflow: hidden;
                 .tab {
-                    flex: 1;
-                    display: flex;
                     text-align: center;
                     border-left: 1px solid #989698;
                     @include linear-gradient(#b8b6b8, #b0aeb0);
@@ -64,15 +57,10 @@ body {
             }
         }
         #client_body {
-            display: flex;
-            flex: 1 0 calc(100% - #{$header_height});
             #client_sidebar {
-                flex: 0 0 $sidebar_width;
-                display: flex;
-                flex-direction: column;
             }
             #client_content {
-                flex: 1 0 auto;
+                overflow:hidden;
                 iframe#content {
                     border: none;
                     width: 100%;

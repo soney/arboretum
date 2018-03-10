@@ -1,8 +1,8 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import {BrowserNavigationBar} from './BrowserNavigationBar';
 import {BrowserTab} from './BrowserTab';
 import {BrowserSidebar, SetServerActiveValue} from './BrowserSidebar';
+import {BrowserNavigationBar} from '../../utils/browserControls/BrowserNavigationBar';
 import {ipcRenderer, remote, BrowserWindow} from 'electron';
 import * as url from 'url';
 import * as _ from 'underscore';
@@ -261,7 +261,7 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
                         <span className="icon icon-plus"></span>
                     </div>
                 </div>
-                <BrowserNavigationBar ref={this.navBarRef} onBack={this.goBack} onForward={this.goForward} onReload={this.reload} onToggleSidebar={this.toggleSidebar} onNavigate={this.navigate} />
+                <BrowserNavigationBar ref={this.navBarRef} onBack={this.goBack} onForward={this.goForward} onReload={this.reload} showSidebarToggle={false} onToggleSidebar={this.toggleSidebar} onNavigate={this.navigate} />
             </header>
             <div className="window-content">
                 <div className="pane-group">

@@ -1,6 +1,5 @@
 .chat {
     font-family: system, -apple-system, ".SFNSDisplay-Regular", "Helvetica Neue", Helvetica, "Segoe UI", sans-serif;
-    background-color: #EEE;
     flex: 1 0 auto;
     display: flex;
     flex-direction: column;
@@ -10,11 +9,11 @@
         flex: 0 0;
         box-sizing: border-box;
         padding: 5px 10px 5px;
+        margin: 0px;
     }
     #chat-participants {
         flex: 0 0;
         border-bottom: 1px solid #CCC;
-        background-color: #DDD;
         padding: 5px 10px 5px;
         box-sizing: border-box;
         .participant {

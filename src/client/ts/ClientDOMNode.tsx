@@ -122,6 +122,13 @@ export class ClientElementNode extends ClientNode {
                 this.element.appendChild(child.getElement());
             });
         }
+        this.addEventListeners();
+    };
+    private addEventListeners():void {
+        this.element.addEventListener('click', this.onClick);
+    };
+    private removeEventListeners():void {
+        this.element.removeEventListener('click', this.onClick);
     };
     public setChildren(children:Array<ClientNode>):void {
         for(let i = this.element.children.length-1; i>=0; i--) {
@@ -176,8 +183,14 @@ export class ClientElementNode extends ClientNode {
     };
     public destroy():void {
         super.destroy();
+        this.removeEventListeners();
         if(this.contentDocument) {
             this.contentDocument.destroy();
+        }
+    };
+    private onClick = (event:MouseEvent):void => {
+        if(this.element === event.target) {
+            console.log(this);
         }
     };
 };

@@ -42,8 +42,8 @@ export class TabList extends React.Component<TabListProps, TabListState> {
         await this.setState({selectedTab})
         this.props.onSelectTab(selectedTab);
     };
-    private changeSelectedTab = (event:React.MouseEvent<HTMLLIElement>):void => {
-        const target = event.target as HTMLLIElement;
+    private changeSelectedTab = (event:React.MouseEvent<HTMLElement>):void => {
+        const target = event.target as HTMLElement;
         this.selectTab(target.getAttribute('data-tabid'));
         event.preventDefault();
         event.stopPropagation();
@@ -52,8 +52,10 @@ export class TabList extends React.Component<TabListProps, TabListState> {
         const tabs:Array<JSX.Element> = this.state.tabs.map((tabInfo:CRI.TabInfo, index) => {
             const {id} = tabInfo;
             const isSelected:boolean = id === this.state.selectedTab;
-            return <li className={'tab' + (isSelected?' selected':'')} data-tabid={id} key={id} onClick={this.changeSelectedTab}>{tabInfo.title}</li>
+            return <div className={'tab-item' + (isSelected?' active':'')} data-tabid={id} key={id} onClick={this.changeSelectedTab}>{tabInfo.title}</div>
         });
-        return <ul id='tabs'>{tabs}</ul>
+        return <div className="tab-group">
+        {tabs}
+        </div>
     };
 };
