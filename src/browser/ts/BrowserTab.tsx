@@ -1,6 +1,9 @@
 import * as React from 'react';
 import * as _ from 'underscore';
 import {BrowserTabID} from './ArboretumBrowser';
+import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
+import * as ShareDB from 'sharedb';
+import {TabDoc} from '../../utils/state_interfaces';
 
 type BrowserTabProps = {
     startURL:string,
@@ -12,6 +15,7 @@ type BrowserTabProps = {
     canGoForwardChanged?:(tab:BrowserTab, canGoForward:boolean) => void,
     isLoadingChanged?:(tab:BrowserTab, isLoading:boolean) => void,
     urlChanged?:(tab:BrowserTab, url:string) => void,
+    sdb:SDB,
     pageTitleChanged?:(tab:BrowserTab, title:string) => void
 };
 type BrowserTabState = {
@@ -27,6 +31,8 @@ type BrowserTabState = {
 export class BrowserTab extends React.Component<BrowserTabProps, BrowserTabState> {
     public webViewEl:JSX.Element;
     public webView:Electron.WebviewTag;
+    private sdbTabId:CRI.TabID;
+    private tabDoc;
     constructor(props) {
         super(props);
         this.state = {
@@ -39,6 +45,18 @@ export class BrowserTab extends React.Component<BrowserTabProps, BrowserTabState
             isLoading:false
         };
         this.webViewEl = <webview id={`${this.props.tabID}`} key={this.props.tabID} ref={this.webViewRef} src={this.props.startURL}/>;
+    };
+    public hasSDBTabID():boolean {
+        return !!this.sdbTabId;
+    };
+    public getSDBTabID():CRI.TabID { return this.sdbTabId; };
+    public async setSDBTabID(id:CRI.TabID):Promise<void> {
+        this.sdbTabId = id;
+        if(this.tabDoc) {
+            this.tabDoc.destroy();
+        }
+        const sdb:SDB = this.props.sdb;
+        this.tabDoc = sdb.get<TabDoc>('tabs', this.getSDBTabID());
     };
 
     public getTabID() {

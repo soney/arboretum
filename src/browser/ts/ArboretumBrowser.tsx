@@ -7,6 +7,7 @@ import {ipcRenderer, remote, BrowserWindow} from 'electron';
 import * as url from 'url';
 import * as _ from 'underscore';
 import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
+import * as ShareDB from 'sharedb';
 import {ArboretumChat} from '../../utils/ArboretumChat';
 import {BrowserDoc} from '../../utils/state_interfaces';
 
@@ -106,6 +107,10 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
             this.socket = new WebSocket(wsAddress);
             this.sdb = new SDB(true, this.socket);
             this.doc = this.sdb.get<BrowserDoc>('arboretum', 'browser');
+            this.doc.subscribe((ops?:Array<ShareDB.Op>, source?:boolean, data?:BrowserDoc) => {
+                const {tabs} = data;
+                const tabObjects:Array<CRI.TabInfo> = _.values(data.tabs);
+            });
 
             if(this.sidebar) {
                 this.sidebar.setSDB(this.sdb);
@@ -251,7 +256,7 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
 
     public render():React.ReactNode {
         const tabs = this.state.tabs.map((info, index) =>
-                        <BrowserTab ref={this.tabRef} selected={info.selected} key={info.id} tabID={info.id} startURL={info.url} onSelect={this.selectTab} onClose={this.closeTab} pageTitleChanged={this.pageTitleChanged} urlChanged={this.tabURLChanged} isLoadingChanged={this.tabIsLoadingChanged} canGoBackChanged={this.tabCanGoBackChanged} canGoForwardChanged={this.tabCanGoForwardChanged} />);
+                        <BrowserTab sdb={this.sdb} ref={this.tabRef} selected={info.selected} key={info.id} tabID={info.id} startURL={info.url} onSelect={this.selectTab} onClose={this.closeTab} pageTitleChanged={this.pageTitleChanged} urlChanged={this.tabURLChanged} isLoadingChanged={this.tabIsLoadingChanged} canGoBackChanged={this.tabCanGoBackChanged} canGoForwardChanged={this.tabCanGoForwardChanged} />);
         return <div className="window">
             <header className="toolbar toolbar-header">
                 <div id="tabsBar" className="tab-group">
