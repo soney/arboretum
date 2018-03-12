@@ -146,7 +146,6 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
             return <span key={u.id} className={`participant ${isMe?'me':''}`} style={style}>{u.displayName}</span>;
         });
         return <div className='chat'>
-            <h6 id="task_title"><span className="icon icon-chat"></span><span id='task-name'>Chat</span></h6>
             <div id="chat-participants">{users}</div>
             <ul id="chat-lines">
                 {messages.filter(m => !!m)}

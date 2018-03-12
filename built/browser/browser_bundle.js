@@ -25914,9 +25914,6 @@ class ArboretumChatBox extends React.Component {
             return React.createElement("span", { key: u.id, className: `participant ${isMe ? 'me' : ''}`, style: style }, u.displayName);
         });
         return React.createElement("div", { className: 'chat' },
-            React.createElement("h6", { id: "task_title" },
-                React.createElement("span", { className: "icon icon-chat" }),
-                React.createElement("span", { id: 'task-name' }, "Chat")),
             React.createElement("div", { id: "chat-participants" }, users),
             React.createElement("ul", { id: "chat-lines" },
                 messages.filter(m => !!m),
@@ -27691,6 +27688,8 @@ class BrowserNavigationBar extends React.Component {
     }
     ;
     render() {
+        console.log(this.state.canGoBack);
+        console.log(this.state.canGoForward);
         const toggleSidebarButton = this.props.showSidebarToggle ? React.createElement("button", { onClick: this.toggleSidebarClicked, className: 'btn btn-default btn-mini', id: 'task' },
             React.createElement("span", { className: 'icon icon-publish' })) : null;
         return React.createElement("div", { className: "toolbar toolbar-header", id: "navBar" },
@@ -28318,6 +28317,7 @@ json.checkList = function(elem) {
 
 json.checkObj = function(elem) {
   if (!isObject(elem)) {
+    debugger;
     throw new Error("Referenced element not an object (it was " + JSON.stringify(elem) + ")");
   }
 };
@@ -28365,6 +28365,7 @@ json.apply = function(snapshot, op) {
 
       parent = elem;
       parentKey = key;
+      if(!elem) { debugger; }
       elem = elem[key];
       key = p;
 
