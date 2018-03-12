@@ -329,7 +329,7 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             this.createFrameState(frame, null, childFrames, resources);
             yield this.refreshRoot();
             yield this.addFrameListeners();
-            yield this.addNetworkListeners();
+            // await this.addNetworkListeners();
             yield this.addDOMListeners();
             // this.addNetworkListeners();
             yield this.addExecutionContextListeners();

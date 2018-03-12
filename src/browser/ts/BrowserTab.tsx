@@ -1,6 +1,8 @@
 import * as React from 'react';
 import * as _ from 'underscore';
 import {BrowserTabID} from './ArboretumBrowser';
+import {ShareDBDOMNode, TabDoc, BrowserDoc, CanvasImage} from '../../utils/state_interfaces';
+import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
 
 type BrowserTabProps = {
     startURL:string,
@@ -27,6 +29,7 @@ type BrowserTabState = {
 export class BrowserTab extends React.Component<BrowserTabProps, BrowserTabState> {
     public webViewEl:JSX.Element;
     public webView:Electron.WebviewTag;
+    private tabDoc:SDBDoc<TabDoc>;
     constructor(props) {
         super(props);
         this.state = {
@@ -39,6 +42,7 @@ export class BrowserTab extends React.Component<BrowserTabProps, BrowserTabState
             isLoading:false
         };
         this.webViewEl = <webview id={`${this.props.tabID}`} key={this.props.tabID} ref={this.webViewRef} src={this.props.startURL}/>;
+        this.tabDoc = this.props.sdb.get<TabDoc>('tab', this.state.tabID);
     };
 
     public getTabID() {
