@@ -25,5 +25,10 @@ export interface ShareDBDOMNode {
 
 export interface TabDoc {
     root:ShareDBDOMNode,
-    id:CRI.TabID
+    id:CRI.TabID,
+    canGoBack:boolean,
+    canGoForward:boolean,
+    url:string,
+    title:string,
+    isLoading:boolean
 };

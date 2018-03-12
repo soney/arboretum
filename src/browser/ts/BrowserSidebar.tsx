@@ -3,6 +3,7 @@ import {ArboretumChatBox} from '../../utils/browserControls/ArboretumChatBox';
 import * as Clipboard from 'clipboard';
 import Switch from 'react-switch';
 import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
+import {ArboretumChat, Message, User, TextMessage, PageActionMessage} from '../../utils/ArboretumChat';
 
 const ENTER_KEY:number = 13;
 
@@ -17,6 +18,7 @@ type BrowserSidebarProps = {
     setServerActive?:(active:boolean)=>Promise<SetServerActiveValue>,
     onSendMessage?:(message:string)=>void,
     onPostTask?:(sandbox:boolean)=>void,
+    onAction?:(pam:PageActionMessage)=>void,
     shareURL:string,
     adminURL:string
 };
@@ -83,6 +85,9 @@ export class BrowserSidebar extends React.Component<BrowserSidebarProps, Browser
             this.chatbox.setSDB(sdb);
         }
     };
+    private onAction = (pam:PageActionMessage):void => {
+        if(this.props.onAction) { this.props.onAction(pam); }
+    };
     public render():React.ReactNode {
         return <div className='sidebar'>
             <table id="server-controls">
@@ -123,7 +128,7 @@ export class BrowserSidebar extends React.Component<BrowserSidebarProps, Browser
                     </tr>
                 </tbody>
             </table>
-            <ArboretumChatBox username="Admin" ref={this.chatBoxRef} onSendMessage={this.sendMessage} />
+            <ArboretumChatBox isAdmin={true} username="Admin" ref={this.chatBoxRef} onSendMessage={this.sendMessage} onAction={this.onAction} />
         </div>;
     };
 };

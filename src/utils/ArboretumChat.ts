@@ -8,6 +8,7 @@ export const userColors:Array<Array<Color>> = [
     ['#A80000', '#B05E0D', '#C19C00', '#107C10', '#038387', '#004E8C', '#5C126B' ]
 ];
 export enum TypingStatus { IDLE, ACTIVE, IDLE_TYPED };
+export type PageAction ='navigate'|'goBack'|'goForward'|'click'|'reload';
 
 export type UserID = string;
 export interface User {
@@ -19,10 +20,16 @@ export interface User {
 };
 export interface Message {
     sender:User,
-    timestamp:number,
-    content?:string
+    timestamp?:number,
+    id?:number,
 };
-export interface TextMessage extends Message{
+export interface TextMessage extends Message {
+    content:string
+};
+export interface PageActionMessage extends Message {
+    action:PageAction,
+    data:any,
+    performed:boolean
 };
 
 export interface ChatDoc {
@@ -50,6 +57,7 @@ export interface ReadyEvent { };
 
 export class ArboretumChat extends TypedEventEmitter {
     private static userCounter:number = 1;
+    private static messageCounter:number = 1;
     private doc:SDBDoc<ChatDoc>;
     public initialized:Promise<void>;
     private meUser:User;
@@ -117,18 +125,35 @@ export class ArboretumChat extends TypedEventEmitter {
         const user:User = {id, color, displayName, present, typing:TypingStatus.IDLE};
         await this.initialized;
 
-        const data:ChatDoc = this.doc.getData();
-        await this.doc.submitOp([{p:['users', data.users.length], li:user}]);
+        await this.doc.submitListPushOp(['users'], user);
         if(isMe) { this.meUser = user; }
         return user;
     };
-    public async addTextMessage(content:string, sender:User=this.getMe()):Promise<void> {
+    private async addMesssage(message:Message) {
         await this.initialized;
-
         const timestamp:number = (new Date()).getTime()
-        const data:ChatDoc = this.doc.getData();
-        const message:TextMessage = {sender, timestamp, content};
-        await this.doc.submitOp([{p:['messages', data.messages.length], li:message}]);
+        message.timestamp = (new Date()).getTime();
+        message.id = ArboretumChat.messageCounter++;
+        this.doc.submitListPushOp(['messages'], message);
+    };
+    public async addTextMessage(content:string, sender:User=this.getMe()):Promise<void> {
+        const message:TextMessage = {sender, content};
+        this.addMesssage(message);
+    };
+    public async addPageActionMessage(action:PageAction, data:any, sender:User=this.getMe()):Promise<void> {
+        const message:PageActionMessage = {sender, action, data, performed:false}
+        this.addMesssage(message);
+    };
+    public async markPerformed(pam:PageActionMessage, performed:boolean=true):Promise<void> {
+        const messages = await this.getMessages();
+        const {id} = pam;
+        for(let i = 0; i<messages.length; i++) {
+            const message:Message = messages[i];
+            if(message.id === id) {
+                this.doc.submitObjectReplaceOp(['messages', i, 'performed'], performed);
+                break;
+            }
+        }
     };
     private async getUserIndex(user:User):Promise<number> {
         await this.initialized;
@@ -145,8 +170,7 @@ export class ArboretumChat extends TypedEventEmitter {
         await this.initialized;
         const data:ChatDoc = this.doc.getData();
         const userIndex:number = await this.getUserIndex(user);
-        const oldValue = data.users[userIndex].present;
-        await this.doc.submitOp([{p:['users', userIndex, 'present'], od:oldValue, oi:false}]);
+        await this.doc.submitObjectReplaceOp(['users', userIndex, 'present'], false);
     };
     public async leave():Promise<void> {
         await this.markUserNotPresent(this.getMe());
@@ -155,8 +179,7 @@ export class ArboretumChat extends TypedEventEmitter {
         await this.initialized;
         const data:ChatDoc = this.doc.getData();
         const userIndex:number = await this.getUserIndex(user);
-        const oldValue = data.users[userIndex].typing;
-        await this.doc.submitOp([{p:['users', userIndex, 'typing'], od:oldValue, oi:typingStatus}]);
+        await this.doc.submitObjectReplaceOp(['users', userIndex, 'typing'], typingStatus);
     };
     public async getMessages():Promise<Array<Message>> {
         await this.initialized;

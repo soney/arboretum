@@ -25194,6 +25194,19 @@ class ArboretumBrowser extends React.Component {
                 this.doc.subscribe((ops, source, data) => {
                     const { tabs } = data;
                     const tabObjects = _.values(data.tabs);
+                    const unmatchedTabIDs = new Set(tabObjects.map((t) => t.id));
+                    const unmatchedTabs = new Set(this.tabs.values());
+                    unmatchedTabs.forEach((tab) => {
+                        if (tab.hasSDBTabID()) {
+                            unmatchedTabs.delete(tab);
+                            unmatchedTabIDs.delete(tab.getSDBTabID());
+                        }
+                    });
+                    if (unmatchedTabIDs.size === 1 && unmatchedTabs.size === 1) {
+                        const tabID = Array.from(unmatchedTabIDs.values())[0];
+                        const tab = Array.from(unmatchedTabs.values())[0];
+                        tab.setSDBTabID(tabID);
+                    }
                 });
                 if (this.sidebar) {
                     this.sidebar.setSDB(this.sdb);
@@ -25324,6 +25337,13 @@ class ArboretumBrowser extends React.Component {
             this.sidebar = sidebar;
             this.setServerActive(this.state.serverActive);
         };
+        this.onAction = (pam) => {
+            const { action } = pam;
+            if (action === 'navigate') {
+                const { url } = pam.data;
+                this.navigate(url);
+            }
+        };
         this.state = {
             tabs: this.props.urls.map((url, index) => {
                 return {
@@ -25392,16 +25412,16 @@ class ArboretumBrowser extends React.Component {
     render() {
         const tabs = this.state.tabs.map((info, index) => React.createElement(BrowserTab_1.BrowserTab, { sdb: this.sdb, ref: this.tabRef, selected: info.selected, key: info.id, tabID: info.id, startURL: info.url, onSelect: this.selectTab, onClose: this.closeTab, pageTitleChanged: this.pageTitleChanged, urlChanged: this.tabURLChanged, isLoadingChanged: this.tabIsLoadingChanged, canGoBackChanged: this.tabCanGoBackChanged, canGoForwardChanged: this.tabCanGoForwardChanged }));
         return React.createElement("div", { className: "window" },
-            React.createElement("header", { className: "toolbar toolbar-header" },
-                React.createElement("div", { id: "tabsBar", className: "tab-group" },
-                    React.createElement("div", { id: 'buttonSpacer', className: "tab-item tab-item-fixed" }, " "),
-                    tabs,
-                    React.createElement("div", { onClick: this.addTab, className: "tab-item tab-item-fixed", id: 'addTab' },
-                        React.createElement("span", { className: "icon icon-plus" }))),
+            React.createElement("div", { id: "tabsBar", className: "tab-group" },
+                React.createElement("div", { id: 'buttonSpacer', className: "tab-item tab-item-fixed" }, " "),
+                tabs,
+                React.createElement("div", { onClick: this.addTab, className: "tab-item tab-item-fixed", id: 'addTab' },
+                    React.createElement("span", { className: "icon icon-plus" }))),
+            React.createElement("header", null,
                 React.createElement(BrowserNavigationBar_1.BrowserNavigationBar, { ref: this.navBarRef, onBack: this.goBack, onForward: this.goForward, onReload: this.reload, showSidebarToggle: false, onToggleSidebar: this.toggleSidebar, onNavigate: this.navigate })),
             React.createElement("div", { className: "window-content" },
                 React.createElement("div", { className: "pane-group" },
-                    React.createElement(BrowserSidebar_1.BrowserSidebar, { shareURL: this.state.shareURL, adminURL: this.state.adminURL, ref: this.sidebarRef, setServerActive: this.setServerActive, isVisible: this.state.showingSidebar, serverActive: this.state.serverActive, onPostTask: this.postTask }),
+                    React.createElement(BrowserSidebar_1.BrowserSidebar, { onAction: this.onAction, shareURL: this.state.shareURL, adminURL: this.state.adminURL, ref: this.sidebarRef, setServerActive: this.setServerActive, isVisible: this.state.showingSidebar, serverActive: this.state.serverActive, onPostTask: this.postTask }),
                     React.createElement("div", { id: "browser-pane", className: "pane" },
                         React.createElement("div", { id: "content" }, this.state.webViews)))));
     }
@@ -25434,14 +25454,17 @@ class BrowserTab extends React.Component {
         this.webViewRef = (el) => {
             if (el) {
                 this.webView = el;
-                this.webView.addEventListener('page-title-updated', (event) => {
+                this.webView.addEventListener('page-title-updated', (event) => __awaiter(this, void 0, void 0, function* () {
                     const { title } = event;
                     this.setState({ title });
                     if (this.props.pageTitleChanged) {
                         this.props.pageTitleChanged(this, title);
                     }
-                });
-                this.webView.addEventListener('load-commit', (event) => {
+                    if (this.tabDoc) {
+                        yield this.tabDoc.submitObjectReplaceOp(['title'], title);
+                    }
+                }));
+                this.webView.addEventListener('load-commit', (event) => __awaiter(this, void 0, void 0, function* () {
                     const { isMainFrame, url } = event;
                     if (isMainFrame) {
                         const loadedURL = url;
@@ -25449,8 +25472,12 @@ class BrowserTab extends React.Component {
                             this.props.urlChanged(this, url);
                         }
                         this.setState({ loadedURL });
+                        if (this.tabDoc) {
+                            yield this.tabDoc.submitObjectReplaceOp(['url'], loadedURL);
+                        }
+                        this.updateCanGos();
                     }
-                });
+                }));
                 this.webView.addEventListener('page-favicon-updated', (event) => {
                     const { favicons } = event;
                     const favIconURL = favicons[0];
@@ -25461,12 +25488,14 @@ class BrowserTab extends React.Component {
                     if (this.props.isLoadingChanged) {
                         this.props.isLoadingChanged(this, true);
                     }
+                    this.updateCanGos();
                 });
                 this.webView.addEventListener('did-stop-loading', (event) => {
                     this.setState({ isLoading: false });
                     if (this.props.isLoadingChanged) {
                         this.props.isLoadingChanged(this, false);
                     }
+                    this.updateCanGos();
                 });
             }
         };
@@ -25506,7 +25535,23 @@ class BrowserTab extends React.Component {
                 this.tabDoc.destroy();
             }
             const sdb = this.props.sdb;
-            this.tabDoc = sdb.get('tabs', this.getSDBTabID());
+            this.tabDoc = yield sdb.get('tab', this.getSDBTabID());
+            yield this.tabDoc.createIfEmpty({
+                id: this.getSDBTabID(),
+                root: null,
+                canGoBack: false,
+                canGoForward: false,
+                url: '',
+                title: '',
+                isLoading: false
+            });
+            yield Promise.all([
+                this.tabDoc.submitObjectReplaceOp(['canGoBack'], this.state.canGoBack),
+                this.tabDoc.submitObjectReplaceOp(['canGoForward'], this.state.canGoForward),
+                this.tabDoc.submitObjectReplaceOp(['isLoading'], this.state.isLoading),
+                this.tabDoc.submitObjectReplaceOp(['title'], this.state.title),
+                this.tabDoc.submitObjectReplaceOp(['url'], this.state.loadedURL)
+            ]);
         });
     }
     ;
@@ -25514,25 +25559,63 @@ class BrowserTab extends React.Component {
         return this.props.tabID;
     }
     ;
+    updateCanGos() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const canGoBack = this.webView.canGoBack();
+            const canGoForward = this.webView.canGoForward();
+            if (canGoBack !== this.state.canGoBack) {
+                this.setState({ canGoBack });
+                if (this.tabDoc) {
+                    yield this.tabDoc.submitObjectReplaceOp(['canGoBack'], canGoBack);
+                }
+                if (this.props.canGoBackChanged) {
+                    this.props.canGoBackChanged(this, canGoBack);
+                }
+            }
+            if (canGoForward !== this.state.canGoForward) {
+                this.setState({ canGoForward });
+                if (this.tabDoc) {
+                    yield this.tabDoc.submitObjectReplaceOp(['canGoForward'], canGoForward);
+                }
+                if (this.props.canGoForwardChanged) {
+                    this.props.canGoForwardChanged(this, canGoForward);
+                }
+            }
+        });
+    }
+    ;
     markSelected(selected = true) {
         this.setState(_.extend(this.state, { selected }));
     }
     ;
     goBack() {
-        this.webView.goBack();
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.webView.canGoBack()) {
+                this.webView.goBack();
+            }
+        });
     }
     ;
     goForward() {
-        this.webView.goForward();
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.webView.canGoForward()) {
+                this.webView.goForward();
+            }
+        });
     }
     ;
     reload() {
-        if (this.webView.isLoading()) {
-            this.webView.stop();
-        }
-        else {
-            this.webView.reload();
-        }
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.webView.isLoading()) {
+                this.webView.stop();
+            }
+            else {
+                this.webView.reload();
+            }
+            if (this.tabDoc) {
+                yield this.tabDoc.submitObjectReplaceOp(['isLoading'], this.webView.isLoading());
+            }
+        });
     }
     ;
     navigate(url, options) {
@@ -25615,6 +25698,11 @@ class BrowserSidebar extends React.Component {
         this.chatBoxRef = (chatbox) => {
             this.chatbox = chatbox;
         };
+        this.onAction = (pam) => {
+            if (this.props.onAction) {
+                this.props.onAction(pam);
+            }
+        };
         this.state = {
             isVisible: this.props.isVisible,
             serverActive: this.props.serverActive,
@@ -25665,7 +25753,7 @@ class BrowserSidebar extends React.Component {
                             React.createElement("label", null,
                                 React.createElement("input", { type: "checkbox", name: "sandbox", value: "sandbox", id: "sandbox", checked: this.state.sandbox, onChange: this.onSandboxChange }),
                                 " Sandbox"))))),
-            React.createElement(ArboretumChatBox_1.ArboretumChatBox, { username: "Admin", ref: this.chatBoxRef, onSendMessage: this.sendMessage }));
+            React.createElement(ArboretumChatBox_1.ArboretumChatBox, { isAdmin: true, username: "Admin", ref: this.chatBoxRef, onSendMessage: this.sendMessage, onAction: this.onAction }));
     }
     ;
 }
@@ -25722,6 +25810,12 @@ class ArboretumChatBox extends React.Component {
         this.onTextareaChange = (event) => {
             this.setState({ chatText: event.target.value });
         };
+        this.performAction = (pam) => {
+            this.getChat().markPerformed(pam);
+            if (this.props.onAction) {
+                this.props.onAction(pam);
+            }
+        };
         this.state = {
             chatText: this.props.chatText || '',
             messages: [],
@@ -25733,6 +25827,7 @@ class ArboretumChatBox extends React.Component {
         window.addEventListener('beforeunload', () => this.leave());
     }
     ;
+    getChat() { return this.chat; }
     setSDB(sdb) {
         return __awaiter(this, void 0, void 0, function* () {
             this.sdb = sdb;
@@ -25774,9 +25869,37 @@ class ArboretumChatBox extends React.Component {
     render() {
         const messages = this.state.messages.map((m, i) => {
             const senderStyle = { color: m.sender.color };
-            return React.createElement("li", { key: i, className: 'chat-line' },
-                React.createElement("span", { style: senderStyle, className: 'from' }, m.sender.displayName),
-                React.createElement("span", { className: 'message' }, m.content));
+            if (m['content']) {
+                const tm = m;
+                return React.createElement("li", { key: i, className: 'chat-line' },
+                    React.createElement("span", { style: senderStyle, className: 'from' }, tm.sender.displayName),
+                    React.createElement("span", { className: 'message' }, tm.content));
+            }
+            else if (m['action']) {
+                const pam = m;
+                const { action, data, performed } = pam;
+                let description;
+                let actions;
+                if (action === 'navigate') {
+                    const { url } = data;
+                    description = React.createElement("span", { className: 'navigate description' },
+                        "navigate to ",
+                        url);
+                }
+                if (performed) {
+                    actions = React.createElement("div", { className: '' }, "(accepted)");
+                }
+                else {
+                    actions = React.createElement("div", { className: 'messageAction' },
+                        React.createElement("a", { href: "javascript:void(0)", onClick: this.performAction.bind(this, pam) }, "Accept"));
+                }
+                return React.createElement("li", { key: i, className: 'chat-line action' + (performed ? ' performed' : '') + (this.props.isAdmin ? ' admin' : ' not_admin') },
+                    React.createElement("span", { style: senderStyle, className: 'from' }, pam.sender.displayName),
+                    " wants to ",
+                    description,
+                    ".",
+                    actions);
+            }
         });
         let meUserID;
         if (this.chat) {
@@ -25796,7 +25919,7 @@ class ArboretumChatBox extends React.Component {
                 React.createElement("span", { id: 'task-name' }, "Chat")),
             React.createElement("div", { id: "chat-participants" }, users),
             React.createElement("ul", { id: "chat-lines" },
-                messages,
+                messages.filter(m => !!m),
                 React.createElement("li", { style: { float: "left", clear: "both" }, ref: (el) => { this.messagesEnd = el; } })),
             React.createElement("form", { id: "chat-form" },
                 React.createElement("textarea", { id: "chat-box", className: "form-control", placeholder: "Send a message", onChange: this.onTextareaChange, onKeyDown: this.chatKeyDown, value: this.state.chatText })));
@@ -25834,6 +25957,7 @@ var TypingStatus;
     TypingStatus[TypingStatus["ACTIVE"] = 1] = "ACTIVE";
     TypingStatus[TypingStatus["IDLE_TYPED"] = 2] = "IDLE_TYPED";
 })(TypingStatus = exports.TypingStatus || (exports.TypingStatus = {}));
+;
 ;
 ;
 ;
@@ -25925,8 +26049,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             const color = yield this.getColor(id);
             const user = { id, color, displayName, present, typing: TypingStatus.IDLE };
             yield this.initialized;
-            const data = this.doc.getData();
-            yield this.doc.submitOp([{ p: ['users', data.users.length], li: user }]);
+            yield this.doc.submitListPushOp(['users'], user);
             if (isMe) {
                 this.meUser = user;
             }
@@ -25934,13 +26057,41 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         });
     }
     ;
-    addTextMessage(content, sender = this.getMe()) {
+    addMesssage(message) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.initialized;
             const timestamp = (new Date()).getTime();
-            const data = this.doc.getData();
-            const message = { sender, timestamp, content };
-            yield this.doc.submitOp([{ p: ['messages', data.messages.length], li: message }]);
+            message.timestamp = (new Date()).getTime();
+            message.id = ArboretumChat.messageCounter++;
+            this.doc.submitListPushOp(['messages'], message);
+        });
+    }
+    ;
+    addTextMessage(content, sender = this.getMe()) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const message = { sender, content };
+            this.addMesssage(message);
+        });
+    }
+    ;
+    addPageActionMessage(action, data, sender = this.getMe()) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const message = { sender, action, data, performed: false };
+            this.addMesssage(message);
+        });
+    }
+    ;
+    markPerformed(pam, performed = true) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const messages = yield this.getMessages();
+            const { id } = pam;
+            for (let i = 0; i < messages.length; i++) {
+                const message = messages[i];
+                if (message.id === id) {
+                    this.doc.submitObjectReplaceOp(['messages', i, 'performed'], performed);
+                    break;
+                }
+            }
         });
     }
     ;
@@ -25963,8 +26114,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             yield this.initialized;
             const data = this.doc.getData();
             const userIndex = yield this.getUserIndex(user);
-            const oldValue = data.users[userIndex].present;
-            yield this.doc.submitOp([{ p: ['users', userIndex, 'present'], od: oldValue, oi: false }]);
+            yield this.doc.submitObjectReplaceOp(['users', userIndex, 'present'], false);
         });
     }
     ;
@@ -25979,8 +26129,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             yield this.initialized;
             const data = this.doc.getData();
             const userIndex = yield this.getUserIndex(user);
-            const oldValue = data.users[userIndex].typing;
-            yield this.doc.submitOp([{ p: ['users', userIndex, 'typing'], od: oldValue, oi: typingStatus }]);
+            yield this.doc.submitObjectReplaceOp(['users', userIndex, 'typing'], typingStatus);
         });
     }
     ;
@@ -26008,6 +26157,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
     ;
 }
 ArboretumChat.userCounter = 1;
+ArboretumChat.messageCounter = 1;
 exports.ArboretumChat = ArboretumChat;
 ;
 
@@ -26218,7 +26368,7 @@ exports = module.exports = __webpack_require__(13)(true);
 
 
 // module
-exports.push([module.i, ".chat {\n  font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n  flex: 1 0 auto;\n  display: flex;\n  flex-direction: column;\n  height: 100%; }\n  .chat #task_title {\n    flex: 0 0;\n    box-sizing: border-box;\n    padding: 5px 10px 5px;\n    margin: 0px; }\n  .chat #chat-participants {\n    flex: 0 0;\n    border-bottom: 1px solid #CCC;\n    padding: 5px 10px 5px;\n    box-sizing: border-box; }\n    .chat #chat-participants .participant {\n      margin: 2px; }\n      .chat #chat-participants .participant.me {\n        font-weight: bold;\n        text-decoration: underline; }\n  .chat #chat-lines {\n    flex: 2 0;\n    box-sizing: border-box;\n    padding: 0px 10px 0px;\n    margin: 0px;\n    overflow-y: auto; }\n    .chat #chat-lines li {\n      list-style-type: none; }\n    .chat #chat-lines .chat-line {\n      font-size: 0.9em;\n      list-style-type: none;\n      list-style-type: none;\n      margin-top: 2px;\n      padding-top: 2px;\n      margin-bottom: 2px;\n      padding-bottom: 2px;\n      color: #555; }\n      .chat #chat-lines .chat-line .from {\n        font-weight: bold; }\n      .chat #chat-lines .chat-line .from::after {\n        content: \": \"; }\n  .chat #chat-form {\n    padding: 0px 2px 0px;\n    flex: 0; }\n    .chat #chat-form textarea#chat-box {\n      box-sizing: border-box;\n      resize: none;\n      flex-grow: 1;\n      width: 100%;\n      font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n      padding: 5px 10px 5px; }\n    .chat #chat-form .form-actions {\n      text-align: right; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/utils/browserControls/src/utils/browserControls/ArboretumChat.scss"],"names":[],"mappings":"AAAA;EACI,gHAA+G;EAC/G,eAAc;EACd,cAAa;EACb,uBAAsB;EACtB,aAAY,EA8Df;EAnED;IAQQ,UAAS;IACT,uBAAsB;IACtB,sBAAqB;IACrB,YAAW,EACd;EAZL;IAcQ,UAAS;IACT,8BAA6B;IAC7B,sBAAqB;IACrB,uBAAsB,EAQzB;IAzBL;MAmBY,YAAW,EAKd;MAxBT;QAqBgB,kBAAiB;QACjB,2BAA0B,EAC7B;EAvBb;IA2BQ,UAAS;IACT,uBAAsB;IACtB,sBAAqB;IACrB,YAAW;IACX,iBAAgB,EAoBnB;IAnDL;MAiCY,sBAAqB,EACxB;IAlCT;MAoCY,iBAAgB;MAChB,sBAAqB;MACrB,sBAAqB;MACrB,gBAAe;MACf,iBAAgB;MAChB,mBAAkB;MAClB,oBAAmB;MACnB,YAAW,EAOd;MAlDT;QA6CgB,kBAAiB,EACpB;MA9Cb;QAgDgB,cAAa,EAChB;EAjDb;IAqDQ,qBAAoB;IACpB,QAAO,EAYV;IAlEL;MAwDY,uBAAsB;MACtB,aAAY;MACZ,aAAY;MACZ,YAAW;MACX,gHAA+G;MAC/G,sBAAqB,EACxB;IA9DT;MAgEY,kBAAiB,EACpB","file":"ArboretumChat.scss","sourcesContent":[".chat {\n    font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n    flex: 1 0 auto;\n    display: flex;\n    flex-direction: column;\n    height: 100%;\n\n    #task_title {\n        flex: 0 0;\n        box-sizing: border-box;\n        padding: 5px 10px 5px;\n        margin: 0px;\n    }\n    #chat-participants {\n        flex: 0 0;\n        border-bottom: 1px solid #CCC;\n        padding: 5px 10px 5px;\n        box-sizing: border-box;\n        .participant {\n            margin: 2px;\n            &.me {\n                font-weight: bold;\n                text-decoration: underline;\n            }\n        }\n    }\n    #chat-lines {\n        flex: 2 0;\n        box-sizing: border-box;\n        padding: 0px 10px 0px;\n        margin: 0px;\n        overflow-y: auto;\n        li {\n            list-style-type: none;\n        }\n        .chat-line {\n            font-size: 0.9em;\n            list-style-type: none;\n            list-style-type: none;\n            margin-top: 2px;\n            padding-top: 2px;\n            margin-bottom: 2px;\n            padding-bottom: 2px;\n            color: #555;\n            .from {\n                font-weight: bold;\n            }\n            .from::after {\n                content: \": \";\n            }\n        }\n    }\n    #chat-form {\n        padding: 0px 2px 0px;\n        flex: 0;\n        textarea#chat-box {\n            box-sizing: border-box;\n            resize: none;\n            flex-grow: 1;\n            width: 100%;\n            font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n            padding: 5px 10px 5px;\n        }\n        .form-actions {\n            text-align: right;\n        }\n    }\n}\n"],"sourceRoot":""}]);
+exports.push([module.i, ".chat {\n  font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n  flex: 1 0 auto;\n  display: flex;\n  flex-direction: column; }\n  .chat #task_title {\n    flex: 0 0;\n    box-sizing: border-box;\n    padding: 5px 10px 5px;\n    margin: 0px; }\n  .chat #chat-participants {\n    flex: 0 0;\n    border-bottom: 1px solid #CCC;\n    padding: 5px 10px 5px;\n    box-sizing: border-box; }\n    .chat #chat-participants .participant {\n      margin: 2px; }\n      .chat #chat-participants .participant.me {\n        font-weight: bold;\n        text-decoration: underline; }\n  .chat #chat-lines {\n    flex: 2 0;\n    box-sizing: border-box;\n    padding: 0px 10px 0px;\n    margin: 0px;\n    overflow-y: auto; }\n    .chat #chat-lines li {\n      list-style-type: none; }\n    .chat #chat-lines .chat-line {\n      font-size: 0.9em;\n      list-style-type: none;\n      list-style-type: none;\n      margin-top: 2px;\n      padding-top: 2px;\n      margin-bottom: 2px;\n      padding-bottom: 2px;\n      color: #555; }\n      .chat #chat-lines .chat-line.action {\n        color: #888; }\n        .chat #chat-lines .chat-line.action.not_admin .messageAction {\n          display: none; }\n      .chat #chat-lines .chat-line:not(.action) .from {\n        font-weight: bold; }\n      .chat #chat-lines .chat-line:not(.action) .from::after {\n        content: \": \"; }\n  .chat #chat-form {\n    padding: 0px 2px 0px;\n    flex: 0; }\n    .chat #chat-form textarea#chat-box {\n      box-sizing: border-box;\n      resize: none;\n      flex-grow: 1;\n      width: 100%;\n      font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n      padding: 5px 10px 5px; }\n    .chat #chat-form .form-actions {\n      text-align: right; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/utils/browserControls/src/utils/browserControls/ArboretumChat.scss"],"names":[],"mappings":"AAAA;EACI,gHAA+G;EAC/G,eAAc;EACd,cAAa;EACb,uBAAsB,EAwEzB;EA5ED;IAOQ,UAAS;IACT,uBAAsB;IACtB,sBAAqB;IACrB,YAAW,EACd;EAXL;IAaQ,UAAS;IACT,8BAA6B;IAC7B,sBAAqB;IACrB,uBAAsB,EAQzB;IAxBL;MAkBY,YAAW,EAKd;MAvBT;QAoBgB,kBAAiB;QACjB,2BAA0B,EAC7B;EAtBb;IA0BQ,UAAS;IACT,uBAAsB;IACtB,sBAAqB;IACrB,YAAW;IACX,iBAAgB,EA8BnB;IA5DL;MAgCY,sBAAqB,EACxB;IAjCT;MAmCY,iBAAgB;MAChB,sBAAqB;MACrB,sBAAqB;MACrB,gBAAe;MACf,iBAAgB;MAChB,mBAAkB;MAClB,oBAAmB;MACnB,YAAW,EAiBd;MA3DT;QA4CgB,YAAW,EAMd;QAlDb;UA+CwB,cAAa,EAChB;MAhDrB;QAqDoB,kBAAiB,EACpB;MAtDjB;QAwDoB,cAAa,EAChB;EAzDjB;IA8DQ,qBAAoB;IACpB,QAAO,EAYV;IA3EL;MAiEY,uBAAsB;MACtB,aAAY;MACZ,aAAY;MACZ,YAAW;MACX,gHAA+G;MAC/G,sBAAqB,EACxB;IAvET;MAyEY,kBAAiB,EACpB","file":"ArboretumChat.scss","sourcesContent":[".chat {\n    font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n    flex: 1 0 auto;\n    display: flex;\n    flex-direction: column;\n\n    #task_title {\n        flex: 0 0;\n        box-sizing: border-box;\n        padding: 5px 10px 5px;\n        margin: 0px;\n    }\n    #chat-participants {\n        flex: 0 0;\n        border-bottom: 1px solid #CCC;\n        padding: 5px 10px 5px;\n        box-sizing: border-box;\n        .participant {\n            margin: 2px;\n            &.me {\n                font-weight: bold;\n                text-decoration: underline;\n            }\n        }\n    }\n    #chat-lines {\n        flex: 2 0;\n        box-sizing: border-box;\n        padding: 0px 10px 0px;\n        margin: 0px;\n        overflow-y: auto;\n        li {\n            list-style-type: none;\n        }\n        .chat-line {\n            font-size: 0.9em;\n            list-style-type: none;\n            list-style-type: none;\n            margin-top: 2px;\n            padding-top: 2px;\n            margin-bottom: 2px;\n            padding-bottom: 2px;\n            color: #555;\n            &.action{\n                color: #888;\n                &.not_admin {\n                    .messageAction {\n                        display: none;\n                    }\n                }\n            }\n            &:not(.action) {\n                .from {\n                    font-weight: bold;\n                }\n                .from::after {\n                    content: \": \";\n                }\n            }\n        }\n    }\n    #chat-form {\n        padding: 0px 2px 0px;\n        flex: 0;\n        textarea#chat-box {\n            box-sizing: border-box;\n            resize: none;\n            flex-grow: 1;\n            width: 100%;\n            font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n            padding: 5px 10px 5px;\n        }\n        .form-actions {\n            text-align: right;\n        }\n    }\n}\n"],"sourceRoot":""}]);
 
 // exports
 
@@ -27763,6 +27913,18 @@ class SDBDoc {
     }
     ;
     submitListPushOp(p, ...items) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const arr = this.traverse(p);
+            const previousLength = arr.length;
+            const ops = items.map((x, i) => {
+                const op = { p: p.concat(previousLength + i), li: x };
+                return op;
+            });
+            return yield this.submitOp(ops);
+        });
+    }
+    ;
+    submitListUnshiftOp(p, ...items) {
         return __awaiter(this, void 0, void 0, function* () {
             const arr = this.traverse(p);
             const previousLength = arr.length;

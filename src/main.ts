@@ -30,7 +30,7 @@ const defaultBrowswerWindowOptions = {
     icon: `${__dirname}/resources/logo/icon.png`,
     minWidth: 350,
     minHeight: 250,
-    titleBarStyle: 'hidden', // hides title bar
+    // titleBarStyle: 'hidden', // hides title bar
     // frame: false,            // removes default frame
     title: 'Arboretum',
 };

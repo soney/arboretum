@@ -88,6 +88,15 @@ export class SDBDoc<E> {
         const arr:Array<any> = this.traverse(p);
         const previousLength:number = arr.length;
         const ops:Array<ShareDB.ListInsertOp> = items.map((x:any, i:number) => {
+            const op:ShareDB.ListInsertOp = {p:p.concat(previousLength+i), li:x};
+            return op;
+        });
+        return await this.submitOp(ops);
+    };
+    public async submitListUnshiftOp(p:Array<string|number>, ...items:Array<any>):Promise<void> {
+        const arr:Array<any> = this.traverse(p);
+        const previousLength:number = arr.length;
+        const ops:Array<ShareDB.ListInsertOp> = items.map((x:any, i:number) => {
             const op:ShareDB.ListInsertOp = {p:p.concat(i), li:x};
             return op;
         });

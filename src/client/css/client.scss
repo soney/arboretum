@@ -58,6 +58,9 @@ body {
         }
         #client_body {
             #client_sidebar {
+                .chat {
+                    height: 100%;
+                }
             }
             #client_content {
                 overflow:hidden;

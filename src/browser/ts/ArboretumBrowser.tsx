@@ -8,7 +8,7 @@ import * as url from 'url';
 import * as _ from 'underscore';
 import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
 import * as ShareDB from 'sharedb';
-import {ArboretumChat} from '../../utils/ArboretumChat';
+import {ArboretumChat, PageActionMessage} from '../../utils/ArboretumChat';
 import {BrowserDoc} from '../../utils/state_interfaces';
 
 export type BrowserTabID = number;
@@ -110,6 +110,20 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
             this.doc.subscribe((ops?:Array<ShareDB.Op>, source?:boolean, data?:BrowserDoc) => {
                 const {tabs} = data;
                 const tabObjects:Array<CRI.TabInfo> = _.values(data.tabs);
+                const unmatchedTabIDs:Set<CRI.TabID> = new Set<CRI.TabID>(tabObjects.map((t) => t.id));
+                const unmatchedTabs:Set<BrowserTab> = new Set<BrowserTab>(this.tabs.values());
+                unmatchedTabs.forEach((tab:BrowserTab) => {
+                    if(tab.hasSDBTabID()) {
+                        unmatchedTabs.delete(tab);
+                        unmatchedTabIDs.delete(tab.getSDBTabID());
+                    }
+                });
+
+                if(unmatchedTabIDs.size === 1 && unmatchedTabs.size === 1) {
+                    const tabID:CRI.TabID = Array.from(unmatchedTabIDs.values())[0];
+                    const tab:BrowserTab = Array.from(unmatchedTabs.values())[0];
+                    tab.setSDBTabID(tabID);
+                }
             });
 
             if(this.sidebar) {
@@ -253,12 +267,18 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
         this.sidebar = sidebar;
         this.setServerActive(this.state.serverActive);
     };
+    private onAction = (pam:PageActionMessage):void => {
+        const {action} = pam;
+        if(action === 'navigate') {
+            const {url} = pam.data;
+            this.navigate(url);
+        }
+    };
 
     public render():React.ReactNode {
         const tabs = this.state.tabs.map((info, index) =>
                         <BrowserTab sdb={this.sdb} ref={this.tabRef} selected={info.selected} key={info.id} tabID={info.id} startURL={info.url} onSelect={this.selectTab} onClose={this.closeTab} pageTitleChanged={this.pageTitleChanged} urlChanged={this.tabURLChanged} isLoadingChanged={this.tabIsLoadingChanged} canGoBackChanged={this.tabCanGoBackChanged} canGoForwardChanged={this.tabCanGoForwardChanged} />);
         return <div className="window">
-            <header className="toolbar toolbar-header">
                 <div id="tabsBar" className="tab-group">
                     <div id='buttonSpacer' className="tab-item tab-item-fixed"> </div>
                     {tabs}
@@ -266,11 +286,12 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
                         <span className="icon icon-plus"></span>
                     </div>
                 </div>
+            <header>
                 <BrowserNavigationBar ref={this.navBarRef} onBack={this.goBack} onForward={this.goForward} onReload={this.reload} showSidebarToggle={false} onToggleSidebar={this.toggleSidebar} onNavigate={this.navigate} />
             </header>
             <div className="window-content">
                 <div className="pane-group">
-                    <BrowserSidebar shareURL={this.state.shareURL} adminURL={this.state.adminURL} ref={this.sidebarRef} setServerActive={this.setServerActive} isVisible={this.state.showingSidebar} serverActive={this.state.serverActive} onPostTask={this.postTask}/>
+                    <BrowserSidebar onAction={this.onAction} shareURL={this.state.shareURL} adminURL={this.state.adminURL} ref={this.sidebarRef} setServerActive={this.setServerActive} isVisible={this.state.showingSidebar} serverActive={this.state.serverActive} onPostTask={this.postTask}/>
                     <div id="browser-pane" className="pane">
                         <div id="content">{this.state.webViews}</div>
                     </div>

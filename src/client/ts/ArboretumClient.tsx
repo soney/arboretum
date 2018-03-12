@@ -4,6 +4,7 @@ import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
 import {ClientTab} from './ClientTab';
 import {ArboretumChatBox} from '../../utils/browserControls/ArboretumChatBox';
 import {BrowserNavigationBar} from '../../utils/browserControls/BrowserNavigationBar';
+import {ArboretumChat, Message, User, TextMessage, PageActionMessage} from '../../utils/ArboretumChat';
 import {TabList} from './TabList';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
@@ -24,6 +25,8 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
     private sdb:SDB;
     private clientTab:ClientTab;
     private tabID:CRI.TabID;
+    private navBar:BrowserNavigationBar;
+    private arboretumChat:ArboretumChatBox;
 
     protected static defaultProps:ArboretumClientProps = {
         wsAddress: `ws://${window.location.hostname}:${window.location.port}`
@@ -52,33 +55,53 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
             this.clientTab.setTabID(this.tabID);
         }
     };
+    private navBarRef = (navBar:BrowserNavigationBar):void => {
+        this.navBar = navBar;
+    };
+    private chatRef = (arboretumChat:ArboretumChatBox):void => {
+        this.arboretumChat = arboretumChat;
+    };
     private goBack = ():void => {
-        console.log('back');
+        this.getChat().addPageActionMessage('goBack', {});
     };
     private goForward = ():void => {
-        console.log('forward');
+        this.getChat().addPageActionMessage('goForward', {});
     };
     private reload = ():void => {
-        console.log('reload');
+        this.getChat().addPageActionMessage('reload', {});
     };
     private navigate = (url:string):void => {
-        console.log('navigate to ', url);
+        this.getChat().addPageActionMessage('navigate', {url, tabID:this.tabID});
     };
+    private tabIsLoadingChanged = (tab:ClientTab, isLoading:boolean):void => {
+        if(this.navBar) { this.navBar.setState({isLoading}); }
+    };
+    private tabCanGoBackChanged = (tab:ClientTab, canGoBack:boolean):void => {
+        if(this.navBar) { this.navBar.setState({canGoBack}); }
+    };
+    private tabCanGoForwardChanged = (tab:ClientTab, canGoForward:boolean):void => {
+        if(this.navBar) { this.navBar.setState({canGoForward}); }
+    };
+    private tabURLChanged = (tab:ClientTab, url:string):void => {
+        if(this.navBar) { this.navBar.setState({urlText: url}); }
+    };
+    private pageTitleChanged = (tab:ClientTab, title:string):void => { };
+    private getChat():ArboretumChat { return this.arboretumChat.getChat(); }
 
     public render():React.ReactNode {
         const {showControls} = this.state;
         return <div className="window" id="arboretum_client">
             <TabList sdb={this.sdb} onSelectTab={this.onSelectTab} />
             <header>
-                <BrowserNavigationBar onBack={this.goBack} onForward={this.goForward} onReload={this.reload} showSidebarToggle={false} onNavigate={this.navigate} />
+                <BrowserNavigationBar ref={this.navBarRef} onBack={this.goBack} onForward={this.goForward} onReload={this.reload} showSidebarToggle={false} onNavigate={this.navigate} />
             </header>
             <div className="window-content">
                 <div className="pane-group" id="client_body">
                     <div className="pane-sm sidebar" id="client_sidebar">
-                        <ArboretumChatBox sdb={this.sdb} username="Steve" />
+                        <ArboretumChatBox isAdmin={false} ref={this.chatRef} sdb={this.sdb} username="Steve" />
                     </div>
                     <div className="pane" id="client_content">
-                        <ClientTab tabID={this.props.tabID} frameID={this.props.frameID} ref={this.clientTabRef} sdb={this.sdb} />
+                        <ClientTab canGoBackChanged={this.tabCanGoBackChanged} canGoForwardChanged={this.tabCanGoForwardChanged} urlChanged={this.tabURLChanged} titleChanged={this.pageTitleChanged} isLoadingChanged={this.tabIsLoadingChanged} tabID={this.props.tabID} frameID={this.props.frameID} ref={this.clientTabRef} sdb={this.sdb} />
                     </div>
                 </div>
             </div>

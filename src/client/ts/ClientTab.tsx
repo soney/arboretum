@@ -9,11 +9,21 @@ import {NodeSelector} from './NodeSelector';
 type ClientTabProps = {
     tabID?:CRI.TabID,
     frameID?:CRI.FrameID,
-    sdb:SDB
+    sdb:SDB,
+    canGoBackChanged?:(tab:ClientTab, canGoBack:boolean) => void,
+    canGoForwardChanged?:(tab:ClientTab, canGoForward:boolean) => void,
+    isLoadingChanged?:(tab:ClientTab, isLoading:boolean) => void,
+    urlChanged?:(tab:ClientTab, url:string) => void,
+    titleChanged?:(tab:ClientTab, title:string) => void
 };
 type ClientTabState = {
     tabID:CRI.TabID,
-    frameID:CRI.FrameID
+    frameID:CRI.FrameID,
+    canGoBack:boolean,
+    canGoForward:boolean,
+    isLoading:boolean,
+    url:string,
+    title:string
 };
 
 export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
@@ -26,7 +36,12 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
         super(props);
         this.state = {
             tabID:this.props.tabID,
-            frameID:this.props.frameID
+            frameID:this.props.frameID,
+            canGoBack:false,
+            canGoForward:false,
+            isLoading:false,
+            url:'',
+            title:''
         };
         // this.setTabID(this.props.tabID);
     };
@@ -47,12 +62,18 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
         }
     };
     private docUpdated = (ops?:Array<ShareDBClient.Op>, source?:boolean, data?:TabDoc):void => {
-        // console.log(data);
         if(ops) {
             ops.forEach((op:ShareDBClient.Op) => {
                 this.handleOp(op);
             })
         } else {
+            const {canGoBack, canGoForward, isLoading, url, title} = data;
+            this.setState({canGoBack, canGoForward, isLoading, url, title});
+            if(this.props.canGoBackChanged) { this.props.canGoBackChanged(this, canGoBack); }
+            if(this.props.canGoForwardChanged) { this.props.canGoForwardChanged(this, canGoForward); }
+            if(this.props.isLoadingChanged) { this.props.isLoadingChanged(this, isLoading); }
+            if(this.props.urlChanged) { this.props.urlChanged(this, url); }
+            if(this.props.titleChanged) { this.props.titleChanged(this, title); }
             if(this.props.frameID) {
                 console.log(this.props.frameID);
             } else {
@@ -74,7 +95,7 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
     };
     private handleOp(op:ShareDBClient.Op):void {
         const {node, property, path} = this.traverse(op);
-        if(node && property) {
+        if(property) {
             const {oi, od} = op;
             if(property === 'characterData') {
                 node.setNodeValue(oi);
@@ -118,6 +139,21 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
                         node.insertChild(child, index);
                     }
                 }
+            } else if(property === 'canGoBack') {
+                this.setState({canGoBack:oi});
+                if(this.props.canGoBackChanged) { this.props.canGoBackChanged(this, oi); }
+            } else if(property === 'canGoForward') {
+                this.setState({canGoForward:oi});
+                if(this.props.canGoForwardChanged) { this.props.canGoForwardChanged(this, oi); }
+            } else if(property === 'isLoading') {
+                this.setState({isLoading:oi});
+                if(this.props.isLoadingChanged) { this.props.isLoadingChanged(this, oi); }
+            } else if(property === 'title') {
+                this.setState({title:oi});
+                if(this.props.titleChanged) { this.props.titleChanged(this, oi); }
+            } else if(property === 'url') {
+                this.setState({url:oi});
+                if(this.props.urlChanged) { this.props.urlChanged(this, oi); }
             } else {
                 console.error('Not handled 1', op);
             }
@@ -157,6 +193,8 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
             } else if(item === 'inputValue') {
                 return {node, property:item, path:p.slice(i+1)};
             } else if(item === 'canvasData') {
+                return {node, property:item, path:p.slice(i+1)};
+            } else if(item === 'canGoBack' || item === 'canGoForward' || item === 'isLoading' || item === 'title' || item === 'url') {
                 return {node, property:item, path:p.slice(i+1)};
             } else if(item === 'shadowRoots') {
                 throw new Error('ShadowRoots not expected to be included');

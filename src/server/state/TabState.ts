@@ -42,7 +42,12 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         this.doc = await this.sdb.get<TabDoc>('tab', this.getTabId());
         await this.doc.createIfEmpty({
             id:this.getTabId(),
-            root:null
+            root:null,
+            canGoBack:false,
+            canGoForward:false,
+            url:this.info.url,
+            title:this.info.title,
+            isLoading: false
         });
         await this.markAttachedToShareDBDoc();
 

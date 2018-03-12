@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {SDB, SDBDoc} from '../ShareDBDoc';
-import {ArboretumChat, Message, User} from '../ArboretumChat';
+import {ArboretumChat, Message, User, TextMessage, PageActionMessage} from '../ArboretumChat';
 
 require('./ArboretumChat.scss');
 
@@ -10,7 +10,9 @@ type ArboretumChatProps = {
     onSendMessage?:(message:string)=>void,
     chatText?:string,
     sdb?:SDB,
-    username:string
+    username:string,
+    onAction?:(pam:PageActionMessage) => void,
+    isAdmin:boolean
 };
 type ArboretumChatState = {
     chatText:string,
@@ -32,6 +34,7 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
         if(this.props.sdb) { this.setSDB(this.props.sdb); }
         window.addEventListener('beforeunload', () => this.leave());
     };
+    public getChat():ArboretumChat { return this.chat; }
     public async setSDB(sdb:SDB):Promise<void> {
         this.sdb = sdb;
         this.chat = new ArboretumChat(this.sdb);
@@ -99,12 +102,37 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
     public componentDidUpdate():void {
         this.scrollToBottom();
     };
+    private performAction = (pam:PageActionMessage):void => {
+        this.getChat().markPerformed(pam);
+        if(this.props.onAction) { this.props.onAction(pam); }
+    };
 
     public render():React.ReactNode {
         const messages = this.state.messages.map((m:Message, i:number) => {
             const senderStyle = {color: m.sender.color};
-            return <li key={i} className='chat-line'><span style={senderStyle} className='from'>{m.sender.displayName}</span><span className='message'>{m.content}</span></li>;
+            if(m['content']) {
+                const tm:TextMessage = m as TextMessage;
+                return <li key={i} className='chat-line'><span style={senderStyle} className='from'>{tm.sender.displayName}</span><span className='message'>{tm.content}</span></li>;
+            } else if(m['action']) {
+                const pam:PageActionMessage = m as PageActionMessage;
+                const {action, data, performed} = pam;
+                let description:JSX.Element;
+                let actions:JSX.Element;
+                if(action === 'navigate') {
+                    const {url} = data;
+                    description = <span className='navigate description'>navigate to {url}</span>;
+                }
+
+                if(performed) {
+                    actions = <div className=''>(accepted)</div>
+                } else {
+                    actions = <div className='messageAction'><a href="javascript:void(0)" onClick={this.performAction.bind(this, pam)}>Accept</a></div>
+                }
+
+                return <li key={i} className={'chat-line action'+(performed?' performed':'')+(this.props.isAdmin ? ' admin':' not_admin')}><span style={senderStyle} className='from'>{pam.sender.displayName}</span> wants to {description}.{actions}</li>;
+            }
         });
+
         let meUserID;
         if(this.chat) {
             const meUser = this.chat.getMe();
@@ -121,7 +149,7 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
             <h6 id="task_title"><span className="icon icon-chat"></span><span id='task-name'>Chat</span></h6>
             <div id="chat-participants">{users}</div>
             <ul id="chat-lines">
-                {messages}
+                {messages.filter(m => !!m)}
                 <li style={{ float:"left", clear: "both" }} ref={(el) => { this.messagesEnd = el; }} />
             </ul>
             <form id="chat-form">

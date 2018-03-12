@@ -30969,18 +30969,45 @@ class ArboretumClient extends React.Component {
                 this.clientTab.setTabID(this.tabID);
             }
         };
+        this.navBarRef = (navBar) => {
+            this.navBar = navBar;
+        };
+        this.chatRef = (arboretumChat) => {
+            this.arboretumChat = arboretumChat;
+        };
         this.goBack = () => {
-            console.log('back');
+            this.getChat().addPageActionMessage('goBack', {});
         };
         this.goForward = () => {
-            console.log('forward');
+            this.getChat().addPageActionMessage('goForward', {});
         };
         this.reload = () => {
-            console.log('reload');
+            this.getChat().addPageActionMessage('reload', {});
         };
         this.navigate = (url) => {
-            console.log('navigate to ', url);
+            this.getChat().addPageActionMessage('navigate', { url, tabID: this.tabID });
         };
+        this.tabIsLoadingChanged = (tab, isLoading) => {
+            if (this.navBar) {
+                this.navBar.setState({ isLoading });
+            }
+        };
+        this.tabCanGoBackChanged = (tab, canGoBack) => {
+            if (this.navBar) {
+                this.navBar.setState({ canGoBack });
+            }
+        };
+        this.tabCanGoForwardChanged = (tab, canGoForward) => {
+            if (this.navBar) {
+                this.navBar.setState({ canGoForward });
+            }
+        };
+        this.tabURLChanged = (tab, url) => {
+            if (this.navBar) {
+                this.navBar.setState({ urlText: url });
+            }
+        };
+        this.pageTitleChanged = (tab, title) => { };
         this.state = {
             showControls: !this.props.frameID
         };
@@ -30992,18 +31019,19 @@ class ArboretumClient extends React.Component {
         this.sdb.close();
     }
     ;
+    getChat() { return this.arboretumChat.getChat(); }
     render() {
         const { showControls } = this.state;
         return React.createElement("div", { className: "window", id: "arboretum_client" },
             React.createElement(TabList_1.TabList, { sdb: this.sdb, onSelectTab: this.onSelectTab }),
             React.createElement("header", null,
-                React.createElement(BrowserNavigationBar_1.BrowserNavigationBar, { onBack: this.goBack, onForward: this.goForward, onReload: this.reload, showSidebarToggle: false, onNavigate: this.navigate })),
+                React.createElement(BrowserNavigationBar_1.BrowserNavigationBar, { ref: this.navBarRef, onBack: this.goBack, onForward: this.goForward, onReload: this.reload, showSidebarToggle: false, onNavigate: this.navigate })),
             React.createElement("div", { className: "window-content" },
                 React.createElement("div", { className: "pane-group", id: "client_body" },
                     React.createElement("div", { className: "pane-sm sidebar", id: "client_sidebar" },
-                        React.createElement(ArboretumChatBox_1.ArboretumChatBox, { sdb: this.sdb, username: "Steve" })),
+                        React.createElement(ArboretumChatBox_1.ArboretumChatBox, { isAdmin: false, ref: this.chatRef, sdb: this.sdb, username: "Steve" })),
                     React.createElement("div", { className: "pane", id: "client_content" },
-                        React.createElement(ClientTab_1.ClientTab, { tabID: this.props.tabID, frameID: this.props.frameID, ref: this.clientTabRef, sdb: this.sdb })))));
+                        React.createElement(ClientTab_1.ClientTab, { canGoBackChanged: this.tabCanGoBackChanged, canGoForwardChanged: this.tabCanGoForwardChanged, urlChanged: this.tabURLChanged, titleChanged: this.pageTitleChanged, isLoadingChanged: this.tabIsLoadingChanged, tabID: this.props.tabID, frameID: this.props.frameID, ref: this.clientTabRef, sdb: this.sdb })))));
     }
     ;
 }
@@ -31140,6 +31168,18 @@ class SDBDoc {
     }
     ;
     submitListPushOp(p, ...items) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const arr = this.traverse(p);
+            const previousLength = arr.length;
+            const ops = items.map((x, i) => {
+                const op = { p: p.concat(previousLength + i), li: x };
+                return op;
+            });
+            return yield this.submitOp(ops);
+        });
+    }
+    ;
+    submitListUnshiftOp(p, ...items) {
         return __awaiter(this, void 0, void 0, function* () {
             const arr = this.traverse(p);
             const previousLength = arr.length;
@@ -34130,13 +34170,29 @@ class ClientTab extends React.Component {
         super(props);
         this.nodeSelector = new NodeSelector_1.NodeSelector();
         this.docUpdated = (ops, source, data) => {
-            // console.log(data);
             if (ops) {
                 ops.forEach((op) => {
                     this.handleOp(op);
                 });
             }
             else {
+                const { canGoBack, canGoForward, isLoading, url, title } = data;
+                this.setState({ canGoBack, canGoForward, isLoading, url, title });
+                if (this.props.canGoBackChanged) {
+                    this.props.canGoBackChanged(this, canGoBack);
+                }
+                if (this.props.canGoForwardChanged) {
+                    this.props.canGoForwardChanged(this, canGoForward);
+                }
+                if (this.props.isLoadingChanged) {
+                    this.props.isLoadingChanged(this, isLoading);
+                }
+                if (this.props.urlChanged) {
+                    this.props.urlChanged(this, url);
+                }
+                if (this.props.titleChanged) {
+                    this.props.titleChanged(this, title);
+                }
                 if (this.props.frameID) {
                     console.log(this.props.frameID);
                 }
@@ -34164,7 +34220,12 @@ class ClientTab extends React.Component {
         };
         this.state = {
             tabID: this.props.tabID,
-            frameID: this.props.frameID
+            frameID: this.props.frameID,
+            canGoBack: false,
+            canGoForward: false,
+            isLoading: false,
+            url: '',
+            title: ''
         };
         // this.setTabID(this.props.tabID);
     }
@@ -34201,7 +34262,7 @@ class ClientTab extends React.Component {
     ;
     handleOp(op) {
         const { node, property, path } = this.traverse(op);
-        if (node && property) {
+        if (property) {
             const { oi, od } = op;
             if (property === 'characterData') {
                 node.setNodeValue(oi);
@@ -34257,6 +34318,36 @@ class ClientTab extends React.Component {
                     }
                 }
             }
+            else if (property === 'canGoBack') {
+                this.setState({ canGoBack: oi });
+                if (this.props.canGoBackChanged) {
+                    this.props.canGoBackChanged(this, oi);
+                }
+            }
+            else if (property === 'canGoForward') {
+                this.setState({ canGoForward: oi });
+                if (this.props.canGoForwardChanged) {
+                    this.props.canGoForwardChanged(this, oi);
+                }
+            }
+            else if (property === 'isLoading') {
+                this.setState({ isLoading: oi });
+                if (this.props.isLoadingChanged) {
+                    this.props.isLoadingChanged(this, oi);
+                }
+            }
+            else if (property === 'title') {
+                this.setState({ title: oi });
+                if (this.props.titleChanged) {
+                    this.props.titleChanged(this, oi);
+                }
+            }
+            else if (property === 'url') {
+                this.setState({ url: oi });
+                if (this.props.urlChanged) {
+                    this.props.urlChanged(this, oi);
+                }
+            }
             else {
                 console.error('Not handled 1', op);
             }
@@ -34307,6 +34398,9 @@ class ClientTab extends React.Component {
                 return { node, property: item, path: p.slice(i + 1) };
             }
             else if (item === 'canvasData') {
+                return { node, property: item, path: p.slice(i + 1) };
+            }
+            else if (item === 'canGoBack' || item === 'canGoForward' || item === 'isLoading' || item === 'title' || item === 'url') {
                 return { node, property: item, path: p.slice(i + 1) };
             }
             else if (item === 'shadowRoots') {
@@ -45497,6 +45591,12 @@ class ArboretumChatBox extends React.Component {
         this.onTextareaChange = (event) => {
             this.setState({ chatText: event.target.value });
         };
+        this.performAction = (pam) => {
+            this.getChat().markPerformed(pam);
+            if (this.props.onAction) {
+                this.props.onAction(pam);
+            }
+        };
         this.state = {
             chatText: this.props.chatText || '',
             messages: [],
@@ -45508,6 +45608,7 @@ class ArboretumChatBox extends React.Component {
         window.addEventListener('beforeunload', () => this.leave());
     }
     ;
+    getChat() { return this.chat; }
     setSDB(sdb) {
         return __awaiter(this, void 0, void 0, function* () {
             this.sdb = sdb;
@@ -45549,9 +45650,37 @@ class ArboretumChatBox extends React.Component {
     render() {
         const messages = this.state.messages.map((m, i) => {
             const senderStyle = { color: m.sender.color };
-            return React.createElement("li", { key: i, className: 'chat-line' },
-                React.createElement("span", { style: senderStyle, className: 'from' }, m.sender.displayName),
-                React.createElement("span", { className: 'message' }, m.content));
+            if (m['content']) {
+                const tm = m;
+                return React.createElement("li", { key: i, className: 'chat-line' },
+                    React.createElement("span", { style: senderStyle, className: 'from' }, tm.sender.displayName),
+                    React.createElement("span", { className: 'message' }, tm.content));
+            }
+            else if (m['action']) {
+                const pam = m;
+                const { action, data, performed } = pam;
+                let description;
+                let actions;
+                if (action === 'navigate') {
+                    const { url } = data;
+                    description = React.createElement("span", { className: 'navigate description' },
+                        "navigate to ",
+                        url);
+                }
+                if (performed) {
+                    actions = React.createElement("div", { className: '' }, "(accepted)");
+                }
+                else {
+                    actions = React.createElement("div", { className: 'messageAction' },
+                        React.createElement("a", { href: "javascript:void(0)", onClick: this.performAction.bind(this, pam) }, "Accept"));
+                }
+                return React.createElement("li", { key: i, className: 'chat-line action' + (performed ? ' performed' : '') + (this.props.isAdmin ? ' admin' : ' not_admin') },
+                    React.createElement("span", { style: senderStyle, className: 'from' }, pam.sender.displayName),
+                    " wants to ",
+                    description,
+                    ".",
+                    actions);
+            }
         });
         let meUserID;
         if (this.chat) {
@@ -45571,7 +45700,7 @@ class ArboretumChatBox extends React.Component {
                 React.createElement("span", { id: 'task-name' }, "Chat")),
             React.createElement("div", { id: "chat-participants" }, users),
             React.createElement("ul", { id: "chat-lines" },
-                messages,
+                messages.filter(m => !!m),
                 React.createElement("li", { style: { float: "left", clear: "both" }, ref: (el) => { this.messagesEnd = el; } })),
             React.createElement("form", { id: "chat-form" },
                 React.createElement("textarea", { id: "chat-box", className: "form-control", placeholder: "Send a message", onChange: this.onTextareaChange, onKeyDown: this.chatKeyDown, value: this.state.chatText })));
@@ -45609,6 +45738,7 @@ var TypingStatus;
     TypingStatus[TypingStatus["ACTIVE"] = 1] = "ACTIVE";
     TypingStatus[TypingStatus["IDLE_TYPED"] = 2] = "IDLE_TYPED";
 })(TypingStatus = exports.TypingStatus || (exports.TypingStatus = {}));
+;
 ;
 ;
 ;
@@ -45700,8 +45830,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             const color = yield this.getColor(id);
             const user = { id, color, displayName, present, typing: TypingStatus.IDLE };
             yield this.initialized;
-            const data = this.doc.getData();
-            yield this.doc.submitOp([{ p: ['users', data.users.length], li: user }]);
+            yield this.doc.submitListPushOp(['users'], user);
             if (isMe) {
                 this.meUser = user;
             }
@@ -45709,13 +45838,41 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         });
     }
     ;
-    addTextMessage(content, sender = this.getMe()) {
+    addMesssage(message) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.initialized;
             const timestamp = (new Date()).getTime();
-            const data = this.doc.getData();
-            const message = { sender, timestamp, content };
-            yield this.doc.submitOp([{ p: ['messages', data.messages.length], li: message }]);
+            message.timestamp = (new Date()).getTime();
+            message.id = ArboretumChat.messageCounter++;
+            this.doc.submitListPushOp(['messages'], message);
+        });
+    }
+    ;
+    addTextMessage(content, sender = this.getMe()) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const message = { sender, content };
+            this.addMesssage(message);
+        });
+    }
+    ;
+    addPageActionMessage(action, data, sender = this.getMe()) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const message = { sender, action, data, performed: false };
+            this.addMesssage(message);
+        });
+    }
+    ;
+    markPerformed(pam, performed = true) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const messages = yield this.getMessages();
+            const { id } = pam;
+            for (let i = 0; i < messages.length; i++) {
+                const message = messages[i];
+                if (message.id === id) {
+                    this.doc.submitObjectReplaceOp(['messages', i, 'performed'], performed);
+                    break;
+                }
+            }
         });
     }
     ;
@@ -45738,8 +45895,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             yield this.initialized;
             const data = this.doc.getData();
             const userIndex = yield this.getUserIndex(user);
-            const oldValue = data.users[userIndex].present;
-            yield this.doc.submitOp([{ p: ['users', userIndex, 'present'], od: oldValue, oi: false }]);
+            yield this.doc.submitObjectReplaceOp(['users', userIndex, 'present'], false);
         });
     }
     ;
@@ -45754,8 +45910,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             yield this.initialized;
             const data = this.doc.getData();
             const userIndex = yield this.getUserIndex(user);
-            const oldValue = data.users[userIndex].typing;
-            yield this.doc.submitOp([{ p: ['users', userIndex, 'typing'], od: oldValue, oi: typingStatus }]);
+            yield this.doc.submitObjectReplaceOp(['users', userIndex, 'typing'], typingStatus);
         });
     }
     ;
@@ -45783,6 +45938,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
     ;
 }
 ArboretumChat.userCounter = 1;
+ArboretumChat.messageCounter = 1;
 exports.ArboretumChat = ArboretumChat;
 ;
 
@@ -45993,7 +46149,7 @@ exports = module.exports = __webpack_require__(23)(true);
 
 
 // module
-exports.push([module.i, ".chat {\n  font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n  flex: 1 0 auto;\n  display: flex;\n  flex-direction: column;\n  height: 100%; }\n  .chat #task_title {\n    flex: 0 0;\n    box-sizing: border-box;\n    padding: 5px 10px 5px;\n    margin: 0px; }\n  .chat #chat-participants {\n    flex: 0 0;\n    border-bottom: 1px solid #CCC;\n    padding: 5px 10px 5px;\n    box-sizing: border-box; }\n    .chat #chat-participants .participant {\n      margin: 2px; }\n      .chat #chat-participants .participant.me {\n        font-weight: bold;\n        text-decoration: underline; }\n  .chat #chat-lines {\n    flex: 2 0;\n    box-sizing: border-box;\n    padding: 0px 10px 0px;\n    margin: 0px;\n    overflow-y: auto; }\n    .chat #chat-lines li {\n      list-style-type: none; }\n    .chat #chat-lines .chat-line {\n      font-size: 0.9em;\n      list-style-type: none;\n      list-style-type: none;\n      margin-top: 2px;\n      padding-top: 2px;\n      margin-bottom: 2px;\n      padding-bottom: 2px;\n      color: #555; }\n      .chat #chat-lines .chat-line .from {\n        font-weight: bold; }\n      .chat #chat-lines .chat-line .from::after {\n        content: \": \"; }\n  .chat #chat-form {\n    padding: 0px 2px 0px;\n    flex: 0; }\n    .chat #chat-form textarea#chat-box {\n      box-sizing: border-box;\n      resize: none;\n      flex-grow: 1;\n      width: 100%;\n      font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n      padding: 5px 10px 5px; }\n    .chat #chat-form .form-actions {\n      text-align: right; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/utils/browserControls/src/utils/browserControls/ArboretumChat.scss"],"names":[],"mappings":"AAAA;EACI,gHAA+G;EAC/G,eAAc;EACd,cAAa;EACb,uBAAsB;EACtB,aAAY,EA8Df;EAnED;IAQQ,UAAS;IACT,uBAAsB;IACtB,sBAAqB;IACrB,YAAW,EACd;EAZL;IAcQ,UAAS;IACT,8BAA6B;IAC7B,sBAAqB;IACrB,uBAAsB,EAQzB;IAzBL;MAmBY,YAAW,EAKd;MAxBT;QAqBgB,kBAAiB;QACjB,2BAA0B,EAC7B;EAvBb;IA2BQ,UAAS;IACT,uBAAsB;IACtB,sBAAqB;IACrB,YAAW;IACX,iBAAgB,EAoBnB;IAnDL;MAiCY,sBAAqB,EACxB;IAlCT;MAoCY,iBAAgB;MAChB,sBAAqB;MACrB,sBAAqB;MACrB,gBAAe;MACf,iBAAgB;MAChB,mBAAkB;MAClB,oBAAmB;MACnB,YAAW,EAOd;MAlDT;QA6CgB,kBAAiB,EACpB;MA9Cb;QAgDgB,cAAa,EAChB;EAjDb;IAqDQ,qBAAoB;IACpB,QAAO,EAYV;IAlEL;MAwDY,uBAAsB;MACtB,aAAY;MACZ,aAAY;MACZ,YAAW;MACX,gHAA+G;MAC/G,sBAAqB,EACxB;IA9DT;MAgEY,kBAAiB,EACpB","file":"ArboretumChat.scss","sourcesContent":[".chat {\n    font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n    flex: 1 0 auto;\n    display: flex;\n    flex-direction: column;\n    height: 100%;\n\n    #task_title {\n        flex: 0 0;\n        box-sizing: border-box;\n        padding: 5px 10px 5px;\n        margin: 0px;\n    }\n    #chat-participants {\n        flex: 0 0;\n        border-bottom: 1px solid #CCC;\n        padding: 5px 10px 5px;\n        box-sizing: border-box;\n        .participant {\n            margin: 2px;\n            &.me {\n                font-weight: bold;\n                text-decoration: underline;\n            }\n        }\n    }\n    #chat-lines {\n        flex: 2 0;\n        box-sizing: border-box;\n        padding: 0px 10px 0px;\n        margin: 0px;\n        overflow-y: auto;\n        li {\n            list-style-type: none;\n        }\n        .chat-line {\n            font-size: 0.9em;\n            list-style-type: none;\n            list-style-type: none;\n            margin-top: 2px;\n            padding-top: 2px;\n            margin-bottom: 2px;\n            padding-bottom: 2px;\n            color: #555;\n            .from {\n                font-weight: bold;\n            }\n            .from::after {\n                content: \": \";\n            }\n        }\n    }\n    #chat-form {\n        padding: 0px 2px 0px;\n        flex: 0;\n        textarea#chat-box {\n            box-sizing: border-box;\n            resize: none;\n            flex-grow: 1;\n            width: 100%;\n            font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n            padding: 5px 10px 5px;\n        }\n        .form-actions {\n            text-align: right;\n        }\n    }\n}\n"],"sourceRoot":""}]);
+exports.push([module.i, ".chat {\n  font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n  flex: 1 0 auto;\n  display: flex;\n  flex-direction: column; }\n  .chat #task_title {\n    flex: 0 0;\n    box-sizing: border-box;\n    padding: 5px 10px 5px;\n    margin: 0px; }\n  .chat #chat-participants {\n    flex: 0 0;\n    border-bottom: 1px solid #CCC;\n    padding: 5px 10px 5px;\n    box-sizing: border-box; }\n    .chat #chat-participants .participant {\n      margin: 2px; }\n      .chat #chat-participants .participant.me {\n        font-weight: bold;\n        text-decoration: underline; }\n  .chat #chat-lines {\n    flex: 2 0;\n    box-sizing: border-box;\n    padding: 0px 10px 0px;\n    margin: 0px;\n    overflow-y: auto; }\n    .chat #chat-lines li {\n      list-style-type: none; }\n    .chat #chat-lines .chat-line {\n      font-size: 0.9em;\n      list-style-type: none;\n      list-style-type: none;\n      margin-top: 2px;\n      padding-top: 2px;\n      margin-bottom: 2px;\n      padding-bottom: 2px;\n      color: #555; }\n      .chat #chat-lines .chat-line.action {\n        color: #888; }\n        .chat #chat-lines .chat-line.action.not_admin .messageAction {\n          display: none; }\n      .chat #chat-lines .chat-line:not(.action) .from {\n        font-weight: bold; }\n      .chat #chat-lines .chat-line:not(.action) .from::after {\n        content: \": \"; }\n  .chat #chat-form {\n    padding: 0px 2px 0px;\n    flex: 0; }\n    .chat #chat-form textarea#chat-box {\n      box-sizing: border-box;\n      resize: none;\n      flex-grow: 1;\n      width: 100%;\n      font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n      padding: 5px 10px 5px; }\n    .chat #chat-form .form-actions {\n      text-align: right; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/utils/browserControls/src/utils/browserControls/ArboretumChat.scss"],"names":[],"mappings":"AAAA;EACI,gHAA+G;EAC/G,eAAc;EACd,cAAa;EACb,uBAAsB,EAwEzB;EA5ED;IAOQ,UAAS;IACT,uBAAsB;IACtB,sBAAqB;IACrB,YAAW,EACd;EAXL;IAaQ,UAAS;IACT,8BAA6B;IAC7B,sBAAqB;IACrB,uBAAsB,EAQzB;IAxBL;MAkBY,YAAW,EAKd;MAvBT;QAoBgB,kBAAiB;QACjB,2BAA0B,EAC7B;EAtBb;IA0BQ,UAAS;IACT,uBAAsB;IACtB,sBAAqB;IACrB,YAAW;IACX,iBAAgB,EA8BnB;IA5DL;MAgCY,sBAAqB,EACxB;IAjCT;MAmCY,iBAAgB;MAChB,sBAAqB;MACrB,sBAAqB;MACrB,gBAAe;MACf,iBAAgB;MAChB,mBAAkB;MAClB,oBAAmB;MACnB,YAAW,EAiBd;MA3DT;QA4CgB,YAAW,EAMd;QAlDb;UA+CwB,cAAa,EAChB;MAhDrB;QAqDoB,kBAAiB,EACpB;MAtDjB;QAwDoB,cAAa,EAChB;EAzDjB;IA8DQ,qBAAoB;IACpB,QAAO,EAYV;IA3EL;MAiEY,uBAAsB;MACtB,aAAY;MACZ,aAAY;MACZ,YAAW;MACX,gHAA+G;MAC/G,sBAAqB,EACxB;IAvET;MAyEY,kBAAiB,EACpB","file":"ArboretumChat.scss","sourcesContent":[".chat {\n    font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n    flex: 1 0 auto;\n    display: flex;\n    flex-direction: column;\n\n    #task_title {\n        flex: 0 0;\n        box-sizing: border-box;\n        padding: 5px 10px 5px;\n        margin: 0px;\n    }\n    #chat-participants {\n        flex: 0 0;\n        border-bottom: 1px solid #CCC;\n        padding: 5px 10px 5px;\n        box-sizing: border-box;\n        .participant {\n            margin: 2px;\n            &.me {\n                font-weight: bold;\n                text-decoration: underline;\n            }\n        }\n    }\n    #chat-lines {\n        flex: 2 0;\n        box-sizing: border-box;\n        padding: 0px 10px 0px;\n        margin: 0px;\n        overflow-y: auto;\n        li {\n            list-style-type: none;\n        }\n        .chat-line {\n            font-size: 0.9em;\n            list-style-type: none;\n            list-style-type: none;\n            margin-top: 2px;\n            padding-top: 2px;\n            margin-bottom: 2px;\n            padding-bottom: 2px;\n            color: #555;\n            &.action{\n                color: #888;\n                &.not_admin {\n                    .messageAction {\n                        display: none;\n                    }\n                }\n            }\n            &:not(.action) {\n                .from {\n                    font-weight: bold;\n                }\n                .from::after {\n                    content: \": \";\n                }\n            }\n        }\n    }\n    #chat-form {\n        padding: 0px 2px 0px;\n        flex: 0;\n        textarea#chat-box {\n            box-sizing: border-box;\n            resize: none;\n            flex-grow: 1;\n            width: 100%;\n            font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n            padding: 5px 10px 5px;\n        }\n        .form-actions {\n            text-align: right;\n        }\n    }\n}\n"],"sourceRoot":""}]);
 
 // exports
 
@@ -46366,7 +46522,7 @@ exports = module.exports = __webpack_require__(23)(true);
 
 
 // module
-exports.push([module.i, "html, body, #client_main, #arboretum_client {\n  margin: 0px;\n  padding: 0px;\n  height: 100%;\n  width: 100%;\n  overflow: hidden; }\n\nbody {\n  font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n  background-color: #333; }\n  body #arboretum_client #client_header {\n    max-height: 40px;\n    background-color: #e8e6e8;\n    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #e8e6e8), color-stop(100%, #d1cfd1));\n    background-image: -webkit-linear-gradient(top, #e8e6e8 0%, #d1cfd1 100%);\n    background-image: linear-gradient(to bottom, #e8e6e8 0%, #d1cfd1 100%); }\n    body #arboretum_client #client_header #tabs {\n      padding: 0px;\n      margin: 0px;\n      overflow: hidden; }\n      body #arboretum_client #client_header #tabs .tab {\n        text-align: center;\n        border-left: 1px solid #989698;\n        background-color: #b8b6b8;\n        background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #b8b6b8), color-stop(100%, #b0aeb0));\n        background-image: -webkit-linear-gradient(top, #b8b6b8 0%, #b0aeb0 100%);\n        background-image: linear-gradient(to bottom, #b8b6b8 0%, #b0aeb0 100%);\n        border-left: 1px solid #AAA;\n        list-style: none;\n        white-space: nowrap;\n        border-bottom: 1px solid #aaa;\n        overflow: hidden;\n        text-overflow: ellipsis;\n        color: #333; }\n      body #arboretum_client #client_header #tabs:last-child {\n        border-right: 1px solid #AAA; }\n      body #arboretum_client #client_header #tabs.not-selected {\n        background: linear-gradient(to bottom, #BBB 80%, #AAA); }\n        body #arboretum_client #client_header #tabs.not-selected .closeTab {\n          color: #999; }\n      body #arboretum_client #client_header #tabs.tab.selected {\n        background-color: #d4d2d4;\n        background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #d4d2d4), color-stop(100%, #cccacc));\n        background-image: -webkit-linear-gradient(top, #d4d2d4 0%, #cccacc 100%);\n        background-image: linear-gradient(to bottom, #d4d2d4 0%, #cccacc 100%);\n        /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n        border-bottom: none;\n        color: #777; }\n  body #arboretum_client #client_body #client_content {\n    overflow: hidden; }\n    body #arboretum_client #client_body #client_content iframe#content {\n      border: none;\n      width: 100%;\n      height: 100%; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/client/css/src/client/css/client.scss"],"names":[],"mappings":"AAUA;EACI,YAAW;EACX,aAAY;EACZ,aAAY;EACZ,YAAW;EACX,iBAAgB,EACnB;;AACD;EACI,gHAA+G;EAC/G,uBAAsB,EAoDzB;EAtDD;IAKY,iBAdQ;IALhB,0BAoBwC;IAnBxC,sHAAyH;IACzH,yEAA8E;IAC9E,uEAA4E,EAmDvE;IAxCT;MASgB,aAAY;MACZ,YAAW;MACX,iBAAgB,EA4BnB;MAvCb;QAaoB,mBAAkB;QAClB,+BAA8B;QA5B9C,0BA6BgD;QA5BhD,sHAAyH;QACzH,yEAA8E;QAC9E,uEAA4E;QA2B5D,4BAA2B;QAC3B,iBAAgB;QAChB,oBAAmB;QACnB,8BAA6B;QAC7B,iBAAgB;QAChB,wBAAuB;QACvB,YAAW,EACd;MAvBjB;QAyBoB,6BAA4B,EAC/B;MA1BjB;QA4BoB,uDAAsD,EAIzD;QAhCjB;UA8BwB,YAAW,EACd;MA/BrB;QAdI,0BAgDgD;QA/ChD,sHAAyH;QACzH,yEAA8E;QAC9E,uEAA4E;QA8C5D,8DAA8D;QAC9D,oBAAmB;QACnB,YAAW,EACd;EAtCjB;IA6CgB,iBAAe,EAMlB;IAnDb;MA+CoB,aAAY;MACZ,YAAW;MACX,aAAY,EACf","file":"client.scss","sourcesContent":["// @import \"../../utils/browserControls/ArboretumChat.scss\";\n// From top to bottom\n@mixin linear-gradient($color-from, $color-to) {\n    background-color: $color-from; // Old browsers\n    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%,$color-from), color-stop(100%,$color-to)); // Chrome, Safari4+\n    background-image: -webkit-linear-gradient(top, $color-from 0%, $color-to 100%);           // Chrome10+, Safari5.1+\n    background-image: linear-gradient(to bottom, $color-from 0%, $color-to 100%);  // W3C\n}\n$header_height: 40px;\n$sidebar_width: 250px;\nhtml, body, #client_main, #arboretum_client {\n    margin: 0px;\n    padding: 0px;\n    height: 100%;\n    width: 100%;\n    overflow: hidden;\n}\nbody {\n    font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n    background-color: #333;\n    #arboretum_client {\n        #client_header {\n            max-height: $header_height;\n            @include linear-gradient(#e8e6e8, #d1cfd1);\n\n            #tabs {\n                padding: 0px;\n                margin: 0px;\n                overflow: hidden;\n                .tab {\n                    text-align: center;\n                    border-left: 1px solid #989698;\n                    @include linear-gradient(#b8b6b8, #b0aeb0);\n                    border-left: 1px solid #AAA;\n                    list-style: none;\n                    white-space: nowrap;\n                    border-bottom: 1px solid #aaa;\n                    overflow: hidden;\n                    text-overflow: ellipsis;\n                    color: #333;\n                }\n                &:last-child {\n                    border-right: 1px solid #AAA;\n                }\n                &.not-selected {\n                    background: linear-gradient(to bottom, #BBB 80%, #AAA);\n                    .closeTab {\n                        color: #999;\n                    }\n                }\n                &.tab.selected {\n                    @include linear-gradient(#d4d2d4, #cccacc);\n                    /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n                    border-bottom: none;\n                    color: #777;\n                }\n            }\n        }\n        #client_body {\n            #client_sidebar {\n            }\n            #client_content {\n                overflow:hidden;\n                iframe#content {\n                    border: none;\n                    width: 100%;\n                    height: 100%;\n                }\n            }\n        }\n    }\n}\n"],"sourceRoot":""}]);
+exports.push([module.i, "html, body, #client_main, #arboretum_client {\n  margin: 0px;\n  padding: 0px;\n  height: 100%;\n  width: 100%;\n  overflow: hidden; }\n\nbody {\n  font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n  background-color: #333; }\n  body #arboretum_client #client_header {\n    max-height: 40px;\n    background-color: #e8e6e8;\n    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #e8e6e8), color-stop(100%, #d1cfd1));\n    background-image: -webkit-linear-gradient(top, #e8e6e8 0%, #d1cfd1 100%);\n    background-image: linear-gradient(to bottom, #e8e6e8 0%, #d1cfd1 100%); }\n    body #arboretum_client #client_header #tabs {\n      padding: 0px;\n      margin: 0px;\n      overflow: hidden; }\n      body #arboretum_client #client_header #tabs .tab {\n        text-align: center;\n        border-left: 1px solid #989698;\n        background-color: #b8b6b8;\n        background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #b8b6b8), color-stop(100%, #b0aeb0));\n        background-image: -webkit-linear-gradient(top, #b8b6b8 0%, #b0aeb0 100%);\n        background-image: linear-gradient(to bottom, #b8b6b8 0%, #b0aeb0 100%);\n        border-left: 1px solid #AAA;\n        list-style: none;\n        white-space: nowrap;\n        border-bottom: 1px solid #aaa;\n        overflow: hidden;\n        text-overflow: ellipsis;\n        color: #333; }\n      body #arboretum_client #client_header #tabs:last-child {\n        border-right: 1px solid #AAA; }\n      body #arboretum_client #client_header #tabs.not-selected {\n        background: linear-gradient(to bottom, #BBB 80%, #AAA); }\n        body #arboretum_client #client_header #tabs.not-selected .closeTab {\n          color: #999; }\n      body #arboretum_client #client_header #tabs.tab.selected {\n        background-color: #d4d2d4;\n        background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #d4d2d4), color-stop(100%, #cccacc));\n        background-image: -webkit-linear-gradient(top, #d4d2d4 0%, #cccacc 100%);\n        background-image: linear-gradient(to bottom, #d4d2d4 0%, #cccacc 100%);\n        /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n        border-bottom: none;\n        color: #777; }\n  body #arboretum_client #client_body #client_sidebar .chat {\n    height: 100%; }\n  body #arboretum_client #client_body #client_content {\n    overflow: hidden; }\n    body #arboretum_client #client_body #client_content iframe#content {\n      border: none;\n      width: 100%;\n      height: 100%; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/client/css/src/client/css/client.scss"],"names":[],"mappings":"AAUA;EACI,YAAW;EACX,aAAY;EACZ,aAAY;EACZ,YAAW;EACX,iBAAgB,EACnB;;AACD;EACI,gHAA+G;EAC/G,uBAAsB,EAuDzB;EAzDD;IAKY,iBAdQ;IALhB,0BAoBwC;IAnBxC,sHAAyH;IACzH,yEAA8E;IAC9E,uEAA4E,EAmDvE;IAxCT;MASgB,aAAY;MACZ,YAAW;MACX,iBAAgB,EA4BnB;MAvCb;QAaoB,mBAAkB;QAClB,+BAA8B;QA5B9C,0BA6BgD;QA5BhD,sHAAyH;QACzH,yEAA8E;QAC9E,uEAA4E;QA2B5D,4BAA2B;QAC3B,iBAAgB;QAChB,oBAAmB;QACnB,8BAA6B;QAC7B,iBAAgB;QAChB,wBAAuB;QACvB,YAAW,EACd;MAvBjB;QAyBoB,6BAA4B,EAC/B;MA1BjB;QA4BoB,uDAAsD,EAIzD;QAhCjB;UA8BwB,YAAW,EACd;MA/BrB;QAdI,0BAgDgD;QA/ChD,sHAAyH;QACzH,yEAA8E;QAC9E,uEAA4E;QA8C5D,8DAA8D;QAC9D,oBAAmB;QACnB,YAAW,EACd;EAtCjB;IA4CoB,aAAY,EACf;EA7CjB;IAgDgB,iBAAe,EAMlB;IAtDb;MAkDoB,aAAY;MACZ,YAAW;MACX,aAAY,EACf","file":"client.scss","sourcesContent":["// @import \"../../utils/browserControls/ArboretumChat.scss\";\n// From top to bottom\n@mixin linear-gradient($color-from, $color-to) {\n    background-color: $color-from; // Old browsers\n    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%,$color-from), color-stop(100%,$color-to)); // Chrome, Safari4+\n    background-image: -webkit-linear-gradient(top, $color-from 0%, $color-to 100%);           // Chrome10+, Safari5.1+\n    background-image: linear-gradient(to bottom, $color-from 0%, $color-to 100%);  // W3C\n}\n$header_height: 40px;\n$sidebar_width: 250px;\nhtml, body, #client_main, #arboretum_client {\n    margin: 0px;\n    padding: 0px;\n    height: 100%;\n    width: 100%;\n    overflow: hidden;\n}\nbody {\n    font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n    background-color: #333;\n    #arboretum_client {\n        #client_header {\n            max-height: $header_height;\n            @include linear-gradient(#e8e6e8, #d1cfd1);\n\n            #tabs {\n                padding: 0px;\n                margin: 0px;\n                overflow: hidden;\n                .tab {\n                    text-align: center;\n                    border-left: 1px solid #989698;\n                    @include linear-gradient(#b8b6b8, #b0aeb0);\n                    border-left: 1px solid #AAA;\n                    list-style: none;\n                    white-space: nowrap;\n                    border-bottom: 1px solid #aaa;\n                    overflow: hidden;\n                    text-overflow: ellipsis;\n                    color: #333;\n                }\n                &:last-child {\n                    border-right: 1px solid #AAA;\n                }\n                &.not-selected {\n                    background: linear-gradient(to bottom, #BBB 80%, #AAA);\n                    .closeTab {\n                        color: #999;\n                    }\n                }\n                &.tab.selected {\n                    @include linear-gradient(#d4d2d4, #cccacc);\n                    /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n                    border-bottom: none;\n                    color: #777;\n                }\n            }\n        }\n        #client_body {\n            #client_sidebar {\n                .chat {\n                    height: 100%;\n                }\n            }\n            #client_content {\n                overflow:hidden;\n                iframe#content {\n                    border: none;\n                    width: 100%;\n                    height: 100%;\n                }\n            }\n        }\n    }\n}\n"],"sourceRoot":""}]);
 
 // exports
 

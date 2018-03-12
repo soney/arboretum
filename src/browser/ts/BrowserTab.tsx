@@ -32,7 +32,7 @@ export class BrowserTab extends React.Component<BrowserTabProps, BrowserTabState
     public webViewEl:JSX.Element;
     public webView:Electron.WebviewTag;
     private sdbTabId:CRI.TabID;
-    private tabDoc;
+    private tabDoc:SDBDoc<TabDoc>;
     constructor(props) {
         super(props);
         this.state = {
@@ -56,7 +56,23 @@ export class BrowserTab extends React.Component<BrowserTabProps, BrowserTabState
             this.tabDoc.destroy();
         }
         const sdb:SDB = this.props.sdb;
-        this.tabDoc = sdb.get<TabDoc>('tabs', this.getSDBTabID());
+        this.tabDoc = await sdb.get<TabDoc>('tab', this.getSDBTabID());
+        await this.tabDoc.createIfEmpty({
+            id:this.getSDBTabID(),
+            root:null,
+            canGoBack:false,
+            canGoForward:false,
+            url:'',
+            title:'',
+            isLoading: false
+        });
+        await Promise.all([
+            this.tabDoc.submitObjectReplaceOp(['canGoBack'], this.state.canGoBack),
+            this.tabDoc.submitObjectReplaceOp(['canGoForward'], this.state.canGoForward),
+            this.tabDoc.submitObjectReplaceOp(['isLoading'], this.state.isLoading),
+            this.tabDoc.submitObjectReplaceOp(['title'], this.state.title),
+            this.tabDoc.submitObjectReplaceOp(['url'], this.state.loadedURL)
+        ]);
     };
 
     public getTabID() {
@@ -66,18 +82,25 @@ export class BrowserTab extends React.Component<BrowserTabProps, BrowserTabState
     private webViewRef = (el:Electron.WebviewTag):void => {
         if(el) {
             this.webView = el;
-            this.webView.addEventListener('page-title-updated', (event:Electron.PageTitleUpdatedEvent) => {
+            this.webView.addEventListener('page-title-updated', async (event:Electron.PageTitleUpdatedEvent) => {
                 const {title} = event;
                 this.setState({title});
                 if(this.props.pageTitleChanged) { this.props.pageTitleChanged(this, title); }
+                if(this.tabDoc) {
+                    await this.tabDoc.submitObjectReplaceOp(['title'], title);
+                }
             });
-            this.webView.addEventListener('load-commit', (event:Electron.LoadCommitEvent) => {
+            this.webView.addEventListener('load-commit', async (event:Electron.LoadCommitEvent) => {
                 const {isMainFrame, url} = event;
 
                 if(isMainFrame) {
                     const loadedURL = url;
                     if(this.props.urlChanged) { this.props.urlChanged(this, url); }
                     this.setState({loadedURL});
+                    if(this.tabDoc) {
+                        await this.tabDoc.submitObjectReplaceOp(['url'], loadedURL);
+                    }
+                    this.updateCanGos();
                 }
             });
             this.webView.addEventListener('page-favicon-updated', (event:Electron.PageFaviconUpdatedEvent) => {
@@ -88,11 +111,35 @@ export class BrowserTab extends React.Component<BrowserTabProps, BrowserTabState
             this.webView.addEventListener('did-start-loading', (event) => {
                 this.setState({isLoading:true});
                 if(this.props.isLoadingChanged) { this.props.isLoadingChanged(this, true); }
+                this.updateCanGos();
             });
             this.webView.addEventListener('did-stop-loading', (event) => {
                 this.setState({isLoading:false});
                 if(this.props.isLoadingChanged) { this.props.isLoadingChanged(this, false); }
+                this.updateCanGos();
             });
+        }
+    };
+    private async updateCanGos():Promise<void> {
+        const canGoBack:boolean = this.webView.canGoBack();
+        const canGoForward:boolean = this.webView.canGoForward();
+        if(canGoBack !== this.state.canGoBack) {
+            this.setState({canGoBack});
+            if(this.tabDoc) {
+                await this.tabDoc.submitObjectReplaceOp(['canGoBack'], canGoBack);
+            }
+            if(this.props.canGoBackChanged) {
+                this.props.canGoBackChanged(this, canGoBack);
+            }
+        }
+        if(canGoForward !== this.state.canGoForward) {
+            this.setState({canGoForward});
+            if(this.tabDoc) {
+                await this.tabDoc.submitObjectReplaceOp(['canGoForward'], canGoForward);
+            }
+            if(this.props.canGoForwardChanged) {
+                this.props.canGoForwardChanged(this, canGoForward);
+            }
         }
     };
 
@@ -106,17 +153,24 @@ export class BrowserTab extends React.Component<BrowserTabProps, BrowserTabState
     public markSelected(selected:boolean=true):void {
         this.setState(_.extend(this.state, {selected}));
     };
-    public goBack():void {
-        this.webView.goBack();
+    public async goBack():Promise<void> {
+        if(this.webView.canGoBack()) {
+            this.webView.goBack();
+        }
     };
-    public goForward():void {
-        this.webView.goForward();
+    public async goForward():Promise<void> {
+        if(this.webView.canGoForward()) {
+            this.webView.goForward();
+        }
     };
-    public reload():void {
+    public async reload():Promise<void> {
         if(this.webView.isLoading()) {
             this.webView.stop();
         } else {
             this.webView.reload();
+        }
+        if(this.tabDoc) {
+            await this.tabDoc.submitObjectReplaceOp(['isLoading'], this.webView.isLoading());
         }
     };
     public navigate(url:string, options?:Electron.LoadURLOptions):void {

@@ -3,7 +3,6 @@
     flex: 1 0 auto;
     display: flex;
     flex-direction: column;
-    height: 100%;
 
     #task_title {
         flex: 0 0;
@@ -42,11 +41,21 @@
             margin-bottom: 2px;
             padding-bottom: 2px;
             color: #555;
-            .from {
-                font-weight: bold;
+            &.action{
+                color: #888;
+                &.not_admin {
+                    .messageAction {
+                        display: none;
+                    }
+                }
             }
-            .from::after {
-                content: ": ";
+            &:not(.action) {
+                .from {
+                    font-weight: bold;
+                }
+                .from::after {
+                    content: ": ";
+                }
             }
         }
     }
