@@ -1,28 +1,46 @@
 import {ShareDBDOMNode, TabDoc, BrowserDoc, CanvasImage} from '../../utils/state_interfaces';
 import {NodeCode} from '../../utils/NodeCode';
+import {TypedEventEmitter, TypedListener, registerEvent} from '../../utils/TypedEventEmitter';
 
-export function createClientNode(sdbNode:ShareDBDOMNode) {
+export interface ClientMouseEvent {
+    type:string,
+    targetNodeID:CRI.NodeID,
+    timeStamp:number,
+    clientX:number,
+    clientY:number,
+    which:number,
+    shiftKey:boolean,
+    ctrlKey:boolean,
+    altKey:boolean
+};
+
+export function createClientNode(sdbNode:ShareDBDOMNode, onCreateNode?:(c:ClientNode)=>void):ClientNode {
     const {nodeType} = sdbNode;
     if(nodeType === NodeCode.DOCUMENT_NODE) {
-        return new ClientDocumentNode(sdbNode);
+        return new ClientDocumentNode(sdbNode, onCreateNode);
     } else if(nodeType === NodeCode.ELEMENT_NODE) {
-        return new ClientElementNode(sdbNode);
+        return new ClientElementNode(sdbNode, onCreateNode);
     } else if(nodeType === NodeCode.TEXT_NODE) {
-        return new ClientTextNode(sdbNode);
+        return new ClientTextNode(sdbNode, onCreateNode);
     } else if(nodeType === NodeCode.COMMENT_NODE) {
-        return new ClientCommentNode(sdbNode);
+        return new ClientCommentNode(sdbNode, onCreateNode);
     } else if(nodeType === NodeCode.DOCUMENT_TYPE_NODE) {
-        return new ClientDocumentTypeNode(sdbNode);
+        return new ClientDocumentTypeNode(sdbNode, onCreateNode);
     } else {
         console.log(sdbNode);
     }
 };
 
-export abstract class ClientNode {
+export abstract class ClientNode extends TypedEventEmitter {
     private children:Array<ClientNode>;
     protected contentDocument:ClientDocumentNode;
-    constructor(protected sdbNode:ShareDBDOMNode) {
-        this.children = this.getNodeChildren().map((child) => createClientNode(child));
+    public mouseEvent = this.registerEvent<ClientMouseEvent>();
+    constructor(protected sdbNode:ShareDBDOMNode, protected onCreateNode?:(c:ClientNode)=>void) {
+        super();
+        this.children = this.getNodeChildren().map((child) => createClientNode(child, this.onCreateNode));
+        if(this.onCreateNode) {
+            this.onCreateNode(this);
+        }
     };
     public getContentDocument():ClientDocumentNode { return this.contentDocument; };
     public getChild(index:number=0):ClientNode { return this.children[index]; };
@@ -41,6 +59,7 @@ export abstract class ClientNode {
     public abstract getElement():HTMLElement|SVGElement|Text|Comment;
     public remove():void { }
     public destroy():void {
+        super.clearRegisteredEvents();
         this.getChildren().forEach((c) => {
             c.destroy();
         });
@@ -48,8 +67,8 @@ export abstract class ClientNode {
 };
 
 export class ClientDocumentNode extends ClientNode {
-    constructor(sdbNode:ShareDBDOMNode, private document?:Document) {
-        super(sdbNode);
+    constructor(sdbNode:ShareDBDOMNode, onCreateNode?:((c:ClientNode)=>void), private document?:Document) {
+        super(sdbNode, onCreateNode);
         this.setChildren(this.getChildren());
     };
     public getDocument():Document { return this.document; };
@@ -80,15 +99,15 @@ export class ClientDocumentNode extends ClientNode {
     };
 };
 export class ClientDocumentTypeNode extends ClientNode {
-    constructor(sdbNode:ShareDBDOMNode) { super(sdbNode); };
+    constructor(sdbNode:ShareDBDOMNode, onCreateNode?:(c:ClientNode)=>void) { super(sdbNode, onCreateNode); };
     public getElement():null {
         return null;
     }
 };
 export class ClientElementNode extends ClientNode {
     private element:HTMLElement|SVGElement;
-    constructor(sdbNode:ShareDBDOMNode) {
-        super(sdbNode);
+    constructor(sdbNode:ShareDBDOMNode, onCreateNode?:(c:ClientNode)=>void) {
+        super(sdbNode, onCreateNode);
         const {nodeName, isSVG, nodeId} = this.sdbNode;
         if(isSVG) {
             this.element = document.createElementNS('http://www.w3.org/2000/svg', nodeName);
@@ -110,7 +129,7 @@ export class ClientElementNode extends ClientNode {
 
             const nodeContentDocument = this.getNodeContentDocument();
             if(nodeContentDocument) {
-                this.contentDocument = new ClientDocumentNode(nodeContentDocument, iFrameElement.contentDocument);
+                this.contentDocument = new ClientDocumentNode(nodeContentDocument, this.onCreateNode, iFrameElement.contentDocument);
                 this.contentDocument.removeChildren();
                 const iframeBody = this.contentDocument.getChild();
                 if(iframeBody) {
@@ -129,6 +148,13 @@ export class ClientElementNode extends ClientNode {
     };
     private removeEventListeners():void {
         this.element.removeEventListener('click', this.onClick);
+    };
+    private onClick = (event:MouseEvent):void => {
+        if(this.element === event.target) {
+            const {type, timeStamp, clientX, clientY, which, shiftKey, altKey, ctrlKey} = event;
+            const targetNodeID = this.sdbNode.nodeId;
+            this.mouseEvent.emit({type, targetNodeID, timeStamp, clientX, clientY, which, shiftKey, altKey, ctrlKey});
+        }
     };
     public setChildren(children:Array<ClientNode>):void {
         for(let i = this.element.children.length-1; i>=0; i--) {
@@ -188,16 +214,11 @@ export class ClientElementNode extends ClientNode {
             this.contentDocument.destroy();
         }
     };
-    private onClick = (event:MouseEvent):void => {
-        if(this.element === event.target) {
-            console.log(this);
-        }
-    };
 };
 export class ClientTextNode extends ClientNode {
     private element:Text;
-    constructor(sdbNode:ShareDBDOMNode) {
-        super(sdbNode);
+    constructor(sdbNode:ShareDBDOMNode, onCreateNode?:(c:ClientNode)=>void) {
+        super(sdbNode, onCreateNode);
         const {nodeValue} = sdbNode;
         this.element = document.createTextNode(nodeValue);
     };
@@ -214,8 +235,8 @@ export class ClientTextNode extends ClientNode {
 };
 export class ClientCommentNode extends ClientNode {
     private element:Comment;
-    constructor(sdbNode:ShareDBDOMNode) {
-        super(sdbNode);
+    constructor(sdbNode:ShareDBDOMNode, onCreateNode?:(c:ClientNode)=>void) {
+        super(sdbNode, onCreateNode);
         const {nodeValue} = sdbNode;
         this.element = document.createComment(nodeValue);
     };

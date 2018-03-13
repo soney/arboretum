@@ -1,111 +1,64 @@
-/******************************************************************************
- * The MIT License (MIT)                                                      *
- *                                                                            *
- * Copyright (c) 2016 Simon "Tenry" Burchert                                  *
- *                                                                            *
- * Permission is hereby granted, free of charge, to any person obtaining a    *
- * copy of this software and associated documentation files (the "Software"), *
- * to deal in the Software without restriction, including without limitation  *
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,   *
- * and/or sell copies of the Software, and to permit persons to whom the      *
- * Software is furnished to do so, subject to the following conditions:       *
- *                                                                            *
- * The above copyright notice and this permission notice shall be included in *
- * all copies or substantial portions of the Software.                        *
- *                                                                            *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR *
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,   *
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL    *
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER *
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING    *
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER        *
- * EALINGS IN THE SOFTWARE.                                                   *
- ******************************************************************************/
-
 export class TypedEventEmitter {
-    private eventListeners: Map<Function, Function[]>;
-
-    constructor() {
-        this.eventListeners = new Map<Function, Function[]>();
+    private registeredEvents:Array<RegisteredEvent<any>> = [];
+    constructor(){};
+    public registerEvent<E>():RegisteredEvent<E> {
+        const rv = new RegisteredEvent<E>();
+        this.registeredEvents.push(rv);
+        return rv;
     };
+    public clearRegisteredEvents():void {
+        this.registeredEvents.forEach((re) => {
+            re.clearListeners();
+        });
+        this.registeredEvents.splice(0, this.registeredEvents.length);
+    }
+};
+export function registerEvent<E>():RegisteredEvent<E> {
+    return new RegisteredEvent<E>();
+};
 
-    public on(event: Function, listener: Function): TypedListener {
-        if (!this.eventListeners.has(event)) {
-            this.eventListeners.set(event, [listener]);
-        } else {
-            this.eventListeners.get(event).push(listener);
-        }
-
-        return new TypedListener(this, event, listener);
+export class RegisteredEvent<E> {
+    private listeners:Array<TypedListener<E>> = [];
+    public emit(event?:E):void {
+        this.listeners.forEach((l) => {
+            l.fire(event);
+        });
     };
-    public once(event: Function, baseListener: Function): TypedListener {
-        const listener = (...args):any => {
-            const rv:any = baseListener(...args);
-            this.removeListener(event, listener);
-            return rv;
-        };
-        return this.on(event, listener);
-    };
-
-    public addListener(event: Function, listener: Function): TypedListener {
-        return this.on(event, listener);
-    };
-
-    public removeListener():void;
-    public removeListener(id: TypedListener):void;
-    public removeListener(event: Function, listener?: Function):void;
-
-    public removeListener():void {
-        if (arguments.length == 0) {
-            this.eventListeners.clear();
-        } else if (arguments.length == 1 && typeof arguments[0] == 'object') {
-            const id = arguments[0];
-            this.removeListener(id.event, id.listener);
-        } else if (arguments.length >= 1) {
-            let event = <Function>arguments[0];
-            let listener = <Function>arguments[1];
-
-            if (this.eventListeners.has(event)) {
-                const listeners = this.eventListeners.get(event);
-                let idx;
-                while (!listener || (idx = listeners.indexOf(listener)) != -1) {
-                    listeners.splice(idx, 1);
-                }
+    public clearListeners():void { this.listeners.splice(0, this.listeners.length); };
+    public removeListener(listener:TypedListener<E>):boolean {
+        let found:boolean = false;
+        for(let i:number=0;i<this.listeners.length;i++) {
+            const l:TypedListener<E> = this.listeners[i];
+            if(l === listener) {
+                this.listeners.splice(i, 1);
+                i--;
+                found = true;
             }
         }
+        return found;
     };
-
-    /**
-     * Emit event. Calls all bound listeners with args.
-     */
-    protected emit(event: Function, ...args):void {
-        if (this.eventListeners.has(event)) {
-            for (let listener of this.eventListeners.get(event)) {
-                listener(...args);
-            }
-        }
-    };
-
-    /**
-     * @typeparam T The event handler signature.
-     */
-    public registerEvent<T extends Function>():Function {
-        const eventBinder = (handler: T) => {
-            return this.addListener(eventBinder, handler);
-        };
-
-        return eventBinder;
+    public addListener(func:(event:E)=>void, unbindWhenRun:boolean=false):TypedListener<E> {
+        const typedListener = new TypedListener<E>(func, this, unbindWhenRun);
+        this.listeners.push(typedListener);
+        return typedListener;
     };
 };
 
-export class TypedListener {
-    constructor(public owner: TypedEventEmitter,
-        public event: Function,
-        public listener: Function, public unbindWhenRun:boolean=false) {
-
+export class TypedListener<E> {
+    constructor(private listener:(event:E)=>void, private owner:RegisteredEvent<E>, private unbindWhenRun:boolean=false) {
     };
-
-    unbind():void {
-        this.owner.removeListener(this);
+    public unbind():void { this.owner.removeListener(this); };
+    public fire(event:E):void {
+        if(this.unbindWhenRun) { this.unbind(); }
+        this.listener(event);
     };
+    // constructor(public owner: TypedEventEmitter,
+    //     public event: Function,
+    //     public listener: Function, public unbindWhenRun:boolean=false) {
+    // };
+    // public fire(event:E) {
+    // };
+    // public unbind():void {
+    //     this.owner.removeListener(this);
+    // };
 };

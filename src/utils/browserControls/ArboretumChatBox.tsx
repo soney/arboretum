@@ -39,15 +39,15 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
         this.sdb = sdb;
         this.chat = new ArboretumChat(this.sdb);
 
-        this.chat.ready(async () => {
+        this.chat.ready.addListener(async () => {
             await this.chat.join(this.props.username);
 
             await this.updateMessagesState();
             await this.updateUsersState();
 
-            this.chat.messageAdded(this.updateMessagesState);
-            this.chat.userJoined(this.updateUsersState);
-            this.chat.userNotPresent(this.updateUsersState);
+            this.chat.messageAdded.addListener(this.updateMessagesState);
+            this.chat.userJoined.addListener(this.updateUsersState);
+            this.chat.userNotPresent.addListener(this.updateUsersState);
         });
     };
     private updateMessagesState = async ():Promise<void> => {
@@ -121,6 +121,9 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
                 if(action === 'navigate') {
                     const {url} = data;
                     description = <span className='navigate description'>navigate to {url}</span>;
+                } else if(action === 'click') {
+                    const {targetNodeID} = data;
+                    description = <span className='navigate description'>click on {targetNodeID}</span>;
                 }
 
                 if(performed) {

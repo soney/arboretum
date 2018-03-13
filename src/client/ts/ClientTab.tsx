@@ -5,6 +5,8 @@ import * as ShareDBClient from 'sharedb/lib/client';
 import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
 import {createClientNode, ClientDocumentNode, ClientNode, ClientElementNode} from './ClientDOMNode';
 import {NodeSelector} from './NodeSelector';
+import {registerEvent} from '../../utils/TypedEventEmitter';
+import {PageAction, PageActionMessage} from '../../utils/ArboretumChat';
 
 type ClientTabProps = {
     tabID?:CRI.TabID,
@@ -31,6 +33,7 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
     private rootElement:ClientNode;
     private nodeSelector:NodeSelector = new NodeSelector();
     private iframeElement:HTMLIFrameElement;
+    public pageAction = registerEvent<{pa:PageAction, data:any}>();
 
     constructor(props) {
         super(props);
@@ -89,9 +92,17 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
             this.rootElement = null;
         }
 
-        this.rootElement = new ClientDocumentNode(root, this.iframeElement.contentDocument);
+        this.rootElement = new ClientDocumentNode(root, this.onDOMNodeCreated, this.iframeElement.contentDocument);
         // const node = ReactDOM.findDOMNode(this);
         // node.appendChild(this.rootElement.getElement());
+    };
+    private onDOMNodeCreated = (clientNode:ClientNode):void => {
+        clientNode.mouseEvent.addListener((event) => {
+            this.pageAction.emit({
+                pa:'click',
+                data:event
+            });
+        });
     };
     private handleOp(op:ShareDBClient.Op):void {
         const {node, property, path} = this.traverse(op);
@@ -127,7 +138,7 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
                 (node as ClientElementNode).setCanvasValue(imageData);
             } else if(property === 'children') {
                 if(path.length === 0) { // set all children
-                    const children = oi.map((c) => createClientNode(c))
+                    const children = oi.map((c) => createClientNode(c, this.onDOMNodeCreated))
                     node.setChildren(children);
                 } else { // set a specific child
                     const {li, ld} = op;
@@ -135,7 +146,7 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
                     if(ld) {
                         node.removeChild(index);
                     } else if(li) {
-                        const child = createClientNode(li);
+                        const child = createClientNode(li, this.onDOMNodeCreated);
                         node.insertChild(child, index);
                     }
                 }

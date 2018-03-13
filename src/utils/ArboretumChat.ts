@@ -40,7 +40,7 @@ export interface ChatDoc {
 
 export interface UserJoinedEvent {
     user:User,
-    after:User
+    after?:User
 };
 export interface UserNotPresentEvent {
     user:User
@@ -51,7 +51,7 @@ export interface UserTypingStatusChangedEvent {
 };
 export interface MessageAddedEvent {
     message:Message,
-    after:Message
+    after?:Message
 };
 export interface ReadyEvent { };
 
@@ -61,11 +61,11 @@ export class ArboretumChat extends TypedEventEmitter {
     private doc:SDBDoc<ChatDoc>;
     public initialized:Promise<void>;
     private meUser:User;
-    public userJoined = this.registerEvent<(UserJoinedEvent)=>void>();
-    public userNotPresent = this.registerEvent<(UserNotPresentEvent)=>void>();
-    public userTypingStatusChanged = this.registerEvent<(UserTypingStatusChangedEvent)=>void>();
-    public messageAdded = this.registerEvent<(MessageAddedEvent)=>void>();
-    public ready = this.registerEvent<(ReadyEvent)=>void>();
+    public userJoined = this.registerEvent<UserJoinedEvent>();
+    public userNotPresent = this.registerEvent<UserNotPresentEvent>();
+    public userTypingStatusChanged = this.registerEvent<UserTypingStatusChangedEvent>();
+    public messageAdded = this.registerEvent<MessageAddedEvent>();
+    public ready = this.registerEvent<ReadyEvent>();
     constructor(private sdb:SDB) {
         super();
         this.doc = this.sdb.get<ChatDoc>('arboretum', 'chat');
@@ -84,7 +84,7 @@ export class ArboretumChat extends TypedEventEmitter {
             if(ops) {
                 ops.forEach((op) => this.handleOp(op));
             } else {
-                this.emit(this.ready);
+                this.ready.emit();
             }
         });
     };
@@ -92,16 +92,16 @@ export class ArboretumChat extends TypedEventEmitter {
         const {p, li} = op;
         if(p[0] === 'users') {
             if(p.length === 2 && li) { // user added
-                this.emit(this.userJoined, {
+                this.userJoined.emit({
                     user:li
                 });
             } else if(p.length === 3 && p[2] === 'present') { // presence status changed
                 const userIndex = p[1];
                 const user = this.doc.getData().users[userIndex];
-                this.emit(this.userNotPresent, { user });
+                this.userNotPresent.emit({ user });
             }
         } else if(p[0] === 'messages') {
-            this.emit(this.messageAdded, {
+            this.messageAdded.emit({
                 message:li
             });
         }

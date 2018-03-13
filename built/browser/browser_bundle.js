@@ -25832,13 +25832,13 @@ class ArboretumChatBox extends React.Component {
         return __awaiter(this, void 0, void 0, function* () {
             this.sdb = sdb;
             this.chat = new ArboretumChat_1.ArboretumChat(this.sdb);
-            this.chat.ready(() => __awaiter(this, void 0, void 0, function* () {
+            this.chat.ready.addListener(() => __awaiter(this, void 0, void 0, function* () {
                 yield this.chat.join(this.props.username);
                 yield this.updateMessagesState();
                 yield this.updateUsersState();
-                this.chat.messageAdded(this.updateMessagesState);
-                this.chat.userJoined(this.updateUsersState);
-                this.chat.userNotPresent(this.updateUsersState);
+                this.chat.messageAdded.addListener(this.updateMessagesState);
+                this.chat.userJoined.addListener(this.updateUsersState);
+                this.chat.userNotPresent.addListener(this.updateUsersState);
             }));
         });
     }
@@ -25885,6 +25885,12 @@ class ArboretumChatBox extends React.Component {
                     description = React.createElement("span", { className: 'navigate description' },
                         "navigate to ",
                         url);
+                }
+                else if (action === 'click') {
+                    const { targetNodeID } = data;
+                    description = React.createElement("span", { className: 'navigate description' },
+                        "click on ",
+                        targetNodeID);
                 }
                 if (performed) {
                     actions = React.createElement("div", { className: '' }, "(accepted)");
@@ -25993,7 +25999,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
                     ops.forEach((op) => this.handleOp(op));
                 }
                 else {
-                    this.emit(this.ready);
+                    this.ready.emit();
                 }
             });
         });
@@ -26003,18 +26009,18 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         const { p, li } = op;
         if (p[0] === 'users') {
             if (p.length === 2 && li) {
-                this.emit(this.userJoined, {
+                this.userJoined.emit({
                     user: li
                 });
             }
             else if (p.length === 3 && p[2] === 'present') {
                 const userIndex = p[1];
                 const user = this.doc.getData().users[userIndex];
-                this.emit(this.userNotPresent, { user });
+                this.userNotPresent.emit({ user });
             }
         }
         else if (p[0] === 'messages') {
-            this.emit(this.messageAdded, {
+            this.messageAdded.emit({
                 message: li
             });
         }
@@ -26165,113 +26171,80 @@ exports.ArboretumChat = ArboretumChat;
 
 "use strict";
 
-/******************************************************************************
- * The MIT License (MIT)                                                      *
- *                                                                            *
- * Copyright (c) 2016 Simon "Tenry" Burchert                                  *
- *                                                                            *
- * Permission is hereby granted, free of charge, to any person obtaining a    *
- * copy of this software and associated documentation files (the "Software"), *
- * to deal in the Software without restriction, including without limitation  *
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,   *
- * and/or sell copies of the Software, and to permit persons to whom the      *
- * Software is furnished to do so, subject to the following conditions:       *
- *                                                                            *
- * The above copyright notice and this permission notice shall be included in *
- * all copies or substantial portions of the Software.                        *
- *                                                                            *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR *
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,   *
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL    *
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER *
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING    *
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER        *
- * EALINGS IN THE SOFTWARE.                                                   *
- ******************************************************************************/
 Object.defineProperty(exports, "__esModule", { value: true });
 class TypedEventEmitter {
     constructor() {
-        this.eventListeners = new Map();
+        this.registeredEvents = [];
     }
     ;
-    on(event, listener) {
-        if (!this.eventListeners.has(event)) {
-            this.eventListeners.set(event, [listener]);
-        }
-        else {
-            this.eventListeners.get(event).push(listener);
-        }
-        return new TypedListener(this, event, listener);
-    }
-    ;
-    once(event, baseListener) {
-        const listener = (...args) => {
-            const rv = baseListener(...args);
-            this.removeListener(event, listener);
-            return rv;
-        };
-        return this.on(event, listener);
-    }
-    ;
-    addListener(event, listener) {
-        return this.on(event, listener);
-    }
-    ;
-    removeListener() {
-        if (arguments.length == 0) {
-            this.eventListeners.clear();
-        }
-        else if (arguments.length == 1 && typeof arguments[0] == 'object') {
-            const id = arguments[0];
-            this.removeListener(id.event, id.listener);
-        }
-        else if (arguments.length >= 1) {
-            let event = arguments[0];
-            let listener = arguments[1];
-            if (this.eventListeners.has(event)) {
-                const listeners = this.eventListeners.get(event);
-                let idx;
-                while (!listener || (idx = listeners.indexOf(listener)) != -1) {
-                    listeners.splice(idx, 1);
-                }
-            }
-        }
-    }
-    ;
-    /**
-     * Emit event. Calls all bound listeners with args.
-     */
-    emit(event, ...args) {
-        if (this.eventListeners.has(event)) {
-            for (let listener of this.eventListeners.get(event)) {
-                listener(...args);
-            }
-        }
-    }
-    ;
-    /**
-     * @typeparam T The event handler signature.
-     */
     registerEvent() {
-        const eventBinder = (handler) => {
-            return this.addListener(eventBinder, handler);
-        };
-        return eventBinder;
+        const rv = new RegisteredEvent();
+        this.registeredEvents.push(rv);
+        return rv;
     }
     ;
+    clearRegisteredEvents() {
+        this.registeredEvents.forEach((re) => {
+            re.clearListeners();
+        });
+        this.registeredEvents.splice(0, this.registeredEvents.length);
+    }
 }
 exports.TypedEventEmitter = TypedEventEmitter;
 ;
+function registerEvent() {
+    return new RegisteredEvent();
+}
+exports.registerEvent = registerEvent;
+;
+class RegisteredEvent {
+    constructor() {
+        this.listeners = [];
+    }
+    emit(event) {
+        this.listeners.forEach((l) => {
+            l.fire(event);
+        });
+    }
+    ;
+    clearListeners() { this.listeners.splice(0, this.listeners.length); }
+    ;
+    removeListener(listener) {
+        let found = false;
+        for (let i = 0; i < this.listeners.length; i++) {
+            const l = this.listeners[i];
+            if (l === listener) {
+                this.listeners.splice(i, 1);
+                i--;
+                found = true;
+            }
+        }
+        return found;
+    }
+    ;
+    addListener(func, unbindWhenRun = false) {
+        const typedListener = new TypedListener(func, this, unbindWhenRun);
+        this.listeners.push(typedListener);
+        return typedListener;
+    }
+    ;
+}
+exports.RegisteredEvent = RegisteredEvent;
+;
 class TypedListener {
-    constructor(owner, event, listener, unbindWhenRun = false) {
-        this.owner = owner;
-        this.event = event;
+    constructor(listener, owner, unbindWhenRun = false) {
         this.listener = listener;
+        this.owner = owner;
         this.unbindWhenRun = unbindWhenRun;
     }
     ;
-    unbind() {
-        this.owner.removeListener(this);
+    unbind() { this.owner.removeListener(this); }
+    ;
+    fire(event) {
+        if (this.unbindWhenRun) {
+            this.unbind();
+        }
+        this.listener(event);
     }
     ;
 }
@@ -27688,8 +27661,6 @@ class BrowserNavigationBar extends React.Component {
     }
     ;
     render() {
-        console.log(this.state.canGoBack);
-        console.log(this.state.canGoForward);
         const toggleSidebarButton = this.props.showSidebarToggle ? React.createElement("button", { onClick: this.toggleSidebarClicked, className: 'btn btn-default btn-mini', id: 'task' },
             React.createElement("span", { className: 'icon icon-publish' })) : null;
         return React.createElement("div", { className: "toolbar toolbar-header", id: "navBar" },

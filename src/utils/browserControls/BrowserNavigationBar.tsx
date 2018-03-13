@@ -68,8 +68,6 @@ export class BrowserNavigationBar extends React.Component<BrowserNavigationBarPr
     };
 
     public render():React.ReactNode {
-        console.log(this.state.canGoBack);
-        console.log(this.state.canGoForward);
         const toggleSidebarButton = this.props.showSidebarToggle ? <button onClick={this.toggleSidebarClicked} className = 'btn btn-default btn-mini' id='task'><span className='icon icon-publish'></span></button> : null;
         return <div className="toolbar toolbar-header" id="navBar">
                     <div className="toolbar-actions">

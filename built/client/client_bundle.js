@@ -60,7 +60,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 54);
+/******/ 	return __webpack_require__(__webpack_require__.s = 55);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -261,9 +261,9 @@ process.umask = function() { return 0; };
 /* WEBPACK VAR INJECTION */(function(process) {
 
 if (process.env.NODE_ENV === 'production') {
-  module.exports = __webpack_require__(55);
-} else {
   module.exports = __webpack_require__(56);
+} else {
+  module.exports = __webpack_require__(57);
 }
 
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
@@ -299,7 +299,7 @@ module.exports = g;
 /* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var makeError = __webpack_require__(70);
+var makeError = __webpack_require__(71);
 
 function ShareDBError(code, message) {
   ShareDBError.super.call(this, message);
@@ -1361,7 +1361,7 @@ exports.Readable = exports;
 exports.Writable = __webpack_require__(19);
 exports.Duplex = __webpack_require__(4);
 exports.Transform = __webpack_require__(51);
-exports.PassThrough = __webpack_require__(88);
+exports.PassThrough = __webpack_require__(89);
 
 
 /***/ }),
@@ -1441,7 +1441,7 @@ util.inherits = __webpack_require__(8);
 
 /*<replacement>*/
 var internalUtil = {
-  deprecate: __webpack_require__(87)
+  deprecate: __webpack_require__(88)
 };
 /*</replacement>*/
 
@@ -4363,7 +4363,7 @@ function updateLink (link, options, obj) {
 if (process.env.NODE_ENV !== 'production') {
   var invariant = __webpack_require__(16);
   var warning = __webpack_require__(17);
-  var ReactPropTypesSecret = __webpack_require__(57);
+  var ReactPropTypesSecret = __webpack_require__(58);
   var loggedTypeFailures = {};
 }
 
@@ -4662,7 +4662,7 @@ module.exports = shallowEqual;
  * 
  */
 
-var isTextNode = __webpack_require__(60);
+var isTextNode = __webpack_require__(61);
 
 /*eslint-disable no-bitwise */
 
@@ -6230,7 +6230,7 @@ function callEach(callbacks, err) {
 // into a separate module that json0 can depend on).
 
 module.exports = {
-  type: __webpack_require__(71)
+  type: __webpack_require__(72)
 };
 
 
@@ -7851,7 +7851,7 @@ exports._unrefActive = exports.active = function(item) {
 };
 
 // setimmediate attaches itself to the global object
-__webpack_require__(75);
+__webpack_require__(76);
 // On some exotic environments, it's not clear which object `setimmeidate` was
 // able to install onto.  Search each possibility in the same order as the
 // `setimmediate` library.
@@ -7868,7 +7868,7 @@ exports.clearImmediate = (typeof self !== "undefined" && self.clearImmediate) ||
 /* 39 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(process) {var hat = __webpack_require__(76);
+/* WEBPACK VAR INJECTION */(function(process) {var hat = __webpack_require__(77);
 var util = __webpack_require__(7);
 var types = __webpack_require__(6);
 
@@ -8805,7 +8805,7 @@ MemoryPubSub.prototype._publish = function(channels, data, callback) {
 /* 43 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(process) {var OpStream = __webpack_require__(77);
+/* WEBPACK VAR INJECTION */(function(process) {var OpStream = __webpack_require__(78);
 var ShareDBError = __webpack_require__(3);
 var util = __webpack_require__(7);
 
@@ -9460,7 +9460,7 @@ function isPrimitive(arg) {
 }
 exports.isPrimitive = isPrimitive;
 
-exports.isBuffer = __webpack_require__(78);
+exports.isBuffer = __webpack_require__(79);
 
 function objectToString(o) {
   return Object.prototype.toString.call(o);
@@ -9504,7 +9504,7 @@ exports.log = function() {
  *     prototype.
  * @param {function} superCtor Constructor function to inherit prototype from.
  */
-exports.inherits = __webpack_require__(79);
+exports.inherits = __webpack_require__(80);
 
 exports._extend = function(origin, add) {
   // Don't do anything if add isn't an object
@@ -9556,10 +9556,10 @@ var inherits = __webpack_require__(8);
 
 inherits(Stream, EE);
 Stream.Readable = __webpack_require__(18);
-Stream.Writable = __webpack_require__(89);
-Stream.Duplex = __webpack_require__(90);
-Stream.Transform = __webpack_require__(91);
-Stream.PassThrough = __webpack_require__(92);
+Stream.Writable = __webpack_require__(90);
+Stream.Duplex = __webpack_require__(91);
+Stream.Transform = __webpack_require__(92);
+Stream.PassThrough = __webpack_require__(93);
 
 // Backwards-compat with node 0.4.x
 Stream.Stream = Stream;
@@ -9693,7 +9693,7 @@ var processNextTick = __webpack_require__(14).nextTick;
 module.exports = Readable;
 
 /*<replacement>*/
-var isArray = __webpack_require__(80);
+var isArray = __webpack_require__(81);
 /*</replacement>*/
 
 /*<replacement>*/
@@ -9733,7 +9733,7 @@ util.inherits = __webpack_require__(8);
 /*</replacement>*/
 
 /*<replacement>*/
-var debugUtil = __webpack_require__(84);
+var debugUtil = __webpack_require__(85);
 var debug = void 0;
 if (debugUtil && debugUtil.debuglog) {
   debug = debugUtil.debuglog('stream');
@@ -9742,7 +9742,7 @@ if (debugUtil && debugUtil.debuglog) {
 }
 /*</replacement>*/
 
-var BufferList = __webpack_require__(85);
+var BufferList = __webpack_require__(86);
 var destroyImpl = __webpack_require__(49);
 var StringDecoder;
 
@@ -10701,9 +10701,9 @@ module.exports = __webpack_require__(13).EventEmitter;
 
 
 
-var base64 = __webpack_require__(81)
-var ieee754 = __webpack_require__(82)
-var isArray = __webpack_require__(83)
+var base64 = __webpack_require__(82)
+var ieee754 = __webpack_require__(83)
+var isArray = __webpack_require__(84)
 
 exports.Buffer = Buffer
 exports.SlowBuffer = SlowBuffer
@@ -13065,8 +13065,8 @@ function done(stream, er, data) {
 /* 52 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var arraydiff = __webpack_require__(93);
-var deepEquals = __webpack_require__(94);
+var arraydiff = __webpack_require__(94);
+var deepEquals = __webpack_require__(95);
 var ShareDBError = __webpack_require__(3);
 var util = __webpack_require__(7);
 
@@ -13625,16 +13625,103 @@ SubmitRequest.prototype.maxRetriesError = function() {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+class TypedEventEmitter {
+    constructor() {
+        this.registeredEvents = [];
+    }
+    ;
+    registerEvent() {
+        const rv = new RegisteredEvent();
+        this.registeredEvents.push(rv);
+        return rv;
+    }
+    ;
+    clearRegisteredEvents() {
+        this.registeredEvents.forEach((re) => {
+            re.clearListeners();
+        });
+        this.registeredEvents.splice(0, this.registeredEvents.length);
+    }
+}
+exports.TypedEventEmitter = TypedEventEmitter;
+;
+function registerEvent() {
+    return new RegisteredEvent();
+}
+exports.registerEvent = registerEvent;
+;
+class RegisteredEvent {
+    constructor() {
+        this.listeners = [];
+    }
+    emit(event) {
+        this.listeners.forEach((l) => {
+            l.fire(event);
+        });
+    }
+    ;
+    clearListeners() { this.listeners.splice(0, this.listeners.length); }
+    ;
+    removeListener(listener) {
+        let found = false;
+        for (let i = 0; i < this.listeners.length; i++) {
+            const l = this.listeners[i];
+            if (l === listener) {
+                this.listeners.splice(i, 1);
+                i--;
+                found = true;
+            }
+        }
+        return found;
+    }
+    ;
+    addListener(func, unbindWhenRun = false) {
+        const typedListener = new TypedListener(func, this, unbindWhenRun);
+        this.listeners.push(typedListener);
+        return typedListener;
+    }
+    ;
+}
+exports.RegisteredEvent = RegisteredEvent;
+;
+class TypedListener {
+    constructor(listener, owner, unbindWhenRun = false) {
+        this.listener = listener;
+        this.owner = owner;
+        this.unbindWhenRun = unbindWhenRun;
+    }
+    ;
+    unbind() { this.owner.removeListener(this); }
+    ;
+    fire(event) {
+        if (this.unbindWhenRun) {
+            this.unbind();
+        }
+        this.listener(event);
+    }
+    ;
+}
+exports.TypedListener = TypedListener;
+;
+
+
+/***/ }),
+/* 55 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(1);
-const ReactDOM = __webpack_require__(58);
-const ArboretumClient_1 = __webpack_require__(67);
+const ReactDOM = __webpack_require__(59);
+const ArboretumClient_1 = __webpack_require__(68);
 __webpack_require__(112);
 const { userID, frameID, tabID, viewType } = window['clientOptions'];
 ReactDOM.render(React.createElement(ArboretumClient_1.ArboretumClient, { userID: userID, frameID: frameID, tabID: tabID, viewType: viewType }), document.getElementById('client_main'));
 
 
 /***/ }),
-/* 55 */
+/* 56 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13662,7 +13749,7 @@ isValidElement:K,version:"16.2.0",__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_F
 
 
 /***/ }),
-/* 56 */
+/* 57 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15027,7 +15114,7 @@ module.exports = react;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 57 */
+/* 58 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15046,7 +15133,7 @@ module.exports = ReactPropTypesSecret;
 
 
 /***/ }),
-/* 58 */
+/* 59 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15084,15 +15171,15 @@ if (process.env.NODE_ENV === 'production') {
   // DCE check should happen before ReactDOM bundle executes so that
   // DevTools can report bad minification during injection.
   checkDCE();
-  module.exports = __webpack_require__(59);
+  module.exports = __webpack_require__(60);
 } else {
-  module.exports = __webpack_require__(62);
+  module.exports = __webpack_require__(63);
 }
 
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 59 */
+/* 60 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15328,7 +15415,7 @@ Z.injectIntoDevTools({findFiberByHostInstance:pb,bundleType:0,version:"16.2.0",r
 
 
 /***/ }),
-/* 60 */
+/* 61 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15343,7 +15430,7 @@ Z.injectIntoDevTools({findFiberByHostInstance:pb,bundleType:0,version:"16.2.0",r
  * @typechecks
  */
 
-var isNode = __webpack_require__(61);
+var isNode = __webpack_require__(62);
 
 /**
  * @param {*} object The object to check.
@@ -15356,7 +15443,7 @@ function isTextNode(object) {
 module.exports = isTextNode;
 
 /***/ }),
-/* 61 */
+/* 62 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15384,7 +15471,7 @@ function isNode(object) {
 module.exports = isNode;
 
 /***/ }),
-/* 62 */
+/* 63 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15418,8 +15505,8 @@ var containsNode = __webpack_require__(30);
 var focusNode = __webpack_require__(31);
 var emptyObject = __webpack_require__(11);
 var checkPropTypes = __webpack_require__(25);
-var hyphenateStyleName = __webpack_require__(63);
-var camelizeStyleName = __webpack_require__(65);
+var hyphenateStyleName = __webpack_require__(64);
+var camelizeStyleName = __webpack_require__(66);
 
 /**
  * WARNING: DO NOT manually require this module.
@@ -30786,7 +30873,7 @@ module.exports = reactDom;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 63 */
+/* 64 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -30801,7 +30888,7 @@ module.exports = reactDom;
 
 
 
-var hyphenate = __webpack_require__(64);
+var hyphenate = __webpack_require__(65);
 
 var msPattern = /^ms-/;
 
@@ -30828,7 +30915,7 @@ function hyphenateStyleName(string) {
 module.exports = hyphenateStyleName;
 
 /***/ }),
-/* 64 */
+/* 65 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -30864,7 +30951,7 @@ function hyphenate(string) {
 module.exports = hyphenate;
 
 /***/ }),
-/* 65 */
+/* 66 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -30879,7 +30966,7 @@ module.exports = hyphenate;
 
 
 
-var camelize = __webpack_require__(66);
+var camelize = __webpack_require__(67);
 
 var msPattern = /^-ms-/;
 
@@ -30907,7 +30994,7 @@ function camelizeStyleName(string) {
 module.exports = camelizeStyleName;
 
 /***/ }),
-/* 66 */
+/* 67 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -30942,15 +31029,15 @@ function camelize(string) {
 module.exports = camelize;
 
 /***/ }),
-/* 67 */
+/* 68 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const ShareDBDoc_1 = __webpack_require__(68);
-const ClientTab_1 = __webpack_require__(96);
-const ArboretumChatBox_1 = __webpack_require__(101);
+const ShareDBDoc_1 = __webpack_require__(69);
+const ClientTab_1 = __webpack_require__(97);
+const ArboretumChatBox_1 = __webpack_require__(102);
 const BrowserNavigationBar_1 = __webpack_require__(108);
 const TabList_1 = __webpack_require__(111);
 const React = __webpack_require__(1);
@@ -30968,6 +31055,11 @@ class ArboretumClient extends React.Component {
             if (this.tabID) {
                 this.clientTab.setTabID(this.tabID);
             }
+            this.clientTab.pageAction.addListener((event) => {
+                const chat = this.getChat();
+                const { pa, data } = event;
+                chat.addPageActionMessage(pa, data);
+            });
         };
         this.navBarRef = (navBar) => {
             this.navBar = navBar;
@@ -31043,7 +31135,7 @@ exports.ArboretumClient = ArboretumClient;
 
 
 /***/ }),
-/* 68 */
+/* 69 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -31057,8 +31149,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const ShareDBClient = __webpack_require__(69);
-const ShareDB = __webpack_require__(73);
+const ShareDBClient = __webpack_require__(70);
+const ShareDB = __webpack_require__(74);
 class SDB {
     constructor(client, connection) {
         this.docs = new Map();
@@ -31290,7 +31382,7 @@ exports.SDBDoc = SDBDoc;
 
 
 /***/ }),
-/* 69 */
+/* 70 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports.Connection = __webpack_require__(32);
@@ -31301,7 +31393,7 @@ exports.types = __webpack_require__(6);
 
 
 /***/ }),
-/* 70 */
+/* 71 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -31450,7 +31542,7 @@ exports.BaseError = BaseError
 
 
 /***/ }),
-/* 71 */
+/* 72 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /*
@@ -32115,14 +32207,14 @@ __webpack_require__(35)(json, json.transformComponent, json.checkValidOp, json.a
 /**
  * Register a subtype for string operations, using the text0 type.
  */
-var text = __webpack_require__(72);
+var text = __webpack_require__(73);
 
 json.registerSubtype(text);
 module.exports = json;
 
 
 /***/ }),
-/* 72 */
+/* 73 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // DEPRECATED!
@@ -32384,10 +32476,10 @@ __webpack_require__(35)(text, transformComponent, checkValidOp, append);
 
 
 /***/ }),
-/* 73 */
+/* 74 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var Backend = __webpack_require__(74);
+var Backend = __webpack_require__(75);
 module.exports = Backend;
 
 Backend.Agent = __webpack_require__(39);
@@ -32405,7 +32497,7 @@ Backend.types = __webpack_require__(6);
 
 
 /***/ }),
-/* 74 */
+/* 75 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var async = __webpack_require__(37);
@@ -32417,7 +32509,7 @@ var MemoryPubSub = __webpack_require__(42);
 var ot = __webpack_require__(20);
 var projections = __webpack_require__(21);
 var QueryEmitter = __webpack_require__(52);
-var StreamSocket = __webpack_require__(95);
+var StreamSocket = __webpack_require__(96);
 var SubmitRequest = __webpack_require__(53);
 
 function Backend(options) {
@@ -32935,7 +33027,7 @@ function pluckIds(snapshots) {
 
 
 /***/ }),
-/* 75 */
+/* 76 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global, process) {(function (global, undefined) {
@@ -33128,7 +33220,7 @@ function pluckIds(snapshots) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2), __webpack_require__(0)))
 
 /***/ }),
-/* 76 */
+/* 77 */
 /***/ (function(module, exports) {
 
 var hat = module.exports = function (bits, base) {
@@ -33196,7 +33288,7 @@ hat.rack = function (bits, base, expandBy) {
 
 
 /***/ }),
-/* 77 */
+/* 78 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var inherits = __webpack_require__(44).inherits;
@@ -33261,7 +33353,7 @@ OpStream.prototype.destroy = function() {
 
 
 /***/ }),
-/* 78 */
+/* 79 */
 /***/ (function(module, exports) {
 
 module.exports = function isBuffer(arg) {
@@ -33272,7 +33364,7 @@ module.exports = function isBuffer(arg) {
 }
 
 /***/ }),
-/* 79 */
+/* 80 */
 /***/ (function(module, exports) {
 
 if (typeof Object.create === 'function') {
@@ -33301,7 +33393,7 @@ if (typeof Object.create === 'function') {
 
 
 /***/ }),
-/* 80 */
+/* 81 */
 /***/ (function(module, exports) {
 
 var toString = {}.toString;
@@ -33312,7 +33404,7 @@ module.exports = Array.isArray || function (arr) {
 
 
 /***/ }),
-/* 81 */
+/* 82 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -33433,7 +33525,7 @@ function fromByteArray (uint8) {
 
 
 /***/ }),
-/* 82 */
+/* 83 */
 /***/ (function(module, exports) {
 
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
@@ -33523,7 +33615,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
 
 /***/ }),
-/* 83 */
+/* 84 */
 /***/ (function(module, exports) {
 
 var toString = {}.toString;
@@ -33534,13 +33626,13 @@ module.exports = Array.isArray || function (arr) {
 
 
 /***/ }),
-/* 84 */
+/* 85 */
 /***/ (function(module, exports) {
 
 /* (ignored) */
 
 /***/ }),
-/* 85 */
+/* 86 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -33549,7 +33641,7 @@ module.exports = Array.isArray || function (arr) {
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var Buffer = __webpack_require__(15).Buffer;
-var util = __webpack_require__(86);
+var util = __webpack_require__(87);
 
 function copyBuffer(src, target, offset) {
   src.copy(target, offset);
@@ -33625,13 +33717,13 @@ if (util && util.inspect && util.inspect.custom) {
 }
 
 /***/ }),
-/* 86 */
+/* 87 */
 /***/ (function(module, exports) {
 
 /* (ignored) */
 
 /***/ }),
-/* 87 */
+/* 88 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global) {
@@ -33705,7 +33797,7 @@ function config (name) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 88 */
+/* 89 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -33758,35 +33850,35 @@ PassThrough.prototype._transform = function (chunk, encoding, cb) {
 };
 
 /***/ }),
-/* 89 */
+/* 90 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__(19);
 
 
 /***/ }),
-/* 90 */
+/* 91 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__(4);
 
 
 /***/ }),
-/* 91 */
+/* 92 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__(18).Transform
 
 
 /***/ }),
-/* 92 */
+/* 93 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__(18).PassThrough
 
 
 /***/ }),
-/* 93 */
+/* 94 */
 /***/ (function(module, exports) {
 
 module.exports = arrayDiff;
@@ -33973,7 +34065,7 @@ function arrayDiff(before, after, equalFn) {
 
 
 /***/ }),
-/* 94 */
+/* 95 */
 /***/ (function(module, exports) {
 
 var pSlice = Array.prototype.slice;
@@ -34081,7 +34173,7 @@ function objEquiv(a, b) {
 
 
 /***/ }),
-/* 95 */
+/* 96 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(process) {var Duplex = __webpack_require__(45).Duplex;
@@ -34150,7 +34242,7 @@ ServerStream.prototype._write = function(chunk, encoding, callback) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 96 */
+/* 97 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -34165,12 +34257,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(1);
-const ClientDOMNode_1 = __webpack_require__(97);
-const NodeSelector_1 = __webpack_require__(99);
+const ClientDOMNode_1 = __webpack_require__(98);
+const NodeSelector_1 = __webpack_require__(100);
+const TypedEventEmitter_1 = __webpack_require__(54);
 class ClientTab extends React.Component {
     constructor(props) {
         super(props);
         this.nodeSelector = new NodeSelector_1.NodeSelector();
+        this.pageAction = TypedEventEmitter_1.registerEvent();
         this.docUpdated = (ops, source, data) => {
             if (ops) {
                 ops.forEach((op) => {
@@ -34203,6 +34297,14 @@ class ClientTab extends React.Component {
                     this.setRoot(data.root);
                 }
             }
+        };
+        this.onDOMNodeCreated = (clientNode) => {
+            clientNode.mouseEvent.addListener((event) => {
+                this.pageAction.emit({
+                    pa: 'click',
+                    data: event
+                });
+            });
         };
         // private updateIFrameContents():void {
         // ReactDOM.render((
@@ -34257,7 +34359,7 @@ class ClientTab extends React.Component {
             this.rootElement.destroy();
             this.rootElement = null;
         }
-        this.rootElement = new ClientDOMNode_1.ClientDocumentNode(root, this.iframeElement.contentDocument);
+        this.rootElement = new ClientDOMNode_1.ClientDocumentNode(root, this.onDOMNodeCreated, this.iframeElement.contentDocument);
         // const node = ReactDOM.findDOMNode(this);
         // node.appendChild(this.rootElement.getElement());
     }
@@ -34305,7 +34407,7 @@ class ClientTab extends React.Component {
             }
             else if (property === 'children') {
                 if (path.length === 0) {
-                    const children = oi.map((c) => ClientDOMNode_1.createClientNode(c));
+                    const children = oi.map((c) => ClientDOMNode_1.createClientNode(c, this.onDOMNodeCreated));
                     node.setChildren(children);
                 }
                 else {
@@ -34315,7 +34417,7 @@ class ClientTab extends React.Component {
                         node.removeChild(index);
                     }
                     else if (li) {
-                        const child = ClientDOMNode_1.createClientNode(li);
+                        const child = ClientDOMNode_1.createClientNode(li, this.onDOMNodeCreated);
                         node.insertChild(child, index);
                     }
                 }
@@ -34426,7 +34528,7 @@ exports.ClientTab = ClientTab;
 
 
 /***/ }),
-/* 97 */
+/* 98 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -34440,23 +34542,25 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const NodeCode_1 = __webpack_require__(98);
-function createClientNode(sdbNode) {
+const NodeCode_1 = __webpack_require__(99);
+const TypedEventEmitter_1 = __webpack_require__(54);
+;
+function createClientNode(sdbNode, onCreateNode) {
     const { nodeType } = sdbNode;
     if (nodeType === NodeCode_1.NodeCode.DOCUMENT_NODE) {
-        return new ClientDocumentNode(sdbNode);
+        return new ClientDocumentNode(sdbNode, onCreateNode);
     }
     else if (nodeType === NodeCode_1.NodeCode.ELEMENT_NODE) {
-        return new ClientElementNode(sdbNode);
+        return new ClientElementNode(sdbNode, onCreateNode);
     }
     else if (nodeType === NodeCode_1.NodeCode.TEXT_NODE) {
-        return new ClientTextNode(sdbNode);
+        return new ClientTextNode(sdbNode, onCreateNode);
     }
     else if (nodeType === NodeCode_1.NodeCode.COMMENT_NODE) {
-        return new ClientCommentNode(sdbNode);
+        return new ClientCommentNode(sdbNode, onCreateNode);
     }
     else if (nodeType === NodeCode_1.NodeCode.DOCUMENT_TYPE_NODE) {
-        return new ClientDocumentTypeNode(sdbNode);
+        return new ClientDocumentTypeNode(sdbNode, onCreateNode);
     }
     else {
         console.log(sdbNode);
@@ -34464,10 +34568,16 @@ function createClientNode(sdbNode) {
 }
 exports.createClientNode = createClientNode;
 ;
-class ClientNode {
-    constructor(sdbNode) {
+class ClientNode extends TypedEventEmitter_1.TypedEventEmitter {
+    constructor(sdbNode, onCreateNode) {
+        super();
         this.sdbNode = sdbNode;
-        this.children = this.getNodeChildren().map((child) => createClientNode(child));
+        this.onCreateNode = onCreateNode;
+        this.mouseEvent = this.registerEvent();
+        this.children = this.getNodeChildren().map((child) => createClientNode(child, this.onCreateNode));
+        if (this.onCreateNode) {
+            this.onCreateNode(this);
+        }
     }
     ;
     getContentDocument() { return this.contentDocument; }
@@ -34497,6 +34607,7 @@ class ClientNode {
     setNodeValue(value) { }
     remove() { }
     destroy() {
+        super.clearRegisteredEvents();
         this.getChildren().forEach((c) => {
             c.destroy();
         });
@@ -34506,8 +34617,8 @@ class ClientNode {
 exports.ClientNode = ClientNode;
 ;
 class ClientDocumentNode extends ClientNode {
-    constructor(sdbNode, document) {
-        super(sdbNode);
+    constructor(sdbNode, onCreateNode, document) {
+        super(sdbNode, onCreateNode);
         this.document = document;
         this.setChildren(this.getChildren());
     }
@@ -34548,7 +34659,7 @@ class ClientDocumentNode extends ClientNode {
 exports.ClientDocumentNode = ClientDocumentNode;
 ;
 class ClientDocumentTypeNode extends ClientNode {
-    constructor(sdbNode) { super(sdbNode); }
+    constructor(sdbNode, onCreateNode) { super(sdbNode, onCreateNode); }
     ;
     getElement() {
         return null;
@@ -34557,11 +34668,13 @@ class ClientDocumentTypeNode extends ClientNode {
 exports.ClientDocumentTypeNode = ClientDocumentTypeNode;
 ;
 class ClientElementNode extends ClientNode {
-    constructor(sdbNode) {
-        super(sdbNode);
+    constructor(sdbNode, onCreateNode) {
+        super(sdbNode, onCreateNode);
         this.onClick = (event) => {
             if (this.element === event.target) {
-                console.log(this);
+                const { type, timeStamp, clientX, clientY, which, shiftKey, altKey, ctrlKey } = event;
+                const targetNodeID = this.sdbNode.nodeId;
+                this.mouseEvent.emit({ type, targetNodeID, timeStamp, clientX, clientY, which, shiftKey, altKey, ctrlKey });
             }
         };
         const { nodeName, isSVG, nodeId } = this.sdbNode;
@@ -34587,7 +34700,7 @@ class ClientElementNode extends ClientNode {
                 yield iframeLoaded(iFrameElement);
                 const nodeContentDocument = this.getNodeContentDocument();
                 if (nodeContentDocument) {
-                    this.contentDocument = new ClientDocumentNode(nodeContentDocument, iFrameElement.contentDocument);
+                    this.contentDocument = new ClientDocumentNode(nodeContentDocument, this.onCreateNode, iFrameElement.contentDocument);
                     this.contentDocument.removeChildren();
                     const iframeBody = this.contentDocument.getChild();
                     if (iframeBody) {
@@ -34688,8 +34801,8 @@ class ClientElementNode extends ClientNode {
 exports.ClientElementNode = ClientElementNode;
 ;
 class ClientTextNode extends ClientNode {
-    constructor(sdbNode) {
-        super(sdbNode);
+    constructor(sdbNode, onCreateNode) {
+        super(sdbNode, onCreateNode);
         const { nodeValue } = sdbNode;
         this.element = document.createTextNode(nodeValue);
     }
@@ -34711,8 +34824,8 @@ class ClientTextNode extends ClientNode {
 exports.ClientTextNode = ClientTextNode;
 ;
 class ClientCommentNode extends ClientNode {
-    constructor(sdbNode) {
-        super(sdbNode);
+    constructor(sdbNode, onCreateNode) {
+        super(sdbNode, onCreateNode);
         const { nodeValue } = sdbNode;
         this.element = document.createComment(nodeValue);
     }
@@ -34739,7 +34852,7 @@ function iframeLoaded(element) {
 
 
 /***/ }),
-/* 98 */
+/* 99 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -34764,13 +34877,13 @@ var NodeCode;
 
 
 /***/ }),
-/* 99 */
+/* 100 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const $ = __webpack_require__(100);
+const $ = __webpack_require__(101);
 const _ = __webpack_require__(22);
 var SelectionState;
 (function (SelectionState) {
@@ -35174,7 +35287,7 @@ function nodeListToArray(nodeList) {
 
 
 /***/ }),
-/* 100 */
+/* 101 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
@@ -45545,7 +45658,7 @@ return jQuery;
 
 
 /***/ }),
-/* 101 */
+/* 102 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -45560,7 +45673,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(1);
-const ArboretumChat_1 = __webpack_require__(102);
+const ArboretumChat_1 = __webpack_require__(103);
 __webpack_require__(105);
 const ENTER_KEY = 13;
 class ArboretumChatBox extends React.Component {
@@ -45615,13 +45728,13 @@ class ArboretumChatBox extends React.Component {
         return __awaiter(this, void 0, void 0, function* () {
             this.sdb = sdb;
             this.chat = new ArboretumChat_1.ArboretumChat(this.sdb);
-            this.chat.ready(() => __awaiter(this, void 0, void 0, function* () {
+            this.chat.ready.addListener(() => __awaiter(this, void 0, void 0, function* () {
                 yield this.chat.join(this.props.username);
                 yield this.updateMessagesState();
                 yield this.updateUsersState();
-                this.chat.messageAdded(this.updateMessagesState);
-                this.chat.userJoined(this.updateUsersState);
-                this.chat.userNotPresent(this.updateUsersState);
+                this.chat.messageAdded.addListener(this.updateMessagesState);
+                this.chat.userJoined.addListener(this.updateUsersState);
+                this.chat.userNotPresent.addListener(this.updateUsersState);
             }));
         });
     }
@@ -45669,6 +45782,12 @@ class ArboretumChatBox extends React.Component {
                         "navigate to ",
                         url);
                 }
+                else if (action === 'click') {
+                    const { targetNodeID } = data;
+                    description = React.createElement("span", { className: 'navigate description' },
+                        "click on ",
+                        targetNodeID);
+                }
                 if (performed) {
                     actions = React.createElement("div", { className: '' }, "(accepted)");
                 }
@@ -45711,7 +45830,7 @@ exports.ArboretumChatBox = ArboretumChatBox;
 
 
 /***/ }),
-/* 102 */
+/* 103 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -45725,7 +45844,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const TypedEventEmitter_1 = __webpack_require__(103);
+const TypedEventEmitter_1 = __webpack_require__(54);
 const guid_1 = __webpack_require__(104);
 const _ = __webpack_require__(22);
 exports.userColors = [
@@ -45776,7 +45895,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
                     ops.forEach((op) => this.handleOp(op));
                 }
                 else {
-                    this.emit(this.ready);
+                    this.ready.emit();
                 }
             });
         });
@@ -45786,18 +45905,18 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         const { p, li } = op;
         if (p[0] === 'users') {
             if (p.length === 2 && li) {
-                this.emit(this.userJoined, {
+                this.userJoined.emit({
                     user: li
                 });
             }
             else if (p.length === 3 && p[2] === 'present') {
                 const userIndex = p[1];
                 const user = this.doc.getData().users[userIndex];
-                this.emit(this.userNotPresent, { user });
+                this.userNotPresent.emit({ user });
             }
         }
         else if (p[0] === 'messages') {
-            this.emit(this.messageAdded, {
+            this.messageAdded.emit({
                 message: li
             });
         }
@@ -45939,126 +46058,6 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
 ArboretumChat.userCounter = 1;
 ArboretumChat.messageCounter = 1;
 exports.ArboretumChat = ArboretumChat;
-;
-
-
-/***/ }),
-/* 103 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-/******************************************************************************
- * The MIT License (MIT)                                                      *
- *                                                                            *
- * Copyright (c) 2016 Simon "Tenry" Burchert                                  *
- *                                                                            *
- * Permission is hereby granted, free of charge, to any person obtaining a    *
- * copy of this software and associated documentation files (the "Software"), *
- * to deal in the Software without restriction, including without limitation  *
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,   *
- * and/or sell copies of the Software, and to permit persons to whom the      *
- * Software is furnished to do so, subject to the following conditions:       *
- *                                                                            *
- * The above copyright notice and this permission notice shall be included in *
- * all copies or substantial portions of the Software.                        *
- *                                                                            *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR *
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,   *
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL    *
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER *
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING    *
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER        *
- * EALINGS IN THE SOFTWARE.                                                   *
- ******************************************************************************/
-Object.defineProperty(exports, "__esModule", { value: true });
-class TypedEventEmitter {
-    constructor() {
-        this.eventListeners = new Map();
-    }
-    ;
-    on(event, listener) {
-        if (!this.eventListeners.has(event)) {
-            this.eventListeners.set(event, [listener]);
-        }
-        else {
-            this.eventListeners.get(event).push(listener);
-        }
-        return new TypedListener(this, event, listener);
-    }
-    ;
-    once(event, baseListener) {
-        const listener = (...args) => {
-            const rv = baseListener(...args);
-            this.removeListener(event, listener);
-            return rv;
-        };
-        return this.on(event, listener);
-    }
-    ;
-    addListener(event, listener) {
-        return this.on(event, listener);
-    }
-    ;
-    removeListener() {
-        if (arguments.length == 0) {
-            this.eventListeners.clear();
-        }
-        else if (arguments.length == 1 && typeof arguments[0] == 'object') {
-            const id = arguments[0];
-            this.removeListener(id.event, id.listener);
-        }
-        else if (arguments.length >= 1) {
-            let event = arguments[0];
-            let listener = arguments[1];
-            if (this.eventListeners.has(event)) {
-                const listeners = this.eventListeners.get(event);
-                let idx;
-                while (!listener || (idx = listeners.indexOf(listener)) != -1) {
-                    listeners.splice(idx, 1);
-                }
-            }
-        }
-    }
-    ;
-    /**
-     * Emit event. Calls all bound listeners with args.
-     */
-    emit(event, ...args) {
-        if (this.eventListeners.has(event)) {
-            for (let listener of this.eventListeners.get(event)) {
-                listener(...args);
-            }
-        }
-    }
-    ;
-    /**
-     * @typeparam T The event handler signature.
-     */
-    registerEvent() {
-        const eventBinder = (handler) => {
-            return this.addListener(eventBinder, handler);
-        };
-        return eventBinder;
-    }
-    ;
-}
-exports.TypedEventEmitter = TypedEventEmitter;
-;
-class TypedListener {
-    constructor(owner, event, listener, unbindWhenRun = false) {
-        this.owner = owner;
-        this.event = event;
-        this.listener = listener;
-        this.unbindWhenRun = unbindWhenRun;
-    }
-    ;
-    unbind() {
-        this.owner.removeListener(this);
-    }
-    ;
-}
-exports.TypedListener = TypedListener;
 ;
 
 
@@ -46309,8 +46308,6 @@ class BrowserNavigationBar extends React.Component {
     }
     ;
     render() {
-        console.log(this.state.canGoBack);
-        console.log(this.state.canGoForward);
         const toggleSidebarButton = this.props.showSidebarToggle ? React.createElement("button", { onClick: this.toggleSidebarClicked, className: 'btn btn-default btn-mini', id: 'task' },
             React.createElement("span", { className: 'icon icon-publish' })) : null;
         return React.createElement("div", { className: "toolbar toolbar-header", id: "navBar" },

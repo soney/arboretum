@@ -4,7 +4,7 @@ import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
 import {ClientTab} from './ClientTab';
 import {ArboretumChatBox} from '../../utils/browserControls/ArboretumChatBox';
 import {BrowserNavigationBar} from '../../utils/browserControls/BrowserNavigationBar';
-import {ArboretumChat, Message, User, TextMessage, PageActionMessage} from '../../utils/ArboretumChat';
+import {ArboretumChat, Message, User, TextMessage, PageActionMessage, PageAction} from '../../utils/ArboretumChat';
 import {TabList} from './TabList';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
@@ -21,10 +21,10 @@ type ArboretumClientState = {
 };
 
 export class ArboretumClient extends React.Component<ArboretumClientProps, ArboretumClientState> {
-    private socket:WebSocket;
     private sdb:SDB;
-    private clientTab:ClientTab;
     private tabID:CRI.TabID;
+    private socket:WebSocket;
+    private clientTab:ClientTab;
     private navBar:BrowserNavigationBar;
     private arboretumChat:ArboretumChatBox;
 
@@ -54,6 +54,11 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
         if(this.tabID) {
             this.clientTab.setTabID(this.tabID);
         }
+        this.clientTab.pageAction.addListener((event:{pa:PageAction,data:any}) => {
+            const chat = this.getChat();
+            const {pa, data} = event;
+            chat.addPageActionMessage(pa, data);
+        });
     };
     private navBarRef = (navBar:BrowserNavigationBar):void => {
         this.navBar = navBar;
