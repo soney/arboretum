@@ -23,12 +23,15 @@
     "@types/request": "^2.47.0",
     "@types/underscore": "^1.8.6",
     "@types/ws": "^4.0.1",
+    "@types/xml-parser": "^1.2.29",
+    "aws-sdk": "^2.209.0",
     "bluebird": "^3.5.1",
     "chalk": "^2.3.1",
     "chrome-remote-interface": "~0.11",
     "chromedriver": "^2.34.0",
     "clipboard": "^1.7.1",
     "css": "^2.2.1",
+    "dot": "^1.1.2",
     "electron": "^1.8.3",
     "express": "~4.13",
     "file-url": "^1.1.0",
@@ -54,7 +57,8 @@
     "urijs": "~1.17",
     "webdriverio": "^4.9.11",
     "websocket-json-stream": "0.0.3",
-    "ws": "^4.0.0"
+    "ws": "^4.0.0",
+    "xml-parser": "^1.2.1"
   },
   "devDependencies": {
     "css-loader": "^0.28.9",

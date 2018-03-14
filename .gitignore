@@ -42,3 +42,4 @@ Arboretum-*
 *.swp
 
 credentials.json
+mturk_creds.json
