@@ -169,19 +169,24 @@ async function stopServer(): Promise<void> {
 
 let chromeProcess:child.ChildProcess;
 
-ipcMain.on('asynchronous-message', async (event, arg) => {
-    if (arg === 'startServer') {
+ipcMain.on('asynchronous-message', async (event, messageID:number, arg:{message:string, data:any}) => {
+    const {message, data} = arg;
+    const replyChannel:string = `reply-${messageID}`;
+    if (message === 'startServer') {
         const info = await startServer();
-        event.sender.send('asynchronous-reply', info);
+        event.sender.send(replyChannel, info);
         console.log(chalk.bgWhite.bold.black(`Listening at ${info.hostname} port ${info.port}`));
         if(OPEN_MIRROR) {
             chromeProcess = await opn(`http://${info.hostname}:${info.port}/`, { app: 'google-chrome' }); // open browser
         }
-    } else if (arg === 'stopServer') {
+    } else if (message === 'stopServer') {
         await stopServer();
-        event.sender.send('asynchronous-reply', 'ok');
+        event.sender.send(replyChannel, 'ok');
+    } else if (message === 'performAction') {
+        await browserState.performAction(data);
+        event.sender.send(replyChannel, 'ok');
     } else {
-        event.sender.send('asynchronous-reply', 'not recognized');
+        event.sender.send(replyChannel, 'not recognized');
     }
 });
 

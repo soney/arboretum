@@ -88,10 +88,13 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
             }
         }
     };
-    private async sendIPCMessage(message:any):Promise<any> {
-        ipcRenderer.send('asynchronous-message', message);
+    private static ipcMessageID:number = 0;
+    private async sendIPCMessage(message:{message:string, data?:any}):Promise<any> {
+        const messageID:number = ArboretumBrowser.ipcMessageID++;
+        const replyChannel:string = `reply-${messageID}`;
+        ipcRenderer.send('asynchronous-message', messageID, message);
         const reply = await new Promise<any>((resolve, reject) => {
-            ipcRenderer.once('asynchronous-reply', (event:Electron.IpcMessageEvent, data:any) => {
+            ipcRenderer.once(replyChannel, (event:Electron.IpcMessageEvent, data:any) => {
                 resolve(data);
             });
         });
@@ -100,7 +103,7 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
     private setServerActive = async (active:boolean):Promise<SetServerActiveValue> => {
         let shareURL:string, adminURL:string;
         if(active) {
-            const {hostname, port} = await this.sendIPCMessage('startServer');
+            const {hostname, port} = await this.sendIPCMessage({message: 'startServer'});
             const fullShareURL = url.format({ protocol:'http', hostname, port });
             const fullAdminURL = url.format({ protocol:'http', hostname, port, pathname:'/admin' });
             const wsAddress = url.format({ protocol:'ws', hostname, port });
@@ -148,7 +151,7 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
                 this.socket.close();
                 this.socket = null;
             }
-            await this.sendIPCMessage('stopServer');
+            await this.sendIPCMessage({message: 'stopServer'});
             [shareURL, adminURL] = ['', ''];
         }
         if(this.sidebar) {
@@ -267,12 +270,18 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
         this.sidebar = sidebar;
         this.setServerActive(this.state.serverActive);
     };
-    private onAction = (pam:PageActionMessage):void => {
-        const {action} = pam;
-        if(action === 'navigate') {
-            const {url} = pam.data;
-            this.navigate(url);
-        }
+    private onAction = async (pam:PageActionMessage):Promise<void> => {
+        await this.sendIPCMessage({
+            message:'performAction',
+            data:pam
+        });
+        // const {action, data} = pam;
+        // if(action === 'navigate') {
+        //     const {url} = data;
+        //     this.navigate(url);
+        // } else if(action === 'mouse_event') {
+        //     console.log(action, data);
+        // }
     };
 
     public render():React.ReactNode {

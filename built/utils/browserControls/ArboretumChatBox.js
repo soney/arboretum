@@ -42,6 +42,12 @@ class ArboretumChatBox extends React.Component {
         this.onTextareaChange = (event) => {
             this.setState({ chatText: event.target.value });
         };
+        this.performAction = (pam) => {
+            this.getChat().markPerformed(pam);
+            if (this.props.onAction) {
+                this.props.onAction(pam);
+            }
+        };
         this.state = {
             chatText: this.props.chatText || '',
             messages: [],
@@ -53,17 +59,18 @@ class ArboretumChatBox extends React.Component {
         window.addEventListener('beforeunload', () => this.leave());
     }
     ;
+    getChat() { return this.chat; }
     setSDB(sdb) {
         return __awaiter(this, void 0, void 0, function* () {
             this.sdb = sdb;
             this.chat = new ArboretumChat_1.ArboretumChat(this.sdb);
-            this.chat.ready(() => __awaiter(this, void 0, void 0, function* () {
+            this.chat.ready.addListener(() => __awaiter(this, void 0, void 0, function* () {
                 yield this.chat.join(this.props.username);
                 yield this.updateMessagesState();
                 yield this.updateUsersState();
-                this.chat.messageAdded(this.updateMessagesState);
-                this.chat.userJoined(this.updateUsersState);
-                this.chat.userNotPresent(this.updateUsersState);
+                this.chat.messageAdded.addListener(this.updateMessagesState);
+                this.chat.userJoined.addListener(this.updateUsersState);
+                this.chat.userNotPresent.addListener(this.updateUsersState);
             }));
         });
     }
@@ -94,9 +101,31 @@ class ArboretumChatBox extends React.Component {
     render() {
         const messages = this.state.messages.map((m, i) => {
             const senderStyle = { color: m.sender.color };
-            return React.createElement("li", { key: i, className: 'chat-line' },
-                React.createElement("span", { style: senderStyle, className: 'from' }, m.sender.displayName),
-                React.createElement("span", { className: 'message' }, m.content));
+            if (m['content']) {
+                const tm = m;
+                return React.createElement("li", { key: i, className: 'chat-line' },
+                    React.createElement("span", { style: senderStyle, className: 'from' }, tm.sender.displayName),
+                    React.createElement("span", { className: 'message' }, tm.content));
+            }
+            else if (m['action']) {
+                const pam = m;
+                const { action, data, performed } = pam;
+                const description = React.createElement("span", { className: 'description' }, ArboretumChat_1.ArboretumChat.describePageActionMessage(pam));
+                let actions;
+                if (performed) {
+                    actions = React.createElement("div", { className: '' }, "(accepted)");
+                }
+                else {
+                    actions = React.createElement("div", { className: 'messageAction' },
+                        React.createElement("a", { href: "javascript:void(0)", onClick: this.performAction.bind(this, pam) }, "Accept"));
+                }
+                return React.createElement("li", { key: i, className: 'chat-line action' + (performed ? ' performed' : '') + (this.props.isAdmin ? ' admin' : ' not_admin') },
+                    React.createElement("span", { style: senderStyle, className: 'from' }, pam.sender.displayName),
+                    " wants to ",
+                    description,
+                    ".",
+                    actions);
+            }
         });
         let meUserID;
         if (this.chat) {
@@ -111,12 +140,9 @@ class ArboretumChatBox extends React.Component {
             return React.createElement("span", { key: u.id, className: `participant ${isMe ? 'me' : ''}`, style: style }, u.displayName);
         });
         return React.createElement("div", { className: 'chat' },
-            React.createElement("h6", { id: "task_title" },
-                React.createElement("span", { className: "icon icon-chat" }),
-                React.createElement("span", { id: 'task-name' }, "Chat")),
             React.createElement("div", { id: "chat-participants" }, users),
             React.createElement("ul", { id: "chat-lines" },
-                messages,
+                messages.filter(m => !!m),
                 React.createElement("li", { style: { float: "left", clear: "both" }, ref: (el) => { this.messagesEnd = el; } })),
             React.createElement("form", { id: "chat-form" },
                 React.createElement("textarea", { id: "chat-box", className: "form-control", placeholder: "Send a message", onChange: this.onTextareaChange, onKeyDown: this.chatKeyDown, value: this.state.chatText })));

@@ -8,7 +8,7 @@ export const userColors:Array<Array<Color>> = [
     ['#A80000', '#B05E0D', '#C19C00', '#107C10', '#038387', '#004E8C', '#5C126B' ]
 ];
 export enum TypingStatus { IDLE, ACTIVE, IDLE_TYPED };
-export type PageAction ='navigate'|'goBack'|'goForward'|'click'|'reload';
+export type PageAction ='navigate'|'goBack'|'goForward'|'mouse_event'|'keyboard_event'|'focus_event'|'reload';
 
 export type UserID = string;
 export interface User {
@@ -28,6 +28,7 @@ export interface TextMessage extends Message {
 };
 export interface PageActionMessage extends Message {
     action:PageAction,
+    tabID:CRI.TabID,
     data:any,
     performed:boolean
 };
@@ -73,6 +74,18 @@ export class ArboretumChat extends TypedEventEmitter {
         this.initialized.catch((err) => {
             console.error(err);
         });
+    };
+    public static describePageActionMessage(pam:PageActionMessage):string {
+        const {action, data, performed} = pam;
+        if(action === 'navigate') {
+            const {url} = data;
+            return `navigate to ${url}`;
+        } else if(action === 'mouse_event') {
+            const {targetNodeID, type} = data;
+            return `${type} on ${targetNodeID}`;
+        } else {
+            return `do ${action}`;
+        }
     };
     private async initializeDoc():Promise<void> {
         await this.doc.createIfEmpty({
@@ -140,8 +153,8 @@ export class ArboretumChat extends TypedEventEmitter {
         const message:TextMessage = {sender, content};
         this.addMesssage(message);
     };
-    public async addPageActionMessage(action:PageAction, data:any, sender:User=this.getMe()):Promise<void> {
-        const message:PageActionMessage = {sender, action, data, performed:false}
+    public async addPageActionMessage(action:PageAction, tabID:CRI.TabID, data:any={}, sender:User=this.getMe()):Promise<void> {
+        const message:PageActionMessage = {sender, action, tabID, data, performed:false}
         this.addMesssage(message);
     };
     public async markPerformed(pam:PageActionMessage, performed:boolean=true):Promise<void> {

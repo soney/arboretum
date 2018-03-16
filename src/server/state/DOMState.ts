@@ -53,7 +53,7 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
         return true;
     };
 
-    public onDestroyed = this.registerEvent<(DestroyedEvent)=>void>();
+    public onDestroyed = this.registerEvent<void>();
     constructor(private node: CRI.Node, private tab:TabState, private contentDocument?:DOMState, private childFrame?:FrameState, private parent?:DOMState) {
         super();
         if(this.contentDocument) { this.contentDocument.setParent(this); }
@@ -209,7 +209,7 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
             this.contentDocument.destroy();
         }
         this.destroyed = true;
-        this.emit(this.onDestroyed, {});
+        this.onDestroyed.emit();
         log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
     }
     public getTab(): TabState { return this.tab; };

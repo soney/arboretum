@@ -57,7 +57,7 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
         this.clientTab.pageAction.addListener((event:{pa:PageAction,data:any}) => {
             const chat = this.getChat();
             const {pa, data} = event;
-            chat.addPageActionMessage(pa, data);
+            chat.addPageActionMessage(pa, this.tabID, data);
         });
     };
     private navBarRef = (navBar:BrowserNavigationBar):void => {
@@ -67,16 +67,16 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
         this.arboretumChat = arboretumChat;
     };
     private goBack = ():void => {
-        this.getChat().addPageActionMessage('goBack', {});
+        this.getChat().addPageActionMessage('goBack', this.tabID);
     };
     private goForward = ():void => {
-        this.getChat().addPageActionMessage('goForward', {});
+        this.getChat().addPageActionMessage('goForward', this.tabID);
     };
     private reload = ():void => {
-        this.getChat().addPageActionMessage('reload', {});
+        this.getChat().addPageActionMessage('reload', this.tabID);
     };
     private navigate = (url:string):void => {
-        this.getChat().addPageActionMessage('navigate', {url, tabID:this.tabID});
+        this.getChat().addPageActionMessage('navigate', this.tabID, {url});
     };
     private tabIsLoadingChanged = (tab:ClientTab, isLoading:boolean):void => {
         if(this.navBar) { this.navBar.setState({isLoading}); }

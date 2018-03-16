@@ -25184,7 +25184,7 @@ class ArboretumBrowser extends React.Component {
         this.setServerActive = (active) => __awaiter(this, void 0, void 0, function* () {
             let shareURL, adminURL;
             if (active) {
-                const { hostname, port } = yield this.sendIPCMessage('startServer');
+                const { hostname, port } = yield this.sendIPCMessage({ message: 'startServer' });
                 const fullShareURL = url.format({ protocol: 'http', hostname, port });
                 const fullAdminURL = url.format({ protocol: 'http', hostname, port, pathname: '/admin' });
                 const wsAddress = url.format({ protocol: 'ws', hostname, port });
@@ -25230,7 +25230,7 @@ class ArboretumBrowser extends React.Component {
                     this.socket.close();
                     this.socket = null;
                 }
-                yield this.sendIPCMessage('stopServer');
+                yield this.sendIPCMessage({ message: 'stopServer' });
                 [shareURL, adminURL] = ['', ''];
             }
             if (this.sidebar) {
@@ -25337,13 +25337,19 @@ class ArboretumBrowser extends React.Component {
             this.sidebar = sidebar;
             this.setServerActive(this.state.serverActive);
         };
-        this.onAction = (pam) => {
-            const { action } = pam;
-            if (action === 'navigate') {
-                const { url } = pam.data;
-                this.navigate(url);
-            }
-        };
+        this.onAction = (pam) => __awaiter(this, void 0, void 0, function* () {
+            yield this.sendIPCMessage({
+                message: 'performAction',
+                data: pam
+            });
+            // const {action, data} = pam;
+            // if(action === 'navigate') {
+            //     const {url} = data;
+            //     this.navigate(url);
+            // } else if(action === 'mouse_event') {
+            //     console.log(action, data);
+            // }
+        });
         this.state = {
             tabs: this.props.urls.map((url, index) => {
                 return {
@@ -25375,9 +25381,11 @@ class ArboretumBrowser extends React.Component {
     ;
     sendIPCMessage(message) {
         return __awaiter(this, void 0, void 0, function* () {
-            electron_1.ipcRenderer.send('asynchronous-message', message);
+            const messageID = ArboretumBrowser.ipcMessageID++;
+            const replyChannel = `reply-${messageID}`;
+            electron_1.ipcRenderer.send('asynchronous-message', messageID, message);
             const reply = yield new Promise((resolve, reject) => {
-                electron_1.ipcRenderer.once('asynchronous-reply', (event, data) => {
+                electron_1.ipcRenderer.once(replyChannel, (event, data) => {
                     resolve(data);
                 });
             });
@@ -25427,6 +25435,7 @@ class ArboretumBrowser extends React.Component {
     }
     ;
 }
+ArboretumBrowser.ipcMessageID = 0;
 exports.ArboretumBrowser = ArboretumBrowser;
 ;
 
@@ -25878,20 +25887,8 @@ class ArboretumChatBox extends React.Component {
             else if (m['action']) {
                 const pam = m;
                 const { action, data, performed } = pam;
-                let description;
+                const description = React.createElement("span", { className: 'description' }, ArboretumChat_1.ArboretumChat.describePageActionMessage(pam));
                 let actions;
-                if (action === 'navigate') {
-                    const { url } = data;
-                    description = React.createElement("span", { className: 'navigate description' },
-                        "navigate to ",
-                        url);
-                }
-                else if (action === 'click') {
-                    const { targetNodeID } = data;
-                    description = React.createElement("span", { className: 'navigate description' },
-                        "click on ",
-                        targetNodeID);
-                }
                 if (performed) {
                     actions = React.createElement("div", { className: '' }, "(accepted)");
                 }
@@ -25987,6 +25984,21 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         });
     }
     ;
+    static describePageActionMessage(pam) {
+        const { action, data, performed } = pam;
+        if (action === 'navigate') {
+            const { url } = data;
+            return `navigate to ${url}`;
+        }
+        else if (action === 'mouse_event') {
+            const { targetNodeID, type } = data;
+            return `${type} on ${targetNodeID}`;
+        }
+        else {
+            return `do ${action}`;
+        }
+    }
+    ;
     initializeDoc() {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.doc.createIfEmpty({
@@ -26077,9 +26089,9 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         });
     }
     ;
-    addPageActionMessage(action, data, sender = this.getMe()) {
+    addPageActionMessage(action, tabID, data = {}, sender = this.getMe()) {
         return __awaiter(this, void 0, void 0, function* () {
-            const message = { sender, action, data, performed: false };
+            const message = { sender, action, tabID, data, performed: false };
             this.addMesssage(message);
         });
     }

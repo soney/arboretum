@@ -9,6 +9,8 @@ import { parse, format } from 'url';
 import * as ShareDB from 'sharedb';
 import {TabDoc } from '../../utils/state_interfaces';
 import {ShareDBSharedState} from '../../utils/ShareDBSharedState';
+import {ArboretumChat, PageActionMessage, PageAction} from '../../utils/ArboretumChat';
+import {mouseEvent, focus, getElementValue, setElementValue, getNamespace, getUniqueSelector, getCanvasImage} from '../hack_driver/hack_driver';
 
 const log = getColoredLogger('yellow');
 interface PendingFrameEvent {
@@ -77,6 +79,16 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         // this.addNetworkListeners();
         await this.addExecutionContextListeners();
     };
+    public async performAction(action:PageAction, data:any):Promise<boolean> {
+        if(action === 'navigate') {
+            const {url} = data;
+            await this.navigate(url);
+        } else if(action === 'mouse_event') {
+            const {targetNodeID, type} = data;
+            mouseEvent(this.chrome, targetNodeID, type, data);
+        }
+        return true;
+    };
     public getSDB():SDB { return this.sdb; };
     public getShareDBDoc():SDBDoc<TabDoc> { return this.doc; };
     public getAbsoluteShareDBPath():Array<string|number> { return []; };
@@ -143,7 +155,7 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         } else {
             const domState = new DOMState(node, this, contentDocument, childFrame, parent);
             this.nodeMap.set(nodeId, domState);
-            domState.once(domState.onDestroyed, () => {
+            domState.onDestroyed.addListener(() => {
                 this.nodeMap.delete(nodeId);
             });
             return domState;

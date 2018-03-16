@@ -175,21 +175,27 @@ function stopServer() {
 }
 ;
 let chromeProcess;
-electron_1.ipcMain.on('asynchronous-message', (event, arg) => __awaiter(this, void 0, void 0, function* () {
-    if (arg === 'startServer') {
+electron_1.ipcMain.on('asynchronous-message', (event, messageID, arg) => __awaiter(this, void 0, void 0, function* () {
+    const { message, data } = arg;
+    const replyChannel = `reply-${messageID}`;
+    if (message === 'startServer') {
         const info = yield startServer();
-        event.sender.send('asynchronous-reply', info);
+        event.sender.send(replyChannel, info);
         console.log(chalk_1.default.bgWhite.bold.black(`Listening at ${info.hostname} port ${info.port}`));
         if (OPEN_MIRROR) {
             chromeProcess = yield opn(`http://${info.hostname}:${info.port}/`, { app: 'google-chrome' }); // open browser
         }
     }
-    else if (arg === 'stopServer') {
+    else if (message === 'stopServer') {
         yield stopServer();
-        event.sender.send('asynchronous-reply', 'ok');
+        event.sender.send(replyChannel, 'ok');
+    }
+    else if (message === 'performAction') {
+        yield browserState.performAction(data);
+        event.sender.send(replyChannel, 'ok');
     }
     else {
-        event.sender.send('asynchronous-reply', 'not recognized');
+        event.sender.send(replyChannel, 'not recognized');
     }
 }));
 keypress(process.stdin);

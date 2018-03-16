@@ -165,7 +165,7 @@ function typedArrayToArray(chrome, objectId) {
         returnByValue: true
     });
 }
-function mouseEvent(chrome, nodeId, eventType) {
+function mouseEvent(chrome, nodeId, eventType, event) {
     return callFNOnElement(chrome, SIMULATE_MOUSE_EVENT, nodeId, [{ value: eventType }]);
 }
 exports.mouseEvent = mouseEvent;

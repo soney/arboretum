@@ -99,7 +99,7 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
     private onDOMNodeCreated = (clientNode:ClientNode):void => {
         clientNode.mouseEvent.addListener((event) => {
             this.pageAction.emit({
-                pa:'click',
+                pa:'mouse_event',
                 data:event
             });
         });

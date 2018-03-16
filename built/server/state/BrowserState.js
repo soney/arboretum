@@ -54,6 +54,19 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
         });
     }
     ;
+    performAction(pam) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { tabID, action, data } = pam;
+            const tab = this.getTab(tabID);
+            if (tab) {
+                return yield tab.performAction(action, data);
+            }
+            else {
+                return false;
+            }
+        });
+    }
+    ;
     shareDBListen(ws) {
         this.sdb.listen(ws);
     }

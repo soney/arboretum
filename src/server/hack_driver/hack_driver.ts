@@ -158,7 +158,7 @@ function typedArrayToArray(chrome:CRI.Chrome, objectId:CRI.Runtime.RemoteObjectI
 }
 
 
-export function mouseEvent(chrome:CRI.Chrome, nodeId:CRI.NodeID, eventType:string):Promise<CRI.CallFunctionOnResult> {
+export function mouseEvent(chrome:CRI.Chrome, nodeId:CRI.NodeID, eventType:string, event?:any):Promise<CRI.CallFunctionOnResult> {
 	return callFNOnElement(chrome, SIMULATE_MOUSE_EVENT, nodeId, [{value: eventType}]);
 };
 export function focus(chrome:CRI.Chrome, nodeId:CRI.NodeID) {

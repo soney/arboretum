@@ -15,6 +15,7 @@ const ColoredLogger_1 = require("../../utils/ColoredLogger");
 const _ = require("underscore");
 const url_1 = require("url");
 const ShareDBSharedState_1 = require("../../utils/ShareDBSharedState");
+const hack_driver_1 = require("../hack_driver/hack_driver");
 const log = ColoredLogger_1.getColoredLogger('yellow');
 ;
 class TabState extends ShareDBSharedState_1.ShareDBSharedState {
@@ -341,6 +342,20 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
         });
     }
     ;
+    performAction(action, data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (action === 'navigate') {
+                const { url } = data;
+                yield this.navigate(url);
+            }
+            else if (action === 'mouse_event') {
+                const { targetNodeID, type } = data;
+                hack_driver_1.mouseEvent(this.chrome, targetNodeID, type, data);
+            }
+            return true;
+        });
+    }
+    ;
     getSDB() { return this.sdb; }
     ;
     getShareDBDoc() { return this.doc; }
@@ -428,7 +443,7 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
         else {
             const domState = new DOMState_1.DOMState(node, this, contentDocument, childFrame, parent);
             this.nodeMap.set(nodeId, domState);
-            domState.once(domState.onDestroyed, () => {
+            domState.onDestroyed.addListener(() => {
                 this.nodeMap.delete(nodeId);
             });
             return domState;

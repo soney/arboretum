@@ -1,4 +1,4 @@
-function simulateMouseEvent(element, eventType) {
+function simulateMouseEvent(element, eventType, eventData) {
 	var event = document.createEvent("MouseEvents");
 	event.initMouseEvent(eventType, true, true, window,
 		0, 0, 0, 0, 0,

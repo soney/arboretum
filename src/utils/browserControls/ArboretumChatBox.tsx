@@ -116,16 +116,9 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
             } else if(m['action']) {
                 const pam:PageActionMessage = m as PageActionMessage;
                 const {action, data, performed} = pam;
-                let description:JSX.Element;
+                const description:JSX.Element = <span className='description'>{ArboretumChat.describePageActionMessage(pam)}</span>;
+                
                 let actions:JSX.Element;
-                if(action === 'navigate') {
-                    const {url} = data;
-                    description = <span className='navigate description'>navigate to {url}</span>;
-                } else if(action === 'click') {
-                    const {targetNodeID} = data;
-                    description = <span className='navigate description'>click on {targetNodeID}</span>;
-                }
-
                 if(performed) {
                     actions = <div className=''>(accepted)</div>
                 } else {

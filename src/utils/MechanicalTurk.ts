@@ -352,7 +352,7 @@ export class MechanicalTurk {
 
 function fileExists(fileName:string):Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
-        fs.access(fileName, fs.R_OK, (err) => {
+        fs.access(fileName, fs.constants.R_OK, (err) => {
             if(err) { resolve(false); }
             else { resolve(true); }
         });

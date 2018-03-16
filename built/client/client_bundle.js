@@ -31058,7 +31058,7 @@ class ArboretumClient extends React.Component {
             this.clientTab.pageAction.addListener((event) => {
                 const chat = this.getChat();
                 const { pa, data } = event;
-                chat.addPageActionMessage(pa, data);
+                chat.addPageActionMessage(pa, this.tabID, data);
             });
         };
         this.navBarRef = (navBar) => {
@@ -31068,16 +31068,16 @@ class ArboretumClient extends React.Component {
             this.arboretumChat = arboretumChat;
         };
         this.goBack = () => {
-            this.getChat().addPageActionMessage('goBack', {});
+            this.getChat().addPageActionMessage('goBack', this.tabID);
         };
         this.goForward = () => {
-            this.getChat().addPageActionMessage('goForward', {});
+            this.getChat().addPageActionMessage('goForward', this.tabID);
         };
         this.reload = () => {
-            this.getChat().addPageActionMessage('reload', {});
+            this.getChat().addPageActionMessage('reload', this.tabID);
         };
         this.navigate = (url) => {
-            this.getChat().addPageActionMessage('navigate', { url, tabID: this.tabID });
+            this.getChat().addPageActionMessage('navigate', this.tabID, { url });
         };
         this.tabIsLoadingChanged = (tab, isLoading) => {
             if (this.navBar) {
@@ -34299,7 +34299,7 @@ class ClientTab extends React.Component {
         this.onDOMNodeCreated = (clientNode) => {
             clientNode.mouseEvent.addListener((event) => {
                 this.pageAction.emit({
-                    pa: 'click',
+                    pa: 'mouse_event',
                     data: event
                 });
             });
@@ -45772,20 +45772,8 @@ class ArboretumChatBox extends React.Component {
             else if (m['action']) {
                 const pam = m;
                 const { action, data, performed } = pam;
-                let description;
+                const description = React.createElement("span", { className: 'description' }, ArboretumChat_1.ArboretumChat.describePageActionMessage(pam));
                 let actions;
-                if (action === 'navigate') {
-                    const { url } = data;
-                    description = React.createElement("span", { className: 'navigate description' },
-                        "navigate to ",
-                        url);
-                }
-                else if (action === 'click') {
-                    const { targetNodeID } = data;
-                    description = React.createElement("span", { className: 'navigate description' },
-                        "click on ",
-                        targetNodeID);
-                }
                 if (performed) {
                     actions = React.createElement("div", { className: '' }, "(accepted)");
                 }
@@ -45881,6 +45869,21 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         });
     }
     ;
+    static describePageActionMessage(pam) {
+        const { action, data, performed } = pam;
+        if (action === 'navigate') {
+            const { url } = data;
+            return `navigate to ${url}`;
+        }
+        else if (action === 'mouse_event') {
+            const { targetNodeID, type } = data;
+            return `${type} on ${targetNodeID}`;
+        }
+        else {
+            return `do ${action}`;
+        }
+    }
+    ;
     initializeDoc() {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.doc.createIfEmpty({
@@ -45971,9 +45974,9 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         });
     }
     ;
-    addPageActionMessage(action, data, sender = this.getMe()) {
+    addPageActionMessage(action, tabID, data = {}, sender = this.getMe()) {
         return __awaiter(this, void 0, void 0, function* () {
-            const message = { sender, action, data, performed: false };
+            const message = { sender, action, tabID, data, performed: false };
             this.addMesssage(message);
         });
     }

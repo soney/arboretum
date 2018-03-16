@@ -12,7 +12,7 @@ import { getColoredLogger, level, setLevel } from '../../utils/ColoredLogger';
 import { EventEmitter } from 'events';
 import { ipcMain } from 'electron';
 import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
-import {ArboretumChat} from '../../utils/ArboretumChat';
+import {ArboretumChat, PageActionMessage, PageAction} from '../../utils/ArboretumChat';
 import * as ShareDB from 'sharedb';
 import {BrowserDoc} from '../../utils/state_interfaces';
 import * as timers from 'timers';
@@ -48,6 +48,15 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
         this.chat = new ArboretumChat(this.sdb);
         this.intervalID = timers.setInterval(_.bind(this.refreshTabs, this), 2000);
         log.debug('=== CREATED BROWSER ===');
+    };
+    public async performAction(pam:PageActionMessage):Promise<boolean> {
+        const {tabID, action, data} = pam;
+        const tab = this.getTab(tabID);
+        if(tab) {
+            return await tab.performAction(action, data);
+        } else {
+            return false;
+        }
     };
     public shareDBListen(ws:stream.Duplex):void {
         this.sdb.listen(ws);
@@ -120,7 +129,7 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
     };
     public async requestResource(url: string, frameID: CRI.FrameID, tabID: CRI.TabID): Promise<[CRI.Page.FrameResource, CRI.GetResourceContentResponse]> {
         const tabState: TabState = this.tabs.get(tabID);
-        
+
         const resource:CRI.Page.FrameResource = await tabState.getResource(url);
         const resourceContent:CRI.GetResourceContentResponse = await tabState.getResourceContent(frameID, url);
         if(resource) {

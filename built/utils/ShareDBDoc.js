@@ -123,6 +123,18 @@ class SDBDoc {
             const arr = this.traverse(p);
             const previousLength = arr.length;
             const ops = items.map((x, i) => {
+                const op = { p: p.concat(previousLength + i), li: x };
+                return op;
+            });
+            return yield this.submitOp(ops);
+        });
+    }
+    ;
+    submitListUnshiftOp(p, ...items) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const arr = this.traverse(p);
+            const previousLength = arr.length;
+            const ops = items.map((x, i) => {
                 const op = { p: p.concat(i), li: x };
                 return op;
             });
