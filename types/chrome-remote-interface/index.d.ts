@@ -1,3 +1,12 @@
+/// <reference path="Browser.d.ts" />
+/// <reference path="CSS.d.ts" />
+/// <reference path="DOM.d.ts" />
+/// <reference path="DOMDebugger.d.ts" />
+/// <reference path="Network.d.ts" />
+/// <reference path="Page.d.ts" />
+/// <reference path="Runtime.d.ts" />
+/// <reference path="Security.d.ts" />
+
 interface EventEmitter {
     once:(event:string, callback:(err:any, data:any)=>void) => void;
     on:(event:string, callback:(err:any, data:any)=>void) => void;
@@ -9,7 +18,6 @@ declare namespace CRI {
     }
     type NodeType = number;
     type NodeID = number;
-    type ScriptID = string;
     type StyleSheetID = string;
     type ExecutionContextID = number;
     type TabID = string;
@@ -44,30 +52,6 @@ declare namespace CRI {
     }
     interface ExecutionContextCreatedEvent {
         context:ExecutionContextDescription
-    }
-    interface Runtime {
-        StackTrace:StackTrace
-        releaseObject:(options:ReleaseObjectOptions, callback:(err:any, result:ReleaseObjectResult)=>any) => void
-        getProperties:(options:GetPropertiesOptions, callback:(err:any, result:GetPropertiesResult)=>any) => void
-    }
-    interface ReleaseObjectOptions {
-        objectId:Runtime.RemoteObjectID
-    }
-    interface ReleaseObjectResult {}
-    interface GetPropertiesOptions {
-        objectId:Runtime.RemoteObjectID,
-        ownProperties:boolean,
-        accessorPropertiesOnly?:boolean,
-        generatePreview?:boolean
-    }
-    interface GetPropertiesResult {
-        result:Array<PropertyDescriptor>,
-        internalProperties:Array<InternalPropertyDescriptor>,
-        exceptionDetails:ExceptionDetails
-    }
-    interface PropertyDescriptor {
-        name:string,
-        value:Runtime.RemoteObject
     }
     interface ObjectPreview {
         type:string,
@@ -104,15 +88,13 @@ declare namespace CRI {
         text:string,
         lineNumber:number,
         columnNumber:number,
-        scriptId:ScriptID,
+        scriptId:Runtime.ScriptID,
         url:string,
         stackTrace:StackTrace,
         exception:Runtime.RemoteObject,
         executionContextId:ExecutionContextID
     }
     interface GetPropertiesResult {}
-    namespace Runtime {
-    }
     interface Frame {
         id:FrameID,
         parentId:FrameID,
@@ -125,17 +107,6 @@ declare namespace CRI {
     }
     interface InlineStyleInvalidatedEvent {
         nodeIds:Array<NodeID>
-    }
-    interface FrameAttachedEvent {
-        frameId: FrameID,
-        parentFrameId:FrameID,
-        stack:StackTrace
-    }
-    interface FrameNavigatedEvent {
-        frame: Frame
-    }
-    interface FrameDetachedEvent {
-        frameId:FrameID
     }
     interface ExecutionContextAuxData {
         isDefault:boolean,
@@ -157,297 +128,33 @@ declare namespace CRI {
         referrer?:string,
         transitionType?:TransitionType
     }
-    namespace Page {
-        type ResourceType = 'Document' | 'Stylesheet' | 'Image' | 'Media' | 'Font' | 'Script' | 'TextTrack' | 'XHR' | 'Fetch' | 'EventSource' | 'WebSocket' | 'Manifest' | 'Other';
-        interface FrameTree {
-            frame:Frame,
-            childFrames:Array<FrameTree>
-        }
-        interface NavigateResult {
-            frameId:FrameID,
-            loaderId:Network.LoaderID,
-            errorText?:string
-        }
-        interface FrameResourceTree {
-            frame:Frame,
-            childFrames:Array<FrameResourceTree>,
-            resources:Array<FrameResource>
-        }
-        interface FrameResource {
-            url:string,
-            type:ResourceType,
-            mimeType:string,
-            lastModified:Network.TimeSinceEpoch,
-            contentSize:number,
-            failed:boolean,
-            canceled:boolean
-        }
-    }
     interface GetFrameTreeOptions{}
-    interface Page {
-        enable:()=>void;
-        disable:()=>void;
-        getResourceTree:(options:GetResourceTreeOptions, callback:(err:any, resources:GetResourceTreeResponse)=>any) => void;
-        frameAttached:(callback:(FrameAttachedEvent)=>void) => void;
-        frameDetached:(callback:(FrameDetachedEvent)=>void) => void;
-        frameNavigated:(callback:(FrameNavigatedEvent)=>void) => void;
-        navigate:(options:NavigateOptions, callback:(err:any, result:Page.NavigateResult)=>any) => void;
-        getFrameTree:(options:GetFrameTreeOptions, callback:(err:any, result:Page.FrameTree)=>void)=>void;
-        getResourceContent:(params:GetResourceContentParams, callback:(err:any, data:GetResourceContentResponse)=>any) => void
-    }
     interface ListTabsOptions {
         host:string,
         port:number,
         secure?:boolean
     }
 
-    interface BrowserVersion {
-        protocolVersion:string,
-        product:string,
-        revision:string,
-        userAgent:string,
-        jsVersion:string
-    }
-    interface Browser {
-        close:()=>any,
-        getVersion:()=>BrowserVersion
-    }
     interface Chrome extends EventEmitter {
         Page:Page,
         DOM:DOM,
+        DOMDebugger:DOMDebugger,
         Runtime:Runtime,
         Network:Network,
         CSS:CSS,
         send:(command:string, params:any, callback:(err:any, value:any)=>void)=>void
         close:()=>void;
     }
-    interface GetDocumentOptions {
-        depth?:number,
-        pierce?:boolean
-    }
-    interface RequestChildNodesOptions {
-        nodeId:NodeID,
-        depth?:number,
-        pierce?:boolean
-    }
-    interface GetDocumentResult {
-        root:Node
-    }
-    interface RequestChildNodesResult {
-        frameId:FrameID,
-        parentFrameId:FrameID
-    }
-    interface SetChildNodesEvent {
-        parentId:NodeID,
-        nodes:Array<Node>
-    }
-    interface GetOuterHTMLOptions {
-        nodeId:NodeID,
-        backendNodeId?:DOM.BackendNodeID,
-        objectId?:Runtime.RemoteObjectID
-    }
-    interface GetOuterHTMLResult {
-        outerHTML:string
-    }
-    interface QuerySelectorAllOptions {
-        nodeId:NodeID,
-        selector:string
-    }
-    interface QuerySelectorAllResult {
-        nodeIds:Array<NodeID>
-    }
-    interface RequestNodeOptions {
-        objectId:Runtime.RemoteObjectID
-    }
-    interface RequestNodeResult {
-        nodeId:NodeID
-    }
-    interface ResolveNodeOptions {
-        nodeId:NodeID,
-        backendNodeId?:DOM.BackendNodeID,
-        objectGroup?:string
-    }
-    interface ResolveNodeResult {
-        object:Runtime.RemoteObject
-    }
-    interface DescribeNodeParams {
-        nodeId:NodeID,
-        backendNodeID?:DOM.BackendNodeID,
-        objectId?:Runtime.RemoteObjectID,
-        depth?:number,
-        pierce?:boolean
-    }
-    interface DescribeNodeResult {
-        node:Node
-    }
-    namespace DOM {
-        type BackendNodeID = number;
-    }
-    interface ShadowRootPoppedParams {}
-    interface ShadowRootPushedParams {}
-    interface ShadowRootPoppedEvent {
-        hostId:NodeID,
-        rootId:NodeID
-    }
-    interface ShadowRootPushedEvent {
-        hostId:NodeID,
-        root:Node
-    }
-    interface DOM {
-        getDocument:(params:GetDocumentOptions, callback:(err:any, value:GetDocumentResult)=>void) => void
-        requestChildNodes:(params:RequestChildNodesOptions, callback:(err:any, value:RequestChildNodesResult)=>void) => void
-        getOuterHTML:(params:GetOuterHTMLOptions, callback:(err:any, value:GetOuterHTMLResult)=>void) => void
-        querySelectorAll:(params:QuerySelectorAllOptions, callback:(err:any, value:QuerySelectorAllResult)=>void) => void
-        requestNode:(params:RequestNodeOptions, callback:(err:any, value:RequestNodeResult)=>void) => void
-        resolveNode:(params:ResolveNodeOptions, callback:(err:any, value:ResolveNodeResult)=>void) => void
-        describeNode:(params:DescribeNodeParams, callback:(err:any, value:DescribeNodeResult)=>void) => void
-        shadowRootPopped:(params:ShadowRootPoppedParams, callback:(value:ShadowRootPoppedEvent)=>void) => void
-        shadowRootPushed:(params:ShadowRootPushedParams, callback:(value:ShadowRootPushedEvent)=>void) => void
-    }
-    namespace Runtime {
-        type RemoteObjectID = string;
-        interface RemoteObject {
-            type:string,
-            subtype:string,
-            className:string,
-            value:any,
-            unserializableValue:UnserializableValue,
-            description:string,
-            objectId:Runtime.RemoteObjectID,
-            preview: ObjectPreview,
-            customPreview: CustomPreview
-        }
-    }
-
-    interface Node {
-        nodeId:NodeID,
-        parentId:NodeID,
-        backendNodeId:DOM.BackendNodeID,
-        nodeType:number,
-        nodeName:string,
-        localName:string,
-        nodeValue:string,
-        childNodeCount:number,
-        children:Array<Node>,
-        attributes:Array<string>,
-        documentURL?:string,
-        baseURL?:string,
-        publicId?:string,
-        systemId?:string,
-        internalSubset?:string,
-        xmlVersion?:string,
-        name?:string,
-        value?:string,
-        pseudoType?:PseudoType,
-        shadowRootType?:ShadowRootType,
-        frameId?:FrameID,
-        contentDocument?:Node,
-        shadowRoots?:Array<Node>,
-        templateContent?:Node,
-        pseudoElements?:Array<Node>,
-        importedDocument?:Node,
-        distributedNodes?:Array<BackendNode>,
-        isSVG?:boolean
-    }
-    interface EvaluateParameters {
-        expression:string,
-        objectGroup?:string,
-        includeCommandLineAPI?:boolean,
-        silent?:boolean,
-        contextId:ExecutionContextID,
-        returnByValue?:boolean,
-        generatePreview?:boolean,
-        userGesture?:boolean,
-        awaitPromise?:boolean
-    }
     interface CallArgument {
         value:any,
         unserializableValue:UnserializableValue,
         objectId:Runtime.RemoteObjectID
-    }
-    interface EvaluateResult {
-        result:Runtime.RemoteObject,
-        exceptionDetails:ExceptionDetails
-    }
-    interface CallFunctionOnArguments {
-        functionDeclaration:string,
-        objectId:Runtime.RemoteObjectID,
-        arguments:Array<CallArgument>,
-        silent?:boolean,
-        returnByValue?:boolean,
-        generatePreview?:boolean,
-        userGesture?:boolean,
-        awaitPromise?:boolean,
-        executionContextId:ExecutionContextID,
-        objectGroup?:string
-    }
-    interface CallFunctionOnResult {
-        result:Runtime.RemoteObject,
-        exceptionDetails:ExceptionDetails
-    }
-    interface Runtime {
-        enable:()=>void,
-        disable:()=>void,
-        executionContextCreated:(callback:(event:ExecutionContextCreatedEvent)=>void) => void,
-        evaluate:(params:EvaluateParameters, callback:(err:any, result:EvaluateResult)=>void) => void,
-        callFunctionOn:(params:CallFunctionOnArguments, callback:(err:any, result:CallFunctionOnResult)=>void) => void,
     }
     interface Initiator {
         type:string,
         stack:StackTrace,
         url:string,
         lineNumber:number
-    }
-    interface RequestWillBeSentEvent {
-        requestId:RequestID,
-        loaderId:Network.LoaderID,
-        documentURL:string,
-        request:Request,
-        timestamp:MonotonicTime,
-        wallTime:Network.TimeSinceEpoch,
-        initiator:Initiator,
-        redirectResponse:Network.Response,
-        type:Page.ResourceType,
-        frameId:FrameID
-    }
-    interface ResponseReceivedEvent {
-        requestId:RequestID,
-        loaderId:Network.LoaderID,
-        timestamp:MonotonicTime,
-        type:Page.ResourceType,
-        response:Network.Response,
-        frameId:FrameID
-    }
-    interface DocumentUpdatedEvent { }
-    interface CharacterDataModifiedEvent {
-        nodeId:NodeID,
-        characterData:string
-    }
-    interface ChildNodeCountUpdatedEvent {
-        nodeId:NodeID,
-        childNodeCount:number
-    }
-    interface ChildNodeInsertedEvent {
-        parentNodeId:NodeID,
-        previousNodeId:NodeID,
-        node:Node
-    }
-    interface ChildNodeRemovedEvent {
-        parentNodeId:NodeID,
-        nodeId:NodeID
-    }
-    interface SetChildNodesResponse {
-        parentId:NodeID,
-        nodes:Array<Node>
-    }
-    interface AttributeModifiedEvent {
-        nodeId:NodeID,
-        name:string,
-        value:string
-    }
-    interface AttributeRemovedEvent {
-        nodeId:NodeID,
-        name:string
     }
     interface LoadingFinishedEvent {
         requestId: RequestID,
@@ -462,155 +169,14 @@ declare namespace CRI {
         canceled?:boolean,
         blockedReason?:Network.BlockedReason
     }
-    interface Network {
-        enable:()=>void,
-        requestWillBeSent:(callback:(event:RequestWillBeSentEvent)=>void) => void,
-        responseReceived:(callback:(event:ResponseReceivedEvent)=>void) => void
-        getResponseBody:(params:GetResponseBodyParams, callback:(err:any, data:GetResponseBodyResponse)=>any) => void
-        loadingFailed:(Callback:(event:LoadingFailedEvent)=>void) => void
-        loadingFinished:(Callback:(event:LoadingFinishedEvent)=>void) => void
-    }
-    interface GetResponseBodyParams {
-        requestId:RequestID
-    }
-    interface GetResponseBodyResponse {
-        body:string,
-        base64Encoded:boolean
-    }
-    interface GetResourceContentParams {
-        frameId:FrameID,
-        url:string
-    }
-    interface GetResourceContentResponse {
-        content:string,
-        base64Encoded:boolean
-    }
 
-    namespace Network {
-        type BlockedReason = 'csp' | 'mixed-content' | 'origin' | 'inspector' | 'subresource-filter' | 'other';
-        type LoaderID = string;
-        type TimeSinceEpoch = number;
-        interface Response {
-            url:string,
-            status:number,
-            statusText:string,
-            headers:Headers,
-            headersText:string,
-            mimeType:string,
-            requestHeaders:Headers,
-            requestHeadersText:string,
-            connectionReused:boolean,
-            connectionId:number,
-            remoteIPAddress:string,
-            remotePort:number,
-            fromDiskCache:boolean,
-            fromServiceWorker:boolean,
-            encodedDataLength:number,
-            timing:ResourceTiming,
-            protocl:string,
-            securityState:Security.SecurityState,
-            securityDetails:SecurityDetails
-        }
-        interface Request {
-            url:string,
-            method:string,
-            headers:Headers,
-            postData:string,
-            hasPostData:boolean,
-            mixedContentType:Security.MixedContentType,
-            initialPriority:ResourcePriority,
-            referrerPolicy:string,
-            isLinkPreload:boolean
-        }
-        interface SignedCertificateTimestamp {
-            status:string,
-            origin:string,
-            logDescription:string,
-            logId:string,
-            timestamp:TimeSinceEpoch,
-            hashAlgorithm:string,
-            signatureAlgorithm:string,
-            signatureData:string
-        }
-        interface SecurityDetails {
-            protocol:string,
-            keyExchange:string,
-            keyExchangeGroup:string,
-            cipher:string,
-            mac:string,
-            certificateId:Security.CertificateId,
-            subjectName:string,
-            sanList:Array<string>,
-            issuer:string,
-            validFrom:TimeSinceEpoch,
-            validTo:TimeSinceEpoch,
-            signedCertificateTimestampList:Array<SignedCertificateTimestamp>
-
-        }
-        interface ResourceTiming {
-            proxyStart:number,
-            proxyEnd:number,
-            dnsStart:number,
-            dnsEnd:number,
-            connectStart:number,
-            connectEnd:number,
-            sslStart:number,
-            sslEnd:number,
-            workerStart:number,
-            workerReady:number,
-            sendStart:number,
-            sendEnd:number,
-            pushStart:number,
-            pushEnd:number,
-            receiveHeadersEnd:number
-        }
-    }
-    namespace Security {
-        type CertificateId = number;
-        type SecurityState = 'unknown' | 'neutral' | 'insecure' | 'secure' | 'info';
-        type MixedContentType = 'blockable' | 'optionally-blockable' | 'none';
-    }
-
-    interface CSSProperty {
-        name:string,
-        value:string,
-        important?:boolean,
-        implicit?:boolean,
-        text:string,
-        parsedOk?:boolean,
-        disabled?:boolean,
-        range?:SourceRange
-    }
-    interface ShorthandEntry {
-        name:string,
-        value:string,
-        important?:boolean
-    }
     interface SourceRange {
         startLine:number,
         startColumn:number,
         endLine:number,
         endColumn:number
     }
-    interface CSSStyle {
-        styleSheetId:StyleSheetID,
-        cssProperties:Array<CSSProperty>,
-        shorthandEntries:Array<ShorthandEntry>,
-        cssText:string,
-        range:SourceRange
-    }
-    interface GetInlineStylesForNodeOptions {
-        nodeId:NodeID
-    }
-    interface GetInlineStylesResponse {
-        inlineStyle:CSSStyle,
-        attributesStyle:CSSStyle
-    }
-    interface CSS {
-        getInlineStylesForNode(options:GetInlineStylesForNodeOptions, callback:(err:any, data:GetInlineStylesResponse)=>any):void
-    }
     interface Protocol {
-
     }
 }
 

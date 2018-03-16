@@ -598,6 +598,14 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
             })
         });
     };
+    private resolveNode():Promise<CRI.Runtime.RemoteObject> {
+        return new Promise<CRI.Runtime.RemoteObject>((resolve, reject) => {
+            this.getChrome().DOM.resolveNode({nodeId:this.getNodeId()}, (err, value) => {
+                if(err) { reject(value); }
+                else { resolve(value.object); }
+            });
+        });
+    };
     public async setChildrenRecursive(children: Array<CRI.Node>=[], shadowRoots:Array<CRI.Node>=[]):Promise<void> {
         const childDOMStates:Array<DOMState> = children.map((child: CRI.Node) => {
             const {contentDocument, frameId} = child;

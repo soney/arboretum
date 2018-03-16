@@ -697,6 +697,19 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         });
     }
     ;
+    resolveNode() {
+        return new Promise((resolve, reject) => {
+            this.getChrome().DOM.resolveNode({ nodeId: this.getNodeId() }, (err, value) => {
+                if (err) {
+                    reject(value);
+                }
+                else {
+                    resolve(value.object);
+                }
+            });
+        });
+    }
+    ;
     setChildrenRecursive(children = [], shadowRoots = []) {
         return __awaiter(this, void 0, void 0, function* () {
             const childDOMStates = children.map((child) => {
