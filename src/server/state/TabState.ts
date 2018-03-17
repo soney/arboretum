@@ -463,6 +463,12 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         const {resources} = resourceTree.frameTree;
         console.log(resources);
     };
+    public async printListeners():Promise<void> {
+        if(this.domRoot) {
+            const listeners = await this.domRoot.getEventListeners(-1);
+            console.log(listeners);
+        }
+    };
     public destroy() {
         this.chrome.close();
         log.debug(`=== DESTROYED TAB STATE ${this.getTabId()} ====`);

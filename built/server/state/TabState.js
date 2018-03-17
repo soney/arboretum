@@ -768,6 +768,15 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
         });
     }
     ;
+    printListeners() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.domRoot) {
+                const listeners = yield this.domRoot.getEventListeners(-1);
+                console.log(listeners);
+            }
+        });
+    }
+    ;
     destroy() {
         this.chrome.close();
         log.debug(`=== DESTROYED TAB STATE ${this.getTabId()} ====`);

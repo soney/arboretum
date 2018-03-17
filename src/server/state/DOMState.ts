@@ -598,6 +598,16 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
             })
         });
     };
+    public async getEventListeners(depth:number=1, pierce:boolean=false):Promise<Array<CRI.DOMDebugger.EventListener>> {
+        const remoteObject:CRI.Runtime.RemoteObject = await this.resolveNode();
+        const {objectId} = remoteObject;
+        return new Promise<Array<CRI.DOMDebugger.EventListener>>((resolve, reject) => {
+            this.getChrome().DOMDebugger.getEventListeners({objectId, depth, pierce}, (err, value:CRI.GetEventListenersResult) => {
+                if(err) { reject(value); }
+                else { resolve(value.listeners); }
+            });
+        });
+    };
     private resolveNode():Promise<CRI.Runtime.RemoteObject> {
         return new Promise<CRI.Runtime.RemoteObject>((resolve, reject) => {
             this.getChrome().DOM.resolveNode({nodeId:this.getNodeId()}, (err, value) => {

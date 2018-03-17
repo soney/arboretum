@@ -127,6 +127,12 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
             tabState.printSummary();
         });
     };
+    public printListeners():void {
+        console.log('Listeners');
+        this.tabs.forEach((tabState:TabState) => {
+            tabState.printListeners();
+        });
+    };
     public async requestResource(url: string, frameID: CRI.FrameID, tabID: CRI.TabID): Promise<[CRI.Page.FrameResource, CRI.GetResourceContentResponse]> {
         const tabState: TabState = this.tabs.get(tabID);
 

@@ -148,6 +148,13 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
         });
     }
     ;
+    printListeners() {
+        console.log('Listeners');
+        this.tabs.forEach((tabState) => {
+            tabState.printListeners();
+        });
+    }
+    ;
     requestResource(url, frameID, tabID) {
         return __awaiter(this, void 0, void 0, function* () {
             const tabState = this.tabs.get(tabID);

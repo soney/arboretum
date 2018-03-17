@@ -697,6 +697,23 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         });
     }
     ;
+    getEventListeners(depth = 1, pierce = false) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const remoteObject = yield this.resolveNode();
+            const { objectId } = remoteObject;
+            return new Promise((resolve, reject) => {
+                this.getChrome().DOMDebugger.getEventListeners({ objectId, depth, pierce }, (err, value) => {
+                    if (err) {
+                        reject(value);
+                    }
+                    else {
+                        resolve(value.listeners);
+                    }
+                });
+            });
+        });
+    }
+    ;
     resolveNode() {
         return new Promise((resolve, reject) => {
             this.getChrome().DOM.resolveNode({ nodeId: this.getNodeId() }, (err, value) => {

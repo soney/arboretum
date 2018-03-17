@@ -4,7 +4,9 @@ import {ArboretumBrowser} from './ts/ArboretumBrowser';
 
 require('./css/browser.scss');
 
+const START_URL:string = 'file:///home/soney/code/arboretum/test/index.html';
+//const START_URL:string = 'http://www.umich.edu/';
 ReactDOM.render(
-    <ArboretumBrowser serverState="active" urls={['http://www.umich.edu/']} />,
+    <ArboretumBrowser serverState="active" urls={[START_URL]} />,
     document.getElementById('arboretum_main')
 );

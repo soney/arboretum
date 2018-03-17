@@ -204,6 +204,8 @@ process.stdin.on('keypress', (ch, key) => {
         browserState.printTabSummaries();
     } else if (name === 'n') {
         browserState.printNetworkSummary();
+    } else if (name === 'l') {
+        browserState.printListeners();
     } else if (name === 'q') {
         if(chromeProcess) {
             chromeProcess.kill();

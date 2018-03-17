@@ -7834,7 +7834,9 @@ const React = __webpack_require__(0);
 const ReactDOM = __webpack_require__(41);
 const ArboretumBrowser_1 = __webpack_require__(50);
 __webpack_require__(85);
-ReactDOM.render(React.createElement(ArboretumBrowser_1.ArboretumBrowser, { serverState: "active", urls: ['http://www.umich.edu/'] }), document.getElementById('arboretum_main'));
+const START_URL = 'file:///home/soney/code/arboretum/test/index.html';
+//const START_URL:string = 'http://www.umich.edu/';
+ReactDOM.render(React.createElement(ArboretumBrowser_1.ArboretumBrowser, { serverState: "active", urls: [START_URL] }), document.getElementById('arboretum_main'));
 
 
 /***/ }),
