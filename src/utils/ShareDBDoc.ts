@@ -170,3 +170,47 @@ export class SDBDoc<E> {
         this.sdb.deleteDoc(this);
     };
 };
+export abstract class SDBObject<T> {
+    private attachedToDoc:boolean=false;
+    protected doc:SDBDoc<any>;
+    protected path:Array<string|number>;
+    constructor(protected value:T) { };
+    public markAttachedToShareDBDoc(doc:SDBDoc<any>, path:Array<string|number>) {
+        this.doc = doc;
+        this.path = path;
+        this.attachedToDoc = true;
+    };
+    protected isAttached():boolean { return this.attachedToDoc; };
+    public getValue():T { return this.value; };
+};
+export class SDBArray<E> extends SDBObject<Array<E>> {
+    constructor(value:Array<E>=[]) {
+        super(value);
+    };
+    public push(...args:Array<E>):void {
+        this.value.push(...args);
+        if(this.isAttached()) {
+            this.doc.submitListPushOp(this.path, ...args);
+        }
+    };
+    public splice(start:number, deleteCount:number, ...toAdd:Array<E>) {
+        this.value.splice(start, deleteCount, ...toAdd);
+        if(this.isAttached()) {
+            for(let _ = 0; _<deleteCount; _++) {
+                this.doc.submitListDeleteOp(this.path.concat(start));
+            }
+            toAdd.forEach((item:E, i:number) => {
+                this.doc.submitListInsertOp(this.path.concat(i), item);
+            });
+        }
+    };
+    public length():number { return this.value.length; }
+    public item(i:number):E { return this.value[i]; };
+    public indexOf(item:E):number { return this.value.indexOf(item); }
+    public contains(item:E):boolean { return this.indexOf(item) >= 0; }
+    public forEach(callbackFunc:(item:E, index?:number) => void):void {
+        this.value.forEach(callbackFunc);
+    };
+    public map(callbackFunc:(item:E, index?:number) => any):Array<any> { return this.value.map(callbackFunc); };
+    public join(glue:string):string { return this.value.join(glue); };
+}

@@ -28016,6 +28016,64 @@ class SDBDoc {
 }
 exports.SDBDoc = SDBDoc;
 ;
+class SDBObject {
+    constructor(value) {
+        this.value = value;
+        this.attachedToDoc = false;
+    }
+    ;
+    markAttachedToShareDBDoc(doc, path) {
+        this.doc = doc;
+        this.path = path;
+        this.attachedToDoc = true;
+    }
+    ;
+    isAttached() { return this.attachedToDoc; }
+    ;
+    getValue() { return this.value; }
+    ;
+}
+exports.SDBObject = SDBObject;
+;
+class SDBArray extends SDBObject {
+    constructor(value = []) {
+        super(value);
+    }
+    ;
+    push(...args) {
+        this.value.push(...args);
+        if (this.isAttached()) {
+            this.doc.submitListPushOp(this.path, ...args);
+        }
+    }
+    ;
+    splice(start, deleteCount, ...toAdd) {
+        this.value.splice(start, deleteCount, ...toAdd);
+        if (this.isAttached()) {
+            for (let _ = 0; _ < deleteCount; _++) {
+                this.doc.submitListDeleteOp(this.path.concat(start));
+            }
+            toAdd.forEach((item, i) => {
+                this.doc.submitListInsertOp(this.path.concat(i), item);
+            });
+        }
+    }
+    ;
+    length() { return this.value.length; }
+    item(i) { return this.value[i]; }
+    ;
+    indexOf(item) { return this.value.indexOf(item); }
+    contains(item) { return this.indexOf(item) >= 0; }
+    forEach(callbackFunc) {
+        this.value.forEach(callbackFunc);
+    }
+    ;
+    map(callbackFunc) { return this.value.map(callbackFunc); }
+    ;
+    join(glue) { return this.value.join(glue); }
+    ;
+}
+exports.SDBArray = SDBArray;
 
 
 /***/ }),

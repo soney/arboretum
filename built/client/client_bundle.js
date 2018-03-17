@@ -31105,6 +31105,7 @@ class ArboretumClient extends React.Component {
         };
         this.socket = new WebSocket(this.props.wsAddress);
         this.sdb = new ShareDBDoc_1.SDB(true, this.socket);
+        window['sdb'] = this.sdb;
     }
     ;
     componentWillUnmount() {
@@ -31379,6 +31380,64 @@ class SDBDoc {
 }
 exports.SDBDoc = SDBDoc;
 ;
+class SDBObject {
+    constructor(value) {
+        this.value = value;
+        this.attachedToDoc = false;
+    }
+    ;
+    markAttachedToShareDBDoc(doc, path) {
+        this.doc = doc;
+        this.path = path;
+        this.attachedToDoc = true;
+    }
+    ;
+    isAttached() { return this.attachedToDoc; }
+    ;
+    getValue() { return this.value; }
+    ;
+}
+exports.SDBObject = SDBObject;
+;
+class SDBArray extends SDBObject {
+    constructor(value = []) {
+        super(value);
+    }
+    ;
+    push(...args) {
+        this.value.push(...args);
+        if (this.isAttached()) {
+            this.doc.submitListPushOp(this.path, ...args);
+        }
+    }
+    ;
+    splice(start, deleteCount, ...toAdd) {
+        this.value.splice(start, deleteCount, ...toAdd);
+        if (this.isAttached()) {
+            for (let _ = 0; _ < deleteCount; _++) {
+                this.doc.submitListDeleteOp(this.path.concat(start));
+            }
+            toAdd.forEach((item, i) => {
+                this.doc.submitListInsertOp(this.path.concat(i), item);
+            });
+        }
+    }
+    ;
+    length() { return this.value.length; }
+    item(i) { return this.value[i]; }
+    ;
+    indexOf(item) { return this.value.indexOf(item); }
+    contains(item) { return this.indexOf(item) >= 0; }
+    forEach(callbackFunc) {
+        this.value.forEach(callbackFunc);
+    }
+    ;
+    map(callbackFunc) { return this.value.map(callbackFunc); }
+    ;
+    join(glue) { return this.value.join(glue); }
+    ;
+}
+exports.SDBArray = SDBArray;
 
 
 /***/ }),
@@ -34347,6 +34406,7 @@ class ClientTab extends React.Component {
             if (this.state.tabID) {
                 this.tabDoc = this.props.sdb.get('tab', this.state.tabID);
                 this.tabDoc.subscribe(this.docUpdated);
+                window['tabDoc'] = this.tabDoc;
             }
         });
     }
@@ -34572,6 +34632,10 @@ class ClientNode extends TypedEventEmitter_1.TypedEventEmitter {
         this.sdbNode = sdbNode;
         this.onCreateNode = onCreateNode;
         this.mouseEvent = this.registerEvent();
+        this.sdbNode.listenedEvents.forEach(this.addListenedEvent);
+        if (this.sdbNode.listenedEvents.length > 0) {
+            console.log(this.sdbNode.nodeId, this.sdbNode.listenedEvents);
+        }
         this.children = this.getNodeChildren().map((child) => createClientNode(child, this.onCreateNode));
         if (this.onCreateNode) {
             this.onCreateNode(this);
@@ -34600,6 +34664,10 @@ class ClientNode extends TypedEventEmitter_1.TypedEventEmitter {
     ;
     removeChild(index) { this.children.splice(index, 1); }
     ;
+    addListenedEvent(eventName) { }
+    ;
+    removeListenedEvent(eventName) { }
+    ;
     // protected getNodeShadowRoots():Array<ShareDBDOMNode> { return this.sdbNode.shadowRoots; };
     setCharacterData(characterData) { }
     setNodeValue(value) { }
@@ -34610,6 +34678,8 @@ class ClientNode extends TypedEventEmitter_1.TypedEventEmitter {
             c.destroy();
         });
     }
+    ;
+    highlight() { }
     ;
 }
 exports.ClientNode = ClientNode;
@@ -34713,6 +34783,14 @@ class ClientElementNode extends ClientNode {
             }
             this.addEventListeners();
         });
+    }
+    ;
+    addListenedEvent(eventName) {
+        console.log('add listener', eventName);
+    }
+    ;
+    removeListenedEvent(eventName) {
+        console.log('remove listener', eventName);
     }
     ;
     addEventListeners() {

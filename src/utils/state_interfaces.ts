@@ -6,7 +6,6 @@ export interface BrowserDoc {
 };
 
 export interface ShareDBDOMNode {
-    // node: CRI.Node,
     nodeId: CRI.NodeID,
     nodeType: CRI.NodeType,
     nodeName: string,
@@ -17,8 +16,10 @@ export interface ShareDBDOMNode {
     childFrame: CRI.Frame,
     inlineStyle:string,
     inputValue:string,
-    isSVG:boolean
-    canvasData:ImageData
+    isSVG:boolean,
+    canvasData:ImageData,
+    listenedEvents:Array<string>
+    // node: CRI.Node,
     // shadowRootType:CRI.ShadowRootType,
     // shadowRoots:Array<ShareDBDOMNode>,
 };

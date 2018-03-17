@@ -62,6 +62,7 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
         if(this.state.tabID) {
             this.tabDoc = this.props.sdb.get<TabDoc>('tab', this.state.tabID);
             this.tabDoc.subscribe(this.docUpdated);
+            window['tabDoc'] = this.tabDoc;
         }
     };
     private docUpdated = (ops?:Array<ShareDBClient.Op>, source?:boolean, data?:TabDoc):void => {

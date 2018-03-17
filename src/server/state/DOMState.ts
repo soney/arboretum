@@ -6,7 +6,7 @@ import { processCSSURLs } from '../css_parser';
 import { EventEmitter } from 'events';
 import { NodeCode } from '../../utils/NodeCode';
 import { urlTransform } from '../url_transform';
-import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
+import {SDB, SDBDoc, SDBArray} from '../../utils/ShareDBDoc';
 import * as _ from 'underscore';
 import * as ShareDB from 'sharedb';
 import * as timers from 'timers';
@@ -25,8 +25,10 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
     private inlineStyle: string = '';
     private subNodes:Map<SubNodeType, Array<DOMState>> = new Map<SubNodeType, Array<DOMState>>();
     private updateValueInterval: NodeJS.Timer = null;
+    private updateListenersInterval: NodeJS.Timer = null;
     private shareDBNode:ShareDBDOMNode;
     private inputValue:string = '';
+    private listenedEvents:SDBArray<string> = new SDBArray<string>();
 
     private static attributesToIgnore: Array<string> = ['onload', 'onclick', 'onmouseover', 'onmouseout', 'onmouseenter', 'onmouseleave', 'action', 'oncontextmenu', 'onfocus'];
     private static shouldIncludeChild(child:DOMState):boolean {
@@ -72,9 +74,12 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
     public getShadowRoots():Array<DOMState> { return this.getSubNodes('shadowRoots'); };
     public getPseudoElements():Array<DOMState> { return this.getSubNodes('pseudoElements'); };
     protected async onAttachedToShareDBDoc():Promise<void> {
-        // if(this.getNodeId() === 21) { debugger; }
         log.debug(`DOM State ${this.getNodeId()} added to ShareDB doc`);
+
         await this.updateNodeValue();
+        await this.updateListenedEvents();
+
+        this.listenedEvents.markAttachedToShareDBDoc(this.getShareDBDoc(), this.getAbsoluteShareDBPath());
         this.getChildren().forEach((child:DOMState) => {
             if(DOMState.shouldIncludeChild(child)) {
                 child.markAttachedToShareDBDoc();
@@ -86,6 +91,7 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
         if(this.contentDocument) {
             this.contentDocument.markAttachedToShareDBDoc();
         }
+        this.addListenersInterval();
         this.addValueListeners();
     };
     private processNodeValue(nodeValue:string):string {
@@ -123,7 +129,8 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
             contentDocument: this.contentDocument ? this.contentDocument.createShareDBNode() : null,
             childFrame: this.childFrame ? this.childFrame.getFrameInfo() : null,
             inlineStyle: this.inlineStyle,
-            inputValue: this.inputValue
+            inputValue: this.inputValue,
+            listenedEvents: this.listenedEvents.getValue()
         };
     };
     private computeGroupedAttributes(attributes:Array<string>):Array<[string, string]> {
@@ -199,6 +206,7 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
     };
     public destroy(): void {
         this.removeValueListeners();
+        this.removeListenersInterval();
         this.getChildren().forEach((child: DOMState) => {
             child.destroy();
         });
@@ -253,7 +261,17 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
             throw (err);
         });
     };
-    private addValueListeners() {
+    private addListenersInterval():void {
+        this.updateListenersInterval = timers.setInterval(async () => {
+            await this.updateListenedEvents();
+        }, 20000);
+    };
+    private removeListenersInterval():void {
+        if(this.updateListenersInterval) {
+            timers.clearInterval(this.updateListenersInterval);
+        }
+    };
+    private addValueListeners():void {
         const tagName: string = this.getTagName().toLowerCase();
         if (tagName === 'input' || tagName === 'textarea') {
             this.updateValueInterval = timers.setInterval(async () => {
@@ -275,7 +293,7 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
             }, 10000);
         }
     };
-    private removeValueListeners() {
+    private removeValueListeners():void {
         if (this.updateValueInterval) {
             timers.clearInterval(this.updateValueInterval);
             this.updateValueInterval = null;
@@ -537,6 +555,9 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
             attributesMap.forEach((val: string, key: string) => {
                 text += ` ${key} = '${val}'`;
             });
+            if(this.listenedEvents.length()>0) {
+                text += ` (events: ${this.listenedEvents.join(', ')})`;
+            }
             text += '>';
             return text;
         } else if (type === NodeCode.COMMENT_NODE) {
@@ -597,6 +618,27 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
                 else { resolve(value.nodeIds); }
             })
         });
+    };
+    private async updateListenedEvents():Promise<void> {
+        const eventTypes:Set<string> = new Set<string>();
+        (await this.getEventListeners()).forEach((el) => {
+            eventTypes.add(el.type);
+        });
+        for(let i = 0; i<this.listenedEvents.length(); i++) {
+            const le:string = this.listenedEvents.item(i);
+            if(!eventTypes.has(le)) {
+                this.listenedEvents.splice(i, 1);
+                i--;
+            }
+        }
+        eventTypes.forEach((el:string) => {
+            if(!this.listenedEvents.contains(el)) {
+                this.listenedEvents.push(el);
+            }
+        });
+        if(eventTypes.size>0) {
+            console.log(this.getNodeId(), this.listenedEvents.join(','));
+        }
     };
     public async getEventListeners(depth:number=1, pierce:boolean=false):Promise<Array<CRI.DOMDebugger.EventListener>> {
         const remoteObject:CRI.Runtime.RemoteObject = await this.resolveNode();

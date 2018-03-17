@@ -39,6 +39,7 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
         };
         this.socket = new WebSocket(this.props.wsAddress);
         this.sdb = new SDB(true, this.socket);
+        window['sdb'] = this.sdb;
     };
     public componentWillUnmount():void {
         this.sdb.close();

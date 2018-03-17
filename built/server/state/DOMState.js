@@ -13,6 +13,7 @@ const ColoredLogger_1 = require("../../utils/ColoredLogger");
 const css_parser_1 = require("../css_parser");
 const NodeCode_1 = require("../../utils/NodeCode");
 const url_transform_1 = require("../url_transform");
+const ShareDBDoc_1 = require("../../utils/ShareDBDoc");
 const _ = require("underscore");
 const timers = require("timers");
 const ShareDBSharedState_1 = require("../../utils/ShareDBSharedState");
@@ -31,7 +32,9 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         this.inlineStyle = '';
         this.subNodes = new Map();
         this.updateValueInterval = null;
+        this.updateListenersInterval = null;
         this.inputValue = '';
+        this.listenedEvents = new ShareDBDoc_1.SDBArray();
         this.onDestroyed = this.registerEvent();
         if (this.contentDocument) {
             this.contentDocument.setParent(this);
@@ -85,9 +88,10 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
     ;
     onAttachedToShareDBDoc() {
         return __awaiter(this, void 0, void 0, function* () {
-            // if(this.getNodeId() === 21) { debugger; }
             log.debug(`DOM State ${this.getNodeId()} added to ShareDB doc`);
             yield this.updateNodeValue();
+            yield this.updateListenedEvents();
+            this.listenedEvents.markAttachedToShareDBDoc(this.getShareDBDoc(), this.getAbsoluteShareDBPath());
             this.getChildren().forEach((child) => {
                 if (DOMState.shouldIncludeChild(child)) {
                     child.markAttachedToShareDBDoc();
@@ -99,6 +103,7 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
             if (this.contentDocument) {
                 this.contentDocument.markAttachedToShareDBDoc();
             }
+            this.addListenersInterval();
             this.addValueListeners();
         });
     }
@@ -145,7 +150,8 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
             contentDocument: this.contentDocument ? this.contentDocument.createShareDBNode() : null,
             childFrame: this.childFrame ? this.childFrame.getFrameInfo() : null,
             inlineStyle: this.inlineStyle,
-            inputValue: this.inputValue
+            inputValue: this.inputValue,
+            listenedEvents: this.listenedEvents.getValue()
         };
     }
     ;
@@ -232,6 +238,7 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
     ;
     destroy() {
         this.removeValueListeners();
+        this.removeListenersInterval();
         this.getChildren().forEach((child) => {
             child.destroy();
         });
@@ -304,6 +311,18 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
                 throw (err);
             });
         });
+    }
+    ;
+    addListenersInterval() {
+        this.updateListenersInterval = timers.setInterval(() => __awaiter(this, void 0, void 0, function* () {
+            yield this.updateListenedEvents();
+        }), 20000);
+    }
+    ;
+    removeListenersInterval() {
+        if (this.updateListenersInterval) {
+            timers.clearInterval(this.updateListenersInterval);
+        }
     }
     ;
     addValueListeners() {
@@ -622,6 +641,9 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
             attributesMap.forEach((val, key) => {
                 text += ` ${key} = '${val}'`;
             });
+            if (this.listenedEvents.length() > 0) {
+                text += ` (events: ${this.listenedEvents.join(', ')})`;
+            }
             text += '>';
             return text;
         }
@@ -694,6 +716,30 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
                     }
                 });
             });
+        });
+    }
+    ;
+    updateListenedEvents() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const eventTypes = new Set();
+            (yield this.getEventListeners()).forEach((el) => {
+                eventTypes.add(el.type);
+            });
+            for (let i = 0; i < this.listenedEvents.length(); i++) {
+                const le = this.listenedEvents.item(i);
+                if (!eventTypes.has(le)) {
+                    this.listenedEvents.splice(i, 1);
+                    i--;
+                }
+            }
+            eventTypes.forEach((el) => {
+                if (!this.listenedEvents.contains(el)) {
+                    this.listenedEvents.push(el);
+                }
+            });
+            if (eventTypes.size > 0) {
+                console.log(this.getNodeId(), this.listenedEvents.join(','));
+            }
         });
     }
     ;

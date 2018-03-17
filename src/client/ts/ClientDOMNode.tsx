@@ -37,6 +37,10 @@ export abstract class ClientNode extends TypedEventEmitter {
     public mouseEvent = this.registerEvent<ClientMouseEvent>();
     constructor(protected sdbNode:ShareDBDOMNode, protected onCreateNode?:(c:ClientNode)=>void) {
         super();
+        this.sdbNode.listenedEvents.forEach(this.addListenedEvent);
+        if(this.sdbNode.listenedEvents.length > 0) {
+            console.log(this.sdbNode.nodeId, this.sdbNode.listenedEvents);
+        }
         this.children = this.getNodeChildren().map((child) => createClientNode(child, this.onCreateNode));
         if(this.onCreateNode) {
             this.onCreateNode(this);
@@ -53,6 +57,8 @@ export abstract class ClientNode extends TypedEventEmitter {
     public removeAttribute(name:string):void {};
     public insertChild(child: ClientNode, index:number):void { this.children.splice(index, 0, child); };
     public removeChild(index:number):void { this.children.splice(index, 1); };
+    protected addListenedEvent(eventName:string):void {};
+    protected removeListenedEvent(eventName:string):void {};
     // protected getNodeShadowRoots():Array<ShareDBDOMNode> { return this.sdbNode.shadowRoots; };
     public setCharacterData(characterData:string):void {}
     public setNodeValue(value:string):void {}
@@ -64,6 +70,7 @@ export abstract class ClientNode extends TypedEventEmitter {
             c.destroy();
         });
     };
+    public highlight():void { };
 };
 
 export class ClientDocumentNode extends ClientNode {
@@ -142,6 +149,13 @@ export class ClientElementNode extends ClientNode {
             });
         }
         this.addEventListeners();
+    };
+
+    protected addListenedEvent(eventName:string):void {
+        console.log('add listener', eventName);
+    };
+    protected removeListenedEvent(eventName:string):void {
+        console.log('remove listener', eventName);
     };
     private addEventListeners():void {
         this.element.addEventListener('click', this.onClick);
