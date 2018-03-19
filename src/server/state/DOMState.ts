@@ -77,9 +77,9 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
         log.debug(`DOM State ${this.getNodeId()} added to ShareDB doc`);
 
         await this.updateNodeValue();
-        await this.updateListenedEvents();
 
-        this.listenedEvents.markAttachedToShareDBDoc(this.getShareDBDoc(), this.getAbsoluteShareDBPath());
+        this.listenedEvents.markAttachedToShareDBDoc(this.getShareDBDoc(), this.p('listenedEvents'));
+        await this.updateListenedEvents();
         this.getChildren().forEach((child:DOMState) => {
             if(DOMState.shouldIncludeChild(child)) {
                 child.markAttachedToShareDBDoc();
@@ -636,9 +636,6 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
                 this.listenedEvents.push(el);
             }
         });
-        if(eventTypes.size>0) {
-            console.log(this.getNodeId(), this.listenedEvents.join(','));
-        }
     };
     public async getEventListeners(depth:number=1, pierce:boolean=false):Promise<Array<CRI.DOMDebugger.EventListener>> {
         const remoteObject:CRI.Runtime.RemoteObject = await this.resolveNode();

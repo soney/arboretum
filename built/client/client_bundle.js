@@ -34603,6 +34603,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const NodeCode_1 = __webpack_require__(99);
 const TypedEventEmitter_1 = __webpack_require__(22);
 ;
+;
+;
 function createClientNode(sdbNode, onCreateNode) {
     const { nodeType } = sdbNode;
     if (nodeType === NodeCode_1.NodeCode.DOCUMENT_NODE) {
@@ -34632,7 +34634,9 @@ class ClientNode extends TypedEventEmitter_1.TypedEventEmitter {
         this.sdbNode = sdbNode;
         this.onCreateNode = onCreateNode;
         this.mouseEvent = this.registerEvent();
-        this.sdbNode.listenedEvents.forEach(this.addListenedEvent);
+        this.keyboardEvent = this.registerEvent();
+        this.elementEvent = this.registerEvent();
+        this.sdbNode.listenedEvents.forEach((le) => this.addListenedEvent(le));
         if (this.sdbNode.listenedEvents.length > 0) {
             console.log(this.sdbNode.nodeId, this.sdbNode.listenedEvents);
         }
@@ -34739,10 +34743,30 @@ class ClientElementNode extends ClientNode {
     constructor(sdbNode, onCreateNode) {
         super(sdbNode, onCreateNode);
         this.onClick = (event) => {
+            // if it isn't looking for a click event already
+            if (this.element.hasAttribute('href') && this.sdbNode.listenedEvents.indexOf('click') < 0) {
+                this.onMouseEvent(event);
+            }
+        };
+        this.onMouseEvent = (event) => {
             if (this.element === event.target) {
-                const { type, timeStamp, clientX, clientY, which, shiftKey, altKey, ctrlKey } = event;
+                const { type, timeStamp, clientX, clientY, which, shiftKey, altKey, ctrlKey, metaKey } = event;
                 const targetNodeID = this.sdbNode.nodeId;
-                this.mouseEvent.emit({ type, targetNodeID, timeStamp, clientX, clientY, which, shiftKey, altKey, ctrlKey });
+                this.mouseEvent.emit({ type, targetNodeID, timeStamp, clientX, clientY, which, shiftKey, altKey, ctrlKey, metaKey });
+            }
+        };
+        this.onKeyboardEvent = (event) => {
+            if (this.element === event.target) {
+                const { type, timeStamp, keyCode, metaKey, which, shiftKey, altKey, ctrlKey } = event;
+                const targetNodeID = this.sdbNode.nodeId;
+                this.keyboardEvent.emit({ type, targetNodeID, timeStamp, shiftKey, altKey, ctrlKey, metaKey, keyCode });
+            }
+        };
+        this.onElementEvent = (event) => {
+            if (this.element === event.target) {
+                const { type, timeStamp } = event;
+                const targetNodeID = this.sdbNode.nodeId;
+                this.elementEvent.emit({ type, targetNodeID, timeStamp });
             }
         };
         const { nodeName, isSVG, nodeId } = this.sdbNode;
@@ -34786,11 +34810,27 @@ class ClientElementNode extends ClientNode {
     }
     ;
     addListenedEvent(eventName) {
-        console.log('add listener', eventName);
+        if (mouseEvents.indexOf(eventName) >= 0) {
+            this.element.addEventListener(eventName, this.onMouseEvent);
+        }
+        else if (keyboardEvents.indexOf(eventName) >= 0) {
+            this.element.addEventListener(eventName, this.onKeyboardEvent);
+        }
+        else {
+            this.element.addEventListener(eventName, this.onElementEvent);
+        }
     }
     ;
     removeListenedEvent(eventName) {
-        console.log('remove listener', eventName);
+        if (mouseEvents.indexOf(eventName) >= 0) {
+            this.element.removeEventListener(eventName, this.onMouseEvent);
+        }
+        else if (keyboardEvents.indexOf(eventName) >= 0) {
+            this.element.removeEventListener(eventName, this.onKeyboardEvent);
+        }
+        else {
+            this.element.removeEventListener(eventName, this.onElementEvent);
+        }
     }
     ;
     addEventListeners() {
@@ -34925,6 +34965,8 @@ function iframeLoaded(element) {
         });
     });
 }
+const mouseEvents = ['mousedown', 'mouseenter', 'mouseleave', 'mousemove', 'mouseout', 'mouseover', 'mouseup', 'click', 'dblclick', 'wheel'];
+const keyboardEvents = ['keydown', 'keyup', 'keypress'];
 
 
 /***/ }),

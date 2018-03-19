@@ -90,8 +90,8 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         return __awaiter(this, void 0, void 0, function* () {
             log.debug(`DOM State ${this.getNodeId()} added to ShareDB doc`);
             yield this.updateNodeValue();
+            this.listenedEvents.markAttachedToShareDBDoc(this.getShareDBDoc(), this.p('listenedEvents'));
             yield this.updateListenedEvents();
-            this.listenedEvents.markAttachedToShareDBDoc(this.getShareDBDoc(), this.getAbsoluteShareDBPath());
             this.getChildren().forEach((child) => {
                 if (DOMState.shouldIncludeChild(child)) {
                     child.markAttachedToShareDBDoc();
@@ -737,9 +737,6 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
                     this.listenedEvents.push(el);
                 }
             });
-            if (eventTypes.size > 0) {
-                console.log(this.getNodeId(), this.listenedEvents.join(','));
-            }
         });
     }
     ;

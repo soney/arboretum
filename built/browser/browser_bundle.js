@@ -25663,8 +25663,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(0);
 const ArboretumChatBox_1 = __webpack_require__(53);
-const Clipboard = __webpack_require__(60);
-const react_switch_1 = __webpack_require__(61);
+const react_switch_1 = __webpack_require__(60);
+const copyToClipboard_1 = __webpack_require__(66);
 const ENTER_KEY = 13;
 ;
 class BrowserSidebar extends React.Component {
@@ -25696,15 +25696,16 @@ class BrowserSidebar extends React.Component {
         this.onSandboxChange = (event) => {
             this.setState({ sandbox: event.target.checked });
         };
-        this.adminURLRef = (el) => {
-            if (el) {
-                new Clipboard(el);
-            }
-        };
+        // private adminURLRef = (el:HTMLInputElement):void => {
+        //     if(el) {
+        //         new Clipboard(el);
+        //     }
+        // };
         this.shareURLRef = (el) => {
-            if (el) {
-                new Clipboard(el);
-            }
+            this.shareURLElement = el;
+            // if(el) {
+            //     new Clipboard(el);
+            // }
         };
         this.chatBoxRef = (chatbox) => {
             this.chatbox = chatbox;
@@ -25713,6 +25714,13 @@ class BrowserSidebar extends React.Component {
             if (this.props.onAction) {
                 this.props.onAction(pam);
             }
+        };
+        this.selectShareURL = () => {
+            this.shareURLElement.select();
+            this.shareURLElement.focus();
+        };
+        this.copyShareURL = () => {
+            copyToClipboard_1.copyToClipboard(this.shareURLElement.value);
         };
         this.state = {
             isVisible: this.props.isVisible,
@@ -25743,19 +25751,15 @@ class BrowserSidebar extends React.Component {
                         React.createElement("td", null,
                             React.createElement("h5", { className: "nav-group-title" }, "Share URL")),
                         React.createElement("td", null,
-                            React.createElement("h5", { className: "nav-group-title" }, "Admin URL")),
-                        React.createElement("td", null,
                             React.createElement("h5", { className: "nav-group-title" }, "MTurk")))),
                 React.createElement("tbody", null,
                     React.createElement("tr", { id: "control_content" },
                         React.createElement("td", null,
                             React.createElement(react_switch_1.default, { height: 24, width: 48, onChange: this.handleServerSwitchChange, checked: this.state.serverActive })),
                         React.createElement("td", { className: "copy_area" },
-                            React.createElement("input", { ref: this.shareURLRef, value: this.state.shareURL, id: "share_url", "data-disabled": "true" }),
-                            React.createElement("span", { ref: (el) => (el), "data-clipboard-target": "#share_url", id: "share_copy", className: "icon icon-clipboard" })),
-                        React.createElement("td", { className: "copy_area" },
-                            React.createElement("input", { ref: this.adminURLRef, value: this.state.adminURL, id: "admin_url", "data-disabled": "true" }),
-                            React.createElement("span", { "data-clipboard-target": "#admin_url", id: "admin_copy", className: "icon icon-clipboard" })),
+                            React.createElement("input", { onClick: this.selectShareURL, ref: this.shareURLRef, value: this.state.shareURL, id: "share_url", "data-disabled": "true" }),
+                            React.createElement("a", { href: "javascript:void(0)", onClick: this.copyShareURL },
+                                React.createElement("span", { ref: (el) => (el), "data-clipboard-target": "#share_url", id: "share_copy", className: "icon icon-clipboard" }))),
                         React.createElement("td", null,
                             React.createElement("button", { onClick: this.postToMTurk, id: "mturk_post", className: 'btn btn-default' },
                                 React.createElement("span", { className: "icon icon-upload-cloud" }),
@@ -26454,12 +26458,6 @@ module.exports = function (css) {
 
 /***/ }),
 /* 60 */
-/***/ (function(module, exports) {
-
-module.exports = require("clipboard");
-
-/***/ }),
-/* 61 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -26475,13 +26473,13 @@ var _react = __webpack_require__(0);
 
 var _react2 = _interopRequireDefault(_react);
 
-var _propTypes = __webpack_require__(62);
+var _propTypes = __webpack_require__(61);
 
 var _propTypes2 = _interopRequireDefault(_propTypes);
 
-var _icons = __webpack_require__(65);
+var _icons = __webpack_require__(64);
 
-var _getBackgroundColor = __webpack_require__(66);
+var _getBackgroundColor = __webpack_require__(65);
 
 var _getBackgroundColor2 = _interopRequireDefault(_getBackgroundColor);
 
@@ -26844,7 +26842,7 @@ Switch.defaultProps = {
 exports.default = Switch;
 
 /***/ }),
-/* 62 */
+/* 61 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /**
@@ -26869,16 +26867,16 @@ if (process.env.NODE_ENV !== 'production') {
   // By explicitly using `prop-types` you are opting into new development behavior.
   // http://fb.me/prop-types-in-prod
   var throwOnDirectAccess = true;
-  module.exports = __webpack_require__(63)(isValidElement, throwOnDirectAccess);
+  module.exports = __webpack_require__(62)(isValidElement, throwOnDirectAccess);
 } else {
   // By explicitly using `prop-types` you are opting into new production behavior.
   // http://fb.me/prop-types-in-prod
-  module.exports = __webpack_require__(64)();
+  module.exports = __webpack_require__(63)();
 }
 
 
 /***/ }),
-/* 63 */
+/* 62 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -27427,7 +27425,7 @@ module.exports = function(isValidElement, throwOnDirectAccess) {
 
 
 /***/ }),
-/* 64 */
+/* 63 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -27492,7 +27490,7 @@ module.exports = function() {
 
 
 /***/ }),
-/* 65 */
+/* 64 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -27564,7 +27562,7 @@ var checkedIcon = exports.checkedIcon = _react2.default.createElement(
 );
 
 /***/ }),
-/* 66 */
+/* 65 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -27613,6 +27611,26 @@ function getBackgroundColor(pos, checkedPos, uncheckedPos, offColor, onColor) {
   var sixDigitOnColor = convertShorthandColor(onColor);
   return createBackgroundColor(pos, checkedPos, uncheckedPos, sixDigitOffColor, sixDigitOnColor);
 }
+
+/***/ }),
+/* 66 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+function copyToClipboard(text) {
+    const copyListener = (e) => {
+        e.clipboardData.setData('text/plain', text);
+        e.preventDefault();
+        document.removeEventListener('copy', copyListener);
+    };
+    document.addEventListener('copy', copyListener);
+    document.execCommand('copy');
+}
+exports.copyToClipboard = copyToClipboard;
+;
+
 
 /***/ }),
 /* 67 */

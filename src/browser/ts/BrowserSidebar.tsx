@@ -4,6 +4,7 @@ import * as Clipboard from 'clipboard';
 import Switch from 'react-switch';
 import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
 import {ArboretumChat, Message, User, TextMessage, PageActionMessage} from '../../utils/ArboretumChat';
+import {copyToClipboard} from '../../utils/copyToClipboard';
 
 const ENTER_KEY:number = 13;
 
@@ -32,6 +33,7 @@ type BrowserSidebarState = {
 
 export class BrowserSidebar extends React.Component<BrowserSidebarProps, BrowserSidebarState> {
     private chatbox:ArboretumChatBox;
+    private shareURLElement:HTMLInputElement;
     constructor(props) {
         super(props);
         this.state = {
@@ -66,15 +68,16 @@ export class BrowserSidebar extends React.Component<BrowserSidebarProps, Browser
     private onSandboxChange = (event:React.ChangeEvent<HTMLInputElement>) => {
         this.setState({sandbox: event.target.checked});
     };
-    private adminURLRef = (el:HTMLInputElement):void => {
-        if(el) {
-            new Clipboard(el);
-        }
-    };
+    // private adminURLRef = (el:HTMLInputElement):void => {
+    //     if(el) {
+    //         new Clipboard(el);
+    //     }
+    // };
     private shareURLRef = (el:HTMLInputElement):void => {
-        if(el) {
-            new Clipboard(el);
-        }
+        this.shareURLElement = el;
+        // if(el) {
+        //     new Clipboard(el);
+        // }
     };
     private chatBoxRef = (chatbox:ArboretumChatBox):void => {
         this.chatbox = chatbox;
@@ -88,6 +91,13 @@ export class BrowserSidebar extends React.Component<BrowserSidebarProps, Browser
     private onAction = (pam:PageActionMessage):void => {
         if(this.props.onAction) { this.props.onAction(pam); }
     };
+    private selectShareURL = ():void => {
+        this.shareURLElement.select();
+        this.shareURLElement.focus();
+    };
+    private copyShareURL = ():void => {
+        copyToClipboard(this.shareURLElement.value);
+    };
     public render():React.ReactNode {
         return <div className='sidebar'>
             <table id="server-controls">
@@ -99,9 +109,9 @@ export class BrowserSidebar extends React.Component<BrowserSidebarProps, Browser
                         <td>
                             <h5 className="nav-group-title">Share URL</h5>
                         </td>
-                        <td>
+                        {/* <td>
                             <h5 className="nav-group-title">Admin URL</h5>
-                        </td>
+                        </td> */}
                         <td>
                             <h5 className="nav-group-title">MTurk</h5>
                         </td>
@@ -113,13 +123,13 @@ export class BrowserSidebar extends React.Component<BrowserSidebarProps, Browser
                             <Switch height={24} width={48} onChange={this.handleServerSwitchChange} checked={this.state.serverActive} />
                         </td>
                         <td className="copy_area">
-                            <input ref={this.shareURLRef} value={this.state.shareURL} id="share_url" data-disabled="true"/>
-                            <span ref={(el) => (el)} data-clipboard-target="#share_url" id="share_copy" className="icon icon-clipboard"></span>
+                            <input onClick={this.selectShareURL} ref={this.shareURLRef} value={this.state.shareURL} id="share_url" data-disabled="true"/>
+                            <a href="javascript:void(0)" onClick={this.copyShareURL}><span ref={(el) => (el)} data-clipboard-target="#share_url" id="share_copy" className="icon icon-clipboard"></span></a>
                         </td>
-                        <td className="copy_area">
+                        {/* <td className="copy_area">
                             <input ref={this.adminURLRef} value={this.state.adminURL} id="admin_url" data-disabled="true"/>
                             <span data-clipboard-target="#admin_url" id="admin_copy" className="icon icon-clipboard"></span>
-                        </td>
+                        </td> */}
                         <td>
                             <button onClick={this.postToMTurk} id="mturk_post" className='btn btn-default'><span className="icon icon-upload-cloud"></span>&nbsp;Post</button>
                             <br />

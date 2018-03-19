@@ -11,7 +11,24 @@ export interface ClientMouseEvent {
     which:number,
     shiftKey:boolean,
     ctrlKey:boolean,
-    altKey:boolean
+    altKey:boolean,
+    metaKey:boolean
+};
+export interface ClientKeyboardEvent {
+    type:string,
+    targetNodeID:CRI.NodeID,
+    timeStamp:number,
+    keyCode:number,
+    shiftKey:boolean,
+    ctrlKey:boolean,
+    altKey:boolean,
+    metaKey:boolean
+};
+
+export interface ElementEvent {
+    type:string,
+    targetNodeID:CRI.NodeID,
+    timeStamp:number
 };
 
 export function createClientNode(sdbNode:ShareDBDOMNode, onCreateNode?:(c:ClientNode)=>void):ClientNode {
@@ -35,9 +52,11 @@ export abstract class ClientNode extends TypedEventEmitter {
     private children:Array<ClientNode>;
     protected contentDocument:ClientDocumentNode;
     public mouseEvent = this.registerEvent<ClientMouseEvent>();
+    public keyboardEvent = this.registerEvent<ClientKeyboardEvent>();
+    public elementEvent = this.registerEvent<ElementEvent>();
     constructor(protected sdbNode:ShareDBDOMNode, protected onCreateNode?:(c:ClientNode)=>void) {
         super();
-        this.sdbNode.listenedEvents.forEach(this.addListenedEvent);
+        this.sdbNode.listenedEvents.forEach((le)=>this.addListenedEvent(le));
         if(this.sdbNode.listenedEvents.length > 0) {
             console.log(this.sdbNode.nodeId, this.sdbNode.listenedEvents);
         }
@@ -150,12 +169,23 @@ export class ClientElementNode extends ClientNode {
         }
         this.addEventListeners();
     };
-
     protected addListenedEvent(eventName:string):void {
-        console.log('add listener', eventName);
+        if(mouseEvents.indexOf(eventName)>=0) {
+            this.element.addEventListener(eventName, this.onMouseEvent);
+        } else if(keyboardEvents.indexOf(eventName)>=0) {
+            this.element.addEventListener(eventName, this.onKeyboardEvent);
+        } else {
+            this.element.addEventListener(eventName, this.onElementEvent);
+        }
     };
     protected removeListenedEvent(eventName:string):void {
-        console.log('remove listener', eventName);
+        if(mouseEvents.indexOf(eventName)>=0) {
+            this.element.removeEventListener(eventName, this.onMouseEvent);
+        } else if(keyboardEvents.indexOf(eventName)>=0) {
+            this.element.removeEventListener(eventName, this.onKeyboardEvent);
+        } else {
+            this.element.removeEventListener(eventName, this.onElementEvent);
+        }
     };
     private addEventListeners():void {
         this.element.addEventListener('click', this.onClick);
@@ -164,10 +194,30 @@ export class ClientElementNode extends ClientNode {
         this.element.removeEventListener('click', this.onClick);
     };
     private onClick = (event:MouseEvent):void => {
+        // if it isn't looking for a click event already
+        if(this.element.hasAttribute('href') && this.sdbNode.listenedEvents.indexOf('click')<0) {
+            this.onMouseEvent(event);
+        }
+    };
+    private onMouseEvent = (event:MouseEvent):void => {
         if(this.element === event.target) {
-            const {type, timeStamp, clientX, clientY, which, shiftKey, altKey, ctrlKey} = event;
+            const {type, timeStamp, clientX, clientY, which, shiftKey, altKey, ctrlKey, metaKey} = event;
             const targetNodeID = this.sdbNode.nodeId;
-            this.mouseEvent.emit({type, targetNodeID, timeStamp, clientX, clientY, which, shiftKey, altKey, ctrlKey});
+            this.mouseEvent.emit({type, targetNodeID, timeStamp, clientX, clientY, which, shiftKey, altKey, ctrlKey, metaKey});
+        }
+    };
+    private onKeyboardEvent = (event:KeyboardEvent):void => {
+        if(this.element === event.target) {
+            const {type, timeStamp, keyCode, metaKey, which, shiftKey, altKey, ctrlKey} = event;
+            const targetNodeID = this.sdbNode.nodeId;
+            this.keyboardEvent.emit({type, targetNodeID, timeStamp, shiftKey, altKey, ctrlKey, metaKey, keyCode});
+        }
+    };
+    private onElementEvent = (event:Event):void => {
+        if(this.element === event.target) {
+            const {type, timeStamp } = event;
+            const targetNodeID = this.sdbNode.nodeId;
+            this.elementEvent.emit({type, targetNodeID, timeStamp });
         }
     };
     public setChildren(children:Array<ClientNode>):void {
@@ -269,3 +319,5 @@ function iframeLoaded(element:HTMLIFrameElement):Promise<HTMLIFrameElement> {
         });
     });
 }
+const mouseEvents = ['mousedown', 'mouseenter', 'mouseleave', 'mousemove', 'mouseout', 'mouseover', 'mouseup', 'click', 'dblclick', 'wheel'];
+const keyboardEvents = ['keydown', 'keyup', 'keypress'];
