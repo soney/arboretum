@@ -820,6 +820,12 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         });
     }
     ;
+    getTextDescription() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return `${this.getNodeId()}`;
+        });
+    }
+    ;
 }
 DOMState.attributesToIgnore = ['onload', 'onclick', 'onmouseover', 'onmouseout', 'onmouseenter', 'onmouseleave', 'action', 'oncontextmenu', 'onfocus'];
 exports.DOMState = DOMState;

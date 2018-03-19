@@ -712,4 +712,7 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
             filteredChildren.forEach((c) => c.markAttachedToShareDBDoc());
         }
     };
+    public async getTextDescription():Promise<string> {
+        return `${this.getNodeId()}`;
+    };
 }

@@ -81,7 +81,7 @@ export class ArboretumChat extends TypedEventEmitter {
             const {url} = data;
             return `navigate to ${url}`;
         } else if(action === 'mouse_event') {
-            const {targetNodeID, type} = data;
+            const {targetNodeID, type, targetNodeDescription} = data;
             return `${type} on ${targetNodeID}`;
         } else {
             return `do ${action}`;

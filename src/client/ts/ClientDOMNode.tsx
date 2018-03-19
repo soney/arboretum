@@ -56,7 +56,6 @@ export abstract class ClientNode extends TypedEventEmitter {
     public elementEvent = this.registerEvent<ElementEvent>();
     constructor(protected sdbNode:ShareDBDOMNode, protected onCreateNode?:(c:ClientNode)=>void) {
         super();
-        this.sdbNode.listenedEvents.forEach((le)=>this.addListenedEvent(le));
         if(this.sdbNode.listenedEvents.length > 0) {
             console.log(this.sdbNode.nodeId, this.sdbNode.listenedEvents);
         }
@@ -140,6 +139,7 @@ export class ClientElementNode extends ClientNode {
         } else {
             this.element = document.createElement(nodeName)
         }
+        this.sdbNode.listenedEvents.forEach((le)=>this.addListenedEvent(le));
         this.element.setAttribute('data-arboretum-node-id', `${nodeId}`);
         this.initialize();
     };

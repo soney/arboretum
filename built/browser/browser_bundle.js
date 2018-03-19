@@ -25997,7 +25997,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             return `navigate to ${url}`;
         }
         else if (action === 'mouse_event') {
-            const { targetNodeID, type } = data;
+            const { targetNodeID, type, targetNodeDescription } = data;
             return `${type} on ${targetNodeID}`;
         }
         else {

@@ -34636,7 +34636,6 @@ class ClientNode extends TypedEventEmitter_1.TypedEventEmitter {
         this.mouseEvent = this.registerEvent();
         this.keyboardEvent = this.registerEvent();
         this.elementEvent = this.registerEvent();
-        this.sdbNode.listenedEvents.forEach((le) => this.addListenedEvent(le));
         if (this.sdbNode.listenedEvents.length > 0) {
             console.log(this.sdbNode.nodeId, this.sdbNode.listenedEvents);
         }
@@ -34776,6 +34775,7 @@ class ClientElementNode extends ClientNode {
         else {
             this.element = document.createElement(nodeName);
         }
+        this.sdbNode.listenedEvents.forEach((le) => this.addListenedEvent(le));
         this.element.setAttribute('data-arboretum-node-id', `${nodeId}`);
         this.initialize();
     }
@@ -45996,7 +45996,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             return `navigate to ${url}`;
         }
         else if (action === 'mouse_event') {
-            const { targetNodeID, type } = data;
+            const { targetNodeID, type, targetNodeDescription } = data;
             return `${type} on ${targetNodeID}`;
         }
         else {
