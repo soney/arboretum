@@ -30,6 +30,7 @@ type ClientTabState = {
 
 export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
     private tabDoc:SDBDoc<TabDoc>;
+    private clientNodes:Map<CRI.NodeID, ClientNode> = new Map<CRI.NodeID, ClientNode>();
     private rootElement:ClientNode;
     private nodeSelector:NodeSelector = new NodeSelector();
     private iframeElement:HTMLIFrameElement;
@@ -65,6 +66,25 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
             window['tabDoc'] = this.tabDoc;
         }
     };
+    private getNode(nodeId:CRI.NodeID):ClientNode {
+        return this.clientNodes.get(nodeId);
+    };
+    public addHighlight (nodeIds:Array<CRI.NodeID>, color:string):void {
+        nodeIds.forEach((id) => {
+            const node = this.getNode(id);
+            if(node) {
+                node.addHighlight(color);
+            }
+        });
+    };
+    public removeHighlight (nodeIds:Array<CRI.NodeID>):void {
+        nodeIds.forEach((id) => {
+            const node = this.getNode(id);
+            if(node) {
+                node.removeHighlight(color);
+            }
+        });
+    };
     private docUpdated = (ops?:Array<ShareDBClient.Op>, source?:boolean, data?:TabDoc):void => {
         if(ops) {
             ops.forEach((op:ShareDBClient.Op) => {
@@ -98,9 +118,22 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
         // node.appendChild(this.rootElement.getElement());
     };
     private onDOMNodeCreated = (clientNode:ClientNode):void => {
+        this.clientNodes.set(clientNode.getNodeID(), clientNode);
         clientNode.mouseEvent.addListener((event) => {
             this.pageAction.emit({
                 pa:'mouse_event',
+                data:event
+            });
+        });
+        clientNode.keyboardEvent.addListener((event) => {
+            this.pageAction.emit({
+                pa:'keyboard_event',
+                data:event
+            });
+        });
+        clientNode.elementEvent.addListener((event) => {
+            this.pageAction.emit({
+                pa: 'element_event',
                 data:event
             });
         });
@@ -137,6 +170,14 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
             } else if(property === 'canvasData') {
                 const imageData:ImageData = new ImageData(new Uint8ClampedArray(oi.data), oi.width, oi.height);
                 (node as ClientElementNode).setCanvasValue(imageData);
+            } else if(property === 'listenedEvents') {
+                const {li, ld} = op;
+                if(ld) {
+                    node.removeListenedEvent(ld);
+                }
+                if(li) {
+                    node.addListenedEvent(li);
+                }
             } else if(property === 'children') {
                 if(path.length === 0) { // set all children
                     const children = oi.map((c) => createClientNode(c, this.onDOMNodeCreated))
@@ -207,6 +248,8 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
             } else if(item === 'canvasData') {
                 return {node, property:item, path:p.slice(i+1)};
             } else if(item === 'canGoBack' || item === 'canGoForward' || item === 'isLoading' || item === 'title' || item === 'url') {
+                return {node, property:item, path:p.slice(i+1)};
+            } else if(item === 'listenedEvents') {
                 return {node, property:item, path:p.slice(i+1)};
             } else if(item === 'shadowRoots') {
                 throw new Error('ShadowRoots not expected to be included');

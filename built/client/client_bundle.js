@@ -31068,6 +31068,7 @@ class ArboretumClient extends React.Component {
             this.arboretumChat = arboretumChat;
         };
         this.goBack = () => {
+            console.log('back');
             this.getChat().addPageActionMessage('goBack', this.tabID);
         };
         this.goForward = () => {
@@ -31100,6 +31101,16 @@ class ArboretumClient extends React.Component {
             }
         };
         this.pageTitleChanged = (tab, title) => { };
+        this.addHighlight = (nodeIds, color) => {
+            if (this.clientTab) {
+                this.clientTab.addHighlight(nodeIds, color);
+            }
+        };
+        this.removeHighlight = (nodeIds) => {
+            if (this.clientTab) {
+                this.clientTab.removeHighlight(nodeIds);
+            }
+        };
         this.state = {
             showControls: !this.props.frameID
         };
@@ -31122,7 +31133,7 @@ class ArboretumClient extends React.Component {
             React.createElement("div", { className: "window-content" },
                 React.createElement("div", { className: "pane-group", id: "client_body" },
                     React.createElement("div", { className: "pane-sm sidebar", id: "client_sidebar" },
-                        React.createElement(ArboretumChatBox_1.ArboretumChatBox, { isAdmin: false, ref: this.chatRef, sdb: this.sdb, username: "Steve" })),
+                        React.createElement(ArboretumChatBox_1.ArboretumChatBox, { onAddHighlight: this.addHighlight, onRemoveHighlight: this.removeHighlight, isAdmin: false, ref: this.chatRef, sdb: this.sdb, username: "Steve" })),
                     React.createElement("div", { className: "pane", id: "client_content" },
                         React.createElement(ClientTab_1.ClientTab, { canGoBackChanged: this.tabCanGoBackChanged, canGoForwardChanged: this.tabCanGoForwardChanged, urlChanged: this.tabURLChanged, titleChanged: this.pageTitleChanged, isLoadingChanged: this.tabIsLoadingChanged, tabID: this.props.tabID, frameID: this.props.frameID, ref: this.clientTabRef, sdb: this.sdb })))));
     }
@@ -31718,6 +31729,7 @@ json.checkList = function(elem) {
 
 json.checkObj = function(elem) {
   if (!isObject(elem)) {
+    debugger;
     throw new Error("Referenced element not an object (it was " + JSON.stringify(elem) + ")");
   }
 };
@@ -31765,6 +31777,7 @@ json.apply = function(snapshot, op) {
 
       parent = elem;
       parentKey = key;
+      if(!elem) { debugger; }
       elem = elem[key];
       key = p;
 
@@ -34320,6 +34333,7 @@ const TypedEventEmitter_1 = __webpack_require__(22);
 class ClientTab extends React.Component {
     constructor(props) {
         super(props);
+        this.clientNodes = new Map();
         this.nodeSelector = new NodeSelector_1.NodeSelector();
         this.pageAction = TypedEventEmitter_1.registerEvent();
         this.docUpdated = (ops, source, data) => {
@@ -34356,9 +34370,22 @@ class ClientTab extends React.Component {
             }
         };
         this.onDOMNodeCreated = (clientNode) => {
+            this.clientNodes.set(clientNode.getNodeID(), clientNode);
             clientNode.mouseEvent.addListener((event) => {
                 this.pageAction.emit({
                     pa: 'mouse_event',
+                    data: event
+                });
+            });
+            clientNode.keyboardEvent.addListener((event) => {
+                this.pageAction.emit({
+                    pa: 'keyboard_event',
+                    data: event
+                });
+            });
+            clientNode.elementEvent.addListener((event) => {
+                this.pageAction.emit({
+                    pa: 'element_event',
                     data: event
                 });
             });
@@ -34407,6 +34434,28 @@ class ClientTab extends React.Component {
                 this.tabDoc = this.props.sdb.get('tab', this.state.tabID);
                 this.tabDoc.subscribe(this.docUpdated);
                 window['tabDoc'] = this.tabDoc;
+            }
+        });
+    }
+    ;
+    getNode(nodeId) {
+        return this.clientNodes.get(nodeId);
+    }
+    ;
+    addHighlight(nodeIds, color) {
+        nodeIds.forEach((id) => {
+            const node = this.getNode(id);
+            if (node) {
+                node.addHighlight(color);
+            }
+        });
+    }
+    ;
+    removeHighlight(nodeIds) {
+        nodeIds.forEach((id) => {
+            const node = this.getNode(id);
+            if (node) {
+                node.removeHighlight(color);
             }
         });
     }
@@ -34462,6 +34511,15 @@ class ClientTab extends React.Component {
             else if (property === 'canvasData') {
                 const imageData = new ImageData(new Uint8ClampedArray(oi.data), oi.width, oi.height);
                 node.setCanvasValue(imageData);
+            }
+            else if (property === 'listenedEvents') {
+                const { li, ld } = op;
+                if (ld) {
+                    node.removeListenedEvent(ld);
+                }
+                if (li) {
+                    node.addListenedEvent(li);
+                }
             }
             else if (property === 'children') {
                 if (path.length === 0) {
@@ -34565,6 +34623,9 @@ class ClientTab extends React.Component {
             else if (item === 'canGoBack' || item === 'canGoForward' || item === 'isLoading' || item === 'title' || item === 'url') {
                 return { node, property: item, path: p.slice(i + 1) };
             }
+            else if (item === 'listenedEvents') {
+                return { node, property: item, path: p.slice(i + 1) };
+            }
             else if (item === 'shadowRoots') {
                 throw new Error('ShadowRoots not expected to be included');
             }
@@ -34602,6 +34663,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const NodeCode_1 = __webpack_require__(99);
 const TypedEventEmitter_1 = __webpack_require__(22);
+const colors_1 = __webpack_require__(114);
 ;
 ;
 ;
@@ -34636,14 +34698,13 @@ class ClientNode extends TypedEventEmitter_1.TypedEventEmitter {
         this.mouseEvent = this.registerEvent();
         this.keyboardEvent = this.registerEvent();
         this.elementEvent = this.registerEvent();
-        if (this.sdbNode.listenedEvents.length > 0) {
-            console.log(this.sdbNode.nodeId, this.sdbNode.listenedEvents);
-        }
         this.children = this.getNodeChildren().map((child) => createClientNode(child, this.onCreateNode));
         if (this.onCreateNode) {
             this.onCreateNode(this);
         }
     }
+    ;
+    getNodeID() { return this.sdbNode.nodeId; }
     ;
     getContentDocument() { return this.contentDocument; }
     ;
@@ -34683,6 +34744,10 @@ class ClientNode extends TypedEventEmitter_1.TypedEventEmitter {
     }
     ;
     highlight() { }
+    ;
+    addHighlight(highlightColor) { }
+    ;
+    removeHighlight() { }
     ;
 }
 exports.ClientNode = ClientNode;
@@ -34741,6 +34806,11 @@ exports.ClientDocumentTypeNode = ClientDocumentTypeNode;
 class ClientElementNode extends ClientNode {
     constructor(sdbNode, onCreateNode) {
         super(sdbNode, onCreateNode);
+        this.highlighted = false;
+        this.onChange = (event) => {
+            const value = this.element.value;
+            this.elementEvent.emit({ value, type: 'change', targetNodeID: this.sdbNode.nodeId, timeStamp: (new Date()).getTime() });
+        };
         this.onClick = (event) => {
             // if it isn't looking for a click event already
             if (this.element.hasAttribute('href') && this.sdbNode.listenedEvents.indexOf('click') < 0) {
@@ -34775,9 +34845,61 @@ class ClientElementNode extends ClientNode {
         else {
             this.element = document.createElement(nodeName);
         }
-        this.sdbNode.listenedEvents.forEach((le) => this.addListenedEvent(le));
         this.element.setAttribute('data-arboretum-node-id', `${nodeId}`);
         this.initialize();
+    }
+    ;
+    static getHighlightStyleString(color) {
+        let largeNumber = 10e10;
+        const attributes = `inset 0px 0px ${largeNumber}px ${largeNumber}px ${color.withAlpha(0.5).toString()},
+        0px 0px 10px 0px ${color.toString()}`;
+        return `
+        box-shadow: ${attributes};
+        -moz-box-shadow: ${attributes};
+        -webkit-box-shadow: ${attributes};
+        `;
+    }
+    ;
+    addHighlight(highlightColor) {
+        super.addHighlight(highlightColor);
+        if (this.highlighted) {
+            this.removeHighlight();
+        }
+        this.highlighted = true;
+        const color = new colors_1.Color(new colors_1.HEX(highlightColor));
+        const styleString = ClientElementNode.getHighlightStyleString(color);
+        const styleValue = this.getStyleAttribute();
+        if (styleValue) {
+            this.element.setAttribute('style', styleString + this.getStyleAttribute());
+        }
+        else {
+            this.element.removeAttribute('style');
+        }
+    }
+    ;
+    removeHighlight() {
+        super.removeHighlight();
+        if (this.highlighted) {
+            this.highlighted = false;
+            const styleValue = this.getStyleAttribute();
+            if (styleValue) {
+                this.element.setAttribute('style', this.getStyleAttribute());
+            }
+            else {
+                this.element.removeAttribute('style');
+            }
+        }
+    }
+    ;
+    getStyleAttribute() {
+        let result = null;
+        this.getAttributes().forEach((attr) => {
+            const [name, value] = attr;
+            if (name.toUpperCase() === 'STYLE') {
+                result = value;
+            }
+        });
+        return result;
     }
     ;
     initialize() {
@@ -34805,6 +34927,7 @@ class ClientElementNode extends ClientNode {
                     this.element.appendChild(child.getElement());
                 });
             }
+            this.sdbNode.listenedEvents.forEach((le) => this.addListenedEvent(le));
             this.addEventListeners();
         });
     }
@@ -34835,6 +34958,10 @@ class ClientElementNode extends ClientNode {
     ;
     addEventListeners() {
         this.element.addEventListener('click', this.onClick);
+        const { nodeName } = this.sdbNode;
+        if (nodeName === 'INPUT' || nodeName === 'TEXTAREA') {
+            this.element.addEventListener('change', this.onChange);
+        }
     }
     ;
     removeEventListeners() {
@@ -45830,6 +45957,19 @@ class ArboretumChatBox extends React.Component {
                 this.props.onAction(pam);
             }
         };
+        this.addHighlights = (pam) => {
+            if (this.props.onAddHighlight) {
+                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pam);
+                const color = pam.sender.color;
+                this.props.onAddHighlight(nodeIDs, color);
+            }
+        };
+        this.removeHighlights = (pam) => {
+            if (this.props.onRemoveHighlight) {
+                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pam);
+                this.props.onRemoveHighlight(nodeIDs);
+            }
+        };
         this.state = {
             chatText: this.props.chatText || '',
             messages: [],
@@ -45892,7 +46032,7 @@ class ArboretumChatBox extends React.Component {
             else if (m['action']) {
                 const pam = m;
                 const { action, data, performed } = pam;
-                const description = React.createElement("span", { className: 'description' }, ArboretumChat_1.ArboretumChat.describePageActionMessage(pam));
+                const description = React.createElement("span", { className: 'description', onMouseEnter: () => this.addHighlights(pam), onMouseLeave: () => this.removeHighlights(pam) }, ArboretumChat_1.ArboretumChat.describePageActionMessage(pam));
                 let actions;
                 if (performed) {
                     actions = React.createElement("div", { className: '' }, "(accepted)");
@@ -46001,6 +46141,17 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         }
         else {
             return `do ${action}`;
+        }
+    }
+    ;
+    static getRelevantNodeIDs(pam) {
+        const { action, data, performed } = pam;
+        const targetNodeID = pam['targetNodeID'];
+        if (targetNodeID) {
+            return [targetNodeID];
+        }
+        else {
+            return [];
         }
     }
     ;
@@ -46644,6 +46795,132 @@ exports = module.exports = __webpack_require__(24)(true);
 exports.push([module.i, "html, body, #client_main, #arboretum_client {\n  margin: 0px;\n  padding: 0px;\n  height: 100%;\n  width: 100%;\n  overflow: hidden; }\n\nbody {\n  font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n  background-color: #333; }\n  body #arboretum_client #client_header {\n    max-height: 40px;\n    background-color: #e8e6e8;\n    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #e8e6e8), color-stop(100%, #d1cfd1));\n    background-image: -webkit-linear-gradient(top, #e8e6e8 0%, #d1cfd1 100%);\n    background-image: linear-gradient(to bottom, #e8e6e8 0%, #d1cfd1 100%); }\n    body #arboretum_client #client_header #tabs {\n      padding: 0px;\n      margin: 0px;\n      overflow: hidden; }\n      body #arboretum_client #client_header #tabs .tab {\n        text-align: center;\n        border-left: 1px solid #989698;\n        background-color: #b8b6b8;\n        background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #b8b6b8), color-stop(100%, #b0aeb0));\n        background-image: -webkit-linear-gradient(top, #b8b6b8 0%, #b0aeb0 100%);\n        background-image: linear-gradient(to bottom, #b8b6b8 0%, #b0aeb0 100%);\n        border-left: 1px solid #AAA;\n        list-style: none;\n        white-space: nowrap;\n        border-bottom: 1px solid #aaa;\n        overflow: hidden;\n        text-overflow: ellipsis;\n        color: #333; }\n      body #arboretum_client #client_header #tabs:last-child {\n        border-right: 1px solid #AAA; }\n      body #arboretum_client #client_header #tabs.not-selected {\n        background: linear-gradient(to bottom, #BBB 80%, #AAA); }\n        body #arboretum_client #client_header #tabs.not-selected .closeTab {\n          color: #999; }\n      body #arboretum_client #client_header #tabs.tab.selected {\n        background-color: #d4d2d4;\n        background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #d4d2d4), color-stop(100%, #cccacc));\n        background-image: -webkit-linear-gradient(top, #d4d2d4 0%, #cccacc 100%);\n        background-image: linear-gradient(to bottom, #d4d2d4 0%, #cccacc 100%);\n        /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n        border-bottom: none;\n        color: #777; }\n  body #arboretum_client #client_body #client_sidebar .chat {\n    height: 100%; }\n  body #arboretum_client #client_body #client_content {\n    overflow: hidden; }\n    body #arboretum_client #client_body #client_content iframe#content {\n      border: none;\n      width: 100%;\n      height: 100%; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/client/css/src/client/css/client.scss"],"names":[],"mappings":"AAUA;EACI,YAAW;EACX,aAAY;EACZ,aAAY;EACZ,YAAW;EACX,iBAAgB,EACnB;;AACD;EACI,gHAA+G;EAC/G,uBAAsB,EAuDzB;EAzDD;IAKY,iBAdQ;IALhB,0BAoBwC;IAnBxC,sHAAyH;IACzH,yEAA8E;IAC9E,uEAA4E,EAmDvE;IAxCT;MASgB,aAAY;MACZ,YAAW;MACX,iBAAgB,EA4BnB;MAvCb;QAaoB,mBAAkB;QAClB,+BAA8B;QA5B9C,0BA6BgD;QA5BhD,sHAAyH;QACzH,yEAA8E;QAC9E,uEAA4E;QA2B5D,4BAA2B;QAC3B,iBAAgB;QAChB,oBAAmB;QACnB,8BAA6B;QAC7B,iBAAgB;QAChB,wBAAuB;QACvB,YAAW,EACd;MAvBjB;QAyBoB,6BAA4B,EAC/B;MA1BjB;QA4BoB,uDAAsD,EAIzD;QAhCjB;UA8BwB,YAAW,EACd;MA/BrB;QAdI,0BAgDgD;QA/ChD,sHAAyH;QACzH,yEAA8E;QAC9E,uEAA4E;QA8C5D,8DAA8D;QAC9D,oBAAmB;QACnB,YAAW,EACd;EAtCjB;IA4CoB,aAAY,EACf;EA7CjB;IAgDgB,iBAAe,EAMlB;IAtDb;MAkDoB,aAAY;MACZ,YAAW;MACX,aAAY,EACf","file":"client.scss","sourcesContent":["// @import \"../../utils/browserControls/ArboretumChat.scss\";\n// From top to bottom\n@mixin linear-gradient($color-from, $color-to) {\n    background-color: $color-from; // Old browsers\n    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%,$color-from), color-stop(100%,$color-to)); // Chrome, Safari4+\n    background-image: -webkit-linear-gradient(top, $color-from 0%, $color-to 100%);           // Chrome10+, Safari5.1+\n    background-image: linear-gradient(to bottom, $color-from 0%, $color-to 100%);  // W3C\n}\n$header_height: 40px;\n$sidebar_width: 250px;\nhtml, body, #client_main, #arboretum_client {\n    margin: 0px;\n    padding: 0px;\n    height: 100%;\n    width: 100%;\n    overflow: hidden;\n}\nbody {\n    font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n    background-color: #333;\n    #arboretum_client {\n        #client_header {\n            max-height: $header_height;\n            @include linear-gradient(#e8e6e8, #d1cfd1);\n\n            #tabs {\n                padding: 0px;\n                margin: 0px;\n                overflow: hidden;\n                .tab {\n                    text-align: center;\n                    border-left: 1px solid #989698;\n                    @include linear-gradient(#b8b6b8, #b0aeb0);\n                    border-left: 1px solid #AAA;\n                    list-style: none;\n                    white-space: nowrap;\n                    border-bottom: 1px solid #aaa;\n                    overflow: hidden;\n                    text-overflow: ellipsis;\n                    color: #333;\n                }\n                &:last-child {\n                    border-right: 1px solid #AAA;\n                }\n                &.not-selected {\n                    background: linear-gradient(to bottom, #BBB 80%, #AAA);\n                    .closeTab {\n                        color: #999;\n                    }\n                }\n                &.tab.selected {\n                    @include linear-gradient(#d4d2d4, #cccacc);\n                    /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n                    border-bottom: none;\n                    color: #777;\n                }\n            }\n        }\n        #client_body {\n            #client_sidebar {\n                .chat {\n                    height: 100%;\n                }\n            }\n            #client_content {\n                overflow:hidden;\n                iframe#content {\n                    border: none;\n                    width: 100%;\n                    height: 100%;\n                }\n            }\n        }\n    }\n}\n"],"sourceRoot":""}]);
 
 // exports
+
+
+/***/ }),
+/* 114 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+class RGB {
+    constructor(r = 0, g = 0, b = 0, alpha = 1) {
+        this.r = r;
+        this.g = g;
+        this.b = b;
+        this.alpha = alpha;
+        this.value = 0;
+        this.setRed(r).setGreen(g).setBlue(b);
+        this.updateValue();
+    }
+    getHexPart(v) {
+        let h = v.toString(16);
+        return (h.length > 1) ? h : "0" + h;
+    }
+    updateValue() {
+        this.value = (this.getRed() + this.getGreen() + this.getBlue());
+        return this;
+    }
+    getValue() {
+        return this.value;
+    }
+    toHex() {
+        let hexString = (this.getAlpha() < 1) ? this.toHexAlpha().toString() : "#" + this.getHexPart(this.getRed()) + this.getHexPart(this.getGreen()) + this.getHexPart(this.getBlue());
+        return new HEX(hexString);
+    }
+    toHexAlpha(light = true) {
+        let tmpRgb = new RGB(this.getRed(), this.getGreen(), this.getBlue());
+        if (this.getAlpha() < 1) {
+            let tmp = (1 - this.getAlpha());
+            tmpRgb.setRed(tmpRgb.getRed() * tmp);
+            tmpRgb.setGreen(tmpRgb.getGreen() * tmp);
+            tmpRgb.setBlue(tmpRgb.getBlue() * tmp);
+        }
+        let adjustValue = (this.getAlpha() < 1) ? Math.floor(255 * this.getAlpha()) : 0;
+        return (light) ? tmpRgb.lighter(adjustValue).toHex() : tmpRgb.darker(adjustValue).toHex();
+    }
+    setRed(value) {
+        this.r = (value > 255) ? 255 : ((value < 0) ? 0 : Math.floor(value));
+        return this.updateValue();
+    }
+    getRed() {
+        return this.r;
+    }
+    setGreen(value) {
+        this.g = (value > 255) ? 255 : ((value < 0) ? 0 : Math.floor(value));
+        return this.updateValue();
+    }
+    getGreen() {
+        return this.g;
+    }
+    setBlue(value) {
+        this.b = (value > 255) ? 255 : ((value < 0) ? 0 : Math.floor(value));
+        return this.updateValue();
+    }
+    getBlue() {
+        return this.b;
+    }
+    withAlpha(a) {
+        if (a < 0 || a > 1) {
+            a = 1;
+        }
+        return new RGB(this.r, this.g, this.b, a);
+    }
+    ;
+    getAlpha() {
+        return this.alpha;
+    }
+    lighter(by) {
+        return new RGB(this.getRed() + by, this.getGreen() + by, this.getBlue() + by);
+    }
+    darker(by) {
+        return new RGB(this.getRed() - by, this.getGreen() - by, this.getBlue() - by);
+    }
+    toString() {
+        return (this.alpha < 1) ? 'rgba(' + this.getRed() + ',' + this.getGreen() + ',' + this.getBlue() + ',' + this.getAlpha() + ')' : 'rgb(' + this.getRed() + ',' + this.getGreen() + ',' + this.getBlue() + ')';
+    }
+}
+exports.RGB = RGB;
+class HEX {
+    constructor(hex) {
+        this.hex = "#000000";
+        this.hex = (hex.toString().length == 6) ? "#" + hex : (hex.toString().length == 7) ? hex : null;
+    }
+    toRGB() {
+        let hexString = this.hex.substr(1).toString();
+        return new RGB(parseInt(hexString.substr(0, 2), 16), parseInt(hexString.substr(2, 2), 16), parseInt(hexString.substr(4, 2), 16));
+    }
+    toString() {
+        return this.hex;
+    }
+}
+exports.HEX = HEX;
+class Color {
+    constructor(color) {
+        if (color instanceof HEX) {
+            this.hex = color;
+            this.rgb = color.toRGB();
+        }
+        else if (color instanceof RGB) {
+            this.rgb = color;
+            this.hex = color.toHex();
+        }
+    }
+    lighter(by) {
+        return new Color(this.rgb.lighter(by));
+    }
+    darker(by) {
+        return new Color(this.rgb.darker(by));
+    }
+    toString(rgb = true) {
+        return (rgb) ? this.rgb.toString() : this.hex.toString();
+    }
+    withAlpha(a) {
+        return new Color(this.rgb.withAlpha(a));
+    }
+}
+exports.Color = Color;
 
 
 /***/ })

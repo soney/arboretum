@@ -8,7 +8,7 @@ export const userColors:Array<Array<Color>> = [
     ['#A80000', '#B05E0D', '#C19C00', '#107C10', '#038387', '#004E8C', '#5C126B' ]
 ];
 export enum TypingStatus { IDLE, ACTIVE, IDLE_TYPED };
-export type PageAction ='navigate'|'goBack'|'goForward'|'mouse_event'|'keyboard_event'|'focus_event'|'reload';
+export type PageAction ='navigate'|'goBack'|'goForward'|'mouse_event'|'keyboard_event'|'element_event'|'focus_event'|'reload';
 
 export type UserID = string;
 export interface User {
@@ -85,6 +85,15 @@ export class ArboretumChat extends TypedEventEmitter {
             return `${type} on ${targetNodeID}`;
         } else {
             return `do ${action}`;
+        }
+    };
+    public static getRelevantNodeIDs(pam:PageActionMessage):Array<CRI.NodeID> {
+        const {action, data, performed} = pam;
+        const targetNodeID = pam['targetNodeID'];
+        if(targetNodeID) {
+            return [targetNodeID];
+        } else {
+            return [];
         }
     };
     private async initializeDoc():Promise<void> {

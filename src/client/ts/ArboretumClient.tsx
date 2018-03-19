@@ -68,6 +68,7 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
         this.arboretumChat = arboretumChat;
     };
     private goBack = ():void => {
+        console.log('back');
         this.getChat().addPageActionMessage('goBack', this.tabID);
     };
     private goForward = ():void => {
@@ -93,6 +94,16 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
     };
     private pageTitleChanged = (tab:ClientTab, title:string):void => { };
     private getChat():ArboretumChat { return this.arboretumChat.getChat(); }
+    private addHighlight = (nodeIds:Array<CRI.NodeID>, color:string):void => {
+        if(this.clientTab) {
+            this.clientTab.addHighlight(nodeIds, color);
+        }
+    };
+    private removeHighlight = (nodeIds:Array<CRI.NodeID>):void => {
+        if(this.clientTab) {
+            this.clientTab.removeHighlight(nodeIds);
+        }
+    };
 
     public render():React.ReactNode {
         const {showControls} = this.state;
@@ -104,7 +115,7 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
             <div className="window-content">
                 <div className="pane-group" id="client_body">
                     <div className="pane-sm sidebar" id="client_sidebar">
-                        <ArboretumChatBox isAdmin={false} ref={this.chatRef} sdb={this.sdb} username="Steve" />
+                        <ArboretumChatBox onAddHighlight={this.addHighlight} onRemoveHighlight={this.removeHighlight} isAdmin={false} ref={this.chatRef} sdb={this.sdb} username="Steve" />
                     </div>
                     <div className="pane" id="client_content">
                         <ClientTab canGoBackChanged={this.tabCanGoBackChanged} canGoForwardChanged={this.tabCanGoForwardChanged} urlChanged={this.tabURLChanged} titleChanged={this.pageTitleChanged} isLoadingChanged={this.tabIsLoadingChanged} tabID={this.props.tabID} frameID={this.props.frameID} ref={this.clientTabRef} sdb={this.sdb} />

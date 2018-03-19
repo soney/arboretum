@@ -1,6 +1,7 @@
 import {ShareDBDOMNode, TabDoc, BrowserDoc, CanvasImage} from '../../utils/state_interfaces';
 import {NodeCode} from '../../utils/NodeCode';
 import {TypedEventEmitter, TypedListener, registerEvent} from '../../utils/TypedEventEmitter';
+import {Color, HEX, RGB} from '../../utils/colors';
 
 export interface ClientMouseEvent {
     type:string,
@@ -28,7 +29,8 @@ export interface ClientKeyboardEvent {
 export interface ElementEvent {
     type:string,
     targetNodeID:CRI.NodeID,
-    timeStamp:number
+    timeStamp:number,
+    value?:any
 };
 
 export function createClientNode(sdbNode:ShareDBDOMNode, onCreateNode?:(c:ClientNode)=>void):ClientNode {
@@ -56,14 +58,12 @@ export abstract class ClientNode extends TypedEventEmitter {
     public elementEvent = this.registerEvent<ElementEvent>();
     constructor(protected sdbNode:ShareDBDOMNode, protected onCreateNode?:(c:ClientNode)=>void) {
         super();
-        if(this.sdbNode.listenedEvents.length > 0) {
-            console.log(this.sdbNode.nodeId, this.sdbNode.listenedEvents);
-        }
         this.children = this.getNodeChildren().map((child) => createClientNode(child, this.onCreateNode));
         if(this.onCreateNode) {
             this.onCreateNode(this);
         }
     };
+    public getNodeID():CRI.NodeID { return this.sdbNode.nodeId; };
     public getContentDocument():ClientDocumentNode { return this.contentDocument; };
     public getChild(index:number=0):ClientNode { return this.children[index]; };
     protected getChildren():Array<ClientNode> { return this.children; };
@@ -75,8 +75,8 @@ export abstract class ClientNode extends TypedEventEmitter {
     public removeAttribute(name:string):void {};
     public insertChild(child: ClientNode, index:number):void { this.children.splice(index, 0, child); };
     public removeChild(index:number):void { this.children.splice(index, 1); };
-    protected addListenedEvent(eventName:string):void {};
-    protected removeListenedEvent(eventName:string):void {};
+    public addListenedEvent(eventName:string):void {};
+    public removeListenedEvent(eventName:string):void {};
     // protected getNodeShadowRoots():Array<ShareDBDOMNode> { return this.sdbNode.shadowRoots; };
     public setCharacterData(characterData:string):void {}
     public setNodeValue(value:string):void {}
@@ -89,6 +89,8 @@ export abstract class ClientNode extends TypedEventEmitter {
         });
     };
     public highlight():void { };
+    public addHighlight(highlightColor:string):void {};
+    public removeHighlight():void {};
 };
 
 export class ClientDocumentNode extends ClientNode {
@@ -131,6 +133,7 @@ export class ClientDocumentTypeNode extends ClientNode {
 };
 export class ClientElementNode extends ClientNode {
     private element:HTMLElement|SVGElement;
+    private highlighted:boolean = false;
     constructor(sdbNode:ShareDBDOMNode, onCreateNode?:(c:ClientNode)=>void) {
         super(sdbNode, onCreateNode);
         const {nodeName, isSVG, nodeId} = this.sdbNode;
@@ -139,9 +142,55 @@ export class ClientElementNode extends ClientNode {
         } else {
             this.element = document.createElement(nodeName)
         }
-        this.sdbNode.listenedEvents.forEach((le)=>this.addListenedEvent(le));
         this.element.setAttribute('data-arboretum-node-id', `${nodeId}`);
         this.initialize();
+    };
+    private static getHighlightStyleString(color:Color):string {
+        let largeNumber:number = 10e10;
+        const attributes:string = `inset 0px 0px ${largeNumber}px ${largeNumber}px ${color.withAlpha(0.5).toString()},
+        0px 0px 10px 0px ${color.toString()}`
+        return `
+        box-shadow: ${attributes};
+        -moz-box-shadow: ${attributes};
+        -webkit-box-shadow: ${attributes};
+        `;
+    };
+    public addHighlight(highlightColor:string):void {
+        super.addHighlight(highlightColor);
+        if(this.highlighted) {
+            this.removeHighlight();
+        }
+        this.highlighted = true;
+        const color = new Color(new HEX(highlightColor));
+        const styleString:string = ClientElementNode.getHighlightStyleString(color);
+        const styleValue:string = this.getStyleAttribute();
+        if(styleValue) {
+            this.element.setAttribute('style', styleString + this.getStyleAttribute());
+        } else {
+            this.element.removeAttribute('style');
+        }
+    };
+    public removeHighlight() {
+        super.removeHighlight();
+        if(this.highlighted) {
+            this.highlighted = false;
+            const styleValue:string = this.getStyleAttribute();
+            if(styleValue) {
+                this.element.setAttribute('style', this.getStyleAttribute());
+            } else {
+                this.element.removeAttribute('style');
+            }
+        }
+    };
+    private getStyleAttribute():string {
+        let result:string = null;
+        this.getAttributes().forEach((attr) => {
+            const [name, value] = attr;
+            if(name.toUpperCase() === 'STYLE') {
+                result = value;
+            }
+        });
+        return result;
     };
     private async initialize():Promise<void> {
         const {nodeName} = this.sdbNode;
@@ -167,9 +216,10 @@ export class ClientElementNode extends ClientNode {
                 this.element.appendChild(child.getElement());
             });
         }
+        this.sdbNode.listenedEvents.forEach((le)=>this.addListenedEvent(le));
         this.addEventListeners();
     };
-    protected addListenedEvent(eventName:string):void {
+    public addListenedEvent(eventName:string):void {
         if(mouseEvents.indexOf(eventName)>=0) {
             this.element.addEventListener(eventName, this.onMouseEvent);
         } else if(keyboardEvents.indexOf(eventName)>=0) {
@@ -178,7 +228,7 @@ export class ClientElementNode extends ClientNode {
             this.element.addEventListener(eventName, this.onElementEvent);
         }
     };
-    protected removeListenedEvent(eventName:string):void {
+    public removeListenedEvent(eventName:string):void {
         if(mouseEvents.indexOf(eventName)>=0) {
             this.element.removeEventListener(eventName, this.onMouseEvent);
         } else if(keyboardEvents.indexOf(eventName)>=0) {
@@ -189,9 +239,17 @@ export class ClientElementNode extends ClientNode {
     };
     private addEventListeners():void {
         this.element.addEventListener('click', this.onClick);
+        const {nodeName} = this.sdbNode;
+        if(nodeName === 'INPUT' || nodeName === 'TEXTAREA') {
+            this.element.addEventListener('change', this.onChange);
+        }
     };
     private removeEventListeners():void {
         this.element.removeEventListener('click', this.onClick);
+    };
+    private onChange = (event:Event):void => {
+        const value:string = (this.element as HTMLInputElement|HTMLTextAreaElement).value;
+        this.elementEvent.emit({ value, type:'change', targetNodeID:this.sdbNode.nodeId, timeStamp: (new Date()).getTime()});
     };
     private onClick = (event:MouseEvent):void => {
         // if it isn't looking for a click event already

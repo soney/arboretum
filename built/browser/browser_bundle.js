@@ -25142,12 +25142,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(0);
 const BrowserTab_1 = __webpack_require__(51);
-const BrowserSidebar_1 = __webpack_require__(52);
 const BrowserNavigationBar_1 = __webpack_require__(67);
 const electron_1 = __webpack_require__(70);
 const url = __webpack_require__(71);
 const _ = __webpack_require__(12);
 const ShareDBDoc_1 = __webpack_require__(72);
+const react_switch_1 = __webpack_require__(60);
+const copyToClipboard_1 = __webpack_require__(66);
+const ArboretumChatBox_1 = __webpack_require__(53);
 class ArboretumBrowser extends React.Component {
     constructor(props) {
         super(props);
@@ -25339,19 +25341,58 @@ class ArboretumBrowser extends React.Component {
             this.sidebar = sidebar;
             this.setServerActive(this.state.serverActive);
         };
+        this.handleServerSwitchChange = (serverActive) => __awaiter(this, void 0, void 0, function* () {
+            this.setState({ serverActive });
+            const shareURLs = yield this.setServerActive(serverActive);
+            if (serverActive) {
+                const { shareURL, adminURL } = shareURLs;
+                this.setState({ shareURL, adminURL });
+            }
+            else {
+                this.setState({ shareURL: '', adminURL: '' });
+            }
+        });
+        this.sendMessage = (message) => {
+        };
+        this.postToMTurk = () => {
+            console.log('post');
+        };
+        this.onSandboxChange = (event) => {
+            this.setState({ sandbox: event.target.checked });
+        };
+        // private adminURLRef = (el:HTMLInputElement):void => {
+        //     if(el) {
+        //         new Clipboard(el);
+        //     }
+        // };
+        this.shareURLRef = (el) => {
+            this.shareURLElement = el;
+            // if(el) {
+            //     new Clipboard(el);
+            // }
+        };
+        this.chatBoxRef = (chatbox) => {
+            this.chatbox = chatbox;
+        };
         this.onAction = (pam) => __awaiter(this, void 0, void 0, function* () {
             yield this.sendIPCMessage({
                 message: 'performAction',
                 data: pam
             });
-            // const {action, data} = pam;
-            // if(action === 'navigate') {
-            //     const {url} = data;
-            //     this.navigate(url);
-            // } else if(action === 'mouse_event') {
-            //     console.log(action, data);
-            // }
         });
+        this.selectShareURL = () => {
+            this.shareURLElement.select();
+            this.shareURLElement.focus();
+        };
+        this.copyShareURL = () => {
+            copyToClipboard_1.copyToClipboard(this.shareURLElement.value);
+        };
+        this.addHighlight = (nodeIds, color) => {
+            console.log(nodeIds, color);
+        };
+        this.removeHighlight = (nodeIds) => {
+            console.log(nodeIds);
+        };
         this.state = {
             tabs: this.props.urls.map((url, index) => {
                 return {
@@ -25366,7 +25407,8 @@ class ArboretumBrowser extends React.Component {
             serverActive: this.props.serverState === "active",
             activeWebViewEl: null,
             shareURL: '',
-            adminURL: ''
+            adminURL: '',
+            sandbox: true
         };
     }
     ;
@@ -25419,6 +25461,16 @@ class ArboretumBrowser extends React.Component {
         this.setState({ webViews });
     }
     ;
+    setSidebarVisible(showingSidebar) {
+        this.setState({ showingSidebar });
+    }
+    ;
+    setSDB(sdb) {
+        if (this.chatbox) {
+            this.chatbox.setSDB(sdb);
+        }
+    }
+    ;
     render() {
         const tabs = this.state.tabs.map((info, index) => React.createElement(BrowserTab_1.BrowserTab, { sdb: this.sdb, ref: this.tabRef, selected: info.selected, key: info.id, tabID: info.id, startURL: info.url, onSelect: this.selectTab, onClose: this.closeTab, pageTitleChanged: this.pageTitleChanged, urlChanged: this.tabURLChanged, isLoadingChanged: this.tabIsLoadingChanged, canGoBackChanged: this.tabCanGoBackChanged, canGoForwardChanged: this.tabCanGoForwardChanged }));
         return React.createElement("div", { className: "window" },
@@ -25431,7 +25483,33 @@ class ArboretumBrowser extends React.Component {
                 React.createElement(BrowserNavigationBar_1.BrowserNavigationBar, { ref: this.navBarRef, onBack: this.goBack, onForward: this.goForward, onReload: this.reload, showSidebarToggle: false, onToggleSidebar: this.toggleSidebar, onNavigate: this.navigate })),
             React.createElement("div", { className: "window-content" },
                 React.createElement("div", { className: "pane-group" },
-                    React.createElement(BrowserSidebar_1.BrowserSidebar, { onAction: this.onAction, shareURL: this.state.shareURL, adminURL: this.state.adminURL, ref: this.sidebarRef, setServerActive: this.setServerActive, isVisible: this.state.showingSidebar, serverActive: this.state.serverActive, onPostTask: this.postTask }),
+                    React.createElement("div", { className: 'sidebar' },
+                        React.createElement("table", { id: "server-controls" },
+                            React.createElement("thead", null,
+                                React.createElement("tr", null,
+                                    React.createElement("td", null,
+                                        React.createElement("h5", { className: "nav-group-title" }, "Server")),
+                                    React.createElement("td", null,
+                                        React.createElement("h5", { className: "nav-group-title" }, "Share URL")),
+                                    React.createElement("td", null,
+                                        React.createElement("h5", { className: "nav-group-title" }, "MTurk")))),
+                            React.createElement("tbody", null,
+                                React.createElement("tr", { id: "control_content" },
+                                    React.createElement("td", null,
+                                        React.createElement(react_switch_1.default, { height: 24, width: 48, onChange: this.handleServerSwitchChange, checked: this.state.serverActive })),
+                                    React.createElement("td", { className: "copy_area" },
+                                        React.createElement("input", { onClick: this.selectShareURL, ref: this.shareURLRef, value: this.state.shareURL, id: "share_url", "data-disabled": "true" }),
+                                        React.createElement("a", { href: "javascript:void(0)", onClick: this.copyShareURL },
+                                            React.createElement("span", { ref: (el) => (el), "data-clipboard-target": "#share_url", id: "share_copy", className: "icon icon-clipboard" }))),
+                                    React.createElement("td", null,
+                                        React.createElement("button", { onClick: this.postToMTurk, id: "mturk_post", className: 'btn btn-default' },
+                                            React.createElement("span", { className: "icon icon-upload-cloud" }),
+                                            "\u00A0Post"),
+                                        React.createElement("br", null),
+                                        React.createElement("label", null,
+                                            React.createElement("input", { type: "checkbox", name: "sandbox", value: "sandbox", id: "sandbox", checked: this.state.sandbox, onChange: this.onSandboxChange }),
+                                            " Sandbox"))))),
+                        React.createElement(ArboretumChatBox_1.ArboretumChatBox, { isAdmin: true, username: "Admin", ref: this.chatBoxRef, onSendMessage: this.sendMessage, onAction: this.onAction, onAddHighlight: this.addHighlight, onRemoveHighlight: this.removeHighlight })),
                     React.createElement("div", { id: "browser-pane", className: "pane" },
                         React.createElement("div", { id: "content" }, this.state.webViews)))));
     }
@@ -25647,136 +25725,7 @@ exports.BrowserTab = BrowserTab;
 
 
 /***/ }),
-/* 52 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const React = __webpack_require__(0);
-const ArboretumChatBox_1 = __webpack_require__(53);
-const react_switch_1 = __webpack_require__(60);
-const copyToClipboard_1 = __webpack_require__(66);
-const ENTER_KEY = 13;
-;
-class BrowserSidebar extends React.Component {
-    constructor(props) {
-        super(props);
-        this.handleServerSwitchChange = (serverActive) => __awaiter(this, void 0, void 0, function* () {
-            this.setState({ serverActive });
-            if (this.props.setServerActive) {
-                const shareURLs = yield this.props.setServerActive(serverActive);
-                if (serverActive) {
-                    const { shareURL, adminURL } = shareURLs;
-                    this.setState({ shareURL, adminURL });
-                }
-                else {
-                    this.setState({ shareURL: '', adminURL: '' });
-                }
-            }
-        });
-        this.sendMessage = (message) => {
-            if (this.props.onSendMessage) {
-                this.props.onSendMessage(message);
-            }
-        };
-        this.postToMTurk = () => {
-            if (this.props.onPostTask) {
-                this.props.onPostTask(this.state.sandbox);
-            }
-        };
-        this.onSandboxChange = (event) => {
-            this.setState({ sandbox: event.target.checked });
-        };
-        // private adminURLRef = (el:HTMLInputElement):void => {
-        //     if(el) {
-        //         new Clipboard(el);
-        //     }
-        // };
-        this.shareURLRef = (el) => {
-            this.shareURLElement = el;
-            // if(el) {
-            //     new Clipboard(el);
-            // }
-        };
-        this.chatBoxRef = (chatbox) => {
-            this.chatbox = chatbox;
-        };
-        this.onAction = (pam) => {
-            if (this.props.onAction) {
-                this.props.onAction(pam);
-            }
-        };
-        this.selectShareURL = () => {
-            this.shareURLElement.select();
-            this.shareURLElement.focus();
-        };
-        this.copyShareURL = () => {
-            copyToClipboard_1.copyToClipboard(this.shareURLElement.value);
-        };
-        this.state = {
-            isVisible: this.props.isVisible,
-            serverActive: this.props.serverActive,
-            shareURL: this.props.shareURL,
-            adminURL: this.props.adminURL,
-            sandbox: true
-        };
-    }
-    ;
-    setVisible(isVisible) {
-        this.setState({ isVisible });
-    }
-    ;
-    setSDB(sdb) {
-        if (this.chatbox) {
-            this.chatbox.setSDB(sdb);
-        }
-    }
-    ;
-    render() {
-        return React.createElement("div", { className: 'sidebar' },
-            React.createElement("table", { id: "server-controls" },
-                React.createElement("thead", null,
-                    React.createElement("tr", null,
-                        React.createElement("td", null,
-                            React.createElement("h5", { className: "nav-group-title" }, "Server")),
-                        React.createElement("td", null,
-                            React.createElement("h5", { className: "nav-group-title" }, "Share URL")),
-                        React.createElement("td", null,
-                            React.createElement("h5", { className: "nav-group-title" }, "MTurk")))),
-                React.createElement("tbody", null,
-                    React.createElement("tr", { id: "control_content" },
-                        React.createElement("td", null,
-                            React.createElement(react_switch_1.default, { height: 24, width: 48, onChange: this.handleServerSwitchChange, checked: this.state.serverActive })),
-                        React.createElement("td", { className: "copy_area" },
-                            React.createElement("input", { onClick: this.selectShareURL, ref: this.shareURLRef, value: this.state.shareURL, id: "share_url", "data-disabled": "true" }),
-                            React.createElement("a", { href: "javascript:void(0)", onClick: this.copyShareURL },
-                                React.createElement("span", { ref: (el) => (el), "data-clipboard-target": "#share_url", id: "share_copy", className: "icon icon-clipboard" }))),
-                        React.createElement("td", null,
-                            React.createElement("button", { onClick: this.postToMTurk, id: "mturk_post", className: 'btn btn-default' },
-                                React.createElement("span", { className: "icon icon-upload-cloud" }),
-                                "\u00A0Post"),
-                            React.createElement("br", null),
-                            React.createElement("label", null,
-                                React.createElement("input", { type: "checkbox", name: "sandbox", value: "sandbox", id: "sandbox", checked: this.state.sandbox, onChange: this.onSandboxChange }),
-                                " Sandbox"))))),
-            React.createElement(ArboretumChatBox_1.ArboretumChatBox, { isAdmin: true, username: "Admin", ref: this.chatBoxRef, onSendMessage: this.sendMessage, onAction: this.onAction }));
-    }
-    ;
-}
-exports.BrowserSidebar = BrowserSidebar;
-;
-
-
-/***/ }),
+/* 52 */,
 /* 53 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -25829,6 +25778,19 @@ class ArboretumChatBox extends React.Component {
             this.getChat().markPerformed(pam);
             if (this.props.onAction) {
                 this.props.onAction(pam);
+            }
+        };
+        this.addHighlights = (pam) => {
+            if (this.props.onAddHighlight) {
+                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pam);
+                const color = pam.sender.color;
+                this.props.onAddHighlight(nodeIDs, color);
+            }
+        };
+        this.removeHighlights = (pam) => {
+            if (this.props.onRemoveHighlight) {
+                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pam);
+                this.props.onRemoveHighlight(nodeIDs);
             }
         };
         this.state = {
@@ -25893,7 +25855,7 @@ class ArboretumChatBox extends React.Component {
             else if (m['action']) {
                 const pam = m;
                 const { action, data, performed } = pam;
-                const description = React.createElement("span", { className: 'description' }, ArboretumChat_1.ArboretumChat.describePageActionMessage(pam));
+                const description = React.createElement("span", { className: 'description', onMouseEnter: () => this.addHighlights(pam), onMouseLeave: () => this.removeHighlights(pam) }, ArboretumChat_1.ArboretumChat.describePageActionMessage(pam));
                 let actions;
                 if (performed) {
                     actions = React.createElement("div", { className: '' }, "(accepted)");
@@ -26002,6 +25964,17 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         }
         else {
             return `do ${action}`;
+        }
+    }
+    ;
+    static getRelevantNodeIDs(pam) {
+        const { action, data, performed } = pam;
+        const targetNodeID = pam['targetNodeID'];
+        if (targetNodeID) {
+            return [targetNodeID];
+        }
+        else {
+            return [];
         }
     }
     ;
@@ -28378,6 +28351,7 @@ json.checkList = function(elem) {
 
 json.checkObj = function(elem) {
   if (!isObject(elem)) {
+    debugger;
     throw new Error("Referenced element not an object (it was " + JSON.stringify(elem) + ")");
   }
 };
@@ -28425,6 +28399,7 @@ json.apply = function(snapshot, op) {
 
       parent = elem;
       parentKey = key;
+      if(!elem) { debugger; }
       elem = elem[key];
       key = p;
 
