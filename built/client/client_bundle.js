@@ -4118,7 +4118,7 @@ var singleton = null;
 var	singletonCounter = 0;
 var	stylesInsertedAtTop = [];
 
-var	fixUrls = __webpack_require__(107);
+var	fixUrls = __webpack_require__(108);
 
 module.exports = function(list, options) {
 	if (typeof DEBUG !== "undefined" && DEBUG) {
@@ -13715,7 +13715,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(1);
 const ReactDOM = __webpack_require__(59);
 const ArboretumClient_1 = __webpack_require__(68);
-__webpack_require__(112);
+__webpack_require__(113);
 const { userID, frameID, tabID, viewType } = window['clientOptions'];
 ReactDOM.render(React.createElement(ArboretumClient_1.ArboretumClient, { userID: userID, frameID: frameID, tabID: tabID, viewType: viewType }), document.getElementById('client_main'));
 
@@ -31037,9 +31037,9 @@ module.exports = camelize;
 Object.defineProperty(exports, "__esModule", { value: true });
 const ShareDBDoc_1 = __webpack_require__(69);
 const ClientTab_1 = __webpack_require__(97);
-const ArboretumChatBox_1 = __webpack_require__(102);
-const BrowserNavigationBar_1 = __webpack_require__(108);
-const TabList_1 = __webpack_require__(111);
+const ArboretumChatBox_1 = __webpack_require__(103);
+const BrowserNavigationBar_1 = __webpack_require__(109);
+const TabList_1 = __webpack_require__(112);
 const React = __webpack_require__(1);
 class ArboretumClient extends React.Component {
     constructor(props) {
@@ -31729,7 +31729,6 @@ json.checkList = function(elem) {
 
 json.checkObj = function(elem) {
   if (!isObject(elem)) {
-    debugger;
     throw new Error("Referenced element not an object (it was " + JSON.stringify(elem) + ")");
   }
 };
@@ -31777,7 +31776,6 @@ json.apply = function(snapshot, op) {
 
       parent = elem;
       parentKey = key;
-      if(!elem) { debugger; }
       elem = elem[key];
       key = p;
 
@@ -34328,7 +34326,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(1);
 const ClientDOMNode_1 = __webpack_require__(98);
-const NodeSelector_1 = __webpack_require__(100);
+const NodeSelector_1 = __webpack_require__(101);
 const TypedEventEmitter_1 = __webpack_require__(22);
 class ClientTab extends React.Component {
     constructor(props) {
@@ -34455,7 +34453,7 @@ class ClientTab extends React.Component {
         nodeIds.forEach((id) => {
             const node = this.getNode(id);
             if (node) {
-                node.removeHighlight(color);
+                node.removeHighlight();
             }
         });
     }
@@ -34663,7 +34661,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const NodeCode_1 = __webpack_require__(99);
 const TypedEventEmitter_1 = __webpack_require__(22);
-const colors_1 = __webpack_require__(114);
+const colors_1 = __webpack_require__(100);
 ;
 ;
 ;
@@ -34838,14 +34836,14 @@ class ClientElementNode extends ClientNode {
                 this.elementEvent.emit({ type, targetNodeID, timeStamp });
             }
         };
-        const { nodeName, isSVG, nodeId } = this.sdbNode;
+        const { nodeName, isSVG } = this.sdbNode;
         if (isSVG) {
             this.element = document.createElementNS('http://www.w3.org/2000/svg', nodeName);
         }
         else {
             this.element = document.createElement(nodeName);
         }
-        this.element.setAttribute('data-arboretum-node-id', `${nodeId}`);
+        this.element.setAttribute('data-arboretum-node-id', `${this.getNodeID()}`);
         this.initialize();
     }
     ;
@@ -34870,10 +34868,10 @@ class ClientElementNode extends ClientNode {
         const styleString = ClientElementNode.getHighlightStyleString(color);
         const styleValue = this.getStyleAttribute();
         if (styleValue) {
-            this.element.setAttribute('style', styleString + this.getStyleAttribute());
+            this.element.setAttribute('style', styleValue + ' ' + styleString);
         }
         else {
-            this.element.removeAttribute('style');
+            this.element.setAttribute('style', styleString);
         }
     }
     ;
@@ -35128,7 +35126,133 @@ var NodeCode;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const $ = __webpack_require__(101);
+class RGB {
+    constructor(r = 0, g = 0, b = 0, alpha = 1) {
+        this.r = r;
+        this.g = g;
+        this.b = b;
+        this.alpha = alpha;
+        this.value = 0;
+        this.setRed(r).setGreen(g).setBlue(b);
+        this.updateValue();
+    }
+    getHexPart(v) {
+        let h = v.toString(16);
+        return (h.length > 1) ? h : "0" + h;
+    }
+    updateValue() {
+        this.value = (this.getRed() + this.getGreen() + this.getBlue());
+        return this;
+    }
+    getValue() {
+        return this.value;
+    }
+    toHex() {
+        let hexString = (this.getAlpha() < 1) ? this.toHexAlpha().toString() : "#" + this.getHexPart(this.getRed()) + this.getHexPart(this.getGreen()) + this.getHexPart(this.getBlue());
+        return new HEX(hexString);
+    }
+    toHexAlpha(light = true) {
+        let tmpRgb = new RGB(this.getRed(), this.getGreen(), this.getBlue());
+        if (this.getAlpha() < 1) {
+            let tmp = (1 - this.getAlpha());
+            tmpRgb.setRed(tmpRgb.getRed() * tmp);
+            tmpRgb.setGreen(tmpRgb.getGreen() * tmp);
+            tmpRgb.setBlue(tmpRgb.getBlue() * tmp);
+        }
+        let adjustValue = (this.getAlpha() < 1) ? Math.floor(255 * this.getAlpha()) : 0;
+        return (light) ? tmpRgb.lighter(adjustValue).toHex() : tmpRgb.darker(adjustValue).toHex();
+    }
+    setRed(value) {
+        this.r = (value > 255) ? 255 : ((value < 0) ? 0 : Math.floor(value));
+        return this.updateValue();
+    }
+    getRed() {
+        return this.r;
+    }
+    setGreen(value) {
+        this.g = (value > 255) ? 255 : ((value < 0) ? 0 : Math.floor(value));
+        return this.updateValue();
+    }
+    getGreen() {
+        return this.g;
+    }
+    setBlue(value) {
+        this.b = (value > 255) ? 255 : ((value < 0) ? 0 : Math.floor(value));
+        return this.updateValue();
+    }
+    getBlue() {
+        return this.b;
+    }
+    withAlpha(a) {
+        if (a < 0 || a > 1) {
+            a = 1;
+        }
+        return new RGB(this.r, this.g, this.b, a);
+    }
+    ;
+    getAlpha() {
+        return this.alpha;
+    }
+    lighter(by) {
+        return new RGB(this.getRed() + by, this.getGreen() + by, this.getBlue() + by);
+    }
+    darker(by) {
+        return new RGB(this.getRed() - by, this.getGreen() - by, this.getBlue() - by);
+    }
+    toString() {
+        return (this.alpha < 1) ? 'rgba(' + this.getRed() + ',' + this.getGreen() + ',' + this.getBlue() + ',' + this.getAlpha() + ')' : 'rgb(' + this.getRed() + ',' + this.getGreen() + ',' + this.getBlue() + ')';
+    }
+}
+exports.RGB = RGB;
+class HEX {
+    constructor(hex) {
+        this.hex = "#000000";
+        this.hex = (hex.toString().length == 6) ? "#" + hex : (hex.toString().length == 7) ? hex : null;
+    }
+    toRGB() {
+        let hexString = this.hex.substr(1).toString();
+        return new RGB(parseInt(hexString.substr(0, 2), 16), parseInt(hexString.substr(2, 2), 16), parseInt(hexString.substr(4, 2), 16));
+    }
+    toString() {
+        return this.hex;
+    }
+}
+exports.HEX = HEX;
+class Color {
+    constructor(color) {
+        if (color instanceof HEX) {
+            this.hex = color;
+            this.rgb = color.toRGB();
+        }
+        else if (color instanceof RGB) {
+            this.rgb = color;
+            this.hex = color.toHex();
+        }
+    }
+    lighter(by) {
+        return new Color(this.rgb.lighter(by));
+    }
+    darker(by) {
+        return new Color(this.rgb.darker(by));
+    }
+    toString(rgb = true) {
+        return (rgb) ? this.rgb.toString() : this.hex.toString();
+    }
+    withAlpha(a) {
+        return new Color(this.rgb.withAlpha(a));
+    }
+}
+exports.Color = Color;
+
+
+/***/ }),
+/* 101 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const $ = __webpack_require__(102);
 const _ = __webpack_require__(23);
 var SelectionState;
 (function (SelectionState) {
@@ -35532,7 +35656,7 @@ function nodeListToArray(nodeList) {
 
 
 /***/ }),
-/* 101 */
+/* 102 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
@@ -45903,7 +46027,7 @@ return jQuery;
 
 
 /***/ }),
-/* 102 */
+/* 103 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -45918,8 +46042,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(1);
-const ArboretumChat_1 = __webpack_require__(103);
-__webpack_require__(105);
+const ArboretumChat_1 = __webpack_require__(104);
+__webpack_require__(106);
 const ENTER_KEY = 13;
 class ArboretumChatBox extends React.Component {
     constructor(props) {
@@ -45969,6 +46093,18 @@ class ArboretumChatBox extends React.Component {
                 const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pam);
                 this.props.onRemoveHighlight(nodeIDs);
             }
+        };
+        this.rejectAction = (pam) => {
+            // this.getChat().markPerformed(pam);
+            // if(this.props.onAction) { this.props.onAction(pam); }
+        };
+        this.focusAction = (pam) => {
+            // this.getChat().markPerformed(pam);
+            // if(this.props.onAction) { this.props.onAction(pam); }
+        };
+        this.addLabel = (pam) => {
+            // this.getChat().markPerformed(pam);
+            // if(this.props.onAction) { this.props.onAction(pam); }
         };
         this.state = {
             chatText: this.props.chatText || '',
@@ -46025,7 +46161,7 @@ class ArboretumChatBox extends React.Component {
             const senderStyle = { color: m.sender.color };
             if (m['content']) {
                 const tm = m;
-                return React.createElement("li", { key: i, className: 'chat-line' },
+                return React.createElement("li", { tabIndex: 0, key: i, className: 'chat-line' },
                     React.createElement("span", { style: senderStyle, className: 'from' }, tm.sender.displayName),
                     React.createElement("span", { className: 'message' }, tm.content));
             }
@@ -46039,9 +46175,12 @@ class ArboretumChatBox extends React.Component {
                 }
                 else {
                     actions = React.createElement("div", { className: 'messageAction' },
-                        React.createElement("a", { href: "javascript:void(0)", onClick: this.performAction.bind(this, pam) }, "Accept"));
+                        React.createElement("a", { href: "javascript:void(0)", onClick: this.performAction.bind(this, pam) }, "Accept"),
+                        React.createElement("a", { href: "javascript:void(0)", onClick: this.rejectAction.bind(this, pam) }, "Reject"),
+                        React.createElement("a", { href: "javascript:void(0)", onClick: this.focusAction.bind(this, pam) }, "Focus"),
+                        React.createElement("a", { href: "javascript:void(0)", onClick: this.addLabel.bind(this, pam) }, "Label"));
                 }
-                return React.createElement("li", { key: i, className: 'chat-line action' + (performed ? ' performed' : '') + (this.props.isAdmin ? ' admin' : ' not_admin') },
+                return React.createElement("li", { tabIndex: 0, key: i, className: 'chat-line action' + (performed ? ' performed' : '') + (this.props.isAdmin ? ' admin' : ' not_admin') },
                     React.createElement("span", { style: senderStyle, className: 'from' }, pam.sender.displayName),
                     " wants to ",
                     description,
@@ -46076,7 +46215,7 @@ exports.ArboretumChatBox = ArboretumChatBox;
 
 
 /***/ }),
-/* 103 */
+/* 104 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -46091,7 +46230,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const TypedEventEmitter_1 = __webpack_require__(22);
-const guid_1 = __webpack_require__(104);
+const guid_1 = __webpack_require__(105);
 const _ = __webpack_require__(23);
 exports.userColors = [
     ['#A80000', '#B05E0D', '#C19C00', '#107C10', '#038387', '#004E8C', '#5C126B']
@@ -46146,7 +46285,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
     ;
     static getRelevantNodeIDs(pam) {
         const { action, data, performed } = pam;
-        const targetNodeID = pam['targetNodeID'];
+        const { targetNodeID } = data;
         if (targetNodeID) {
             return [targetNodeID];
         }
@@ -46334,7 +46473,7 @@ exports.ArboretumChat = ArboretumChat;
 
 
 /***/ }),
-/* 104 */
+/* 105 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -46361,11 +46500,11 @@ exports.guidIndex = guidIndex;
 
 
 /***/ }),
-/* 105 */
+/* 106 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
-var content = __webpack_require__(106);
+var content = __webpack_require__(107);
 
 if(typeof content === 'string') content = [[module.i, content, '']];
 
@@ -46411,7 +46550,7 @@ if(false) {
 }
 
 /***/ }),
-/* 106 */
+/* 107 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(24)(true);
@@ -46425,7 +46564,7 @@ exports.push([module.i, ".chat {\n  font-family: system, -apple-system, \".SFNSD
 
 
 /***/ }),
-/* 107 */
+/* 108 */
 /***/ (function(module, exports) {
 
 
@@ -46520,14 +46659,14 @@ module.exports = function (css) {
 
 
 /***/ }),
-/* 108 */
+/* 109 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(1);
-__webpack_require__(109);
+__webpack_require__(110);
 const ENTER_KEY = 13;
 class BrowserNavigationBar extends React.Component {
     constructor(props) {
@@ -46601,11 +46740,11 @@ exports.BrowserNavigationBar = BrowserNavigationBar;
 
 
 /***/ }),
-/* 109 */
+/* 110 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
-var content = __webpack_require__(110);
+var content = __webpack_require__(111);
 
 if(typeof content === 'string') content = [[module.i, content, '']];
 
@@ -46651,7 +46790,7 @@ if(false) {
 }
 
 /***/ }),
-/* 110 */
+/* 111 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(24)(true);
@@ -46665,7 +46804,7 @@ exports.push([module.i, "#navBar {\n  display: flex; }\n  #navBar input#url {\n 
 
 
 /***/ }),
-/* 111 */
+/* 112 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -46734,11 +46873,11 @@ exports.TabList = TabList;
 
 
 /***/ }),
-/* 112 */
+/* 113 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
-var content = __webpack_require__(113);
+var content = __webpack_require__(114);
 
 if(typeof content === 'string') content = [[module.i, content, '']];
 
@@ -46784,7 +46923,7 @@ if(false) {
 }
 
 /***/ }),
-/* 113 */
+/* 114 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(24)(true);
@@ -46795,132 +46934,6 @@ exports = module.exports = __webpack_require__(24)(true);
 exports.push([module.i, "html, body, #client_main, #arboretum_client {\n  margin: 0px;\n  padding: 0px;\n  height: 100%;\n  width: 100%;\n  overflow: hidden; }\n\nbody {\n  font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n  background-color: #333; }\n  body #arboretum_client #client_header {\n    max-height: 40px;\n    background-color: #e8e6e8;\n    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #e8e6e8), color-stop(100%, #d1cfd1));\n    background-image: -webkit-linear-gradient(top, #e8e6e8 0%, #d1cfd1 100%);\n    background-image: linear-gradient(to bottom, #e8e6e8 0%, #d1cfd1 100%); }\n    body #arboretum_client #client_header #tabs {\n      padding: 0px;\n      margin: 0px;\n      overflow: hidden; }\n      body #arboretum_client #client_header #tabs .tab {\n        text-align: center;\n        border-left: 1px solid #989698;\n        background-color: #b8b6b8;\n        background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #b8b6b8), color-stop(100%, #b0aeb0));\n        background-image: -webkit-linear-gradient(top, #b8b6b8 0%, #b0aeb0 100%);\n        background-image: linear-gradient(to bottom, #b8b6b8 0%, #b0aeb0 100%);\n        border-left: 1px solid #AAA;\n        list-style: none;\n        white-space: nowrap;\n        border-bottom: 1px solid #aaa;\n        overflow: hidden;\n        text-overflow: ellipsis;\n        color: #333; }\n      body #arboretum_client #client_header #tabs:last-child {\n        border-right: 1px solid #AAA; }\n      body #arboretum_client #client_header #tabs.not-selected {\n        background: linear-gradient(to bottom, #BBB 80%, #AAA); }\n        body #arboretum_client #client_header #tabs.not-selected .closeTab {\n          color: #999; }\n      body #arboretum_client #client_header #tabs.tab.selected {\n        background-color: #d4d2d4;\n        background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #d4d2d4), color-stop(100%, #cccacc));\n        background-image: -webkit-linear-gradient(top, #d4d2d4 0%, #cccacc 100%);\n        background-image: linear-gradient(to bottom, #d4d2d4 0%, #cccacc 100%);\n        /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n        border-bottom: none;\n        color: #777; }\n  body #arboretum_client #client_body #client_sidebar .chat {\n    height: 100%; }\n  body #arboretum_client #client_body #client_content {\n    overflow: hidden; }\n    body #arboretum_client #client_body #client_content iframe#content {\n      border: none;\n      width: 100%;\n      height: 100%; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/client/css/src/client/css/client.scss"],"names":[],"mappings":"AAUA;EACI,YAAW;EACX,aAAY;EACZ,aAAY;EACZ,YAAW;EACX,iBAAgB,EACnB;;AACD;EACI,gHAA+G;EAC/G,uBAAsB,EAuDzB;EAzDD;IAKY,iBAdQ;IALhB,0BAoBwC;IAnBxC,sHAAyH;IACzH,yEAA8E;IAC9E,uEAA4E,EAmDvE;IAxCT;MASgB,aAAY;MACZ,YAAW;MACX,iBAAgB,EA4BnB;MAvCb;QAaoB,mBAAkB;QAClB,+BAA8B;QA5B9C,0BA6BgD;QA5BhD,sHAAyH;QACzH,yEAA8E;QAC9E,uEAA4E;QA2B5D,4BAA2B;QAC3B,iBAAgB;QAChB,oBAAmB;QACnB,8BAA6B;QAC7B,iBAAgB;QAChB,wBAAuB;QACvB,YAAW,EACd;MAvBjB;QAyBoB,6BAA4B,EAC/B;MA1BjB;QA4BoB,uDAAsD,EAIzD;QAhCjB;UA8BwB,YAAW,EACd;MA/BrB;QAdI,0BAgDgD;QA/ChD,sHAAyH;QACzH,yEAA8E;QAC9E,uEAA4E;QA8C5D,8DAA8D;QAC9D,oBAAmB;QACnB,YAAW,EACd;EAtCjB;IA4CoB,aAAY,EACf;EA7CjB;IAgDgB,iBAAe,EAMlB;IAtDb;MAkDoB,aAAY;MACZ,YAAW;MACX,aAAY,EACf","file":"client.scss","sourcesContent":["// @import \"../../utils/browserControls/ArboretumChat.scss\";\n// From top to bottom\n@mixin linear-gradient($color-from, $color-to) {\n    background-color: $color-from; // Old browsers\n    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%,$color-from), color-stop(100%,$color-to)); // Chrome, Safari4+\n    background-image: -webkit-linear-gradient(top, $color-from 0%, $color-to 100%);           // Chrome10+, Safari5.1+\n    background-image: linear-gradient(to bottom, $color-from 0%, $color-to 100%);  // W3C\n}\n$header_height: 40px;\n$sidebar_width: 250px;\nhtml, body, #client_main, #arboretum_client {\n    margin: 0px;\n    padding: 0px;\n    height: 100%;\n    width: 100%;\n    overflow: hidden;\n}\nbody {\n    font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n    background-color: #333;\n    #arboretum_client {\n        #client_header {\n            max-height: $header_height;\n            @include linear-gradient(#e8e6e8, #d1cfd1);\n\n            #tabs {\n                padding: 0px;\n                margin: 0px;\n                overflow: hidden;\n                .tab {\n                    text-align: center;\n                    border-left: 1px solid #989698;\n                    @include linear-gradient(#b8b6b8, #b0aeb0);\n                    border-left: 1px solid #AAA;\n                    list-style: none;\n                    white-space: nowrap;\n                    border-bottom: 1px solid #aaa;\n                    overflow: hidden;\n                    text-overflow: ellipsis;\n                    color: #333;\n                }\n                &:last-child {\n                    border-right: 1px solid #AAA;\n                }\n                &.not-selected {\n                    background: linear-gradient(to bottom, #BBB 80%, #AAA);\n                    .closeTab {\n                        color: #999;\n                    }\n                }\n                &.tab.selected {\n                    @include linear-gradient(#d4d2d4, #cccacc);\n                    /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n                    border-bottom: none;\n                    color: #777;\n                }\n            }\n        }\n        #client_body {\n            #client_sidebar {\n                .chat {\n                    height: 100%;\n                }\n            }\n            #client_content {\n                overflow:hidden;\n                iframe#content {\n                    border: none;\n                    width: 100%;\n                    height: 100%;\n                }\n            }\n        }\n    }\n}\n"],"sourceRoot":""}]);
 
 // exports
-
-
-/***/ }),
-/* 114 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-class RGB {
-    constructor(r = 0, g = 0, b = 0, alpha = 1) {
-        this.r = r;
-        this.g = g;
-        this.b = b;
-        this.alpha = alpha;
-        this.value = 0;
-        this.setRed(r).setGreen(g).setBlue(b);
-        this.updateValue();
-    }
-    getHexPart(v) {
-        let h = v.toString(16);
-        return (h.length > 1) ? h : "0" + h;
-    }
-    updateValue() {
-        this.value = (this.getRed() + this.getGreen() + this.getBlue());
-        return this;
-    }
-    getValue() {
-        return this.value;
-    }
-    toHex() {
-        let hexString = (this.getAlpha() < 1) ? this.toHexAlpha().toString() : "#" + this.getHexPart(this.getRed()) + this.getHexPart(this.getGreen()) + this.getHexPart(this.getBlue());
-        return new HEX(hexString);
-    }
-    toHexAlpha(light = true) {
-        let tmpRgb = new RGB(this.getRed(), this.getGreen(), this.getBlue());
-        if (this.getAlpha() < 1) {
-            let tmp = (1 - this.getAlpha());
-            tmpRgb.setRed(tmpRgb.getRed() * tmp);
-            tmpRgb.setGreen(tmpRgb.getGreen() * tmp);
-            tmpRgb.setBlue(tmpRgb.getBlue() * tmp);
-        }
-        let adjustValue = (this.getAlpha() < 1) ? Math.floor(255 * this.getAlpha()) : 0;
-        return (light) ? tmpRgb.lighter(adjustValue).toHex() : tmpRgb.darker(adjustValue).toHex();
-    }
-    setRed(value) {
-        this.r = (value > 255) ? 255 : ((value < 0) ? 0 : Math.floor(value));
-        return this.updateValue();
-    }
-    getRed() {
-        return this.r;
-    }
-    setGreen(value) {
-        this.g = (value > 255) ? 255 : ((value < 0) ? 0 : Math.floor(value));
-        return this.updateValue();
-    }
-    getGreen() {
-        return this.g;
-    }
-    setBlue(value) {
-        this.b = (value > 255) ? 255 : ((value < 0) ? 0 : Math.floor(value));
-        return this.updateValue();
-    }
-    getBlue() {
-        return this.b;
-    }
-    withAlpha(a) {
-        if (a < 0 || a > 1) {
-            a = 1;
-        }
-        return new RGB(this.r, this.g, this.b, a);
-    }
-    ;
-    getAlpha() {
-        return this.alpha;
-    }
-    lighter(by) {
-        return new RGB(this.getRed() + by, this.getGreen() + by, this.getBlue() + by);
-    }
-    darker(by) {
-        return new RGB(this.getRed() - by, this.getGreen() - by, this.getBlue() - by);
-    }
-    toString() {
-        return (this.alpha < 1) ? 'rgba(' + this.getRed() + ',' + this.getGreen() + ',' + this.getBlue() + ',' + this.getAlpha() + ')' : 'rgb(' + this.getRed() + ',' + this.getGreen() + ',' + this.getBlue() + ')';
-    }
-}
-exports.RGB = RGB;
-class HEX {
-    constructor(hex) {
-        this.hex = "#000000";
-        this.hex = (hex.toString().length == 6) ? "#" + hex : (hex.toString().length == 7) ? hex : null;
-    }
-    toRGB() {
-        let hexString = this.hex.substr(1).toString();
-        return new RGB(parseInt(hexString.substr(0, 2), 16), parseInt(hexString.substr(2, 2), 16), parseInt(hexString.substr(4, 2), 16));
-    }
-    toString() {
-        return this.hex;
-    }
-}
-exports.HEX = HEX;
-class Color {
-    constructor(color) {
-        if (color instanceof HEX) {
-            this.hex = color;
-            this.rgb = color.toRGB();
-        }
-        else if (color instanceof RGB) {
-            this.rgb = color;
-            this.hex = color.toHex();
-        }
-    }
-    lighter(by) {
-        return new Color(this.rgb.lighter(by));
-    }
-    darker(by) {
-        return new Color(this.rgb.darker(by));
-    }
-    toString(rgb = true) {
-        return (rgb) ? this.rgb.toString() : this.hex.toString();
-    }
-    withAlpha(a) {
-        return new Color(this.rgb.withAlpha(a));
-    }
-}
-exports.Color = Color;
 
 
 /***/ })

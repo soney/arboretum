@@ -129,13 +129,25 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
             this.props.onRemoveHighlight(nodeIDs);
         }
     };
+    private rejectAction = (pam:PageActionMessage):void => {
+        // this.getChat().markPerformed(pam);
+        // if(this.props.onAction) { this.props.onAction(pam); }
+    };
+    private focusAction = (pam:PageActionMessage):void => {
+        // this.getChat().markPerformed(pam);
+        // if(this.props.onAction) { this.props.onAction(pam); }
+    };
+    private addLabel = (pam:PageActionMessage):void => {
+        // this.getChat().markPerformed(pam);
+        // if(this.props.onAction) { this.props.onAction(pam); }
+    };
 
     public render():React.ReactNode {
         const messages = this.state.messages.map((m:Message, i:number) => {
             const senderStyle = {color: m.sender.color};
             if(m['content']) {
                 const tm:TextMessage = m as TextMessage;
-                return <li key={i} className='chat-line'><span style={senderStyle} className='from'>{tm.sender.displayName}</span><span className='message'>{tm.content}</span></li>;
+                return <li tabIndex={0} key={i} className='chat-line'><span style={senderStyle} className='from'>{tm.sender.displayName}</span><span className='message'>{tm.content}</span></li>;
             } else if(m['action']) {
                 const pam:PageActionMessage = m as PageActionMessage;
                 const {action, data, performed} = pam;
@@ -145,10 +157,15 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
                 if(performed) {
                     actions = <div className=''>(accepted)</div>
                 } else {
-                    actions = <div className='messageAction'><a href="javascript:void(0)" onClick={this.performAction.bind(this, pam)}>Accept</a></div>
+                    actions = <div className='messageAction'>
+                        <a href="javascript:void(0)" onClick={this.performAction.bind(this, pam)}>Accept</a>
+                        <a href="javascript:void(0)" onClick={this.rejectAction.bind(this, pam)}>Reject</a>
+                        <a href="javascript:void(0)" onClick={this.focusAction.bind(this, pam)}>Focus</a>
+                        <a href="javascript:void(0)" onClick={this.addLabel.bind(this, pam)}>Label</a>
+                    </div>
                 }
 
-                return <li key={i} className={'chat-line action'+(performed?' performed':'')+(this.props.isAdmin ? ' admin':' not_admin')}><span style={senderStyle} className='from'>{pam.sender.displayName}</span> wants to {description}.{actions}</li>;
+                return <li tabIndex={0} key={i} className={'chat-line action'+(performed?' performed':'')+(this.props.isAdmin ? ' admin':' not_admin')}><span style={senderStyle} className='from'>{pam.sender.displayName}</span> wants to {description}.{actions}</li>;
             }
         });
 

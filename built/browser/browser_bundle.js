@@ -123,7 +123,7 @@ module.exports = emptyFunction;
 /* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var makeError = __webpack_require__(75);
+var makeError = __webpack_require__(61);
 
 function ShareDBError(code, message) {
   ShareDBError.super.call(this, message);
@@ -417,7 +417,7 @@ module.exports = warning;
 /* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var EventEmitter = __webpack_require__(74).EventEmitter;
+var EventEmitter = __webpack_require__(60).EventEmitter;
 
 exports.EventEmitter = EventEmitter;
 exports.mixin = mixin;
@@ -2218,7 +2218,7 @@ var singleton = null;
 var	singletonCounter = 0;
 var	stylesInsertedAtTop = [];
 
-var	fixUrls = __webpack_require__(59);
+var	fixUrls = __webpack_require__(55);
 
 module.exports = function(list, options) {
 	if (typeof DEBUG !== "undefined" && DEBUG) {
@@ -4626,7 +4626,7 @@ function callEach(callbacks, err) {
 // into a separate module that json0 can depend on).
 
 module.exports = {
-  type: __webpack_require__(76)
+  type: __webpack_require__(62)
 };
 
 
@@ -6195,7 +6195,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
 /* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var hat = __webpack_require__(80);
+var hat = __webpack_require__(66);
 var util = __webpack_require__(4);
 var types = __webpack_require__(3);
 
@@ -7129,7 +7129,7 @@ MemoryPubSub.prototype._publish = function(channels, data, callback) {
 /* 33 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var OpStream = __webpack_require__(81);
+var OpStream = __webpack_require__(67);
 var ShareDBError = __webpack_require__(2);
 var util = __webpack_require__(4);
 
@@ -7270,8 +7270,8 @@ module.exports = require("stream");
 /* 36 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var arraydiff = __webpack_require__(82);
-var deepEquals = __webpack_require__(83);
+var arraydiff = __webpack_require__(68);
+var deepEquals = __webpack_require__(69);
 var ShareDBError = __webpack_require__(2);
 var util = __webpack_require__(4);
 
@@ -7833,7 +7833,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(0);
 const ReactDOM = __webpack_require__(41);
 const ArboretumBrowser_1 = __webpack_require__(50);
-__webpack_require__(85);
+__webpack_require__(84);
 const START_URL = 'file:///home/soney/code/arboretum/test/index.html';
 //const START_URL:string = 'http://www.umich.edu/';
 ReactDOM.render(React.createElement(ArboretumBrowser_1.ArboretumBrowser, { serverState: "active", urls: [START_URL] }), document.getElementById('arboretum_main'));
@@ -25142,14 +25142,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(0);
 const BrowserTab_1 = __webpack_require__(51);
-const BrowserNavigationBar_1 = __webpack_require__(67);
-const electron_1 = __webpack_require__(70);
-const url = __webpack_require__(71);
+const BrowserNavigationBar_1 = __webpack_require__(52);
+const electron_1 = __webpack_require__(56);
+const url = __webpack_require__(57);
 const _ = __webpack_require__(12);
-const ShareDBDoc_1 = __webpack_require__(72);
-const react_switch_1 = __webpack_require__(60);
-const copyToClipboard_1 = __webpack_require__(66);
-const ArboretumChatBox_1 = __webpack_require__(53);
+const ShareDBDoc_1 = __webpack_require__(58);
+const react_switch_1 = __webpack_require__(71);
+const copyToClipboard_1 = __webpack_require__(77);
+const ArboretumChatBox_1 = __webpack_require__(78);
+;
 class ArboretumBrowser extends React.Component {
     constructor(props) {
         super(props);
@@ -25212,9 +25213,6 @@ class ArboretumBrowser extends React.Component {
                         tab.setSDBTabID(tabID);
                     }
                 });
-                if (this.sidebar) {
-                    this.sidebar.setSDB(this.sdb);
-                }
                 [shareURL, adminURL] = yield Promise.all([
                     this.getShortcut(fullShareURL), this.getShortcut(fullAdminURL)
                 ]);
@@ -25222,9 +25220,6 @@ class ArboretumBrowser extends React.Component {
             else {
                 if (this.doc) {
                     this.doc.destroy();
-                }
-                if (this.sidebar) {
-                    this.sidebar.setSDB(null);
                 }
                 if (this.sdb) {
                     yield this.sdb.close();
@@ -25237,8 +25232,8 @@ class ArboretumBrowser extends React.Component {
                 yield this.sendIPCMessage({ message: 'stopServer' });
                 [shareURL, adminURL] = ['', ''];
             }
-            if (this.sidebar) {
-                this.sidebar.setState({ shareURL, adminURL });
+            if (this.chatbox) {
+                this.chatbox.setSDB(this.sdb);
             }
             this.setState({ shareURL, adminURL });
             return { shareURL, adminURL };
@@ -25337,10 +25332,6 @@ class ArboretumBrowser extends React.Component {
                 this.selectedTabPageTitleChanged(title);
             }
         };
-        this.sidebarRef = (sidebar) => {
-            this.sidebar = sidebar;
-            this.setServerActive(this.state.serverActive);
-        };
         this.handleServerSwitchChange = (serverActive) => __awaiter(this, void 0, void 0, function* () {
             this.setState({ serverActive });
             const shareURLs = yield this.setServerActive(serverActive);
@@ -25373,6 +25364,9 @@ class ArboretumBrowser extends React.Component {
         };
         this.chatBoxRef = (chatbox) => {
             this.chatbox = chatbox;
+            if (this.sdb) {
+                this.chatbox.setSDB(this.sdb);
+            }
         };
         this.onAction = (pam) => __awaiter(this, void 0, void 0, function* () {
             yield this.sendIPCMessage({
@@ -25410,6 +25404,9 @@ class ArboretumBrowser extends React.Component {
             adminURL: '',
             sandbox: true
         };
+        if (this.state.serverActive) {
+            this.setServerActive(this.state.serverActive);
+        }
     }
     ;
     updateNavBarState() {
@@ -25465,12 +25462,6 @@ class ArboretumBrowser extends React.Component {
         this.setState({ showingSidebar });
     }
     ;
-    setSDB(sdb) {
-        if (this.chatbox) {
-            this.chatbox.setSDB(sdb);
-        }
-    }
-    ;
     render() {
         const tabs = this.state.tabs.map((info, index) => React.createElement(BrowserTab_1.BrowserTab, { sdb: this.sdb, ref: this.tabRef, selected: info.selected, key: info.id, tabID: info.id, startURL: info.url, onSelect: this.selectTab, onClose: this.closeTab, pageTitleChanged: this.pageTitleChanged, urlChanged: this.tabURLChanged, isLoadingChanged: this.tabIsLoadingChanged, canGoBackChanged: this.tabCanGoBackChanged, canGoForwardChanged: this.tabCanGoForwardChanged }));
         return React.createElement("div", { className: "window" },
@@ -25509,7 +25500,7 @@ class ArboretumBrowser extends React.Component {
                                         React.createElement("label", null,
                                             React.createElement("input", { type: "checkbox", name: "sandbox", value: "sandbox", id: "sandbox", checked: this.state.sandbox, onChange: this.onSandboxChange }),
                                             " Sandbox"))))),
-                        React.createElement(ArboretumChatBox_1.ArboretumChatBox, { isAdmin: true, username: "Admin", ref: this.chatBoxRef, onSendMessage: this.sendMessage, onAction: this.onAction, onAddHighlight: this.addHighlight, onRemoveHighlight: this.removeHighlight })),
+                        React.createElement(ArboretumChatBox_1.ArboretumChatBox, { isAdmin: true, sdb: this.sdb, username: "Admin", ref: this.chatBoxRef, onSendMessage: this.sendMessage, onAction: this.onAction, onAddHighlight: this.addHighlight, onRemoveHighlight: this.removeHighlight })),
                     React.createElement("div", { id: "browser-pane", className: "pane" },
                         React.createElement("div", { id: "content" }, this.state.webViews)))));
     }
@@ -25725,557 +25716,92 @@ exports.BrowserTab = BrowserTab;
 
 
 /***/ }),
-/* 52 */,
-/* 53 */
+/* 52 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(0);
-const ArboretumChat_1 = __webpack_require__(54);
-__webpack_require__(57);
+__webpack_require__(53);
 const ENTER_KEY = 13;
-class ArboretumChatBox extends React.Component {
+class BrowserNavigationBar extends React.Component {
     constructor(props) {
         super(props);
-        this.updateMessagesState = () => __awaiter(this, void 0, void 0, function* () {
-            const messages = yield this.chat.getMessages();
-            this.setState({ messages });
-        });
-        this.updateUsersState = () => __awaiter(this, void 0, void 0, function* () {
-            const users = yield this.chat.getUsers();
-            this.setState({ users });
-        });
-        this.chatKeyDown = (event) => {
-            const { keyCode, ctrlKey, altKey, metaKey, shiftKey } = event;
-            if (keyCode === ENTER_KEY && !(ctrlKey || altKey || metaKey || shiftKey)) {
-                event.preventDefault();
-                const { chatText } = this.state;
-                if (chatText !== '') {
-                    if (this.props.onSendMessage) {
-                        this.props.onSendMessage(chatText);
-                    }
-                    if (this.chat) {
-                        this.chat.addTextMessage(chatText);
-                    }
-                    this.setState({ chatText: '' });
+        this.handleURLChange = (event) => {
+            this.setState({ urlText: event.target.value });
+        };
+        this.backClicked = () => {
+            if (this.props.onBack) {
+                this.props.onBack();
+            }
+        };
+        this.forwardClicked = () => {
+            if (this.props.onForward) {
+                this.props.onForward();
+            }
+        };
+        this.reloadClicked = () => {
+            if (this.props.onReload) {
+                this.props.onReload();
+            }
+        };
+        this.toggleSidebarClicked = () => {
+            if (this.props.onToggleSidebar) {
+                this.props.onToggleSidebar();
+            }
+        };
+        this.urlKeyDown = (event) => {
+            const { keyCode } = event;
+            if (keyCode === ENTER_KEY) {
+                const { urlText } = this.state;
+                if (this.props.onNavigate) {
+                    this.props.onNavigate(urlText);
                 }
             }
         };
-        this.onTextareaChange = (event) => {
-            this.setState({ chatText: event.target.value });
+        this.onURLBarFocus = (event) => {
+            this.setState({ urlBarFocused: true });
         };
-        this.performAction = (pam) => {
-            this.getChat().markPerformed(pam);
-            if (this.props.onAction) {
-                this.props.onAction(pam);
-            }
-        };
-        this.addHighlights = (pam) => {
-            if (this.props.onAddHighlight) {
-                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pam);
-                const color = pam.sender.color;
-                this.props.onAddHighlight(nodeIDs, color);
-            }
-        };
-        this.removeHighlights = (pam) => {
-            if (this.props.onRemoveHighlight) {
-                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pam);
-                this.props.onRemoveHighlight(nodeIDs);
-            }
+        this.onURLBarBlur = (event) => {
+            this.setState({ urlBarFocused: false });
         };
         this.state = {
-            chatText: this.props.chatText || '',
-            messages: [],
-            users: []
+            urlText: '',
+            canGoBack: false,
+            canGoForward: false,
+            isLoading: false,
+            urlBarFocused: false
         };
-        if (this.props.sdb) {
-            this.setSDB(this.props.sdb);
-        }
-        window.addEventListener('beforeunload', () => this.leave());
-    }
-    ;
-    getChat() { return this.chat; }
-    setSDB(sdb) {
-        return __awaiter(this, void 0, void 0, function* () {
-            this.sdb = sdb;
-            this.chat = new ArboretumChat_1.ArboretumChat(this.sdb);
-            this.chat.ready.addListener(() => __awaiter(this, void 0, void 0, function* () {
-                yield this.chat.join(this.props.username);
-                yield this.updateMessagesState();
-                yield this.updateUsersState();
-                this.chat.messageAdded.addListener(this.updateMessagesState);
-                this.chat.userJoined.addListener(this.updateUsersState);
-                this.chat.userNotPresent.addListener(this.updateUsersState);
-            }));
-        });
-    }
-    ;
-    //https://stackoverflow.com/questions/37620694/how-to-scroll-to-bottom-in-react
-    scrollToBottom() {
-        this.messagesEnd.scrollIntoView({ behavior: "smooth" });
-    }
-    ;
-    componentDidMount() {
-        this.scrollToBottom();
-    }
-    ;
-    leave() {
-        if (this.chat) {
-            this.chat.leave();
-        }
-    }
-    ;
-    componentWillUnmount() {
-        this.leave();
-    }
-    ;
-    componentDidUpdate() {
-        this.scrollToBottom();
     }
     ;
     render() {
-        const messages = this.state.messages.map((m, i) => {
-            const senderStyle = { color: m.sender.color };
-            if (m['content']) {
-                const tm = m;
-                return React.createElement("li", { key: i, className: 'chat-line' },
-                    React.createElement("span", { style: senderStyle, className: 'from' }, tm.sender.displayName),
-                    React.createElement("span", { className: 'message' }, tm.content));
-            }
-            else if (m['action']) {
-                const pam = m;
-                const { action, data, performed } = pam;
-                const description = React.createElement("span", { className: 'description', onMouseEnter: () => this.addHighlights(pam), onMouseLeave: () => this.removeHighlights(pam) }, ArboretumChat_1.ArboretumChat.describePageActionMessage(pam));
-                let actions;
-                if (performed) {
-                    actions = React.createElement("div", { className: '' }, "(accepted)");
-                }
-                else {
-                    actions = React.createElement("div", { className: 'messageAction' },
-                        React.createElement("a", { href: "javascript:void(0)", onClick: this.performAction.bind(this, pam) }, "Accept"));
-                }
-                return React.createElement("li", { key: i, className: 'chat-line action' + (performed ? ' performed' : '') + (this.props.isAdmin ? ' admin' : ' not_admin') },
-                    React.createElement("span", { style: senderStyle, className: 'from' }, pam.sender.displayName),
-                    " wants to ",
-                    description,
-                    ".",
-                    actions);
-            }
-        });
-        let meUserID;
-        if (this.chat) {
-            const meUser = this.chat.getMe();
-            if (meUser) {
-                meUserID = meUser.id;
-            }
-        }
-        const users = this.state.users.map((u) => {
-            const isMe = u.id === meUserID;
-            const style = { color: u.color };
-            return React.createElement("span", { key: u.id, className: `participant ${isMe ? 'me' : ''}`, style: style }, u.displayName);
-        });
-        return React.createElement("div", { className: 'chat' },
-            React.createElement("div", { id: "chat-participants" }, users),
-            React.createElement("ul", { id: "chat-lines" },
-                messages.filter(m => !!m),
-                React.createElement("li", { style: { float: "left", clear: "both" }, ref: (el) => { this.messagesEnd = el; } })),
-            React.createElement("form", { id: "chat-form" },
-                React.createElement("textarea", { id: "chat-box", className: "form-control", placeholder: "Send a message", onChange: this.onTextareaChange, onKeyDown: this.chatKeyDown, value: this.state.chatText })));
+        const toggleSidebarButton = this.props.showSidebarToggle ? React.createElement("button", { onClick: this.toggleSidebarClicked, className: 'btn btn-default btn-mini', id: 'task' },
+            React.createElement("span", { className: 'icon icon-publish' })) : null;
+        return React.createElement("div", { className: "toolbar toolbar-header", id: "navBar" },
+            React.createElement("div", { className: "toolbar-actions" },
+                React.createElement("div", { className: "btn-group" },
+                    React.createElement("button", { disabled: !this.state.canGoBack, onClick: this.backClicked, className: 'btn btn-default btn-mini', id: 'back' },
+                        React.createElement("span", { className: 'icon icon-left-open-big' })),
+                    React.createElement("button", { disabled: !this.state.canGoForward, onClick: this.forwardClicked, className: 'btn btn-default btn-mini', id: 'forward' },
+                        React.createElement("span", { className: 'icon icon-right-open-big' }))),
+                React.createElement("button", { onClick: this.reloadClicked, className: 'btn btn-default btn-mini', id: 'reload' },
+                    React.createElement("span", { className: `icon ${this.state.isLoading ? 'icon-cancel' : 'icon-ccw'}` })),
+                toggleSidebarButton),
+            React.createElement("input", { value: this.state.urlText, onChange: this.handleURLChange, onKeyDown: this.urlKeyDown, onFocus: this.onURLBarFocus, onBlur: this.onURLBarBlur, id: 'url', type: "text", placeholder: "Enter URL or Term to Search" }));
     }
     ;
 }
-exports.ArboretumChatBox = ArboretumChatBox;
+exports.BrowserNavigationBar = BrowserNavigationBar;
 ;
 
 
 /***/ }),
-/* 54 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const TypedEventEmitter_1 = __webpack_require__(55);
-const guid_1 = __webpack_require__(56);
-const _ = __webpack_require__(12);
-exports.userColors = [
-    ['#A80000', '#B05E0D', '#C19C00', '#107C10', '#038387', '#004E8C', '#5C126B']
-];
-var TypingStatus;
-(function (TypingStatus) {
-    TypingStatus[TypingStatus["IDLE"] = 0] = "IDLE";
-    TypingStatus[TypingStatus["ACTIVE"] = 1] = "ACTIVE";
-    TypingStatus[TypingStatus["IDLE_TYPED"] = 2] = "IDLE_TYPED";
-})(TypingStatus = exports.TypingStatus || (exports.TypingStatus = {}));
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
-    constructor(sdb) {
-        super();
-        this.sdb = sdb;
-        this.userJoined = this.registerEvent();
-        this.userNotPresent = this.registerEvent();
-        this.userTypingStatusChanged = this.registerEvent();
-        this.messageAdded = this.registerEvent();
-        this.ready = this.registerEvent();
-        this.doc = this.sdb.get('arboretum', 'chat');
-        this.initialized = this.initializeDoc();
-        this.initialized.catch((err) => {
-            console.error(err);
-        });
-    }
-    ;
-    static describePageActionMessage(pam) {
-        const { action, data, performed } = pam;
-        if (action === 'navigate') {
-            const { url } = data;
-            return `navigate to ${url}`;
-        }
-        else if (action === 'mouse_event') {
-            const { targetNodeID, type, targetNodeDescription } = data;
-            return `${type} on ${targetNodeID}`;
-        }
-        else {
-            return `do ${action}`;
-        }
-    }
-    ;
-    static getRelevantNodeIDs(pam) {
-        const { action, data, performed } = pam;
-        const targetNodeID = pam['targetNodeID'];
-        if (targetNodeID) {
-            return [targetNodeID];
-        }
-        else {
-            return [];
-        }
-    }
-    ;
-    initializeDoc() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.doc.createIfEmpty({
-                users: [],
-                messages: [],
-                colors: _.shuffle(_.sample(exports.userColors))
-            });
-            this.doc.subscribe((ops, source, data) => {
-                if (ops) {
-                    ops.forEach((op) => this.handleOp(op));
-                }
-                else {
-                    this.ready.emit();
-                }
-            });
-        });
-    }
-    ;
-    handleOp(op) {
-        const { p, li } = op;
-        if (p[0] === 'users') {
-            if (p.length === 2 && li) {
-                this.userJoined.emit({
-                    user: li
-                });
-            }
-            else if (p.length === 3 && p[2] === 'present') {
-                const userIndex = p[1];
-                const user = this.doc.getData().users[userIndex];
-                this.userNotPresent.emit({ user });
-            }
-        }
-        else if (p[0] === 'messages') {
-            this.messageAdded.emit({
-                message: li
-            });
-        }
-    }
-    ;
-    getMe() {
-        return this.meUser;
-    }
-    ;
-    getColor(id) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.initialized;
-            const data = this.doc.getData();
-            const { colors } = data;
-            const index = guid_1.guidIndex(id) % colors.length;
-            return colors[index];
-        });
-    }
-    ;
-    join(displayName) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return this.addUser(displayName);
-        });
-    }
-    ;
-    addUser(displayName, isMe = true, present = true) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const id = guid_1.guid();
-            const color = yield this.getColor(id);
-            const user = { id, color, displayName, present, typing: TypingStatus.IDLE };
-            yield this.initialized;
-            yield this.doc.submitListPushOp(['users'], user);
-            if (isMe) {
-                this.meUser = user;
-            }
-            return user;
-        });
-    }
-    ;
-    addMesssage(message) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.initialized;
-            const timestamp = (new Date()).getTime();
-            message.timestamp = (new Date()).getTime();
-            message.id = ArboretumChat.messageCounter++;
-            this.doc.submitListPushOp(['messages'], message);
-        });
-    }
-    ;
-    addTextMessage(content, sender = this.getMe()) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const message = { sender, content };
-            this.addMesssage(message);
-        });
-    }
-    ;
-    addPageActionMessage(action, tabID, data = {}, sender = this.getMe()) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const message = { sender, action, tabID, data, performed: false };
-            this.addMesssage(message);
-        });
-    }
-    ;
-    markPerformed(pam, performed = true) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const messages = yield this.getMessages();
-            const { id } = pam;
-            for (let i = 0; i < messages.length; i++) {
-                const message = messages[i];
-                if (message.id === id) {
-                    this.doc.submitObjectReplaceOp(['messages', i, 'performed'], performed);
-                    break;
-                }
-            }
-        });
-    }
-    ;
-    getUserIndex(user) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.initialized;
-            const data = this.doc.getData();
-            for (let i = 0; i < data.users.length; i++) {
-                const u = data.users[i];
-                if (user.id === u.id) {
-                    return i;
-                }
-            }
-            return -1;
-        });
-    }
-    ;
-    markUserNotPresent(user) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.initialized;
-            const data = this.doc.getData();
-            const userIndex = yield this.getUserIndex(user);
-            yield this.doc.submitObjectReplaceOp(['users', userIndex, 'present'], false);
-        });
-    }
-    ;
-    leave() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.markUserNotPresent(this.getMe());
-        });
-    }
-    ;
-    setUserTypingStatus(user, typingStatus) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.initialized;
-            const data = this.doc.getData();
-            const userIndex = yield this.getUserIndex(user);
-            yield this.doc.submitObjectReplaceOp(['users', userIndex, 'typing'], typingStatus);
-        });
-    }
-    ;
-    getMessages() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.initialized;
-            const data = this.doc.getData();
-            return data.messages;
-        });
-    }
-    ;
-    getUsers(onlyPresent = true) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.initialized;
-            const data = this.doc.getData();
-            const { users } = data;
-            if (onlyPresent) {
-                return users.filter((u) => u.present);
-            }
-            else {
-                return users;
-            }
-        });
-    }
-    ;
-}
-ArboretumChat.userCounter = 1;
-ArboretumChat.messageCounter = 1;
-exports.ArboretumChat = ArboretumChat;
-;
-
-
-/***/ }),
-/* 55 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-class TypedEventEmitter {
-    constructor() {
-        this.registeredEvents = [];
-    }
-    ;
-    registerEvent() {
-        const rv = new RegisteredEvent();
-        this.registeredEvents.push(rv);
-        return rv;
-    }
-    ;
-    clearRegisteredEvents() {
-        this.registeredEvents.forEach((re) => {
-            re.clearListeners();
-        });
-        this.registeredEvents.splice(0, this.registeredEvents.length);
-    }
-}
-exports.TypedEventEmitter = TypedEventEmitter;
-;
-function registerEvent() {
-    return new RegisteredEvent();
-}
-exports.registerEvent = registerEvent;
-;
-class RegisteredEvent {
-    constructor() {
-        this.listeners = [];
-    }
-    emit(event) {
-        this.listeners.forEach((l) => {
-            l.fire(event);
-        });
-    }
-    ;
-    clearListeners() { this.listeners.splice(0, this.listeners.length); }
-    ;
-    removeListener(listener) {
-        let found = false;
-        for (let i = 0; i < this.listeners.length; i++) {
-            const l = this.listeners[i];
-            if (l === listener) {
-                this.listeners.splice(i, 1);
-                i--;
-                found = true;
-            }
-        }
-        return found;
-    }
-    ;
-    addListener(func, unbindWhenRun = false) {
-        const typedListener = new TypedListener(func, this, unbindWhenRun);
-        this.listeners.push(typedListener);
-        return typedListener;
-    }
-    ;
-}
-exports.RegisteredEvent = RegisteredEvent;
-;
-class TypedListener {
-    constructor(listener, owner, unbindWhenRun = false) {
-        this.listener = listener;
-        this.owner = owner;
-        this.unbindWhenRun = unbindWhenRun;
-    }
-    ;
-    unbind() { this.owner.removeListener(this); }
-    ;
-    fire(event) {
-        if (this.unbindWhenRun) {
-            this.unbind();
-        }
-        this.listener(event);
-    }
-    ;
-}
-exports.TypedListener = TypedListener;
-;
-
-
-/***/ }),
-/* 56 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-function s4() {
-    return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
-}
-;
-function guid() {
-    return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
-}
-exports.guid = guid;
-;
-function guidIndex(id) {
-    let result = 0;
-    for (let i = 0; i < id.length; i++) {
-        result += id.charCodeAt(i);
-    }
-    return result;
-}
-exports.guidIndex = guidIndex;
-;
-
-
-/***/ }),
-/* 57 */
+/* 53 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
-var content = __webpack_require__(58);
+var content = __webpack_require__(54);
 
 if(typeof content === 'string') content = [[module.i, content, '']];
 
@@ -26294,8 +25820,8 @@ var update = __webpack_require__(14)(content, options);
 if(content.locals) module.exports = content.locals;
 
 if(false) {
-	module.hot.accept("!!../../../node_modules/css-loader/index.js??ref--2-1!../../../node_modules/sass-loader/lib/loader.js??ref--2-2!./ArboretumChat.scss", function() {
-		var newContent = require("!!../../../node_modules/css-loader/index.js??ref--2-1!../../../node_modules/sass-loader/lib/loader.js??ref--2-2!./ArboretumChat.scss");
+	module.hot.accept("!!../../../node_modules/css-loader/index.js??ref--2-1!../../../node_modules/sass-loader/lib/loader.js??ref--2-2!./BrowserNavigationBar.scss", function() {
+		var newContent = require("!!../../../node_modules/css-loader/index.js??ref--2-1!../../../node_modules/sass-loader/lib/loader.js??ref--2-2!./BrowserNavigationBar.scss");
 
 		if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
 
@@ -26321,7 +25847,7 @@ if(false) {
 }
 
 /***/ }),
-/* 58 */
+/* 54 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(13)(true);
@@ -26329,13 +25855,13 @@ exports = module.exports = __webpack_require__(13)(true);
 
 
 // module
-exports.push([module.i, ".chat {\n  font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n  flex: 1 0 auto;\n  display: flex;\n  flex-direction: column; }\n  .chat #task_title {\n    flex: 0 0;\n    box-sizing: border-box;\n    padding: 5px 10px 5px;\n    margin: 0px; }\n  .chat #chat-participants {\n    flex: 0 0;\n    border-bottom: 1px solid #CCC;\n    padding: 5px 10px 5px;\n    box-sizing: border-box; }\n    .chat #chat-participants .participant {\n      margin: 2px; }\n      .chat #chat-participants .participant.me {\n        font-weight: bold;\n        text-decoration: underline; }\n  .chat #chat-lines {\n    flex: 2 0;\n    box-sizing: border-box;\n    padding: 0px 10px 0px;\n    margin: 0px;\n    overflow-y: auto; }\n    .chat #chat-lines li {\n      list-style-type: none; }\n    .chat #chat-lines .chat-line {\n      font-size: 0.9em;\n      list-style-type: none;\n      list-style-type: none;\n      margin-top: 2px;\n      padding-top: 2px;\n      margin-bottom: 2px;\n      padding-bottom: 2px;\n      color: #555; }\n      .chat #chat-lines .chat-line.action {\n        color: #888; }\n        .chat #chat-lines .chat-line.action.not_admin .messageAction {\n          display: none; }\n      .chat #chat-lines .chat-line:not(.action) .from {\n        font-weight: bold; }\n      .chat #chat-lines .chat-line:not(.action) .from::after {\n        content: \": \"; }\n  .chat #chat-form {\n    padding: 0px 2px 0px;\n    flex: 0; }\n    .chat #chat-form textarea#chat-box {\n      box-sizing: border-box;\n      resize: none;\n      flex-grow: 1;\n      width: 100%;\n      font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n      padding: 5px 10px 5px; }\n    .chat #chat-form .form-actions {\n      text-align: right; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/utils/browserControls/src/utils/browserControls/ArboretumChat.scss"],"names":[],"mappings":"AAAA;EACI,gHAA+G;EAC/G,eAAc;EACd,cAAa;EACb,uBAAsB,EAwEzB;EA5ED;IAOQ,UAAS;IACT,uBAAsB;IACtB,sBAAqB;IACrB,YAAW,EACd;EAXL;IAaQ,UAAS;IACT,8BAA6B;IAC7B,sBAAqB;IACrB,uBAAsB,EAQzB;IAxBL;MAkBY,YAAW,EAKd;MAvBT;QAoBgB,kBAAiB;QACjB,2BAA0B,EAC7B;EAtBb;IA0BQ,UAAS;IACT,uBAAsB;IACtB,sBAAqB;IACrB,YAAW;IACX,iBAAgB,EA8BnB;IA5DL;MAgCY,sBAAqB,EACxB;IAjCT;MAmCY,iBAAgB;MAChB,sBAAqB;MACrB,sBAAqB;MACrB,gBAAe;MACf,iBAAgB;MAChB,mBAAkB;MAClB,oBAAmB;MACnB,YAAW,EAiBd;MA3DT;QA4CgB,YAAW,EAMd;QAlDb;UA+CwB,cAAa,EAChB;MAhDrB;QAqDoB,kBAAiB,EACpB;MAtDjB;QAwDoB,cAAa,EAChB;EAzDjB;IA8DQ,qBAAoB;IACpB,QAAO,EAYV;IA3EL;MAiEY,uBAAsB;MACtB,aAAY;MACZ,aAAY;MACZ,YAAW;MACX,gHAA+G;MAC/G,sBAAqB,EACxB;IAvET;MAyEY,kBAAiB,EACpB","file":"ArboretumChat.scss","sourcesContent":[".chat {\n    font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n    flex: 1 0 auto;\n    display: flex;\n    flex-direction: column;\n\n    #task_title {\n        flex: 0 0;\n        box-sizing: border-box;\n        padding: 5px 10px 5px;\n        margin: 0px;\n    }\n    #chat-participants {\n        flex: 0 0;\n        border-bottom: 1px solid #CCC;\n        padding: 5px 10px 5px;\n        box-sizing: border-box;\n        .participant {\n            margin: 2px;\n            &.me {\n                font-weight: bold;\n                text-decoration: underline;\n            }\n        }\n    }\n    #chat-lines {\n        flex: 2 0;\n        box-sizing: border-box;\n        padding: 0px 10px 0px;\n        margin: 0px;\n        overflow-y: auto;\n        li {\n            list-style-type: none;\n        }\n        .chat-line {\n            font-size: 0.9em;\n            list-style-type: none;\n            list-style-type: none;\n            margin-top: 2px;\n            padding-top: 2px;\n            margin-bottom: 2px;\n            padding-bottom: 2px;\n            color: #555;\n            &.action{\n                color: #888;\n                &.not_admin {\n                    .messageAction {\n                        display: none;\n                    }\n                }\n            }\n            &:not(.action) {\n                .from {\n                    font-weight: bold;\n                }\n                .from::after {\n                    content: \": \";\n                }\n            }\n        }\n    }\n    #chat-form {\n        padding: 0px 2px 0px;\n        flex: 0;\n        textarea#chat-box {\n            box-sizing: border-box;\n            resize: none;\n            flex-grow: 1;\n            width: 100%;\n            font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n            padding: 5px 10px 5px;\n        }\n        .form-actions {\n            text-align: right;\n        }\n    }\n}\n"],"sourceRoot":""}]);
+exports.push([module.i, "#navBar {\n  display: flex; }\n  #navBar input#url {\n    flex: 1;\n    /*margin: 4px 2px 3px 2px;*/\n    /*font-size: 12px;*/\n    /*padding: 0px 0px 0px 0px;*/\n    padding: 3px;\n    /*height: 100%;*/\n    /*height: 20px;*/\n    box-shadow: inset 0px 1px 2px rgba(0, 0, 0, 0.2);\n    border: 0px;\n    border-left: 1px solid #bbb;\n    border-top-left-radius: 3px;\n    border-bottom-left-radius: 3px;\n    color: #808080;\n    outline: 0;\n    background: #FFF;\n    /*font-weight: lighter;*/ }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/utils/browserControls/src/utils/browserControls/BrowserNavigationBar.scss"],"names":[],"mappings":"AAAA;EACI,cAAa,EAmBhB;EApBD;IAGQ,QAAO;IACP,4BAA4B;IAC5B,oBAAoB;IACpB,6BAA6B;IAC7B,aAAY;IACZ,iBAAiB;IACjB,iBAAiB;IACjB,iDAAgD;IAChD,YAAW;IACX,4BAA2B;IAC3B,4BAA2B;IAC3B,+BAA8B;IAC9B,eAAc;IACd,WAAU;IACV,iBAAgB;IAChB,yBAAyB,EAC5B","file":"BrowserNavigationBar.scss","sourcesContent":["#navBar {\n    display: flex;\n    input#url {\n        flex: 1;\n        /*margin: 4px 2px 3px 2px;*/\n        /*font-size: 12px;*/\n        /*padding: 0px 0px 0px 0px;*/\n        padding: 3px;\n        /*height: 100%;*/\n        /*height: 20px;*/\n        box-shadow: inset 0px 1px 2px rgba(0, 0, 0, 0.2);\n        border: 0px;\n        border-left: 1px solid #bbb;\n        border-top-left-radius: 3px;\n        border-bottom-left-radius: 3px;\n        color: #808080;\n        outline: 0;\n        background: #FFF;\n        /*font-weight: lighter;*/\n    }\n}\n"],"sourceRoot":""}]);
 
 // exports
 
 
 /***/ }),
-/* 59 */
+/* 55 */
 /***/ (function(module, exports) {
 
 
@@ -26430,7 +25956,2469 @@ module.exports = function (css) {
 
 
 /***/ }),
+/* 56 */
+/***/ (function(module, exports) {
+
+module.exports = require("electron");
+
+/***/ }),
+/* 57 */
+/***/ (function(module, exports) {
+
+module.exports = require("url");
+
+/***/ }),
+/* 58 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const ShareDBClient = __webpack_require__(59);
+const ShareDB = __webpack_require__(64);
+class SDB {
+    constructor(client, connection) {
+        this.docs = new Map();
+        if (client) {
+            this.connection = new ShareDBClient.Connection(connection);
+        }
+        else {
+            this.share = new ShareDB();
+            this.connection = this.share.connect();
+        }
+    }
+    ;
+    getDocIdentifier(collectionName, documentID) {
+        return [collectionName, documentID];
+    }
+    ;
+    listen(stream) {
+        this.share.listen(stream);
+    }
+    ;
+    get(collectionName, documentID) {
+        const docIdentifier = this.getDocIdentifier(collectionName, documentID);
+        let sdbDoc;
+        if (this.docs.has(docIdentifier)) {
+            sdbDoc = this.docs.get(docIdentifier);
+        }
+        else {
+            const doc = this.connection.get(collectionName, documentID);
+            sdbDoc = new SDBDoc(docIdentifier, doc, this);
+            this.docs.set(docIdentifier, sdbDoc);
+        }
+        return sdbDoc;
+    }
+    ;
+    close() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield new Promise((resolve, reject) => {
+                this.share.close(() => {
+                    resolve(null);
+                });
+            });
+        });
+    }
+    ;
+    deleteDoc(doc) {
+        this.docs.delete(doc.docIdentifier);
+    }
+    ;
+}
+exports.SDB = SDB;
+;
+class SDBDoc {
+    constructor(docIdentifier, doc, sdb) {
+        this.docIdentifier = docIdentifier;
+        this.doc = doc;
+        this.sdb = sdb;
+    }
+    ;
+    traverse(path) {
+        let x = this.getData();
+        for (let i = 0; i < path.length; i++) {
+            x = x[path[i]];
+        }
+        return x;
+    }
+    ;
+    submitObjectReplaceOp(p, oi, od = this.traverse(p)) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const op = { p, oi, od };
+            return yield this.submitOp([op]);
+        });
+    }
+    ;
+    submitObjectInsertOp(p, oi) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const op = { p, oi };
+            return yield this.submitOp([op]);
+        });
+    }
+    ;
+    submitObjectDeleteOp(p, od = this.traverse(p)) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const op = { p, od };
+            return yield this.submitOp([op]);
+        });
+    }
+    ;
+    submitListReplaceOp(p, li, ld = this.traverse(p)) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const op = { p, li, ld };
+            return yield this.submitOp([op]);
+        });
+    }
+    ;
+    submitListInsertOp(p, li) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const op = { p, li };
+            return yield this.submitOp([op]);
+        });
+    }
+    ;
+    submitListDeleteOp(p, ld = this.traverse(p)) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const op = { p, ld };
+            return yield this.submitOp([op]);
+        });
+    }
+    ;
+    submitListPushOp(p, ...items) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const arr = this.traverse(p);
+            const previousLength = arr.length;
+            const ops = items.map((x, i) => {
+                const op = { p: p.concat(previousLength + i), li: x };
+                return op;
+            });
+            return yield this.submitOp(ops);
+        });
+    }
+    ;
+    submitListUnshiftOp(p, ...items) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const arr = this.traverse(p);
+            const previousLength = arr.length;
+            const ops = items.map((x, i) => {
+                const op = { p: p.concat(i), li: x };
+                return op;
+            });
+            return yield this.submitOp(ops);
+        });
+    }
+    ;
+    fetch() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => {
+                this.doc.fetch((err) => {
+                    if (err) {
+                        reject(err);
+                    }
+                    else {
+                        resolve(this.doc);
+                    }
+                });
+            });
+        });
+    }
+    ;
+    create(data, type, options) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => {
+                this.doc.create(data, type, options, () => {
+                    resolve(this.doc);
+                });
+            });
+        });
+    }
+    ;
+    del(source = true) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield new Promise((resolve, reject) => {
+                this.doc.del({ source }, (err) => {
+                    if (err) {
+                        reject(err);
+                    }
+                    else {
+                        resolve();
+                    }
+                });
+            });
+            this.sdb.deleteDoc(this);
+        });
+    }
+    ;
+    subscribe(callback) {
+        this.doc.subscribe((err) => {
+            if (err) {
+                throw (err);
+            }
+            callback(null, null, this.doc.data);
+        });
+        const onOpFunc = (ops, source) => {
+            callback(ops, source, this.doc.data);
+        };
+        this.doc.on('op', onOpFunc);
+        return () => {
+            this.doc.removeListener('op', onOpFunc);
+        };
+    }
+    ;
+    submitOp(op, source = true) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield new Promise((resolve, reject) => {
+                this.doc.submitOp(op, { source }, (err) => {
+                    if (err) {
+                        reject(err);
+                    }
+                    else {
+                        resolve();
+                    }
+                });
+            });
+        });
+    }
+    ;
+    createIfEmpty(data, type, options) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const doc = yield this.fetch();
+            if (doc.type === null) {
+                return this.create(data, type, options);
+            }
+            else {
+                return doc;
+            }
+        });
+    }
+    ;
+    getData() {
+        return this.doc.data;
+    }
+    ;
+    destroy() {
+        this.doc.destroy();
+        this.sdb.deleteDoc(this);
+    }
+    ;
+}
+exports.SDBDoc = SDBDoc;
+;
+class SDBObject {
+    constructor(value) {
+        this.value = value;
+        this.attachedToDoc = false;
+    }
+    ;
+    markAttachedToShareDBDoc(doc, path) {
+        this.doc = doc;
+        this.path = path;
+        this.attachedToDoc = true;
+    }
+    ;
+    isAttached() { return this.attachedToDoc; }
+    ;
+    getValue() { return this.value; }
+    ;
+}
+exports.SDBObject = SDBObject;
+;
+class SDBArray extends SDBObject {
+    constructor(value = []) {
+        super(value);
+    }
+    ;
+    push(...args) {
+        this.value.push(...args);
+        if (this.isAttached()) {
+            this.doc.submitListPushOp(this.path, ...args);
+        }
+    }
+    ;
+    splice(start, deleteCount, ...toAdd) {
+        this.value.splice(start, deleteCount, ...toAdd);
+        if (this.isAttached()) {
+            for (let _ = 0; _ < deleteCount; _++) {
+                this.doc.submitListDeleteOp(this.path.concat(start));
+            }
+            toAdd.forEach((item, i) => {
+                this.doc.submitListInsertOp(this.path.concat(i), item);
+            });
+        }
+    }
+    ;
+    length() { return this.value.length; }
+    item(i) { return this.value[i]; }
+    ;
+    indexOf(item) { return this.value.indexOf(item); }
+    contains(item) { return this.indexOf(item) >= 0; }
+    forEach(callbackFunc) {
+        this.value.forEach(callbackFunc);
+    }
+    ;
+    map(callbackFunc) { return this.value.map(callbackFunc); }
+    ;
+    join(glue) { return this.value.join(glue); }
+    ;
+}
+exports.SDBArray = SDBArray;
+
+
+/***/ }),
+/* 59 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports.Connection = __webpack_require__(23);
+exports.Doc = __webpack_require__(24);
+exports.Error = __webpack_require__(2);
+exports.Query = __webpack_require__(27);
+exports.types = __webpack_require__(3);
+
+
+/***/ }),
 /* 60 */
+/***/ (function(module, exports) {
+
+module.exports = require("events");
+
+/***/ }),
+/* 61 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+// ISC @ Julien Fontanet
+
+
+
+// ===================================================================
+
+var defineProperty = Object.defineProperty
+
+// -------------------------------------------------------------------
+
+var captureStackTrace = Error.captureStackTrace
+if (!captureStackTrace) {
+  captureStackTrace = function captureStackTrace (error) {
+    var container = new Error()
+
+    defineProperty(error, 'stack', {
+      configurable: true,
+      get: function getStack () {
+        var stack = container.stack
+
+        // Replace property with value for faster future accesses.
+        defineProperty(this, 'stack', {
+          value: stack
+        })
+
+        return stack
+      },
+      set: function setStack (stack) {
+        defineProperty(error, 'stack', {
+          configurable: true,
+          value: stack,
+          writable: true
+        })
+      }
+    })
+  }
+}
+
+// -------------------------------------------------------------------
+
+function BaseError (message) {
+  if (message) {
+    defineProperty(this, 'message', {
+      configurable: true,
+      value: message,
+      writable: true
+    })
+  }
+
+  var cname = this.constructor.name
+  if (
+    cname &&
+    cname !== this.name
+  ) {
+    defineProperty(this, 'name', {
+      configurable: true,
+      value: cname,
+      writable: true
+    })
+  }
+
+  captureStackTrace(this, this.constructor)
+}
+
+BaseError.prototype = Object.create(Error.prototype, {
+  // See: https://github.com/JsCommunity/make-error/issues/4
+  constructor: {
+    configurable: true,
+    value: BaseError,
+    writable: true
+  }
+})
+
+// -------------------------------------------------------------------
+
+// Sets the name of a function if possible (depends of the JS engine).
+var setFunctionName = (function () {
+  function setFunctionName (fn, name) {
+    return defineProperty(fn, 'name', {
+      configurable: true,
+      value: name
+    })
+  }
+  try {
+    var f = function () {}
+    setFunctionName(f, 'foo')
+    if (f.name === 'foo') {
+      return setFunctionName
+    }
+  } catch (_) {}
+})()
+
+// -------------------------------------------------------------------
+
+function makeError (constructor, super_) {
+  if (super_ == null || super_ === Error) {
+    super_ = BaseError
+  } else if (typeof super_ !== 'function') {
+    throw new TypeError('super_ should be a function')
+  }
+
+  var name
+  if (typeof constructor === 'string') {
+    name = constructor
+    constructor = function () { super_.apply(this, arguments) }
+
+    // If the name can be set, do it once and for all.
+    if (setFunctionName) {
+      setFunctionName(constructor, name)
+      name = null
+    }
+  } else if (typeof constructor !== 'function') {
+    throw new TypeError('constructor should be either a string or a function')
+  }
+
+  // Also register the super constructor also as `constructor.super_` just
+  // like Node's `util.inherits()`.
+  constructor.super_ = constructor['super'] = super_
+
+  var properties = {
+    constructor: {
+      configurable: true,
+      value: constructor,
+      writable: true
+    }
+  }
+
+  // If the name could not be set on the constructor, set it on the
+  // prototype.
+  if (name != null) {
+    properties.name = {
+      configurable: true,
+      value: name,
+      writable: true
+    }
+  }
+  constructor.prototype = Object.create(super_.prototype, properties)
+
+  return constructor
+}
+exports = module.exports = makeError
+exports.BaseError = BaseError
+
+
+/***/ }),
+/* 62 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/*
+ This is the implementation of the JSON OT type.
+
+ Spec is here: https://github.com/josephg/ShareJS/wiki/JSON-Operations
+
+ Note: This is being made obsolete. It will soon be replaced by the JSON2 type.
+*/
+
+/**
+ * UTILITY FUNCTIONS
+ */
+
+/**
+ * Checks if the passed object is an Array instance. Can't use Array.isArray
+ * yet because its not supported on IE8.
+ *
+ * @param obj
+ * @returns {boolean}
+ */
+var isArray = function(obj) {
+  return Object.prototype.toString.call(obj) == '[object Array]';
+};
+
+/**
+ * Checks if the passed object is an Object instance.
+ * No function call (fast) version
+ *
+ * @param obj
+ * @returns {boolean}
+ */
+var isObject = function(obj) {
+  return (!!obj) && (obj.constructor === Object);
+};
+
+/**
+ * Clones the passed object using JSON serialization (which is slow).
+ *
+ * hax, copied from test/types/json. Apparently this is still the fastest way
+ * to deep clone an object, assuming we have browser support for JSON.  @see
+ * http://jsperf.com/cloning-an-object/12
+ */
+var clone = function(o) {
+  return JSON.parse(JSON.stringify(o));
+};
+
+/**
+ * JSON OT Type
+ * @type {*}
+ */
+var json = {
+  name: 'json0',
+  uri: 'http://sharejs.org/types/JSONv0'
+};
+
+// You can register another OT type as a subtype in a JSON document using
+// the following function. This allows another type to handle certain
+// operations instead of the builtin JSON type.
+var subtypes = {};
+json.registerSubtype = function(subtype) {
+  subtypes[subtype.name] = subtype;
+};
+
+json.create = function(data) {
+  // Null instead of undefined if you don't pass an argument.
+  return data === undefined ? null : clone(data);
+};
+
+json.invertComponent = function(c) {
+  var c_ = {p: c.p};
+
+  // handle subtype ops
+  if (c.t && subtypes[c.t]) {
+    c_.t = c.t;
+    c_.o = subtypes[c.t].invert(c.o);
+  }
+
+  if (c.si !== void 0) c_.sd = c.si;
+  if (c.sd !== void 0) c_.si = c.sd;
+  if (c.oi !== void 0) c_.od = c.oi;
+  if (c.od !== void 0) c_.oi = c.od;
+  if (c.li !== void 0) c_.ld = c.li;
+  if (c.ld !== void 0) c_.li = c.ld;
+  if (c.na !== void 0) c_.na = -c.na;
+
+  if (c.lm !== void 0) {
+    c_.lm = c.p[c.p.length-1];
+    c_.p = c.p.slice(0,c.p.length-1).concat([c.lm]);
+  }
+
+  return c_;
+};
+
+json.invert = function(op) {
+  var op_ = op.slice().reverse();
+  var iop = [];
+  for (var i = 0; i < op_.length; i++) {
+    iop.push(json.invertComponent(op_[i]));
+  }
+  return iop;
+};
+
+json.checkValidOp = function(op) {
+  for (var i = 0; i < op.length; i++) {
+    if (!isArray(op[i].p)) throw new Error('Missing path');
+  }
+};
+
+json.checkList = function(elem) {
+  if (!isArray(elem))
+    throw new Error('Referenced element not a list');
+};
+
+json.checkObj = function(elem) {
+  if (!isObject(elem)) {
+    throw new Error("Referenced element not an object (it was " + JSON.stringify(elem) + ")");
+  }
+};
+
+// helper functions to convert old string ops to and from subtype ops
+function convertFromText(c) {
+  c.t = 'text0';
+  var o = {p: c.p.pop()};
+  if (c.si != null) o.i = c.si;
+  if (c.sd != null) o.d = c.sd;
+  c.o = [o];
+}
+
+function convertToText(c) {
+  c.p.push(c.o[0].p);
+  if (c.o[0].i != null) c.si = c.o[0].i;
+  if (c.o[0].d != null) c.sd = c.o[0].d;
+  delete c.t;
+  delete c.o;
+}
+
+json.apply = function(snapshot, op) {
+  json.checkValidOp(op);
+
+  op = clone(op);
+
+  var container = {
+    data: snapshot
+  };
+
+  for (var i = 0; i < op.length; i++) {
+    var c = op[i];
+
+    // convert old string ops to use subtype for backwards compatibility
+    if (c.si != null || c.sd != null)
+      convertFromText(c);
+
+    var parent = null;
+    var parentKey = null;
+    var elem = container;
+    var key = 'data';
+
+    for (var j = 0; j < c.p.length; j++) {
+      var p = c.p[j];
+
+      parent = elem;
+      parentKey = key;
+      elem = elem[key];
+      key = p;
+
+      if (parent == null)
+        throw new Error('Path invalid');
+    }
+
+    // handle subtype ops
+    if (c.t && c.o !== void 0 && subtypes[c.t]) {
+      elem[key] = subtypes[c.t].apply(elem[key], c.o);
+
+    // Number add
+    } else if (c.na !== void 0) {
+      if (typeof elem[key] != 'number')
+        throw new Error('Referenced element not a number');
+
+      elem[key] += c.na;
+    }
+
+    // List replace
+    else if (c.li !== void 0 && c.ld !== void 0) {
+      json.checkList(elem);
+      // Should check the list element matches c.ld
+      elem[key] = c.li;
+    }
+
+    // List insert
+    else if (c.li !== void 0) {
+      json.checkList(elem);
+      elem.splice(key,0, c.li);
+    }
+
+    // List delete
+    else if (c.ld !== void 0) {
+      json.checkList(elem);
+      // Should check the list element matches c.ld here too.
+      elem.splice(key,1);
+    }
+
+    // List move
+    else if (c.lm !== void 0) {
+      json.checkList(elem);
+      if (c.lm != key) {
+        var e = elem[key];
+        // Remove it...
+        elem.splice(key,1);
+        // And insert it back.
+        elem.splice(c.lm,0,e);
+      }
+    }
+
+    // Object insert / replace
+    else if (c.oi !== void 0) {
+      json.checkObj(elem);
+
+      // Should check that elem[key] == c.od
+      elem[key] = c.oi;
+    }
+
+    // Object delete
+    else if (c.od !== void 0) {
+      json.checkObj(elem);
+
+      // Should check that elem[key] == c.od
+      delete elem[key];
+    }
+
+    else {
+      throw new Error('invalid / missing instruction in op');
+    }
+  }
+
+  return container.data;
+};
+
+// Helper to break an operation up into a bunch of small ops.
+json.shatter = function(op) {
+  var results = [];
+  for (var i = 0; i < op.length; i++) {
+    results.push([op[i]]);
+  }
+  return results;
+};
+
+// Helper for incrementally applying an operation to a snapshot. Calls yield
+// after each op component has been applied.
+json.incrementalApply = function(snapshot, op, _yield) {
+  for (var i = 0; i < op.length; i++) {
+    var smallOp = [op[i]];
+    snapshot = json.apply(snapshot, smallOp);
+    // I'd just call this yield, but thats a reserved keyword. Bah!
+    _yield(smallOp, snapshot);
+  }
+
+  return snapshot;
+};
+
+// Checks if two paths, p1 and p2 match.
+var pathMatches = json.pathMatches = function(p1, p2, ignoreLast) {
+  if (p1.length != p2.length)
+    return false;
+
+  for (var i = 0; i < p1.length; i++) {
+    if (p1[i] !== p2[i] && (!ignoreLast || i !== p1.length - 1))
+      return false;
+  }
+
+  return true;
+};
+
+json.append = function(dest,c) {
+  c = clone(c);
+
+  if (dest.length === 0) {
+    dest.push(c);
+    return;
+  }
+
+  var last = dest[dest.length - 1];
+
+  // convert old string ops to use subtype for backwards compatibility
+  if ((c.si != null || c.sd != null) && (last.si != null || last.sd != null)) {
+    convertFromText(c);
+    convertFromText(last);
+  }
+
+  if (pathMatches(c.p, last.p)) {
+    // handle subtype ops
+    if (c.t && last.t && c.t === last.t && subtypes[c.t]) {
+      last.o = subtypes[c.t].compose(last.o, c.o);
+
+      // convert back to old string ops
+      if (c.si != null || c.sd != null) {
+        var p = c.p;
+        for (var i = 0; i < last.o.length - 1; i++) {
+          c.o = [last.o.pop()];
+          c.p = p.slice();
+          convertToText(c);
+          dest.push(c);
+        }
+
+        convertToText(last);
+      }
+    } else if (last.na != null && c.na != null) {
+      dest[dest.length - 1] = {p: last.p, na: last.na + c.na};
+    } else if (last.li !== undefined && c.li === undefined && c.ld === last.li) {
+      // insert immediately followed by delete becomes a noop.
+      if (last.ld !== undefined) {
+        // leave the delete part of the replace
+        delete last.li;
+      } else {
+        dest.pop();
+      }
+    } else if (last.od !== undefined && last.oi === undefined && c.oi !== undefined && c.od === undefined) {
+      last.oi = c.oi;
+    } else if (last.oi !== undefined && c.od !== undefined) {
+      // The last path component inserted something that the new component deletes (or replaces).
+      // Just merge them.
+      if (c.oi !== undefined) {
+        last.oi = c.oi;
+      } else if (last.od !== undefined) {
+        delete last.oi;
+      } else {
+        // An insert directly followed by a delete turns into a no-op and can be removed.
+        dest.pop();
+      }
+    } else if (c.lm !== undefined && c.p[c.p.length - 1] === c.lm) {
+      // don't do anything
+    } else {
+      dest.push(c);
+    }
+  } else {
+    // convert string ops back
+    if ((c.si != null || c.sd != null) && (last.si != null || last.sd != null)) {
+      convertToText(c);
+      convertToText(last);
+    }
+
+    dest.push(c);
+  }
+};
+
+json.compose = function(op1,op2) {
+  json.checkValidOp(op1);
+  json.checkValidOp(op2);
+
+  var newOp = clone(op1);
+
+  for (var i = 0; i < op2.length; i++) {
+    json.append(newOp,op2[i]);
+  }
+
+  return newOp;
+};
+
+json.normalize = function(op) {
+  var newOp = [];
+
+  op = isArray(op) ? op : [op];
+
+  for (var i = 0; i < op.length; i++) {
+    var c = op[i];
+    if (c.p == null) c.p = [];
+
+    json.append(newOp,c);
+  }
+
+  return newOp;
+};
+
+// Returns the common length of the paths of ops a and b
+json.commonLengthForOps = function(a, b) {
+  var alen = a.p.length;
+  var blen = b.p.length;
+  if (a.na != null || a.t)
+    alen++;
+
+  if (b.na != null || b.t)
+    blen++;
+
+  if (alen === 0) return -1;
+  if (blen === 0) return null;
+
+  alen--;
+  blen--;
+
+  for (var i = 0; i < alen; i++) {
+    var p = a.p[i];
+    if (i >= blen || p !== b.p[i])
+      return null;
+  }
+
+  return alen;
+};
+
+// Returns true if an op can affect the given path
+json.canOpAffectPath = function(op, path) {
+  return json.commonLengthForOps({p:path}, op) != null;
+};
+
+// transform c so it applies to a document with otherC applied.
+json.transformComponent = function(dest, c, otherC, type) {
+  c = clone(c);
+
+  var common = json.commonLengthForOps(otherC, c);
+  var common2 = json.commonLengthForOps(c, otherC);
+  var cplength = c.p.length;
+  var otherCplength = otherC.p.length;
+
+  if (c.na != null || c.t)
+    cplength++;
+
+  if (otherC.na != null || otherC.t)
+    otherCplength++;
+
+  // if c is deleting something, and that thing is changed by otherC, we need to
+  // update c to reflect that change for invertibility.
+  if (common2 != null && otherCplength > cplength && c.p[common2] == otherC.p[common2]) {
+    if (c.ld !== void 0) {
+      var oc = clone(otherC);
+      oc.p = oc.p.slice(cplength);
+      c.ld = json.apply(clone(c.ld),[oc]);
+    } else if (c.od !== void 0) {
+      var oc = clone(otherC);
+      oc.p = oc.p.slice(cplength);
+      c.od = json.apply(clone(c.od),[oc]);
+    }
+  }
+
+  if (common != null) {
+    var commonOperand = cplength == otherCplength;
+
+    // backward compatibility for old string ops
+    var oc = otherC;
+    if ((c.si != null || c.sd != null) && (otherC.si != null || otherC.sd != null)) {
+      convertFromText(c);
+      oc = clone(otherC);
+      convertFromText(oc);
+    }
+
+    // handle subtype ops
+    if (oc.t && subtypes[oc.t]) {
+      if (c.t && c.t === oc.t) {
+        var res = subtypes[c.t].transform(c.o, oc.o, type);
+
+        if (res.length > 0) {
+          // convert back to old string ops
+          if (c.si != null || c.sd != null) {
+            var p = c.p;
+            for (var i = 0; i < res.length; i++) {
+              c.o = [res[i]];
+              c.p = p.slice();
+              convertToText(c);
+              json.append(dest, c);
+            }
+          } else {
+            c.o = res;
+            json.append(dest, c);
+          }
+        }
+
+        return dest;
+      }
+    }
+
+    // transform based on otherC
+    else if (otherC.na !== void 0) {
+      // this case is handled below
+    } else if (otherC.li !== void 0 && otherC.ld !== void 0) {
+      if (otherC.p[common] === c.p[common]) {
+        // noop
+
+        if (!commonOperand) {
+          return dest;
+        } else if (c.ld !== void 0) {
+          // we're trying to delete the same element, -> noop
+          if (c.li !== void 0 && type === 'left') {
+            // we're both replacing one element with another. only one can survive
+            c.ld = clone(otherC.li);
+          } else {
+            return dest;
+          }
+        }
+      }
+    } else if (otherC.li !== void 0) {
+      if (c.li !== void 0 && c.ld === undefined && commonOperand && c.p[common] === otherC.p[common]) {
+        // in li vs. li, left wins.
+        if (type === 'right')
+          c.p[common]++;
+      } else if (otherC.p[common] <= c.p[common]) {
+        c.p[common]++;
+      }
+
+      if (c.lm !== void 0) {
+        if (commonOperand) {
+          // otherC edits the same list we edit
+          if (otherC.p[common] <= c.lm)
+            c.lm++;
+          // changing c.from is handled above.
+        }
+      }
+    } else if (otherC.ld !== void 0) {
+      if (c.lm !== void 0) {
+        if (commonOperand) {
+          if (otherC.p[common] === c.p[common]) {
+            // they deleted the thing we're trying to move
+            return dest;
+          }
+          // otherC edits the same list we edit
+          var p = otherC.p[common];
+          var from = c.p[common];
+          var to = c.lm;
+          if (p < to || (p === to && from < to))
+            c.lm--;
+
+        }
+      }
+
+      if (otherC.p[common] < c.p[common]) {
+        c.p[common]--;
+      } else if (otherC.p[common] === c.p[common]) {
+        if (otherCplength < cplength) {
+          // we're below the deleted element, so -> noop
+          return dest;
+        } else if (c.ld !== void 0) {
+          if (c.li !== void 0) {
+            // we're replacing, they're deleting. we become an insert.
+            delete c.ld;
+          } else {
+            // we're trying to delete the same element, -> noop
+            return dest;
+          }
+        }
+      }
+
+    } else if (otherC.lm !== void 0) {
+      if (c.lm !== void 0 && cplength === otherCplength) {
+        // lm vs lm, here we go!
+        var from = c.p[common];
+        var to = c.lm;
+        var otherFrom = otherC.p[common];
+        var otherTo = otherC.lm;
+        if (otherFrom !== otherTo) {
+          // if otherFrom == otherTo, we don't need to change our op.
+
+          // where did my thing go?
+          if (from === otherFrom) {
+            // they moved it! tie break.
+            if (type === 'left') {
+              c.p[common] = otherTo;
+              if (from === to) // ugh
+                c.lm = otherTo;
+            } else {
+              return dest;
+            }
+          } else {
+            // they moved around it
+            if (from > otherFrom) c.p[common]--;
+            if (from > otherTo) c.p[common]++;
+            else if (from === otherTo) {
+              if (otherFrom > otherTo) {
+                c.p[common]++;
+                if (from === to) // ugh, again
+                  c.lm++;
+              }
+            }
+
+            // step 2: where am i going to put it?
+            if (to > otherFrom) {
+              c.lm--;
+            } else if (to === otherFrom) {
+              if (to > from)
+                c.lm--;
+            }
+            if (to > otherTo) {
+              c.lm++;
+            } else if (to === otherTo) {
+              // if we're both moving in the same direction, tie break
+              if ((otherTo > otherFrom && to > from) ||
+                  (otherTo < otherFrom && to < from)) {
+                if (type === 'right') c.lm++;
+              } else {
+                if (to > from) c.lm++;
+                else if (to === otherFrom) c.lm--;
+              }
+            }
+          }
+        }
+      } else if (c.li !== void 0 && c.ld === undefined && commonOperand) {
+        // li
+        var from = otherC.p[common];
+        var to = otherC.lm;
+        p = c.p[common];
+        if (p > from) c.p[common]--;
+        if (p > to) c.p[common]++;
+      } else {
+        // ld, ld+li, si, sd, na, oi, od, oi+od, any li on an element beneath
+        // the lm
+        //
+        // i.e. things care about where their item is after the move.
+        var from = otherC.p[common];
+        var to = otherC.lm;
+        p = c.p[common];
+        if (p === from) {
+          c.p[common] = to;
+        } else {
+          if (p > from) c.p[common]--;
+          if (p > to) c.p[common]++;
+          else if (p === to && from > to) c.p[common]++;
+        }
+      }
+    }
+    else if (otherC.oi !== void 0 && otherC.od !== void 0) {
+      if (c.p[common] === otherC.p[common]) {
+        if (c.oi !== void 0 && commonOperand) {
+          // we inserted where someone else replaced
+          if (type === 'right') {
+            // left wins
+            return dest;
+          } else {
+            // we win, make our op replace what they inserted
+            c.od = otherC.oi;
+          }
+        } else {
+          // -> noop if the other component is deleting the same object (or any parent)
+          return dest;
+        }
+      }
+    } else if (otherC.oi !== void 0) {
+      if (c.oi !== void 0 && c.p[common] === otherC.p[common]) {
+        // left wins if we try to insert at the same place
+        if (type === 'left') {
+          json.append(dest,{p: c.p, od:otherC.oi});
+        } else {
+          return dest;
+        }
+      }
+    } else if (otherC.od !== void 0) {
+      if (c.p[common] == otherC.p[common]) {
+        if (!commonOperand)
+          return dest;
+        if (c.oi !== void 0) {
+          delete c.od;
+        } else {
+          return dest;
+        }
+      }
+    }
+  }
+
+  json.append(dest,c);
+  return dest;
+};
+
+__webpack_require__(26)(json, json.transformComponent, json.checkValidOp, json.append);
+
+/**
+ * Register a subtype for string operations, using the text0 type.
+ */
+var text = __webpack_require__(63);
+
+json.registerSubtype(text);
+module.exports = json;
+
+
+/***/ }),
+/* 63 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// DEPRECATED!
+//
+// This type works, but is not exported. Its included here because the JSON0
+// embedded string operations use this library.
+
+
+// A simple text implementation
+//
+// Operations are lists of components. Each component either inserts or deletes
+// at a specified position in the document.
+//
+// Components are either:
+//  {i:'str', p:100}: Insert 'str' at position 100 in the document
+//  {d:'str', p:100}: Delete 'str' at position 100 in the document
+//
+// Components in an operation are executed sequentially, so the position of components
+// assumes previous components have already executed.
+//
+// Eg: This op:
+//   [{i:'abc', p:0}]
+// is equivalent to this op:
+//   [{i:'a', p:0}, {i:'b', p:1}, {i:'c', p:2}]
+
+var text = module.exports = {
+  name: 'text0',
+  uri: 'http://sharejs.org/types/textv0',
+  create: function(initial) {
+    if ((initial != null) && typeof initial !== 'string') {
+      throw new Error('Initial data must be a string');
+    }
+    return initial || '';
+  }
+};
+
+/** Insert s2 into s1 at pos. */
+var strInject = function(s1, pos, s2) {
+  return s1.slice(0, pos) + s2 + s1.slice(pos);
+};
+
+/** Check that an operation component is valid. Throws if its invalid. */
+var checkValidComponent = function(c) {
+  if (typeof c.p !== 'number')
+    throw new Error('component missing position field');
+
+  if ((typeof c.i === 'string') === (typeof c.d === 'string'))
+    throw new Error('component needs an i or d field');
+
+  if (c.p < 0)
+    throw new Error('position cannot be negative');
+};
+
+/** Check that an operation is valid */
+var checkValidOp = function(op) {
+  for (var i = 0; i < op.length; i++) {
+    checkValidComponent(op[i]);
+  }
+};
+
+/** Apply op to snapshot */
+text.apply = function(snapshot, op) {
+  var deleted;
+
+  checkValidOp(op);
+  for (var i = 0; i < op.length; i++) {
+    var component = op[i];
+    if (component.i != null) {
+      snapshot = strInject(snapshot, component.p, component.i);
+    } else {
+      deleted = snapshot.slice(component.p, component.p + component.d.length);
+      if (component.d !== deleted)
+        throw new Error("Delete component '" + component.d + "' does not match deleted text '" + deleted + "'");
+
+      snapshot = snapshot.slice(0, component.p) + snapshot.slice(component.p + component.d.length);
+    }
+  }
+  return snapshot;
+};
+
+/**
+ * Append a component to the end of newOp. Exported for use by the random op
+ * generator and the JSON0 type.
+ */
+var append = text._append = function(newOp, c) {
+  if (c.i === '' || c.d === '') return;
+
+  if (newOp.length === 0) {
+    newOp.push(c);
+  } else {
+    var last = newOp[newOp.length - 1];
+
+    if (last.i != null && c.i != null && last.p <= c.p && c.p <= last.p + last.i.length) {
+      // Compose the insert into the previous insert
+      newOp[newOp.length - 1] = {i:strInject(last.i, c.p - last.p, c.i), p:last.p};
+
+    } else if (last.d != null && c.d != null && c.p <= last.p && last.p <= c.p + c.d.length) {
+      // Compose the deletes together
+      newOp[newOp.length - 1] = {d:strInject(c.d, last.p - c.p, last.d), p:c.p};
+
+    } else {
+      newOp.push(c);
+    }
+  }
+};
+
+/** Compose op1 and op2 together */
+text.compose = function(op1, op2) {
+  checkValidOp(op1);
+  checkValidOp(op2);
+  var newOp = op1.slice();
+  for (var i = 0; i < op2.length; i++) {
+    append(newOp, op2[i]);
+  }
+  return newOp;
+};
+
+/** Clean up an op */
+text.normalize = function(op) {
+  var newOp = [];
+
+  // Normalize should allow ops which are a single (unwrapped) component:
+  // {i:'asdf', p:23}.
+  // There's no good way to test if something is an array:
+  // http://perfectionkills.com/instanceof-considered-harmful-or-how-to-write-a-robust-isarray/
+  // so this is probably the least bad solution.
+  if (op.i != null || op.p != null) op = [op];
+
+  for (var i = 0; i < op.length; i++) {
+    var c = op[i];
+    if (c.p == null) c.p = 0;
+
+    append(newOp, c);
+  }
+
+  return newOp;
+};
+
+// This helper method transforms a position by an op component.
+//
+// If c is an insert, insertAfter specifies whether the transform
+// is pushed after the insert (true) or before it (false).
+//
+// insertAfter is optional for deletes.
+var transformPosition = function(pos, c, insertAfter) {
+  // This will get collapsed into a giant ternary by uglify.
+  if (c.i != null) {
+    if (c.p < pos || (c.p === pos && insertAfter)) {
+      return pos + c.i.length;
+    } else {
+      return pos;
+    }
+  } else {
+    // I think this could also be written as: Math.min(c.p, Math.min(c.p -
+    // otherC.p, otherC.d.length)) but I think its harder to read that way, and
+    // it compiles using ternary operators anyway so its no slower written like
+    // this.
+    if (pos <= c.p) {
+      return pos;
+    } else if (pos <= c.p + c.d.length) {
+      return c.p;
+    } else {
+      return pos - c.d.length;
+    }
+  }
+};
+
+// Helper method to transform a cursor position as a result of an op.
+//
+// Like transformPosition above, if c is an insert, insertAfter specifies
+// whether the cursor position is pushed after an insert (true) or before it
+// (false).
+text.transformCursor = function(position, op, side) {
+  var insertAfter = side === 'right';
+  for (var i = 0; i < op.length; i++) {
+    position = transformPosition(position, op[i], insertAfter);
+  }
+
+  return position;
+};
+
+// Transform an op component by another op component. Asymmetric.
+// The result will be appended to destination.
+//
+// exported for use in JSON type
+var transformComponent = text._tc = function(dest, c, otherC, side) {
+  //var cIntersect, intersectEnd, intersectStart, newC, otherIntersect, s;
+
+  checkValidComponent(c);
+  checkValidComponent(otherC);
+
+  if (c.i != null) {
+    // Insert.
+    append(dest, {i:c.i, p:transformPosition(c.p, otherC, side === 'right')});
+  } else {
+    // Delete
+    if (otherC.i != null) {
+      // Delete vs insert
+      var s = c.d;
+      if (c.p < otherC.p) {
+        append(dest, {d:s.slice(0, otherC.p - c.p), p:c.p});
+        s = s.slice(otherC.p - c.p);
+      }
+      if (s !== '')
+        append(dest, {d: s, p: c.p + otherC.i.length});
+
+    } else {
+      // Delete vs delete
+      if (c.p >= otherC.p + otherC.d.length)
+        append(dest, {d: c.d, p: c.p - otherC.d.length});
+      else if (c.p + c.d.length <= otherC.p)
+        append(dest, c);
+      else {
+        // They overlap somewhere.
+        var newC = {d: '', p: c.p};
+
+        if (c.p < otherC.p)
+          newC.d = c.d.slice(0, otherC.p - c.p);
+
+        if (c.p + c.d.length > otherC.p + otherC.d.length)
+          newC.d += c.d.slice(otherC.p + otherC.d.length - c.p);
+
+        // This is entirely optional - I'm just checking the deleted text in
+        // the two ops matches
+        var intersectStart = Math.max(c.p, otherC.p);
+        var intersectEnd = Math.min(c.p + c.d.length, otherC.p + otherC.d.length);
+        var cIntersect = c.d.slice(intersectStart - c.p, intersectEnd - c.p);
+        var otherIntersect = otherC.d.slice(intersectStart - otherC.p, intersectEnd - otherC.p);
+        if (cIntersect !== otherIntersect)
+          throw new Error('Delete ops delete different text in the same region of the document');
+
+        if (newC.d !== '') {
+          newC.p = transformPosition(newC.p, otherC);
+          append(dest, newC);
+        }
+      }
+    }
+  }
+
+  return dest;
+};
+
+var invertComponent = function(c) {
+  return (c.i != null) ? {d:c.i, p:c.p} : {i:c.d, p:c.p};
+};
+
+// No need to use append for invert, because the components won't be able to
+// cancel one another.
+text.invert = function(op) {
+  // Shallow copy & reverse that sucka.
+  op = op.slice().reverse();
+  for (var i = 0; i < op.length; i++) {
+    op[i] = invertComponent(op[i]);
+  }
+  return op;
+};
+
+__webpack_require__(26)(text, transformComponent, checkValidOp, append);
+
+
+/***/ }),
+/* 64 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var Backend = __webpack_require__(65);
+module.exports = Backend;
+
+Backend.Agent = __webpack_require__(29);
+Backend.Backend = Backend;
+Backend.DB = __webpack_require__(31);
+Backend.Error = __webpack_require__(2);
+Backend.MemoryDB = __webpack_require__(30);
+Backend.MemoryPubSub = __webpack_require__(32);
+Backend.ot = __webpack_require__(15);
+Backend.projections = __webpack_require__(16);
+Backend.PubSub = __webpack_require__(33);
+Backend.QueryEmitter = __webpack_require__(36);
+Backend.SubmitRequest = __webpack_require__(37);
+Backend.types = __webpack_require__(3);
+
+
+/***/ }),
+/* 65 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var async = __webpack_require__(28);
+var Agent = __webpack_require__(29);
+var Connection = __webpack_require__(23);
+var emitter = __webpack_require__(9);
+var MemoryDB = __webpack_require__(30);
+var MemoryPubSub = __webpack_require__(32);
+var ot = __webpack_require__(15);
+var projections = __webpack_require__(16);
+var QueryEmitter = __webpack_require__(36);
+var StreamSocket = __webpack_require__(70);
+var SubmitRequest = __webpack_require__(37);
+
+function Backend(options) {
+  if (!(this instanceof Backend)) return new Backend(options);
+  emitter.EventEmitter.call(this);
+
+  if (!options) options = {};
+  this.db = options.db || new MemoryDB();
+  this.pubsub = options.pubsub || new MemoryPubSub();
+  // This contains any extra databases that can be queried
+  this.extraDbs = options.extraDbs || {};
+
+  // Map from projected collection -> {type, fields}
+  this.projections = {};
+
+  this.suppressPublish = !!options.suppressPublish;
+  this.maxSubmitRetries = options.maxSubmitRetries || null;
+
+  // Map from event name to a list of middleware
+  this.middleware = {};
+
+  // The number of open agents for monitoring and testing memory leaks
+  this.agentsCount = 0;
+  this.remoteAgentsCount = 0;
+}
+module.exports = Backend;
+emitter.mixin(Backend);
+
+Backend.prototype.close = function(callback) {
+  var wait = 3;
+  var backend = this;
+  function finish(err) {
+    if (err) {
+      if (callback) return callback(err);
+      return backend.emit('error', err);
+    }
+    if (--wait) return;
+    if (callback) callback();
+  }
+  this.pubsub.close(finish);
+  this.db.close(finish);
+  for (var name in this.extraDbs) {
+    wait++;
+    this.extraDbs[name].close(finish);
+  }
+  finish();
+};
+
+Backend.prototype.connect = function(connection, req) {
+  var socket = new StreamSocket();
+  if (connection) {
+    connection.bindToSocket(socket);
+  } else {
+    connection = new Connection(socket);
+  }
+  socket._open();
+  var agent = this.listen(socket.stream, req);
+  // Store a reference to the agent on the connection for convenience. This is
+  // not used internal to ShareDB, but it is handy for server-side only user
+  // code that may cache state on the agent and read it in middleware
+  connection.agent = agent;
+  return connection;
+};
+
+/** A client has connected through the specified stream. Listen for messages.
+ *
+ * The optional second argument (req) is an initial request which is passed
+ * through to any connect() middleware. This is useful for inspecting cookies
+ * or an express session or whatever on the request object in your middleware.
+ *
+ * (The agent is available through all middleware)
+ */
+Backend.prototype.listen = function(stream, req) {
+  var agent = new Agent(this, stream);
+  this.trigger('connect', agent, {stream: stream, req: req}, function(err) {
+    if (err) return agent.close(err);
+    agent._open();
+  });
+  return agent;
+};
+
+Backend.prototype.addProjection = function(name, collection, fields) {
+  if (this.projections[name]) {
+    throw new Error('Projection ' + name + ' already exists');
+  }
+
+  for (var key in fields) {
+    if (fields[key] !== true) {
+      throw new Error('Invalid field ' + key + ' - fields must be {somekey: true}. Subfields not currently supported.');
+    }
+  }
+
+  this.projections[name] = {
+    target: collection,
+    fields: fields
+  };
+};
+
+/**
+ * Add middleware to an action or array of actions
+ */
+Backend.prototype.use = function(action, fn) {
+  if (Array.isArray(action)) {
+    for (var i = 0; i < action.length; i++) {
+      this.use(action[i], fn);
+    }
+    return;
+  }
+  var fns = this.middleware[action] || (this.middleware[action] = []);
+  fns.push(fn);
+  return this;
+};
+
+/**
+ * Passes request through the middleware stack
+ *
+ * Middleware may modify the request object. After all middleware have been
+ * invoked we call `callback` with `null` and the modified request. If one of
+ * the middleware resturns an error the callback is called with that error.
+ */
+Backend.prototype.trigger = function(action, agent, request, callback) {
+  request.action = action;
+  request.agent = agent;
+  request.backend = this;
+
+  var fns = this.middleware[action];
+  if (!fns) return callback();
+
+  // Copying the triggers we'll fire so they don't get edited while we iterate.
+  fns = fns.slice();
+  var next = function(err) {
+    if (err) return callback(err);
+    var fn = fns.shift();
+    if (!fn) return callback();
+    fn(request, next);
+  };
+  next();
+};
+
+// Submit an operation on the named collection/docname. op should contain a
+// {op:}, {create:} or {del:} field. It should probably contain a v: field (if
+// it doesn't, it defaults to the current version).
+Backend.prototype.submit = function(agent, index, id, op, options, callback) {
+  var err = ot.checkOp(op);
+  if (err) return callback(err);
+  var request = new SubmitRequest(this, agent, index, id, op, options);
+  var backend = this;
+  backend.trigger('submit', agent, request, function(err) {
+    if (err) return callback(err);
+    request.submit(function(err) {
+      if (err) return callback(err);
+      backend.trigger('after submit', agent, request, function(err) {
+        if (err) return callback(err);
+        backend._sanitizeOps(agent, request.projection, request.collection, id, request.ops, function(err) {
+          if (err) return callback(err);
+          backend.emit('timing', 'submit.total', Date.now() - request.start, request);
+          callback(err, request.ops);
+        });
+      });
+    });
+  });
+};
+
+Backend.prototype._sanitizeOp = function(agent, projection, collection, id, op, callback) {
+  if (projection) {
+    try {
+      projections.projectOp(projection.fields, op);
+    } catch (err) {
+      return callback(err);
+    }
+  }
+  this.trigger('op', agent, {collection: collection, id: id, op: op}, callback);
+};
+Backend.prototype._sanitizeOps = function(agent, projection, collection, id, ops, callback) {
+  var backend = this;
+  async.each(ops, function(op, eachCb) {
+    backend._sanitizeOp(agent, projection, collection, id, op, eachCb);
+  }, callback);
+};
+Backend.prototype._sanitizeOpsBulk = function(agent, projection, collection, opsMap, callback) {
+  var backend = this;
+  async.forEachOf(opsMap, function(ops, id, eachCb) {
+    backend._sanitizeOps(agent, projection, collection, id, ops, eachCb);
+  }, callback);
+};
+
+Backend.prototype._sanitizeSnapshot = function(agent, projection, collection, id, snapshot, callback) {
+  if (projection) {
+    try {
+      projections.projectSnapshot(projection.fields, snapshot);
+    } catch (err) {
+      return callback(err);
+    }
+  }
+  this.trigger('doc', agent, {collection: collection, id: id, snapshot: snapshot}, callback);
+};
+Backend.prototype._sanitizeSnapshots = function(agent, projection, collection, snapshots, callback) {
+  var backend = this;
+  async.each(snapshots, function(snapshot, eachCb) {
+    backend._sanitizeSnapshot(agent, projection, collection, snapshot.id, snapshot, eachCb);
+  }, callback);
+};
+Backend.prototype._sanitizeSnapshotBulk = function(agent, projection, collection, snapshotMap, callback) {
+  var backend = this;
+  async.forEachOf(snapshotMap, function(snapshot, id, eachCb) {
+    backend._sanitizeSnapshot(agent, projection, collection, id, snapshot, eachCb);
+  }, callback);
+};
+
+Backend.prototype._getSnapshotProjection = function(db, projection) {
+  return (db.projectsSnapshots) ? null : projection;
+};
+
+// Non inclusive - gets ops from [from, to). Ie, all relevant ops. If to is
+// not defined (null or undefined) then it returns all ops.
+Backend.prototype.getOps = function(agent, index, id, from, to, callback) {
+  var start = Date.now();
+  var projection = this.projections[index];
+  var collection = (projection) ? projection.target : index;
+  var backend = this;
+  var request = {
+    agent: agent,
+    index: index,
+    collection: collection,
+    id: id,
+    from: from,
+    to: to
+  };
+  backend.db.getOps(collection, id, from, to, null, function(err, ops) {
+    if (err) return callback(err);
+    backend._sanitizeOps(agent, projection, collection, id, ops, function(err) {
+      if (err) return callback(err);
+      backend.emit('timing', 'getOps', Date.now() - start, request);
+      callback(err, ops);
+    });
+  });
+};
+
+Backend.prototype.getOpsBulk = function(agent, index, fromMap, toMap, callback) {
+  var start = Date.now();
+  var projection = this.projections[index];
+  var collection = (projection) ? projection.target : index;
+  var backend = this;
+  var request = {
+    agent: agent,
+    index: index,
+    collection: collection,
+    fromMap: fromMap,
+    toMap: toMap
+  };
+  backend.db.getOpsBulk(collection, fromMap, toMap, null, function(err, opsMap) {
+    if (err) return callback(err);
+    backend._sanitizeOpsBulk(agent, projection, collection, opsMap, function(err) {
+      if (err) return callback(err);
+      backend.emit('timing', 'getOpsBulk', Date.now() - start, request);
+      callback(err, opsMap);
+    });
+  });
+};
+
+Backend.prototype.fetch = function(agent, index, id, callback) {
+  var start = Date.now();
+  var projection = this.projections[index];
+  var collection = (projection) ? projection.target : index;
+  var fields = projection && projection.fields;
+  var backend = this;
+  var request = {
+    agent: agent,
+    index: index,
+    collection: collection,
+    id: id
+  };
+  backend.db.getSnapshot(collection, id, fields, null, function(err, snapshot) {
+    if (err) return callback(err);
+    var snapshotProjection = backend._getSnapshotProjection(backend.db, projection);
+    backend._sanitizeSnapshot(agent, snapshotProjection, collection, id, snapshot, function(err) {
+      if (err) return callback(err);
+      backend.emit('timing', 'fetch', Date.now() - start, request);
+      callback(null, snapshot);
+    });
+  });
+};
+
+Backend.prototype.fetchBulk = function(agent, index, ids, callback) {
+  var start = Date.now();
+  var projection = this.projections[index];
+  var collection = (projection) ? projection.target : index;
+  var fields = projection && projection.fields;
+  var backend = this;
+  var request = {
+    agent: agent,
+    index: index,
+    collection: collection,
+    ids: ids
+  };
+  backend.db.getSnapshotBulk(collection, ids, fields, null, function(err, snapshotMap) {
+    if (err) return callback(err);
+    var snapshotProjection = backend._getSnapshotProjection(backend.db, projection);
+    backend._sanitizeSnapshotBulk(agent, snapshotProjection, collection, snapshotMap, function(err) {
+      if (err) return callback(err);
+      backend.emit('timing', 'fetchBulk', Date.now() - start, request);
+      callback(null, snapshotMap);
+    });
+  });
+};
+
+// Subscribe to the document from the specified version or null version
+Backend.prototype.subscribe = function(agent, index, id, version, callback) {
+  var start = Date.now();
+  var projection = this.projections[index];
+  var collection = (projection) ? projection.target : index;
+  var channel = this.getDocChannel(collection, id);
+  var backend = this;
+  var request = {
+    agent: agent,
+    index: index,
+    collection: collection,
+    id: id,
+    version: version
+  };
+  backend.pubsub.subscribe(channel, function(err, stream) {
+    if (err) return callback(err);
+    stream.initProjection(backend, agent, projection);
+    if (version == null) {
+      // Subscribing from null means that the agent doesn't have a document
+      // and needs to fetch it as well as subscribing
+      backend.fetch(agent, index, id, function(err, snapshot) {
+        if (err) return callback(err);
+        backend.emit('timing', 'subscribe.snapshot', Date.now() - start, request);
+        callback(null, stream, snapshot);
+      });
+    } else {
+      backend.db.getOps(collection, id, version, null, null, function(err, ops) {
+        if (err) return callback(err);
+        stream.pushOps(collection, id, ops);
+        backend.emit('timing', 'subscribe.ops', Date.now() - start, request);
+        callback(null, stream);
+      });
+    }
+  });
+};
+
+Backend.prototype.subscribeBulk = function(agent, index, versions, callback) {
+  var start = Date.now();
+  var projection = this.projections[index];
+  var collection = (projection) ? projection.target : index;
+  var backend = this;
+  var streams = {};
+  var doFetch = Array.isArray(versions);
+  var ids = (doFetch) ? versions : Object.keys(versions);
+  var request = {
+    agent: agent,
+    index: index,
+    collection: collection,
+    versions: versions
+  };
+  async.each(ids, function(id, eachCb) {
+    var channel = backend.getDocChannel(collection, id);
+    backend.pubsub.subscribe(channel, function(err, stream) {
+      if (err) return eachCb(err);
+      stream.initProjection(backend, agent, projection);
+      streams[id] = stream;
+      eachCb();
+    });
+  }, function(err) {
+    if (err) {
+      destroyStreams(streams);
+      return callback(err);
+    }
+    if (doFetch) {
+      // If an array of ids, get current snapshots
+      backend.fetchBulk(agent, index, ids, function(err, snapshotMap) {
+        if (err) {
+          destroyStreams(streams);
+          return callback(err);
+        }
+        backend.emit('timing', 'subscribeBulk.snapshot', Date.now() - start, request);
+        callback(null, streams, snapshotMap);
+      });
+    } else {
+      // If a versions map, get ops since requested versions
+      backend.db.getOpsBulk(collection, versions, null, null, function(err, opsMap) {
+        if (err) {
+          destroyStreams(streams);
+          return callback(err);
+        }
+        for (var id in opsMap) {
+          var ops = opsMap[id];
+          streams[id].pushOps(collection, id, ops);
+        }
+        backend.emit('timing', 'subscribeBulk.ops', Date.now() - start, request);
+        callback(null, streams);
+      });
+    }
+  });
+};
+function destroyStreams(streams) {
+  for (var id in streams) {
+    streams[id].destroy();
+  }
+}
+
+Backend.prototype.queryFetch = function(agent, index, query, options, callback) {
+  var start = Date.now();
+  var backend = this;
+  backend._triggerQuery(agent, index, query, options, function(err, request) {
+    if (err) return callback(err);
+    backend._query(agent, request, function(err, snapshots, extra) {
+      if (err) return callback(err);
+      backend.emit('timing', 'queryFetch', Date.now() - start, request);
+      callback(null, snapshots, extra);
+    });
+  });
+};
+
+// Options can contain:
+// db: The name of the DB (if the DB is specified in the otherDbs when the backend instance is created)
+// skipPoll: function(collection, id, op, query) {return true or false; }
+//  this is a syncronous function which can be used as an early filter for
+//  operations going through the system to reduce the load on the DB.
+// pollDebounce: Minimum delay between subsequent database polls. This is
+//  used to batch updates to reduce load on the database at the expense of
+//  liveness
+Backend.prototype.querySubscribe = function(agent, index, query, options, callback) {
+  var start = Date.now();
+  var backend = this;
+  backend._triggerQuery(agent, index, query, options, function(err, request) {
+    if (err) return callback(err);
+    if (request.db.disableSubscribe) {
+      return callback({code: 4002, message: 'DB does not support subscribe'});
+    }
+    backend.pubsub.subscribe(request.channel, function(err, stream) {
+      if (err) return callback(err);
+      stream.initProjection(backend, agent, request.projection);
+      if (options.ids) {
+        var queryEmitter = new QueryEmitter(request, stream, options.ids);
+        backend.emit('timing', 'querySubscribe.reconnect', Date.now() - start, request);
+        callback(null, queryEmitter);
+        return;
+      }
+      // Issue query on db to get our initial results
+      backend._query(agent, request, function(err, snapshots, extra) {
+        if (err) {
+          stream.destroy();
+          return callback(err);
+        }
+        var ids = pluckIds(snapshots);
+        var queryEmitter = new QueryEmitter(request, stream, ids, extra);
+        backend.emit('timing', 'querySubscribe.initial', Date.now() - start, request);
+        callback(null, queryEmitter, snapshots, extra);
+      });
+    });
+  });
+};
+
+Backend.prototype._triggerQuery = function(agent, index, query, options, callback) {
+  var projection = this.projections[index];
+  var collection = (projection) ? projection.target : index;
+  var fields = projection && projection.fields;
+  var request = {
+    index: index,
+    collection: collection,
+    projection: projection,
+    fields: fields,
+    channel: this.getCollectionChannel(collection),
+    query: query,
+    options: options,
+    db: null,
+    snapshotProjection: null,
+  };
+  var backend = this;
+  backend.trigger('query', agent, request, function(err) {
+    if (err) return callback(err);
+    // Set the DB reference for the request after the middleware trigger so
+    // that the db option can be changed in middleware
+    request.db = (options.db) ? backend.extraDbs[options.db] : backend.db;
+    if (!request.db) return callback({code: 4003, message: 'DB not found'});
+    request.snapshotProjection = backend._getSnapshotProjection(request.db, projection);
+    callback(null, request);
+  });
+};
+
+Backend.prototype._query = function(agent, request, callback) {
+  var backend = this;
+  request.db.query(request.collection, request.query, request.fields, request.options, function(err, snapshots, extra) {
+    if (err) return callback(err);
+    backend._sanitizeSnapshots(agent, request.snapshotProjection, request.collection, snapshots, function(err) {
+      callback(err, snapshots, extra);
+    });
+  });
+};
+
+Backend.prototype.getCollectionChannel = function(collection) {
+  return collection;
+};
+
+Backend.prototype.getDocChannel = function(collection, id) {
+  return collection + '.' + id;
+};
+
+Backend.prototype.getChannels = function(collection, id) {
+  return [
+    this.getCollectionChannel(collection),
+    this.getDocChannel(collection, id)
+  ];
+};
+
+function pluckIds(snapshots) {
+  var ids = [];
+  for (var i = 0; i < snapshots.length; i++) {
+    ids.push(snapshots[i].id);
+  }
+  return ids;
+}
+
+
+/***/ }),
+/* 66 */
+/***/ (function(module, exports) {
+
+var hat = module.exports = function (bits, base) {
+    if (!base) base = 16;
+    if (bits === undefined) bits = 128;
+    if (bits <= 0) return '0';
+    
+    var digits = Math.log(Math.pow(2, bits)) / Math.log(base);
+    for (var i = 2; digits === Infinity; i *= 2) {
+        digits = Math.log(Math.pow(2, bits / i)) / Math.log(base) * i;
+    }
+    
+    var rem = digits - Math.floor(digits);
+    
+    var res = '';
+    
+    for (var i = 0; i < Math.floor(digits); i++) {
+        var x = Math.floor(Math.random() * base).toString(base);
+        res = x + res;
+    }
+    
+    if (rem) {
+        var b = Math.pow(base, rem);
+        var x = Math.floor(Math.random() * b).toString(base);
+        res = x + res;
+    }
+    
+    var parsed = parseInt(res, base);
+    if (parsed !== Infinity && parsed >= Math.pow(2, bits)) {
+        return hat(bits, base)
+    }
+    else return res;
+};
+
+hat.rack = function (bits, base, expandBy) {
+    var fn = function (data) {
+        var iters = 0;
+        do {
+            if (iters ++ > 10) {
+                if (expandBy) bits += expandBy;
+                else throw new Error('too many ID collisions, use more bits')
+            }
+            
+            var id = hat(bits, base);
+        } while (Object.hasOwnProperty.call(hats, id));
+        
+        hats[id] = data;
+        return id;
+    };
+    var hats = fn.hats = {};
+    
+    fn.get = function (id) {
+        return fn.hats[id];
+    };
+    
+    fn.set = function (id, value) {
+        fn.hats[id] = value;
+        return fn;
+    };
+    
+    fn.bits = bits || 128;
+    fn.base = base || 16;
+    return fn;
+};
+
+
+/***/ }),
+/* 67 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var inherits = __webpack_require__(34).inherits;
+var Readable = __webpack_require__(35).Readable;
+var util = __webpack_require__(4);
+
+// Stream of operations. Subscribe returns one of these
+function OpStream() {
+  Readable.call(this, {objectMode: true});
+
+  this.id = null;
+  this.backend = null;
+  this.agent = null;
+  this.projection = null;
+
+  this.open = true;
+}
+module.exports = OpStream;
+
+inherits(OpStream, Readable);
+
+// This function is for notifying us that the stream is empty and needs data.
+// For now, we'll just ignore the signal and assume the reader reads as fast
+// as we fill it. I could add a buffer in this function, but really I don't
+// think that is any better than the buffer implementation in nodejs streams
+// themselves.
+OpStream.prototype._read = util.doNothing;
+
+OpStream.prototype.initProjection = function(backend, agent, projection) {
+  this.backend = backend;
+  this.agent = agent;
+  this.projection = projection;
+};
+
+OpStream.prototype.pushOp = function(collection, id, op) {
+  if (this.backend) {
+    var stream = this;
+    this.backend._sanitizeOp(this.agent, this.projection, collection, id, op, function(err) {
+      if (!stream.open) return;
+      stream.push(err ? {error: err} : op);
+    });
+  } else {
+    // Ignore any messages after unsubscribe
+    if (!this.open) return;
+    this.push(op);
+  }
+};
+
+OpStream.prototype.pushOps = function(collection, id, ops) {
+  for (var i = 0; i < ops.length; i++) {
+    this.pushOp(collection, id, ops[i]);
+  }
+};
+
+OpStream.prototype.destroy = function() {
+  if (!this.open) return;
+  this.open = false;
+
+  this.push(null);
+  this.emit('close');
+};
+
+
+/***/ }),
+/* 68 */
+/***/ (function(module, exports) {
+
+module.exports = arrayDiff;
+
+// Based on some rough benchmarking, this algorithm is about O(2n) worst case,
+// and it can compute diffs on random arrays of length 1024 in about 34ms,
+// though just a few changes on an array of length 1024 takes about 0.5ms
+
+arrayDiff.InsertDiff = InsertDiff;
+arrayDiff.RemoveDiff = RemoveDiff;
+arrayDiff.MoveDiff = MoveDiff;
+
+function InsertDiff(index, values) {
+  this.index = index;
+  this.values = values;
+}
+InsertDiff.prototype.type = 'insert';
+InsertDiff.prototype.toJSON = function() {
+  return {
+    type: this.type,
+    index: this.index,
+    values: this.values
+  };
+};
+
+function RemoveDiff(index, howMany) {
+  this.index = index;
+  this.howMany = howMany;
+}
+RemoveDiff.prototype.type = 'remove';
+RemoveDiff.prototype.toJSON = function() {
+  return {
+    type: this.type,
+    index: this.index,
+    howMany: this.howMany
+  };
+};
+
+function MoveDiff(from, to, howMany) {
+  this.from = from;
+  this.to = to;
+  this.howMany = howMany;
+}
+MoveDiff.prototype.type = 'move';
+MoveDiff.prototype.toJSON = function() {
+  return {
+    type: this.type,
+    from: this.from,
+    to: this.to,
+    howMany: this.howMany
+  };
+};
+
+function strictEqual(a, b) {
+  return a === b;
+}
+
+function arrayDiff(before, after, equalFn) {
+  if (!equalFn) equalFn = strictEqual;
+
+  // Find all items in both the before and after array, and represent them
+  // as moves. Many of these "moves" may end up being discarded in the last
+  // pass if they are from an index to the same index, but we don't know this
+  // up front, since we haven't yet offset the indices.
+  //
+  // Also keep a map of all the indices accounted for in the before and after
+  // arrays. These maps are used next to create insert and remove diffs.
+  var beforeLength = before.length;
+  var afterLength = after.length;
+  var moves = [];
+  var beforeMarked = {};
+  var afterMarked = {};
+  for (var beforeIndex = 0; beforeIndex < beforeLength; beforeIndex++) {
+    var beforeItem = before[beforeIndex];
+    for (var afterIndex = 0; afterIndex < afterLength; afterIndex++) {
+      if (afterMarked[afterIndex]) continue;
+      if (!equalFn(beforeItem, after[afterIndex])) continue;
+      var from = beforeIndex;
+      var to = afterIndex;
+      var howMany = 0;
+      do {
+        beforeMarked[beforeIndex++] = afterMarked[afterIndex++] = true;
+        howMany++;
+      } while (
+        beforeIndex < beforeLength &&
+        afterIndex < afterLength &&
+        equalFn(before[beforeIndex], after[afterIndex]) &&
+        !afterMarked[afterIndex]
+      );
+      moves.push(new MoveDiff(from, to, howMany));
+      beforeIndex--;
+      break;
+    }
+  }
+
+  // Create a remove for all of the items in the before array that were
+  // not marked as being matched in the after array as well
+  var removes = [];
+  for (beforeIndex = 0; beforeIndex < beforeLength;) {
+    if (beforeMarked[beforeIndex]) {
+      beforeIndex++;
+      continue;
+    }
+    var index = beforeIndex;
+    var howMany = 0;
+    while (beforeIndex < beforeLength && !beforeMarked[beforeIndex++]) {
+      howMany++;
+    }
+    removes.push(new RemoveDiff(index, howMany));
+  }
+
+  // Create an insert for all of the items in the after array that were
+  // not marked as being matched in the before array as well
+  var inserts = [];
+  for (var afterIndex = 0; afterIndex < afterLength;) {
+    if (afterMarked[afterIndex]) {
+      afterIndex++;
+      continue;
+    }
+    var index = afterIndex;
+    var howMany = 0;
+    while (afterIndex < afterLength && !afterMarked[afterIndex++]) {
+      howMany++;
+    }
+    var values = after.slice(index, index + howMany);
+    inserts.push(new InsertDiff(index, values));
+  }
+
+  var insertsLength = inserts.length;
+  var removesLength = removes.length;
+  var movesLength = moves.length;
+  var i, j;
+
+  // Offset subsequent removes and moves by removes
+  var count = 0;
+  for (i = 0; i < removesLength; i++) {
+    var remove = removes[i];
+    remove.index -= count;
+    count += remove.howMany;
+    for (j = 0; j < movesLength; j++) {
+      var move = moves[j];
+      if (move.from >= remove.index) move.from -= remove.howMany;
+    }
+  }
+
+  // Offset moves by inserts
+  for (i = insertsLength; i--;) {
+    var insert = inserts[i];
+    var howMany = insert.values.length;
+    for (j = movesLength; j--;) {
+      var move = moves[j];
+      if (move.to >= insert.index) move.to -= howMany;
+    }
+  }
+
+  // Offset the to of moves by later moves
+  for (i = movesLength; i-- > 1;) {
+    var move = moves[i];
+    if (move.to === move.from) continue;
+    for (j = i; j--;) {
+      var earlier = moves[j];
+      if (earlier.to >= move.to) earlier.to -= move.howMany;
+      if (earlier.to >= move.from) earlier.to += move.howMany;
+    }
+  }
+
+  // Only output moves that end up having an effect after offsetting
+  var outputMoves = [];
+
+  // Offset the from of moves by earlier moves
+  for (i = 0; i < movesLength; i++) {
+    var move = moves[i];
+    if (move.to === move.from) continue;
+    outputMoves.push(move);
+    for (j = i + 1; j < movesLength; j++) {
+      var later = moves[j];
+      if (later.from >= move.from) later.from -= move.howMany;
+      if (later.from >= move.to) later.from += move.howMany;
+    }
+  }
+
+  return removes.concat(outputMoves, inserts);
+}
+
+
+/***/ }),
+/* 69 */
+/***/ (function(module, exports) {
+
+var pSlice = Array.prototype.slice;
+var Object_keys = typeof Object.keys === 'function'
+    ? Object.keys
+    : function (obj) {
+        var keys = [];
+        for (var key in obj) keys.push(key);
+        return keys;
+    }
+;
+
+var deepEqual = module.exports = function (actual, expected) {
+  // enforce Object.is +0 !== -0
+  if (actual === 0 && expected === 0) {
+    return areZerosEqual(actual, expected);
+
+  // 7.1. All identical values are equivalent, as determined by ===.
+  } else if (actual === expected) {
+    return true;
+
+  } else if (actual instanceof Date && expected instanceof Date) {
+    return actual.getTime() === expected.getTime();
+
+  } else if (isNumberNaN(actual)) {
+    return isNumberNaN(expected);
+
+  // 7.3. Other pairs that do not both pass typeof value == 'object',
+  // equivalence is determined by ==.
+  } else if (typeof actual != 'object' && typeof expected != 'object') {
+    return actual == expected;
+
+  // 7.4. For all other Object pairs, including Array objects, equivalence is
+  // determined by having the same number of owned properties (as verified
+  // with Object.prototype.hasOwnProperty.call), the same set of keys
+  // (although not necessarily the same order), equivalent values for every
+  // corresponding key, and an identical 'prototype' property. Note: this
+  // accounts for both named and indexed properties on Arrays.
+  } else {
+    return objEquiv(actual, expected);
+  }
+};
+
+function isUndefinedOrNull(value) {
+  return value === null || value === undefined;
+}
+
+function isArguments(object) {
+  return Object.prototype.toString.call(object) == '[object Arguments]';
+}
+
+function isNumberNaN(value) {
+  // NaN === NaN -> false
+  return typeof value == 'number' && value !== value;
+}
+
+function areZerosEqual(zeroA, zeroB) {
+  // (1 / +0|0) -> Infinity, but (1 / -0) -> -Infinity and (Infinity !== -Infinity)
+  return (1 / zeroA) === (1 / zeroB);
+}
+
+function objEquiv(a, b) {
+  if (isUndefinedOrNull(a) || isUndefinedOrNull(b))
+    return false;
+
+  // an identical 'prototype' property.
+  if (a.prototype !== b.prototype) return false;
+  //~~~I've managed to break Object.keys through screwy arguments passing.
+  //   Converting to array solves the problem.
+  if (isArguments(a)) {
+    if (!isArguments(b)) {
+      return false;
+    }
+    a = pSlice.call(a);
+    b = pSlice.call(b);
+    return deepEqual(a, b);
+  }
+  try {
+    var ka = Object_keys(a),
+        kb = Object_keys(b),
+        key, i;
+  } catch (e) {//happens when one is a string literal and the other isn't
+    return false;
+  }
+  // having the same number of owned properties (keys incorporates
+  // hasOwnProperty)
+  if (ka.length != kb.length)
+    return false;
+  //the same set of keys (although not necessarily the same order),
+  ka.sort();
+  kb.sort();
+  //~~~cheap key test
+  for (i = ka.length - 1; i >= 0; i--) {
+    if (ka[i] != kb[i])
+      return false;
+  }
+  //equivalent values for every corresponding key, and
+  //~~~possibly expensive deep test
+  for (i = ka.length - 1; i >= 0; i--) {
+    key = ka[i];
+    if (!deepEqual(a[key], b[key])) return false;
+  }
+  return true;
+}
+
+
+/***/ }),
+/* 70 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var Duplex = __webpack_require__(35).Duplex;
+var inherits = __webpack_require__(34).inherits;
+var util = __webpack_require__(4);
+
+function StreamSocket() {
+  this.readyState = 0;
+  this.stream = new ServerStream(this);
+}
+module.exports = StreamSocket;
+
+StreamSocket.prototype._open = function() {
+  if (this.readyState !== 0) return;
+  this.readyState = 1;
+  this.onopen();
+};
+StreamSocket.prototype.close = function(reason) {
+  if (this.readyState === 3) return;
+  this.readyState = 3;
+  // Signal data writing is complete. Emits the 'end' event
+  this.stream.push(null);
+  this.onclose(reason || 'closed');
+};
+StreamSocket.prototype.send = function(data) {
+  // Data is an object
+  this.stream.push(JSON.parse(data));
+};
+StreamSocket.prototype.onmessage = util.doNothing;
+StreamSocket.prototype.onclose = util.doNothing;
+StreamSocket.prototype.onerror = util.doNothing;
+StreamSocket.prototype.onopen = util.doNothing;
+
+
+function ServerStream(socket) {
+  Duplex.call(this, {objectMode: true});
+
+  this.socket = socket;
+
+  this.on('error', function(error) {
+    console.warn('ShareDB client message stream error', error);
+    socket.close('stopped');
+  });
+
+  // The server ended the writable stream. Triggered by calling stream.end()
+  // in agent.close()
+  this.on('finish', function() {
+    socket.close('stopped');
+  });
+}
+inherits(ServerStream, Duplex);
+
+ServerStream.prototype.isServer = true;
+
+ServerStream.prototype._read = util.doNothing;
+
+ServerStream.prototype._write = function(chunk, encoding, callback) {
+  var socket = this.socket;
+  process.nextTick(function() {
+    if (socket.readyState !== 1) return;
+    socket.onmessage({data: JSON.stringify(chunk)});
+    callback();
+  });
+};
+
+
+/***/ }),
+/* 71 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -26446,13 +28434,13 @@ var _react = __webpack_require__(0);
 
 var _react2 = _interopRequireDefault(_react);
 
-var _propTypes = __webpack_require__(61);
+var _propTypes = __webpack_require__(72);
 
 var _propTypes2 = _interopRequireDefault(_propTypes);
 
-var _icons = __webpack_require__(64);
+var _icons = __webpack_require__(75);
 
-var _getBackgroundColor = __webpack_require__(65);
+var _getBackgroundColor = __webpack_require__(76);
 
 var _getBackgroundColor2 = _interopRequireDefault(_getBackgroundColor);
 
@@ -26815,7 +28803,7 @@ Switch.defaultProps = {
 exports.default = Switch;
 
 /***/ }),
-/* 61 */
+/* 72 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /**
@@ -26840,16 +28828,16 @@ if (process.env.NODE_ENV !== 'production') {
   // By explicitly using `prop-types` you are opting into new development behavior.
   // http://fb.me/prop-types-in-prod
   var throwOnDirectAccess = true;
-  module.exports = __webpack_require__(62)(isValidElement, throwOnDirectAccess);
+  module.exports = __webpack_require__(73)(isValidElement, throwOnDirectAccess);
 } else {
   // By explicitly using `prop-types` you are opting into new production behavior.
   // http://fb.me/prop-types-in-prod
-  module.exports = __webpack_require__(63)();
+  module.exports = __webpack_require__(74)();
 }
 
 
 /***/ }),
-/* 62 */
+/* 73 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -27398,7 +29386,7 @@ module.exports = function(isValidElement, throwOnDirectAccess) {
 
 
 /***/ }),
-/* 63 */
+/* 74 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -27463,7 +29451,7 @@ module.exports = function() {
 
 
 /***/ }),
-/* 64 */
+/* 75 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -27535,7 +29523,7 @@ var checkedIcon = exports.checkedIcon = _react2.default.createElement(
 );
 
 /***/ }),
-/* 65 */
+/* 76 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -27586,7 +29574,7 @@ function getBackgroundColor(pos, checkedPos, uncheckedPos, offColor, onColor) {
 }
 
 /***/ }),
-/* 66 */
+/* 77 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -27606,92 +29594,571 @@ exports.copyToClipboard = copyToClipboard;
 
 
 /***/ }),
-/* 67 */
+/* 78 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const React = __webpack_require__(0);
+const ArboretumChat_1 = __webpack_require__(79);
+__webpack_require__(82);
+const ENTER_KEY = 13;
+class ArboretumChatBox extends React.Component {
+    constructor(props) {
+        super(props);
+        this.updateMessagesState = () => __awaiter(this, void 0, void 0, function* () {
+            const messages = yield this.chat.getMessages();
+            this.setState({ messages });
+        });
+        this.updateUsersState = () => __awaiter(this, void 0, void 0, function* () {
+            const users = yield this.chat.getUsers();
+            this.setState({ users });
+        });
+        this.chatKeyDown = (event) => {
+            const { keyCode, ctrlKey, altKey, metaKey, shiftKey } = event;
+            if (keyCode === ENTER_KEY && !(ctrlKey || altKey || metaKey || shiftKey)) {
+                event.preventDefault();
+                const { chatText } = this.state;
+                if (chatText !== '') {
+                    if (this.props.onSendMessage) {
+                        this.props.onSendMessage(chatText);
+                    }
+                    if (this.chat) {
+                        this.chat.addTextMessage(chatText);
+                    }
+                    this.setState({ chatText: '' });
+                }
+            }
+        };
+        this.onTextareaChange = (event) => {
+            this.setState({ chatText: event.target.value });
+        };
+        this.performAction = (pam) => {
+            this.getChat().markPerformed(pam);
+            if (this.props.onAction) {
+                this.props.onAction(pam);
+            }
+        };
+        this.addHighlights = (pam) => {
+            if (this.props.onAddHighlight) {
+                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pam);
+                const color = pam.sender.color;
+                this.props.onAddHighlight(nodeIDs, color);
+            }
+        };
+        this.removeHighlights = (pam) => {
+            if (this.props.onRemoveHighlight) {
+                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pam);
+                this.props.onRemoveHighlight(nodeIDs);
+            }
+        };
+        this.rejectAction = (pam) => {
+            // this.getChat().markPerformed(pam);
+            // if(this.props.onAction) { this.props.onAction(pam); }
+        };
+        this.focusAction = (pam) => {
+            // this.getChat().markPerformed(pam);
+            // if(this.props.onAction) { this.props.onAction(pam); }
+        };
+        this.addLabel = (pam) => {
+            // this.getChat().markPerformed(pam);
+            // if(this.props.onAction) { this.props.onAction(pam); }
+        };
+        this.state = {
+            chatText: this.props.chatText || '',
+            messages: [],
+            users: []
+        };
+        if (this.props.sdb) {
+            this.setSDB(this.props.sdb);
+        }
+        window.addEventListener('beforeunload', () => this.leave());
+    }
+    ;
+    getChat() { return this.chat; }
+    setSDB(sdb) {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.sdb = sdb;
+            this.chat = new ArboretumChat_1.ArboretumChat(this.sdb);
+            this.chat.ready.addListener(() => __awaiter(this, void 0, void 0, function* () {
+                yield this.chat.join(this.props.username);
+                yield this.updateMessagesState();
+                yield this.updateUsersState();
+                this.chat.messageAdded.addListener(this.updateMessagesState);
+                this.chat.userJoined.addListener(this.updateUsersState);
+                this.chat.userNotPresent.addListener(this.updateUsersState);
+            }));
+        });
+    }
+    ;
+    //https://stackoverflow.com/questions/37620694/how-to-scroll-to-bottom-in-react
+    scrollToBottom() {
+        this.messagesEnd.scrollIntoView({ behavior: "smooth" });
+    }
+    ;
+    componentDidMount() {
+        this.scrollToBottom();
+    }
+    ;
+    leave() {
+        if (this.chat) {
+            this.chat.leave();
+        }
+    }
+    ;
+    componentWillUnmount() {
+        this.leave();
+    }
+    ;
+    componentDidUpdate() {
+        this.scrollToBottom();
+    }
+    ;
+    render() {
+        const messages = this.state.messages.map((m, i) => {
+            const senderStyle = { color: m.sender.color };
+            if (m['content']) {
+                const tm = m;
+                return React.createElement("li", { tabIndex: 0, key: i, className: 'chat-line' },
+                    React.createElement("span", { style: senderStyle, className: 'from' }, tm.sender.displayName),
+                    React.createElement("span", { className: 'message' }, tm.content));
+            }
+            else if (m['action']) {
+                const pam = m;
+                const { action, data, performed } = pam;
+                const description = React.createElement("span", { className: 'description', onMouseEnter: () => this.addHighlights(pam), onMouseLeave: () => this.removeHighlights(pam) }, ArboretumChat_1.ArboretumChat.describePageActionMessage(pam));
+                let actions;
+                if (performed) {
+                    actions = React.createElement("div", { className: '' }, "(accepted)");
+                }
+                else {
+                    actions = React.createElement("div", { className: 'messageAction' },
+                        React.createElement("a", { href: "javascript:void(0)", onClick: this.performAction.bind(this, pam) }, "Accept"),
+                        React.createElement("a", { href: "javascript:void(0)", onClick: this.rejectAction.bind(this, pam) }, "Reject"),
+                        React.createElement("a", { href: "javascript:void(0)", onClick: this.focusAction.bind(this, pam) }, "Focus"),
+                        React.createElement("a", { href: "javascript:void(0)", onClick: this.addLabel.bind(this, pam) }, "Label"));
+                }
+                return React.createElement("li", { tabIndex: 0, key: i, className: 'chat-line action' + (performed ? ' performed' : '') + (this.props.isAdmin ? ' admin' : ' not_admin') },
+                    React.createElement("span", { style: senderStyle, className: 'from' }, pam.sender.displayName),
+                    " wants to ",
+                    description,
+                    ".",
+                    actions);
+            }
+        });
+        let meUserID;
+        if (this.chat) {
+            const meUser = this.chat.getMe();
+            if (meUser) {
+                meUserID = meUser.id;
+            }
+        }
+        const users = this.state.users.map((u) => {
+            const isMe = u.id === meUserID;
+            const style = { color: u.color };
+            return React.createElement("span", { key: u.id, className: `participant ${isMe ? 'me' : ''}`, style: style }, u.displayName);
+        });
+        return React.createElement("div", { className: 'chat' },
+            React.createElement("div", { id: "chat-participants" }, users),
+            React.createElement("ul", { id: "chat-lines" },
+                messages.filter(m => !!m),
+                React.createElement("li", { style: { float: "left", clear: "both" }, ref: (el) => { this.messagesEnd = el; } })),
+            React.createElement("form", { id: "chat-form" },
+                React.createElement("textarea", { id: "chat-box", className: "form-control", placeholder: "Send a message", onChange: this.onTextareaChange, onKeyDown: this.chatKeyDown, value: this.state.chatText })));
+    }
+    ;
+}
+exports.ArboretumChatBox = ArboretumChatBox;
+;
+
+
+/***/ }),
+/* 79 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const TypedEventEmitter_1 = __webpack_require__(80);
+const guid_1 = __webpack_require__(81);
+const _ = __webpack_require__(12);
+exports.userColors = [
+    ['#A80000', '#B05E0D', '#C19C00', '#107C10', '#038387', '#004E8C', '#5C126B']
+];
+var TypingStatus;
+(function (TypingStatus) {
+    TypingStatus[TypingStatus["IDLE"] = 0] = "IDLE";
+    TypingStatus[TypingStatus["ACTIVE"] = 1] = "ACTIVE";
+    TypingStatus[TypingStatus["IDLE_TYPED"] = 2] = "IDLE_TYPED";
+})(TypingStatus = exports.TypingStatus || (exports.TypingStatus = {}));
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
+    constructor(sdb) {
+        super();
+        this.sdb = sdb;
+        this.userJoined = this.registerEvent();
+        this.userNotPresent = this.registerEvent();
+        this.userTypingStatusChanged = this.registerEvent();
+        this.messageAdded = this.registerEvent();
+        this.ready = this.registerEvent();
+        this.doc = this.sdb.get('arboretum', 'chat');
+        this.initialized = this.initializeDoc();
+        this.initialized.catch((err) => {
+            console.error(err);
+        });
+    }
+    ;
+    static describePageActionMessage(pam) {
+        const { action, data, performed } = pam;
+        if (action === 'navigate') {
+            const { url } = data;
+            return `navigate to ${url}`;
+        }
+        else if (action === 'mouse_event') {
+            const { targetNodeID, type, targetNodeDescription } = data;
+            return `${type} on ${targetNodeID}`;
+        }
+        else {
+            return `do ${action}`;
+        }
+    }
+    ;
+    static getRelevantNodeIDs(pam) {
+        const { action, data, performed } = pam;
+        const { targetNodeID } = data;
+        if (targetNodeID) {
+            return [targetNodeID];
+        }
+        else {
+            return [];
+        }
+    }
+    ;
+    initializeDoc() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.doc.createIfEmpty({
+                users: [],
+                messages: [],
+                colors: _.shuffle(_.sample(exports.userColors))
+            });
+            this.doc.subscribe((ops, source, data) => {
+                if (ops) {
+                    ops.forEach((op) => this.handleOp(op));
+                }
+                else {
+                    this.ready.emit();
+                }
+            });
+        });
+    }
+    ;
+    handleOp(op) {
+        const { p, li } = op;
+        if (p[0] === 'users') {
+            if (p.length === 2 && li) {
+                this.userJoined.emit({
+                    user: li
+                });
+            }
+            else if (p.length === 3 && p[2] === 'present') {
+                const userIndex = p[1];
+                const user = this.doc.getData().users[userIndex];
+                this.userNotPresent.emit({ user });
+            }
+        }
+        else if (p[0] === 'messages') {
+            this.messageAdded.emit({
+                message: li
+            });
+        }
+    }
+    ;
+    getMe() {
+        return this.meUser;
+    }
+    ;
+    getColor(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.initialized;
+            const data = this.doc.getData();
+            const { colors } = data;
+            const index = guid_1.guidIndex(id) % colors.length;
+            return colors[index];
+        });
+    }
+    ;
+    join(displayName) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.addUser(displayName);
+        });
+    }
+    ;
+    addUser(displayName, isMe = true, present = true) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const id = guid_1.guid();
+            const color = yield this.getColor(id);
+            const user = { id, color, displayName, present, typing: TypingStatus.IDLE };
+            yield this.initialized;
+            yield this.doc.submitListPushOp(['users'], user);
+            if (isMe) {
+                this.meUser = user;
+            }
+            return user;
+        });
+    }
+    ;
+    addMesssage(message) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.initialized;
+            const timestamp = (new Date()).getTime();
+            message.timestamp = (new Date()).getTime();
+            message.id = ArboretumChat.messageCounter++;
+            this.doc.submitListPushOp(['messages'], message);
+        });
+    }
+    ;
+    addTextMessage(content, sender = this.getMe()) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const message = { sender, content };
+            this.addMesssage(message);
+        });
+    }
+    ;
+    addPageActionMessage(action, tabID, data = {}, sender = this.getMe()) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const message = { sender, action, tabID, data, performed: false };
+            this.addMesssage(message);
+        });
+    }
+    ;
+    markPerformed(pam, performed = true) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const messages = yield this.getMessages();
+            const { id } = pam;
+            for (let i = 0; i < messages.length; i++) {
+                const message = messages[i];
+                if (message.id === id) {
+                    this.doc.submitObjectReplaceOp(['messages', i, 'performed'], performed);
+                    break;
+                }
+            }
+        });
+    }
+    ;
+    getUserIndex(user) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.initialized;
+            const data = this.doc.getData();
+            for (let i = 0; i < data.users.length; i++) {
+                const u = data.users[i];
+                if (user.id === u.id) {
+                    return i;
+                }
+            }
+            return -1;
+        });
+    }
+    ;
+    markUserNotPresent(user) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.initialized;
+            const data = this.doc.getData();
+            const userIndex = yield this.getUserIndex(user);
+            yield this.doc.submitObjectReplaceOp(['users', userIndex, 'present'], false);
+        });
+    }
+    ;
+    leave() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.markUserNotPresent(this.getMe());
+        });
+    }
+    ;
+    setUserTypingStatus(user, typingStatus) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.initialized;
+            const data = this.doc.getData();
+            const userIndex = yield this.getUserIndex(user);
+            yield this.doc.submitObjectReplaceOp(['users', userIndex, 'typing'], typingStatus);
+        });
+    }
+    ;
+    getMessages() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.initialized;
+            const data = this.doc.getData();
+            return data.messages;
+        });
+    }
+    ;
+    getUsers(onlyPresent = true) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.initialized;
+            const data = this.doc.getData();
+            const { users } = data;
+            if (onlyPresent) {
+                return users.filter((u) => u.present);
+            }
+            else {
+                return users;
+            }
+        });
+    }
+    ;
+}
+ArboretumChat.userCounter = 1;
+ArboretumChat.messageCounter = 1;
+exports.ArboretumChat = ArboretumChat;
+;
+
+
+/***/ }),
+/* 80 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const React = __webpack_require__(0);
-__webpack_require__(68);
-const ENTER_KEY = 13;
-class BrowserNavigationBar extends React.Component {
-    constructor(props) {
-        super(props);
-        this.handleURLChange = (event) => {
-            this.setState({ urlText: event.target.value });
-        };
-        this.backClicked = () => {
-            if (this.props.onBack) {
-                this.props.onBack();
-            }
-        };
-        this.forwardClicked = () => {
-            if (this.props.onForward) {
-                this.props.onForward();
-            }
-        };
-        this.reloadClicked = () => {
-            if (this.props.onReload) {
-                this.props.onReload();
-            }
-        };
-        this.toggleSidebarClicked = () => {
-            if (this.props.onToggleSidebar) {
-                this.props.onToggleSidebar();
-            }
-        };
-        this.urlKeyDown = (event) => {
-            const { keyCode } = event;
-            if (keyCode === ENTER_KEY) {
-                const { urlText } = this.state;
-                if (this.props.onNavigate) {
-                    this.props.onNavigate(urlText);
-                }
-            }
-        };
-        this.onURLBarFocus = (event) => {
-            this.setState({ urlBarFocused: true });
-        };
-        this.onURLBarBlur = (event) => {
-            this.setState({ urlBarFocused: false });
-        };
-        this.state = {
-            urlText: '',
-            canGoBack: false,
-            canGoForward: false,
-            isLoading: false,
-            urlBarFocused: false
-        };
+class TypedEventEmitter {
+    constructor() {
+        this.registeredEvents = [];
     }
     ;
-    render() {
-        const toggleSidebarButton = this.props.showSidebarToggle ? React.createElement("button", { onClick: this.toggleSidebarClicked, className: 'btn btn-default btn-mini', id: 'task' },
-            React.createElement("span", { className: 'icon icon-publish' })) : null;
-        return React.createElement("div", { className: "toolbar toolbar-header", id: "navBar" },
-            React.createElement("div", { className: "toolbar-actions" },
-                React.createElement("div", { className: "btn-group" },
-                    React.createElement("button", { disabled: !this.state.canGoBack, onClick: this.backClicked, className: 'btn btn-default btn-mini', id: 'back' },
-                        React.createElement("span", { className: 'icon icon-left-open-big' })),
-                    React.createElement("button", { disabled: !this.state.canGoForward, onClick: this.forwardClicked, className: 'btn btn-default btn-mini', id: 'forward' },
-                        React.createElement("span", { className: 'icon icon-right-open-big' }))),
-                React.createElement("button", { onClick: this.reloadClicked, className: 'btn btn-default btn-mini', id: 'reload' },
-                    React.createElement("span", { className: `icon ${this.state.isLoading ? 'icon-cancel' : 'icon-ccw'}` })),
-                toggleSidebarButton),
-            React.createElement("input", { value: this.state.urlText, onChange: this.handleURLChange, onKeyDown: this.urlKeyDown, onFocus: this.onURLBarFocus, onBlur: this.onURLBarBlur, id: 'url', type: "text", placeholder: "Enter URL or Term to Search" }));
+    registerEvent() {
+        const rv = new RegisteredEvent();
+        this.registeredEvents.push(rv);
+        return rv;
+    }
+    ;
+    clearRegisteredEvents() {
+        this.registeredEvents.forEach((re) => {
+            re.clearListeners();
+        });
+        this.registeredEvents.splice(0, this.registeredEvents.length);
+    }
+}
+exports.TypedEventEmitter = TypedEventEmitter;
+;
+function registerEvent() {
+    return new RegisteredEvent();
+}
+exports.registerEvent = registerEvent;
+;
+class RegisteredEvent {
+    constructor() {
+        this.listeners = [];
+    }
+    emit(event) {
+        this.listeners.forEach((l) => {
+            l.fire(event);
+        });
+    }
+    ;
+    clearListeners() { this.listeners.splice(0, this.listeners.length); }
+    ;
+    removeListener(listener) {
+        let found = false;
+        for (let i = 0; i < this.listeners.length; i++) {
+            const l = this.listeners[i];
+            if (l === listener) {
+                this.listeners.splice(i, 1);
+                i--;
+                found = true;
+            }
+        }
+        return found;
+    }
+    ;
+    addListener(func, unbindWhenRun = false) {
+        const typedListener = new TypedListener(func, this, unbindWhenRun);
+        this.listeners.push(typedListener);
+        return typedListener;
     }
     ;
 }
-exports.BrowserNavigationBar = BrowserNavigationBar;
+exports.RegisteredEvent = RegisteredEvent;
+;
+class TypedListener {
+    constructor(listener, owner, unbindWhenRun = false) {
+        this.listener = listener;
+        this.owner = owner;
+        this.unbindWhenRun = unbindWhenRun;
+    }
+    ;
+    unbind() { this.owner.removeListener(this); }
+    ;
+    fire(event) {
+        if (this.unbindWhenRun) {
+            this.unbind();
+        }
+        this.listener(event);
+    }
+    ;
+}
+exports.TypedListener = TypedListener;
 ;
 
 
 /***/ }),
-/* 68 */
+/* 81 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+function s4() {
+    return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+}
+;
+function guid() {
+    return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+}
+exports.guid = guid;
+;
+function guidIndex(id) {
+    let result = 0;
+    for (let i = 0; i < id.length; i++) {
+        result += id.charCodeAt(i);
+    }
+    return result;
+}
+exports.guidIndex = guidIndex;
+;
+
+
+/***/ }),
+/* 82 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
-var content = __webpack_require__(69);
+var content = __webpack_require__(83);
 
 if(typeof content === 'string') content = [[module.i, content, '']];
 
@@ -27710,8 +30177,8 @@ var update = __webpack_require__(14)(content, options);
 if(content.locals) module.exports = content.locals;
 
 if(false) {
-	module.hot.accept("!!../../../node_modules/css-loader/index.js??ref--2-1!../../../node_modules/sass-loader/lib/loader.js??ref--2-2!./BrowserNavigationBar.scss", function() {
-		var newContent = require("!!../../../node_modules/css-loader/index.js??ref--2-1!../../../node_modules/sass-loader/lib/loader.js??ref--2-2!./BrowserNavigationBar.scss");
+	module.hot.accept("!!../../../node_modules/css-loader/index.js??ref--2-1!../../../node_modules/sass-loader/lib/loader.js??ref--2-2!./ArboretumChat.scss", function() {
+		var newContent = require("!!../../../node_modules/css-loader/index.js??ref--2-1!../../../node_modules/sass-loader/lib/loader.js??ref--2-2!./ArboretumChat.scss");
 
 		if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
 
@@ -27737,7 +30204,7 @@ if(false) {
 }
 
 /***/ }),
-/* 69 */
+/* 83 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(13)(true);
@@ -27745,2481 +30212,17 @@ exports = module.exports = __webpack_require__(13)(true);
 
 
 // module
-exports.push([module.i, "#navBar {\n  display: flex; }\n  #navBar input#url {\n    flex: 1;\n    /*margin: 4px 2px 3px 2px;*/\n    /*font-size: 12px;*/\n    /*padding: 0px 0px 0px 0px;*/\n    padding: 3px;\n    /*height: 100%;*/\n    /*height: 20px;*/\n    box-shadow: inset 0px 1px 2px rgba(0, 0, 0, 0.2);\n    border: 0px;\n    border-left: 1px solid #bbb;\n    border-top-left-radius: 3px;\n    border-bottom-left-radius: 3px;\n    color: #808080;\n    outline: 0;\n    background: #FFF;\n    /*font-weight: lighter;*/ }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/utils/browserControls/src/utils/browserControls/BrowserNavigationBar.scss"],"names":[],"mappings":"AAAA;EACI,cAAa,EAmBhB;EApBD;IAGQ,QAAO;IACP,4BAA4B;IAC5B,oBAAoB;IACpB,6BAA6B;IAC7B,aAAY;IACZ,iBAAiB;IACjB,iBAAiB;IACjB,iDAAgD;IAChD,YAAW;IACX,4BAA2B;IAC3B,4BAA2B;IAC3B,+BAA8B;IAC9B,eAAc;IACd,WAAU;IACV,iBAAgB;IAChB,yBAAyB,EAC5B","file":"BrowserNavigationBar.scss","sourcesContent":["#navBar {\n    display: flex;\n    input#url {\n        flex: 1;\n        /*margin: 4px 2px 3px 2px;*/\n        /*font-size: 12px;*/\n        /*padding: 0px 0px 0px 0px;*/\n        padding: 3px;\n        /*height: 100%;*/\n        /*height: 20px;*/\n        box-shadow: inset 0px 1px 2px rgba(0, 0, 0, 0.2);\n        border: 0px;\n        border-left: 1px solid #bbb;\n        border-top-left-radius: 3px;\n        border-bottom-left-radius: 3px;\n        color: #808080;\n        outline: 0;\n        background: #FFF;\n        /*font-weight: lighter;*/\n    }\n}\n"],"sourceRoot":""}]);
+exports.push([module.i, ".chat {\n  font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n  flex: 1 0 auto;\n  display: flex;\n  flex-direction: column; }\n  .chat #task_title {\n    flex: 0 0;\n    box-sizing: border-box;\n    padding: 5px 10px 5px;\n    margin: 0px; }\n  .chat #chat-participants {\n    flex: 0 0;\n    border-bottom: 1px solid #CCC;\n    padding: 5px 10px 5px;\n    box-sizing: border-box; }\n    .chat #chat-participants .participant {\n      margin: 2px; }\n      .chat #chat-participants .participant.me {\n        font-weight: bold;\n        text-decoration: underline; }\n  .chat #chat-lines {\n    flex: 2 0;\n    box-sizing: border-box;\n    padding: 0px 10px 0px;\n    margin: 0px;\n    overflow-y: auto; }\n    .chat #chat-lines li {\n      list-style-type: none; }\n    .chat #chat-lines .chat-line {\n      font-size: 0.9em;\n      list-style-type: none;\n      list-style-type: none;\n      margin-top: 2px;\n      padding-top: 2px;\n      margin-bottom: 2px;\n      padding-bottom: 2px;\n      color: #555; }\n      .chat #chat-lines .chat-line.action {\n        color: #888; }\n        .chat #chat-lines .chat-line.action.not_admin .messageAction {\n          display: none; }\n      .chat #chat-lines .chat-line:not(.action) .from {\n        font-weight: bold; }\n      .chat #chat-lines .chat-line:not(.action) .from::after {\n        content: \": \"; }\n  .chat #chat-form {\n    padding: 0px 2px 0px;\n    flex: 0; }\n    .chat #chat-form textarea#chat-box {\n      box-sizing: border-box;\n      resize: none;\n      flex-grow: 1;\n      width: 100%;\n      font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n      padding: 5px 10px 5px; }\n    .chat #chat-form .form-actions {\n      text-align: right; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/utils/browserControls/src/utils/browserControls/ArboretumChat.scss"],"names":[],"mappings":"AAAA;EACI,gHAA+G;EAC/G,eAAc;EACd,cAAa;EACb,uBAAsB,EAwEzB;EA5ED;IAOQ,UAAS;IACT,uBAAsB;IACtB,sBAAqB;IACrB,YAAW,EACd;EAXL;IAaQ,UAAS;IACT,8BAA6B;IAC7B,sBAAqB;IACrB,uBAAsB,EAQzB;IAxBL;MAkBY,YAAW,EAKd;MAvBT;QAoBgB,kBAAiB;QACjB,2BAA0B,EAC7B;EAtBb;IA0BQ,UAAS;IACT,uBAAsB;IACtB,sBAAqB;IACrB,YAAW;IACX,iBAAgB,EA8BnB;IA5DL;MAgCY,sBAAqB,EACxB;IAjCT;MAmCY,iBAAgB;MAChB,sBAAqB;MACrB,sBAAqB;MACrB,gBAAe;MACf,iBAAgB;MAChB,mBAAkB;MAClB,oBAAmB;MACnB,YAAW,EAiBd;MA3DT;QA4CgB,YAAW,EAMd;QAlDb;UA+CwB,cAAa,EAChB;MAhDrB;QAqDoB,kBAAiB,EACpB;MAtDjB;QAwDoB,cAAa,EAChB;EAzDjB;IA8DQ,qBAAoB;IACpB,QAAO,EAYV;IA3EL;MAiEY,uBAAsB;MACtB,aAAY;MACZ,aAAY;MACZ,YAAW;MACX,gHAA+G;MAC/G,sBAAqB,EACxB;IAvET;MAyEY,kBAAiB,EACpB","file":"ArboretumChat.scss","sourcesContent":[".chat {\n    font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n    flex: 1 0 auto;\n    display: flex;\n    flex-direction: column;\n\n    #task_title {\n        flex: 0 0;\n        box-sizing: border-box;\n        padding: 5px 10px 5px;\n        margin: 0px;\n    }\n    #chat-participants {\n        flex: 0 0;\n        border-bottom: 1px solid #CCC;\n        padding: 5px 10px 5px;\n        box-sizing: border-box;\n        .participant {\n            margin: 2px;\n            &.me {\n                font-weight: bold;\n                text-decoration: underline;\n            }\n        }\n    }\n    #chat-lines {\n        flex: 2 0;\n        box-sizing: border-box;\n        padding: 0px 10px 0px;\n        margin: 0px;\n        overflow-y: auto;\n        li {\n            list-style-type: none;\n        }\n        .chat-line {\n            font-size: 0.9em;\n            list-style-type: none;\n            list-style-type: none;\n            margin-top: 2px;\n            padding-top: 2px;\n            margin-bottom: 2px;\n            padding-bottom: 2px;\n            color: #555;\n            &.action{\n                color: #888;\n                &.not_admin {\n                    .messageAction {\n                        display: none;\n                    }\n                }\n            }\n            &:not(.action) {\n                .from {\n                    font-weight: bold;\n                }\n                .from::after {\n                    content: \": \";\n                }\n            }\n        }\n    }\n    #chat-form {\n        padding: 0px 2px 0px;\n        flex: 0;\n        textarea#chat-box {\n            box-sizing: border-box;\n            resize: none;\n            flex-grow: 1;\n            width: 100%;\n            font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n            padding: 5px 10px 5px;\n        }\n        .form-actions {\n            text-align: right;\n        }\n    }\n}\n"],"sourceRoot":""}]);
 
 // exports
-
-
-/***/ }),
-/* 70 */
-/***/ (function(module, exports) {
-
-module.exports = require("electron");
-
-/***/ }),
-/* 71 */
-/***/ (function(module, exports) {
-
-module.exports = require("url");
-
-/***/ }),
-/* 72 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const ShareDBClient = __webpack_require__(73);
-const ShareDB = __webpack_require__(78);
-class SDB {
-    constructor(client, connection) {
-        this.docs = new Map();
-        if (client) {
-            this.connection = new ShareDBClient.Connection(connection);
-        }
-        else {
-            this.share = new ShareDB();
-            this.connection = this.share.connect();
-        }
-    }
-    ;
-    getDocIdentifier(collectionName, documentID) {
-        return [collectionName, documentID];
-    }
-    ;
-    listen(stream) {
-        this.share.listen(stream);
-    }
-    ;
-    get(collectionName, documentID) {
-        const docIdentifier = this.getDocIdentifier(collectionName, documentID);
-        let sdbDoc;
-        if (this.docs.has(docIdentifier)) {
-            sdbDoc = this.docs.get(docIdentifier);
-        }
-        else {
-            const doc = this.connection.get(collectionName, documentID);
-            sdbDoc = new SDBDoc(docIdentifier, doc, this);
-            this.docs.set(docIdentifier, sdbDoc);
-        }
-        return sdbDoc;
-    }
-    ;
-    close() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield new Promise((resolve, reject) => {
-                this.share.close(() => {
-                    resolve(null);
-                });
-            });
-        });
-    }
-    ;
-    deleteDoc(doc) {
-        this.docs.delete(doc.docIdentifier);
-    }
-    ;
-}
-exports.SDB = SDB;
-;
-class SDBDoc {
-    constructor(docIdentifier, doc, sdb) {
-        this.docIdentifier = docIdentifier;
-        this.doc = doc;
-        this.sdb = sdb;
-    }
-    ;
-    traverse(path) {
-        let x = this.getData();
-        for (let i = 0; i < path.length; i++) {
-            x = x[path[i]];
-        }
-        return x;
-    }
-    ;
-    submitObjectReplaceOp(p, oi, od = this.traverse(p)) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const op = { p, oi, od };
-            return yield this.submitOp([op]);
-        });
-    }
-    ;
-    submitObjectInsertOp(p, oi) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const op = { p, oi };
-            return yield this.submitOp([op]);
-        });
-    }
-    ;
-    submitObjectDeleteOp(p, od = this.traverse(p)) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const op = { p, od };
-            return yield this.submitOp([op]);
-        });
-    }
-    ;
-    submitListReplaceOp(p, li, ld = this.traverse(p)) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const op = { p, li, ld };
-            return yield this.submitOp([op]);
-        });
-    }
-    ;
-    submitListInsertOp(p, li) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const op = { p, li };
-            return yield this.submitOp([op]);
-        });
-    }
-    ;
-    submitListDeleteOp(p, ld = this.traverse(p)) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const op = { p, ld };
-            return yield this.submitOp([op]);
-        });
-    }
-    ;
-    submitListPushOp(p, ...items) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const arr = this.traverse(p);
-            const previousLength = arr.length;
-            const ops = items.map((x, i) => {
-                const op = { p: p.concat(previousLength + i), li: x };
-                return op;
-            });
-            return yield this.submitOp(ops);
-        });
-    }
-    ;
-    submitListUnshiftOp(p, ...items) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const arr = this.traverse(p);
-            const previousLength = arr.length;
-            const ops = items.map((x, i) => {
-                const op = { p: p.concat(i), li: x };
-                return op;
-            });
-            return yield this.submitOp(ops);
-        });
-    }
-    ;
-    fetch() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return new Promise((resolve, reject) => {
-                this.doc.fetch((err) => {
-                    if (err) {
-                        reject(err);
-                    }
-                    else {
-                        resolve(this.doc);
-                    }
-                });
-            });
-        });
-    }
-    ;
-    create(data, type, options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return new Promise((resolve, reject) => {
-                this.doc.create(data, type, options, () => {
-                    resolve(this.doc);
-                });
-            });
-        });
-    }
-    ;
-    del(source = true) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield new Promise((resolve, reject) => {
-                this.doc.del({ source }, (err) => {
-                    if (err) {
-                        reject(err);
-                    }
-                    else {
-                        resolve();
-                    }
-                });
-            });
-            this.sdb.deleteDoc(this);
-        });
-    }
-    ;
-    subscribe(callback) {
-        this.doc.subscribe((err) => {
-            if (err) {
-                throw (err);
-            }
-            callback(null, null, this.doc.data);
-        });
-        const onOpFunc = (ops, source) => {
-            callback(ops, source, this.doc.data);
-        };
-        this.doc.on('op', onOpFunc);
-        return () => {
-            this.doc.removeListener('op', onOpFunc);
-        };
-    }
-    ;
-    submitOp(op, source = true) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield new Promise((resolve, reject) => {
-                this.doc.submitOp(op, { source }, (err) => {
-                    if (err) {
-                        reject(err);
-                    }
-                    else {
-                        resolve();
-                    }
-                });
-            });
-        });
-    }
-    ;
-    createIfEmpty(data, type, options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const doc = yield this.fetch();
-            if (doc.type === null) {
-                return this.create(data, type, options);
-            }
-            else {
-                return doc;
-            }
-        });
-    }
-    ;
-    getData() {
-        return this.doc.data;
-    }
-    ;
-    destroy() {
-        this.doc.destroy();
-        this.sdb.deleteDoc(this);
-    }
-    ;
-}
-exports.SDBDoc = SDBDoc;
-;
-class SDBObject {
-    constructor(value) {
-        this.value = value;
-        this.attachedToDoc = false;
-    }
-    ;
-    markAttachedToShareDBDoc(doc, path) {
-        this.doc = doc;
-        this.path = path;
-        this.attachedToDoc = true;
-    }
-    ;
-    isAttached() { return this.attachedToDoc; }
-    ;
-    getValue() { return this.value; }
-    ;
-}
-exports.SDBObject = SDBObject;
-;
-class SDBArray extends SDBObject {
-    constructor(value = []) {
-        super(value);
-    }
-    ;
-    push(...args) {
-        this.value.push(...args);
-        if (this.isAttached()) {
-            this.doc.submitListPushOp(this.path, ...args);
-        }
-    }
-    ;
-    splice(start, deleteCount, ...toAdd) {
-        this.value.splice(start, deleteCount, ...toAdd);
-        if (this.isAttached()) {
-            for (let _ = 0; _ < deleteCount; _++) {
-                this.doc.submitListDeleteOp(this.path.concat(start));
-            }
-            toAdd.forEach((item, i) => {
-                this.doc.submitListInsertOp(this.path.concat(i), item);
-            });
-        }
-    }
-    ;
-    length() { return this.value.length; }
-    item(i) { return this.value[i]; }
-    ;
-    indexOf(item) { return this.value.indexOf(item); }
-    contains(item) { return this.indexOf(item) >= 0; }
-    forEach(callbackFunc) {
-        this.value.forEach(callbackFunc);
-    }
-    ;
-    map(callbackFunc) { return this.value.map(callbackFunc); }
-    ;
-    join(glue) { return this.value.join(glue); }
-    ;
-}
-exports.SDBArray = SDBArray;
-
-
-/***/ }),
-/* 73 */
-/***/ (function(module, exports, __webpack_require__) {
-
-exports.Connection = __webpack_require__(23);
-exports.Doc = __webpack_require__(24);
-exports.Error = __webpack_require__(2);
-exports.Query = __webpack_require__(27);
-exports.types = __webpack_require__(3);
-
-
-/***/ }),
-/* 74 */
-/***/ (function(module, exports) {
-
-module.exports = require("events");
-
-/***/ }),
-/* 75 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-// ISC @ Julien Fontanet
-
-
-
-// ===================================================================
-
-var defineProperty = Object.defineProperty
-
-// -------------------------------------------------------------------
-
-var captureStackTrace = Error.captureStackTrace
-if (!captureStackTrace) {
-  captureStackTrace = function captureStackTrace (error) {
-    var container = new Error()
-
-    defineProperty(error, 'stack', {
-      configurable: true,
-      get: function getStack () {
-        var stack = container.stack
-
-        // Replace property with value for faster future accesses.
-        defineProperty(this, 'stack', {
-          value: stack
-        })
-
-        return stack
-      },
-      set: function setStack (stack) {
-        defineProperty(error, 'stack', {
-          configurable: true,
-          value: stack,
-          writable: true
-        })
-      }
-    })
-  }
-}
-
-// -------------------------------------------------------------------
-
-function BaseError (message) {
-  if (message) {
-    defineProperty(this, 'message', {
-      configurable: true,
-      value: message,
-      writable: true
-    })
-  }
-
-  var cname = this.constructor.name
-  if (
-    cname &&
-    cname !== this.name
-  ) {
-    defineProperty(this, 'name', {
-      configurable: true,
-      value: cname,
-      writable: true
-    })
-  }
-
-  captureStackTrace(this, this.constructor)
-}
-
-BaseError.prototype = Object.create(Error.prototype, {
-  // See: https://github.com/JsCommunity/make-error/issues/4
-  constructor: {
-    configurable: true,
-    value: BaseError,
-    writable: true
-  }
-})
-
-// -------------------------------------------------------------------
-
-// Sets the name of a function if possible (depends of the JS engine).
-var setFunctionName = (function () {
-  function setFunctionName (fn, name) {
-    return defineProperty(fn, 'name', {
-      configurable: true,
-      value: name
-    })
-  }
-  try {
-    var f = function () {}
-    setFunctionName(f, 'foo')
-    if (f.name === 'foo') {
-      return setFunctionName
-    }
-  } catch (_) {}
-})()
-
-// -------------------------------------------------------------------
-
-function makeError (constructor, super_) {
-  if (super_ == null || super_ === Error) {
-    super_ = BaseError
-  } else if (typeof super_ !== 'function') {
-    throw new TypeError('super_ should be a function')
-  }
-
-  var name
-  if (typeof constructor === 'string') {
-    name = constructor
-    constructor = function () { super_.apply(this, arguments) }
-
-    // If the name can be set, do it once and for all.
-    if (setFunctionName) {
-      setFunctionName(constructor, name)
-      name = null
-    }
-  } else if (typeof constructor !== 'function') {
-    throw new TypeError('constructor should be either a string or a function')
-  }
-
-  // Also register the super constructor also as `constructor.super_` just
-  // like Node's `util.inherits()`.
-  constructor.super_ = constructor['super'] = super_
-
-  var properties = {
-    constructor: {
-      configurable: true,
-      value: constructor,
-      writable: true
-    }
-  }
-
-  // If the name could not be set on the constructor, set it on the
-  // prototype.
-  if (name != null) {
-    properties.name = {
-      configurable: true,
-      value: name,
-      writable: true
-    }
-  }
-  constructor.prototype = Object.create(super_.prototype, properties)
-
-  return constructor
-}
-exports = module.exports = makeError
-exports.BaseError = BaseError
-
-
-/***/ }),
-/* 76 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/*
- This is the implementation of the JSON OT type.
-
- Spec is here: https://github.com/josephg/ShareJS/wiki/JSON-Operations
-
- Note: This is being made obsolete. It will soon be replaced by the JSON2 type.
-*/
-
-/**
- * UTILITY FUNCTIONS
- */
-
-/**
- * Checks if the passed object is an Array instance. Can't use Array.isArray
- * yet because its not supported on IE8.
- *
- * @param obj
- * @returns {boolean}
- */
-var isArray = function(obj) {
-  return Object.prototype.toString.call(obj) == '[object Array]';
-};
-
-/**
- * Checks if the passed object is an Object instance.
- * No function call (fast) version
- *
- * @param obj
- * @returns {boolean}
- */
-var isObject = function(obj) {
-  return (!!obj) && (obj.constructor === Object);
-};
-
-/**
- * Clones the passed object using JSON serialization (which is slow).
- *
- * hax, copied from test/types/json. Apparently this is still the fastest way
- * to deep clone an object, assuming we have browser support for JSON.  @see
- * http://jsperf.com/cloning-an-object/12
- */
-var clone = function(o) {
-  return JSON.parse(JSON.stringify(o));
-};
-
-/**
- * JSON OT Type
- * @type {*}
- */
-var json = {
-  name: 'json0',
-  uri: 'http://sharejs.org/types/JSONv0'
-};
-
-// You can register another OT type as a subtype in a JSON document using
-// the following function. This allows another type to handle certain
-// operations instead of the builtin JSON type.
-var subtypes = {};
-json.registerSubtype = function(subtype) {
-  subtypes[subtype.name] = subtype;
-};
-
-json.create = function(data) {
-  // Null instead of undefined if you don't pass an argument.
-  return data === undefined ? null : clone(data);
-};
-
-json.invertComponent = function(c) {
-  var c_ = {p: c.p};
-
-  // handle subtype ops
-  if (c.t && subtypes[c.t]) {
-    c_.t = c.t;
-    c_.o = subtypes[c.t].invert(c.o);
-  }
-
-  if (c.si !== void 0) c_.sd = c.si;
-  if (c.sd !== void 0) c_.si = c.sd;
-  if (c.oi !== void 0) c_.od = c.oi;
-  if (c.od !== void 0) c_.oi = c.od;
-  if (c.li !== void 0) c_.ld = c.li;
-  if (c.ld !== void 0) c_.li = c.ld;
-  if (c.na !== void 0) c_.na = -c.na;
-
-  if (c.lm !== void 0) {
-    c_.lm = c.p[c.p.length-1];
-    c_.p = c.p.slice(0,c.p.length-1).concat([c.lm]);
-  }
-
-  return c_;
-};
-
-json.invert = function(op) {
-  var op_ = op.slice().reverse();
-  var iop = [];
-  for (var i = 0; i < op_.length; i++) {
-    iop.push(json.invertComponent(op_[i]));
-  }
-  return iop;
-};
-
-json.checkValidOp = function(op) {
-  for (var i = 0; i < op.length; i++) {
-    if (!isArray(op[i].p)) throw new Error('Missing path');
-  }
-};
-
-json.checkList = function(elem) {
-  if (!isArray(elem))
-    throw new Error('Referenced element not a list');
-};
-
-json.checkObj = function(elem) {
-  if (!isObject(elem)) {
-    debugger;
-    throw new Error("Referenced element not an object (it was " + JSON.stringify(elem) + ")");
-  }
-};
-
-// helper functions to convert old string ops to and from subtype ops
-function convertFromText(c) {
-  c.t = 'text0';
-  var o = {p: c.p.pop()};
-  if (c.si != null) o.i = c.si;
-  if (c.sd != null) o.d = c.sd;
-  c.o = [o];
-}
-
-function convertToText(c) {
-  c.p.push(c.o[0].p);
-  if (c.o[0].i != null) c.si = c.o[0].i;
-  if (c.o[0].d != null) c.sd = c.o[0].d;
-  delete c.t;
-  delete c.o;
-}
-
-json.apply = function(snapshot, op) {
-  json.checkValidOp(op);
-
-  op = clone(op);
-
-  var container = {
-    data: snapshot
-  };
-
-  for (var i = 0; i < op.length; i++) {
-    var c = op[i];
-
-    // convert old string ops to use subtype for backwards compatibility
-    if (c.si != null || c.sd != null)
-      convertFromText(c);
-
-    var parent = null;
-    var parentKey = null;
-    var elem = container;
-    var key = 'data';
-
-    for (var j = 0; j < c.p.length; j++) {
-      var p = c.p[j];
-
-      parent = elem;
-      parentKey = key;
-      if(!elem) { debugger; }
-      elem = elem[key];
-      key = p;
-
-      if (parent == null)
-        throw new Error('Path invalid');
-    }
-
-    // handle subtype ops
-    if (c.t && c.o !== void 0 && subtypes[c.t]) {
-      elem[key] = subtypes[c.t].apply(elem[key], c.o);
-
-    // Number add
-    } else if (c.na !== void 0) {
-      if (typeof elem[key] != 'number')
-        throw new Error('Referenced element not a number');
-
-      elem[key] += c.na;
-    }
-
-    // List replace
-    else if (c.li !== void 0 && c.ld !== void 0) {
-      json.checkList(elem);
-      // Should check the list element matches c.ld
-      elem[key] = c.li;
-    }
-
-    // List insert
-    else if (c.li !== void 0) {
-      json.checkList(elem);
-      elem.splice(key,0, c.li);
-    }
-
-    // List delete
-    else if (c.ld !== void 0) {
-      json.checkList(elem);
-      // Should check the list element matches c.ld here too.
-      elem.splice(key,1);
-    }
-
-    // List move
-    else if (c.lm !== void 0) {
-      json.checkList(elem);
-      if (c.lm != key) {
-        var e = elem[key];
-        // Remove it...
-        elem.splice(key,1);
-        // And insert it back.
-        elem.splice(c.lm,0,e);
-      }
-    }
-
-    // Object insert / replace
-    else if (c.oi !== void 0) {
-      json.checkObj(elem);
-
-      // Should check that elem[key] == c.od
-      elem[key] = c.oi;
-    }
-
-    // Object delete
-    else if (c.od !== void 0) {
-      json.checkObj(elem);
-
-      // Should check that elem[key] == c.od
-      delete elem[key];
-    }
-
-    else {
-      throw new Error('invalid / missing instruction in op');
-    }
-  }
-
-  return container.data;
-};
-
-// Helper to break an operation up into a bunch of small ops.
-json.shatter = function(op) {
-  var results = [];
-  for (var i = 0; i < op.length; i++) {
-    results.push([op[i]]);
-  }
-  return results;
-};
-
-// Helper for incrementally applying an operation to a snapshot. Calls yield
-// after each op component has been applied.
-json.incrementalApply = function(snapshot, op, _yield) {
-  for (var i = 0; i < op.length; i++) {
-    var smallOp = [op[i]];
-    snapshot = json.apply(snapshot, smallOp);
-    // I'd just call this yield, but thats a reserved keyword. Bah!
-    _yield(smallOp, snapshot);
-  }
-
-  return snapshot;
-};
-
-// Checks if two paths, p1 and p2 match.
-var pathMatches = json.pathMatches = function(p1, p2, ignoreLast) {
-  if (p1.length != p2.length)
-    return false;
-
-  for (var i = 0; i < p1.length; i++) {
-    if (p1[i] !== p2[i] && (!ignoreLast || i !== p1.length - 1))
-      return false;
-  }
-
-  return true;
-};
-
-json.append = function(dest,c) {
-  c = clone(c);
-
-  if (dest.length === 0) {
-    dest.push(c);
-    return;
-  }
-
-  var last = dest[dest.length - 1];
-
-  // convert old string ops to use subtype for backwards compatibility
-  if ((c.si != null || c.sd != null) && (last.si != null || last.sd != null)) {
-    convertFromText(c);
-    convertFromText(last);
-  }
-
-  if (pathMatches(c.p, last.p)) {
-    // handle subtype ops
-    if (c.t && last.t && c.t === last.t && subtypes[c.t]) {
-      last.o = subtypes[c.t].compose(last.o, c.o);
-
-      // convert back to old string ops
-      if (c.si != null || c.sd != null) {
-        var p = c.p;
-        for (var i = 0; i < last.o.length - 1; i++) {
-          c.o = [last.o.pop()];
-          c.p = p.slice();
-          convertToText(c);
-          dest.push(c);
-        }
-
-        convertToText(last);
-      }
-    } else if (last.na != null && c.na != null) {
-      dest[dest.length - 1] = {p: last.p, na: last.na + c.na};
-    } else if (last.li !== undefined && c.li === undefined && c.ld === last.li) {
-      // insert immediately followed by delete becomes a noop.
-      if (last.ld !== undefined) {
-        // leave the delete part of the replace
-        delete last.li;
-      } else {
-        dest.pop();
-      }
-    } else if (last.od !== undefined && last.oi === undefined && c.oi !== undefined && c.od === undefined) {
-      last.oi = c.oi;
-    } else if (last.oi !== undefined && c.od !== undefined) {
-      // The last path component inserted something that the new component deletes (or replaces).
-      // Just merge them.
-      if (c.oi !== undefined) {
-        last.oi = c.oi;
-      } else if (last.od !== undefined) {
-        delete last.oi;
-      } else {
-        // An insert directly followed by a delete turns into a no-op and can be removed.
-        dest.pop();
-      }
-    } else if (c.lm !== undefined && c.p[c.p.length - 1] === c.lm) {
-      // don't do anything
-    } else {
-      dest.push(c);
-    }
-  } else {
-    // convert string ops back
-    if ((c.si != null || c.sd != null) && (last.si != null || last.sd != null)) {
-      convertToText(c);
-      convertToText(last);
-    }
-
-    dest.push(c);
-  }
-};
-
-json.compose = function(op1,op2) {
-  json.checkValidOp(op1);
-  json.checkValidOp(op2);
-
-  var newOp = clone(op1);
-
-  for (var i = 0; i < op2.length; i++) {
-    json.append(newOp,op2[i]);
-  }
-
-  return newOp;
-};
-
-json.normalize = function(op) {
-  var newOp = [];
-
-  op = isArray(op) ? op : [op];
-
-  for (var i = 0; i < op.length; i++) {
-    var c = op[i];
-    if (c.p == null) c.p = [];
-
-    json.append(newOp,c);
-  }
-
-  return newOp;
-};
-
-// Returns the common length of the paths of ops a and b
-json.commonLengthForOps = function(a, b) {
-  var alen = a.p.length;
-  var blen = b.p.length;
-  if (a.na != null || a.t)
-    alen++;
-
-  if (b.na != null || b.t)
-    blen++;
-
-  if (alen === 0) return -1;
-  if (blen === 0) return null;
-
-  alen--;
-  blen--;
-
-  for (var i = 0; i < alen; i++) {
-    var p = a.p[i];
-    if (i >= blen || p !== b.p[i])
-      return null;
-  }
-
-  return alen;
-};
-
-// Returns true if an op can affect the given path
-json.canOpAffectPath = function(op, path) {
-  return json.commonLengthForOps({p:path}, op) != null;
-};
-
-// transform c so it applies to a document with otherC applied.
-json.transformComponent = function(dest, c, otherC, type) {
-  c = clone(c);
-
-  var common = json.commonLengthForOps(otherC, c);
-  var common2 = json.commonLengthForOps(c, otherC);
-  var cplength = c.p.length;
-  var otherCplength = otherC.p.length;
-
-  if (c.na != null || c.t)
-    cplength++;
-
-  if (otherC.na != null || otherC.t)
-    otherCplength++;
-
-  // if c is deleting something, and that thing is changed by otherC, we need to
-  // update c to reflect that change for invertibility.
-  if (common2 != null && otherCplength > cplength && c.p[common2] == otherC.p[common2]) {
-    if (c.ld !== void 0) {
-      var oc = clone(otherC);
-      oc.p = oc.p.slice(cplength);
-      c.ld = json.apply(clone(c.ld),[oc]);
-    } else if (c.od !== void 0) {
-      var oc = clone(otherC);
-      oc.p = oc.p.slice(cplength);
-      c.od = json.apply(clone(c.od),[oc]);
-    }
-  }
-
-  if (common != null) {
-    var commonOperand = cplength == otherCplength;
-
-    // backward compatibility for old string ops
-    var oc = otherC;
-    if ((c.si != null || c.sd != null) && (otherC.si != null || otherC.sd != null)) {
-      convertFromText(c);
-      oc = clone(otherC);
-      convertFromText(oc);
-    }
-
-    // handle subtype ops
-    if (oc.t && subtypes[oc.t]) {
-      if (c.t && c.t === oc.t) {
-        var res = subtypes[c.t].transform(c.o, oc.o, type);
-
-        if (res.length > 0) {
-          // convert back to old string ops
-          if (c.si != null || c.sd != null) {
-            var p = c.p;
-            for (var i = 0; i < res.length; i++) {
-              c.o = [res[i]];
-              c.p = p.slice();
-              convertToText(c);
-              json.append(dest, c);
-            }
-          } else {
-            c.o = res;
-            json.append(dest, c);
-          }
-        }
-
-        return dest;
-      }
-    }
-
-    // transform based on otherC
-    else if (otherC.na !== void 0) {
-      // this case is handled below
-    } else if (otherC.li !== void 0 && otherC.ld !== void 0) {
-      if (otherC.p[common] === c.p[common]) {
-        // noop
-
-        if (!commonOperand) {
-          return dest;
-        } else if (c.ld !== void 0) {
-          // we're trying to delete the same element, -> noop
-          if (c.li !== void 0 && type === 'left') {
-            // we're both replacing one element with another. only one can survive
-            c.ld = clone(otherC.li);
-          } else {
-            return dest;
-          }
-        }
-      }
-    } else if (otherC.li !== void 0) {
-      if (c.li !== void 0 && c.ld === undefined && commonOperand && c.p[common] === otherC.p[common]) {
-        // in li vs. li, left wins.
-        if (type === 'right')
-          c.p[common]++;
-      } else if (otherC.p[common] <= c.p[common]) {
-        c.p[common]++;
-      }
-
-      if (c.lm !== void 0) {
-        if (commonOperand) {
-          // otherC edits the same list we edit
-          if (otherC.p[common] <= c.lm)
-            c.lm++;
-          // changing c.from is handled above.
-        }
-      }
-    } else if (otherC.ld !== void 0) {
-      if (c.lm !== void 0) {
-        if (commonOperand) {
-          if (otherC.p[common] === c.p[common]) {
-            // they deleted the thing we're trying to move
-            return dest;
-          }
-          // otherC edits the same list we edit
-          var p = otherC.p[common];
-          var from = c.p[common];
-          var to = c.lm;
-          if (p < to || (p === to && from < to))
-            c.lm--;
-
-        }
-      }
-
-      if (otherC.p[common] < c.p[common]) {
-        c.p[common]--;
-      } else if (otherC.p[common] === c.p[common]) {
-        if (otherCplength < cplength) {
-          // we're below the deleted element, so -> noop
-          return dest;
-        } else if (c.ld !== void 0) {
-          if (c.li !== void 0) {
-            // we're replacing, they're deleting. we become an insert.
-            delete c.ld;
-          } else {
-            // we're trying to delete the same element, -> noop
-            return dest;
-          }
-        }
-      }
-
-    } else if (otherC.lm !== void 0) {
-      if (c.lm !== void 0 && cplength === otherCplength) {
-        // lm vs lm, here we go!
-        var from = c.p[common];
-        var to = c.lm;
-        var otherFrom = otherC.p[common];
-        var otherTo = otherC.lm;
-        if (otherFrom !== otherTo) {
-          // if otherFrom == otherTo, we don't need to change our op.
-
-          // where did my thing go?
-          if (from === otherFrom) {
-            // they moved it! tie break.
-            if (type === 'left') {
-              c.p[common] = otherTo;
-              if (from === to) // ugh
-                c.lm = otherTo;
-            } else {
-              return dest;
-            }
-          } else {
-            // they moved around it
-            if (from > otherFrom) c.p[common]--;
-            if (from > otherTo) c.p[common]++;
-            else if (from === otherTo) {
-              if (otherFrom > otherTo) {
-                c.p[common]++;
-                if (from === to) // ugh, again
-                  c.lm++;
-              }
-            }
-
-            // step 2: where am i going to put it?
-            if (to > otherFrom) {
-              c.lm--;
-            } else if (to === otherFrom) {
-              if (to > from)
-                c.lm--;
-            }
-            if (to > otherTo) {
-              c.lm++;
-            } else if (to === otherTo) {
-              // if we're both moving in the same direction, tie break
-              if ((otherTo > otherFrom && to > from) ||
-                  (otherTo < otherFrom && to < from)) {
-                if (type === 'right') c.lm++;
-              } else {
-                if (to > from) c.lm++;
-                else if (to === otherFrom) c.lm--;
-              }
-            }
-          }
-        }
-      } else if (c.li !== void 0 && c.ld === undefined && commonOperand) {
-        // li
-        var from = otherC.p[common];
-        var to = otherC.lm;
-        p = c.p[common];
-        if (p > from) c.p[common]--;
-        if (p > to) c.p[common]++;
-      } else {
-        // ld, ld+li, si, sd, na, oi, od, oi+od, any li on an element beneath
-        // the lm
-        //
-        // i.e. things care about where their item is after the move.
-        var from = otherC.p[common];
-        var to = otherC.lm;
-        p = c.p[common];
-        if (p === from) {
-          c.p[common] = to;
-        } else {
-          if (p > from) c.p[common]--;
-          if (p > to) c.p[common]++;
-          else if (p === to && from > to) c.p[common]++;
-        }
-      }
-    }
-    else if (otherC.oi !== void 0 && otherC.od !== void 0) {
-      if (c.p[common] === otherC.p[common]) {
-        if (c.oi !== void 0 && commonOperand) {
-          // we inserted where someone else replaced
-          if (type === 'right') {
-            // left wins
-            return dest;
-          } else {
-            // we win, make our op replace what they inserted
-            c.od = otherC.oi;
-          }
-        } else {
-          // -> noop if the other component is deleting the same object (or any parent)
-          return dest;
-        }
-      }
-    } else if (otherC.oi !== void 0) {
-      if (c.oi !== void 0 && c.p[common] === otherC.p[common]) {
-        // left wins if we try to insert at the same place
-        if (type === 'left') {
-          json.append(dest,{p: c.p, od:otherC.oi});
-        } else {
-          return dest;
-        }
-      }
-    } else if (otherC.od !== void 0) {
-      if (c.p[common] == otherC.p[common]) {
-        if (!commonOperand)
-          return dest;
-        if (c.oi !== void 0) {
-          delete c.od;
-        } else {
-          return dest;
-        }
-      }
-    }
-  }
-
-  json.append(dest,c);
-  return dest;
-};
-
-__webpack_require__(26)(json, json.transformComponent, json.checkValidOp, json.append);
-
-/**
- * Register a subtype for string operations, using the text0 type.
- */
-var text = __webpack_require__(77);
-
-json.registerSubtype(text);
-module.exports = json;
-
-
-/***/ }),
-/* 77 */
-/***/ (function(module, exports, __webpack_require__) {
-
-// DEPRECATED!
-//
-// This type works, but is not exported. Its included here because the JSON0
-// embedded string operations use this library.
-
-
-// A simple text implementation
-//
-// Operations are lists of components. Each component either inserts or deletes
-// at a specified position in the document.
-//
-// Components are either:
-//  {i:'str', p:100}: Insert 'str' at position 100 in the document
-//  {d:'str', p:100}: Delete 'str' at position 100 in the document
-//
-// Components in an operation are executed sequentially, so the position of components
-// assumes previous components have already executed.
-//
-// Eg: This op:
-//   [{i:'abc', p:0}]
-// is equivalent to this op:
-//   [{i:'a', p:0}, {i:'b', p:1}, {i:'c', p:2}]
-
-var text = module.exports = {
-  name: 'text0',
-  uri: 'http://sharejs.org/types/textv0',
-  create: function(initial) {
-    if ((initial != null) && typeof initial !== 'string') {
-      throw new Error('Initial data must be a string');
-    }
-    return initial || '';
-  }
-};
-
-/** Insert s2 into s1 at pos. */
-var strInject = function(s1, pos, s2) {
-  return s1.slice(0, pos) + s2 + s1.slice(pos);
-};
-
-/** Check that an operation component is valid. Throws if its invalid. */
-var checkValidComponent = function(c) {
-  if (typeof c.p !== 'number')
-    throw new Error('component missing position field');
-
-  if ((typeof c.i === 'string') === (typeof c.d === 'string'))
-    throw new Error('component needs an i or d field');
-
-  if (c.p < 0)
-    throw new Error('position cannot be negative');
-};
-
-/** Check that an operation is valid */
-var checkValidOp = function(op) {
-  for (var i = 0; i < op.length; i++) {
-    checkValidComponent(op[i]);
-  }
-};
-
-/** Apply op to snapshot */
-text.apply = function(snapshot, op) {
-  var deleted;
-
-  checkValidOp(op);
-  for (var i = 0; i < op.length; i++) {
-    var component = op[i];
-    if (component.i != null) {
-      snapshot = strInject(snapshot, component.p, component.i);
-    } else {
-      deleted = snapshot.slice(component.p, component.p + component.d.length);
-      if (component.d !== deleted)
-        throw new Error("Delete component '" + component.d + "' does not match deleted text '" + deleted + "'");
-
-      snapshot = snapshot.slice(0, component.p) + snapshot.slice(component.p + component.d.length);
-    }
-  }
-  return snapshot;
-};
-
-/**
- * Append a component to the end of newOp. Exported for use by the random op
- * generator and the JSON0 type.
- */
-var append = text._append = function(newOp, c) {
-  if (c.i === '' || c.d === '') return;
-
-  if (newOp.length === 0) {
-    newOp.push(c);
-  } else {
-    var last = newOp[newOp.length - 1];
-
-    if (last.i != null && c.i != null && last.p <= c.p && c.p <= last.p + last.i.length) {
-      // Compose the insert into the previous insert
-      newOp[newOp.length - 1] = {i:strInject(last.i, c.p - last.p, c.i), p:last.p};
-
-    } else if (last.d != null && c.d != null && c.p <= last.p && last.p <= c.p + c.d.length) {
-      // Compose the deletes together
-      newOp[newOp.length - 1] = {d:strInject(c.d, last.p - c.p, last.d), p:c.p};
-
-    } else {
-      newOp.push(c);
-    }
-  }
-};
-
-/** Compose op1 and op2 together */
-text.compose = function(op1, op2) {
-  checkValidOp(op1);
-  checkValidOp(op2);
-  var newOp = op1.slice();
-  for (var i = 0; i < op2.length; i++) {
-    append(newOp, op2[i]);
-  }
-  return newOp;
-};
-
-/** Clean up an op */
-text.normalize = function(op) {
-  var newOp = [];
-
-  // Normalize should allow ops which are a single (unwrapped) component:
-  // {i:'asdf', p:23}.
-  // There's no good way to test if something is an array:
-  // http://perfectionkills.com/instanceof-considered-harmful-or-how-to-write-a-robust-isarray/
-  // so this is probably the least bad solution.
-  if (op.i != null || op.p != null) op = [op];
-
-  for (var i = 0; i < op.length; i++) {
-    var c = op[i];
-    if (c.p == null) c.p = 0;
-
-    append(newOp, c);
-  }
-
-  return newOp;
-};
-
-// This helper method transforms a position by an op component.
-//
-// If c is an insert, insertAfter specifies whether the transform
-// is pushed after the insert (true) or before it (false).
-//
-// insertAfter is optional for deletes.
-var transformPosition = function(pos, c, insertAfter) {
-  // This will get collapsed into a giant ternary by uglify.
-  if (c.i != null) {
-    if (c.p < pos || (c.p === pos && insertAfter)) {
-      return pos + c.i.length;
-    } else {
-      return pos;
-    }
-  } else {
-    // I think this could also be written as: Math.min(c.p, Math.min(c.p -
-    // otherC.p, otherC.d.length)) but I think its harder to read that way, and
-    // it compiles using ternary operators anyway so its no slower written like
-    // this.
-    if (pos <= c.p) {
-      return pos;
-    } else if (pos <= c.p + c.d.length) {
-      return c.p;
-    } else {
-      return pos - c.d.length;
-    }
-  }
-};
-
-// Helper method to transform a cursor position as a result of an op.
-//
-// Like transformPosition above, if c is an insert, insertAfter specifies
-// whether the cursor position is pushed after an insert (true) or before it
-// (false).
-text.transformCursor = function(position, op, side) {
-  var insertAfter = side === 'right';
-  for (var i = 0; i < op.length; i++) {
-    position = transformPosition(position, op[i], insertAfter);
-  }
-
-  return position;
-};
-
-// Transform an op component by another op component. Asymmetric.
-// The result will be appended to destination.
-//
-// exported for use in JSON type
-var transformComponent = text._tc = function(dest, c, otherC, side) {
-  //var cIntersect, intersectEnd, intersectStart, newC, otherIntersect, s;
-
-  checkValidComponent(c);
-  checkValidComponent(otherC);
-
-  if (c.i != null) {
-    // Insert.
-    append(dest, {i:c.i, p:transformPosition(c.p, otherC, side === 'right')});
-  } else {
-    // Delete
-    if (otherC.i != null) {
-      // Delete vs insert
-      var s = c.d;
-      if (c.p < otherC.p) {
-        append(dest, {d:s.slice(0, otherC.p - c.p), p:c.p});
-        s = s.slice(otherC.p - c.p);
-      }
-      if (s !== '')
-        append(dest, {d: s, p: c.p + otherC.i.length});
-
-    } else {
-      // Delete vs delete
-      if (c.p >= otherC.p + otherC.d.length)
-        append(dest, {d: c.d, p: c.p - otherC.d.length});
-      else if (c.p + c.d.length <= otherC.p)
-        append(dest, c);
-      else {
-        // They overlap somewhere.
-        var newC = {d: '', p: c.p};
-
-        if (c.p < otherC.p)
-          newC.d = c.d.slice(0, otherC.p - c.p);
-
-        if (c.p + c.d.length > otherC.p + otherC.d.length)
-          newC.d += c.d.slice(otherC.p + otherC.d.length - c.p);
-
-        // This is entirely optional - I'm just checking the deleted text in
-        // the two ops matches
-        var intersectStart = Math.max(c.p, otherC.p);
-        var intersectEnd = Math.min(c.p + c.d.length, otherC.p + otherC.d.length);
-        var cIntersect = c.d.slice(intersectStart - c.p, intersectEnd - c.p);
-        var otherIntersect = otherC.d.slice(intersectStart - otherC.p, intersectEnd - otherC.p);
-        if (cIntersect !== otherIntersect)
-          throw new Error('Delete ops delete different text in the same region of the document');
-
-        if (newC.d !== '') {
-          newC.p = transformPosition(newC.p, otherC);
-          append(dest, newC);
-        }
-      }
-    }
-  }
-
-  return dest;
-};
-
-var invertComponent = function(c) {
-  return (c.i != null) ? {d:c.i, p:c.p} : {i:c.d, p:c.p};
-};
-
-// No need to use append for invert, because the components won't be able to
-// cancel one another.
-text.invert = function(op) {
-  // Shallow copy & reverse that sucka.
-  op = op.slice().reverse();
-  for (var i = 0; i < op.length; i++) {
-    op[i] = invertComponent(op[i]);
-  }
-  return op;
-};
-
-__webpack_require__(26)(text, transformComponent, checkValidOp, append);
-
-
-/***/ }),
-/* 78 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var Backend = __webpack_require__(79);
-module.exports = Backend;
-
-Backend.Agent = __webpack_require__(29);
-Backend.Backend = Backend;
-Backend.DB = __webpack_require__(31);
-Backend.Error = __webpack_require__(2);
-Backend.MemoryDB = __webpack_require__(30);
-Backend.MemoryPubSub = __webpack_require__(32);
-Backend.ot = __webpack_require__(15);
-Backend.projections = __webpack_require__(16);
-Backend.PubSub = __webpack_require__(33);
-Backend.QueryEmitter = __webpack_require__(36);
-Backend.SubmitRequest = __webpack_require__(37);
-Backend.types = __webpack_require__(3);
-
-
-/***/ }),
-/* 79 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var async = __webpack_require__(28);
-var Agent = __webpack_require__(29);
-var Connection = __webpack_require__(23);
-var emitter = __webpack_require__(9);
-var MemoryDB = __webpack_require__(30);
-var MemoryPubSub = __webpack_require__(32);
-var ot = __webpack_require__(15);
-var projections = __webpack_require__(16);
-var QueryEmitter = __webpack_require__(36);
-var StreamSocket = __webpack_require__(84);
-var SubmitRequest = __webpack_require__(37);
-
-function Backend(options) {
-  if (!(this instanceof Backend)) return new Backend(options);
-  emitter.EventEmitter.call(this);
-
-  if (!options) options = {};
-  this.db = options.db || new MemoryDB();
-  this.pubsub = options.pubsub || new MemoryPubSub();
-  // This contains any extra databases that can be queried
-  this.extraDbs = options.extraDbs || {};
-
-  // Map from projected collection -> {type, fields}
-  this.projections = {};
-
-  this.suppressPublish = !!options.suppressPublish;
-  this.maxSubmitRetries = options.maxSubmitRetries || null;
-
-  // Map from event name to a list of middleware
-  this.middleware = {};
-
-  // The number of open agents for monitoring and testing memory leaks
-  this.agentsCount = 0;
-  this.remoteAgentsCount = 0;
-}
-module.exports = Backend;
-emitter.mixin(Backend);
-
-Backend.prototype.close = function(callback) {
-  var wait = 3;
-  var backend = this;
-  function finish(err) {
-    if (err) {
-      if (callback) return callback(err);
-      return backend.emit('error', err);
-    }
-    if (--wait) return;
-    if (callback) callback();
-  }
-  this.pubsub.close(finish);
-  this.db.close(finish);
-  for (var name in this.extraDbs) {
-    wait++;
-    this.extraDbs[name].close(finish);
-  }
-  finish();
-};
-
-Backend.prototype.connect = function(connection, req) {
-  var socket = new StreamSocket();
-  if (connection) {
-    connection.bindToSocket(socket);
-  } else {
-    connection = new Connection(socket);
-  }
-  socket._open();
-  var agent = this.listen(socket.stream, req);
-  // Store a reference to the agent on the connection for convenience. This is
-  // not used internal to ShareDB, but it is handy for server-side only user
-  // code that may cache state on the agent and read it in middleware
-  connection.agent = agent;
-  return connection;
-};
-
-/** A client has connected through the specified stream. Listen for messages.
- *
- * The optional second argument (req) is an initial request which is passed
- * through to any connect() middleware. This is useful for inspecting cookies
- * or an express session or whatever on the request object in your middleware.
- *
- * (The agent is available through all middleware)
- */
-Backend.prototype.listen = function(stream, req) {
-  var agent = new Agent(this, stream);
-  this.trigger('connect', agent, {stream: stream, req: req}, function(err) {
-    if (err) return agent.close(err);
-    agent._open();
-  });
-  return agent;
-};
-
-Backend.prototype.addProjection = function(name, collection, fields) {
-  if (this.projections[name]) {
-    throw new Error('Projection ' + name + ' already exists');
-  }
-
-  for (var key in fields) {
-    if (fields[key] !== true) {
-      throw new Error('Invalid field ' + key + ' - fields must be {somekey: true}. Subfields not currently supported.');
-    }
-  }
-
-  this.projections[name] = {
-    target: collection,
-    fields: fields
-  };
-};
-
-/**
- * Add middleware to an action or array of actions
- */
-Backend.prototype.use = function(action, fn) {
-  if (Array.isArray(action)) {
-    for (var i = 0; i < action.length; i++) {
-      this.use(action[i], fn);
-    }
-    return;
-  }
-  var fns = this.middleware[action] || (this.middleware[action] = []);
-  fns.push(fn);
-  return this;
-};
-
-/**
- * Passes request through the middleware stack
- *
- * Middleware may modify the request object. After all middleware have been
- * invoked we call `callback` with `null` and the modified request. If one of
- * the middleware resturns an error the callback is called with that error.
- */
-Backend.prototype.trigger = function(action, agent, request, callback) {
-  request.action = action;
-  request.agent = agent;
-  request.backend = this;
-
-  var fns = this.middleware[action];
-  if (!fns) return callback();
-
-  // Copying the triggers we'll fire so they don't get edited while we iterate.
-  fns = fns.slice();
-  var next = function(err) {
-    if (err) return callback(err);
-    var fn = fns.shift();
-    if (!fn) return callback();
-    fn(request, next);
-  };
-  next();
-};
-
-// Submit an operation on the named collection/docname. op should contain a
-// {op:}, {create:} or {del:} field. It should probably contain a v: field (if
-// it doesn't, it defaults to the current version).
-Backend.prototype.submit = function(agent, index, id, op, options, callback) {
-  var err = ot.checkOp(op);
-  if (err) return callback(err);
-  var request = new SubmitRequest(this, agent, index, id, op, options);
-  var backend = this;
-  backend.trigger('submit', agent, request, function(err) {
-    if (err) return callback(err);
-    request.submit(function(err) {
-      if (err) return callback(err);
-      backend.trigger('after submit', agent, request, function(err) {
-        if (err) return callback(err);
-        backend._sanitizeOps(agent, request.projection, request.collection, id, request.ops, function(err) {
-          if (err) return callback(err);
-          backend.emit('timing', 'submit.total', Date.now() - request.start, request);
-          callback(err, request.ops);
-        });
-      });
-    });
-  });
-};
-
-Backend.prototype._sanitizeOp = function(agent, projection, collection, id, op, callback) {
-  if (projection) {
-    try {
-      projections.projectOp(projection.fields, op);
-    } catch (err) {
-      return callback(err);
-    }
-  }
-  this.trigger('op', agent, {collection: collection, id: id, op: op}, callback);
-};
-Backend.prototype._sanitizeOps = function(agent, projection, collection, id, ops, callback) {
-  var backend = this;
-  async.each(ops, function(op, eachCb) {
-    backend._sanitizeOp(agent, projection, collection, id, op, eachCb);
-  }, callback);
-};
-Backend.prototype._sanitizeOpsBulk = function(agent, projection, collection, opsMap, callback) {
-  var backend = this;
-  async.forEachOf(opsMap, function(ops, id, eachCb) {
-    backend._sanitizeOps(agent, projection, collection, id, ops, eachCb);
-  }, callback);
-};
-
-Backend.prototype._sanitizeSnapshot = function(agent, projection, collection, id, snapshot, callback) {
-  if (projection) {
-    try {
-      projections.projectSnapshot(projection.fields, snapshot);
-    } catch (err) {
-      return callback(err);
-    }
-  }
-  this.trigger('doc', agent, {collection: collection, id: id, snapshot: snapshot}, callback);
-};
-Backend.prototype._sanitizeSnapshots = function(agent, projection, collection, snapshots, callback) {
-  var backend = this;
-  async.each(snapshots, function(snapshot, eachCb) {
-    backend._sanitizeSnapshot(agent, projection, collection, snapshot.id, snapshot, eachCb);
-  }, callback);
-};
-Backend.prototype._sanitizeSnapshotBulk = function(agent, projection, collection, snapshotMap, callback) {
-  var backend = this;
-  async.forEachOf(snapshotMap, function(snapshot, id, eachCb) {
-    backend._sanitizeSnapshot(agent, projection, collection, id, snapshot, eachCb);
-  }, callback);
-};
-
-Backend.prototype._getSnapshotProjection = function(db, projection) {
-  return (db.projectsSnapshots) ? null : projection;
-};
-
-// Non inclusive - gets ops from [from, to). Ie, all relevant ops. If to is
-// not defined (null or undefined) then it returns all ops.
-Backend.prototype.getOps = function(agent, index, id, from, to, callback) {
-  var start = Date.now();
-  var projection = this.projections[index];
-  var collection = (projection) ? projection.target : index;
-  var backend = this;
-  var request = {
-    agent: agent,
-    index: index,
-    collection: collection,
-    id: id,
-    from: from,
-    to: to
-  };
-  backend.db.getOps(collection, id, from, to, null, function(err, ops) {
-    if (err) return callback(err);
-    backend._sanitizeOps(agent, projection, collection, id, ops, function(err) {
-      if (err) return callback(err);
-      backend.emit('timing', 'getOps', Date.now() - start, request);
-      callback(err, ops);
-    });
-  });
-};
-
-Backend.prototype.getOpsBulk = function(agent, index, fromMap, toMap, callback) {
-  var start = Date.now();
-  var projection = this.projections[index];
-  var collection = (projection) ? projection.target : index;
-  var backend = this;
-  var request = {
-    agent: agent,
-    index: index,
-    collection: collection,
-    fromMap: fromMap,
-    toMap: toMap
-  };
-  backend.db.getOpsBulk(collection, fromMap, toMap, null, function(err, opsMap) {
-    if (err) return callback(err);
-    backend._sanitizeOpsBulk(agent, projection, collection, opsMap, function(err) {
-      if (err) return callback(err);
-      backend.emit('timing', 'getOpsBulk', Date.now() - start, request);
-      callback(err, opsMap);
-    });
-  });
-};
-
-Backend.prototype.fetch = function(agent, index, id, callback) {
-  var start = Date.now();
-  var projection = this.projections[index];
-  var collection = (projection) ? projection.target : index;
-  var fields = projection && projection.fields;
-  var backend = this;
-  var request = {
-    agent: agent,
-    index: index,
-    collection: collection,
-    id: id
-  };
-  backend.db.getSnapshot(collection, id, fields, null, function(err, snapshot) {
-    if (err) return callback(err);
-    var snapshotProjection = backend._getSnapshotProjection(backend.db, projection);
-    backend._sanitizeSnapshot(agent, snapshotProjection, collection, id, snapshot, function(err) {
-      if (err) return callback(err);
-      backend.emit('timing', 'fetch', Date.now() - start, request);
-      callback(null, snapshot);
-    });
-  });
-};
-
-Backend.prototype.fetchBulk = function(agent, index, ids, callback) {
-  var start = Date.now();
-  var projection = this.projections[index];
-  var collection = (projection) ? projection.target : index;
-  var fields = projection && projection.fields;
-  var backend = this;
-  var request = {
-    agent: agent,
-    index: index,
-    collection: collection,
-    ids: ids
-  };
-  backend.db.getSnapshotBulk(collection, ids, fields, null, function(err, snapshotMap) {
-    if (err) return callback(err);
-    var snapshotProjection = backend._getSnapshotProjection(backend.db, projection);
-    backend._sanitizeSnapshotBulk(agent, snapshotProjection, collection, snapshotMap, function(err) {
-      if (err) return callback(err);
-      backend.emit('timing', 'fetchBulk', Date.now() - start, request);
-      callback(null, snapshotMap);
-    });
-  });
-};
-
-// Subscribe to the document from the specified version or null version
-Backend.prototype.subscribe = function(agent, index, id, version, callback) {
-  var start = Date.now();
-  var projection = this.projections[index];
-  var collection = (projection) ? projection.target : index;
-  var channel = this.getDocChannel(collection, id);
-  var backend = this;
-  var request = {
-    agent: agent,
-    index: index,
-    collection: collection,
-    id: id,
-    version: version
-  };
-  backend.pubsub.subscribe(channel, function(err, stream) {
-    if (err) return callback(err);
-    stream.initProjection(backend, agent, projection);
-    if (version == null) {
-      // Subscribing from null means that the agent doesn't have a document
-      // and needs to fetch it as well as subscribing
-      backend.fetch(agent, index, id, function(err, snapshot) {
-        if (err) return callback(err);
-        backend.emit('timing', 'subscribe.snapshot', Date.now() - start, request);
-        callback(null, stream, snapshot);
-      });
-    } else {
-      backend.db.getOps(collection, id, version, null, null, function(err, ops) {
-        if (err) return callback(err);
-        stream.pushOps(collection, id, ops);
-        backend.emit('timing', 'subscribe.ops', Date.now() - start, request);
-        callback(null, stream);
-      });
-    }
-  });
-};
-
-Backend.prototype.subscribeBulk = function(agent, index, versions, callback) {
-  var start = Date.now();
-  var projection = this.projections[index];
-  var collection = (projection) ? projection.target : index;
-  var backend = this;
-  var streams = {};
-  var doFetch = Array.isArray(versions);
-  var ids = (doFetch) ? versions : Object.keys(versions);
-  var request = {
-    agent: agent,
-    index: index,
-    collection: collection,
-    versions: versions
-  };
-  async.each(ids, function(id, eachCb) {
-    var channel = backend.getDocChannel(collection, id);
-    backend.pubsub.subscribe(channel, function(err, stream) {
-      if (err) return eachCb(err);
-      stream.initProjection(backend, agent, projection);
-      streams[id] = stream;
-      eachCb();
-    });
-  }, function(err) {
-    if (err) {
-      destroyStreams(streams);
-      return callback(err);
-    }
-    if (doFetch) {
-      // If an array of ids, get current snapshots
-      backend.fetchBulk(agent, index, ids, function(err, snapshotMap) {
-        if (err) {
-          destroyStreams(streams);
-          return callback(err);
-        }
-        backend.emit('timing', 'subscribeBulk.snapshot', Date.now() - start, request);
-        callback(null, streams, snapshotMap);
-      });
-    } else {
-      // If a versions map, get ops since requested versions
-      backend.db.getOpsBulk(collection, versions, null, null, function(err, opsMap) {
-        if (err) {
-          destroyStreams(streams);
-          return callback(err);
-        }
-        for (var id in opsMap) {
-          var ops = opsMap[id];
-          streams[id].pushOps(collection, id, ops);
-        }
-        backend.emit('timing', 'subscribeBulk.ops', Date.now() - start, request);
-        callback(null, streams);
-      });
-    }
-  });
-};
-function destroyStreams(streams) {
-  for (var id in streams) {
-    streams[id].destroy();
-  }
-}
-
-Backend.prototype.queryFetch = function(agent, index, query, options, callback) {
-  var start = Date.now();
-  var backend = this;
-  backend._triggerQuery(agent, index, query, options, function(err, request) {
-    if (err) return callback(err);
-    backend._query(agent, request, function(err, snapshots, extra) {
-      if (err) return callback(err);
-      backend.emit('timing', 'queryFetch', Date.now() - start, request);
-      callback(null, snapshots, extra);
-    });
-  });
-};
-
-// Options can contain:
-// db: The name of the DB (if the DB is specified in the otherDbs when the backend instance is created)
-// skipPoll: function(collection, id, op, query) {return true or false; }
-//  this is a syncronous function which can be used as an early filter for
-//  operations going through the system to reduce the load on the DB.
-// pollDebounce: Minimum delay between subsequent database polls. This is
-//  used to batch updates to reduce load on the database at the expense of
-//  liveness
-Backend.prototype.querySubscribe = function(agent, index, query, options, callback) {
-  var start = Date.now();
-  var backend = this;
-  backend._triggerQuery(agent, index, query, options, function(err, request) {
-    if (err) return callback(err);
-    if (request.db.disableSubscribe) {
-      return callback({code: 4002, message: 'DB does not support subscribe'});
-    }
-    backend.pubsub.subscribe(request.channel, function(err, stream) {
-      if (err) return callback(err);
-      stream.initProjection(backend, agent, request.projection);
-      if (options.ids) {
-        var queryEmitter = new QueryEmitter(request, stream, options.ids);
-        backend.emit('timing', 'querySubscribe.reconnect', Date.now() - start, request);
-        callback(null, queryEmitter);
-        return;
-      }
-      // Issue query on db to get our initial results
-      backend._query(agent, request, function(err, snapshots, extra) {
-        if (err) {
-          stream.destroy();
-          return callback(err);
-        }
-        var ids = pluckIds(snapshots);
-        var queryEmitter = new QueryEmitter(request, stream, ids, extra);
-        backend.emit('timing', 'querySubscribe.initial', Date.now() - start, request);
-        callback(null, queryEmitter, snapshots, extra);
-      });
-    });
-  });
-};
-
-Backend.prototype._triggerQuery = function(agent, index, query, options, callback) {
-  var projection = this.projections[index];
-  var collection = (projection) ? projection.target : index;
-  var fields = projection && projection.fields;
-  var request = {
-    index: index,
-    collection: collection,
-    projection: projection,
-    fields: fields,
-    channel: this.getCollectionChannel(collection),
-    query: query,
-    options: options,
-    db: null,
-    snapshotProjection: null,
-  };
-  var backend = this;
-  backend.trigger('query', agent, request, function(err) {
-    if (err) return callback(err);
-    // Set the DB reference for the request after the middleware trigger so
-    // that the db option can be changed in middleware
-    request.db = (options.db) ? backend.extraDbs[options.db] : backend.db;
-    if (!request.db) return callback({code: 4003, message: 'DB not found'});
-    request.snapshotProjection = backend._getSnapshotProjection(request.db, projection);
-    callback(null, request);
-  });
-};
-
-Backend.prototype._query = function(agent, request, callback) {
-  var backend = this;
-  request.db.query(request.collection, request.query, request.fields, request.options, function(err, snapshots, extra) {
-    if (err) return callback(err);
-    backend._sanitizeSnapshots(agent, request.snapshotProjection, request.collection, snapshots, function(err) {
-      callback(err, snapshots, extra);
-    });
-  });
-};
-
-Backend.prototype.getCollectionChannel = function(collection) {
-  return collection;
-};
-
-Backend.prototype.getDocChannel = function(collection, id) {
-  return collection + '.' + id;
-};
-
-Backend.prototype.getChannels = function(collection, id) {
-  return [
-    this.getCollectionChannel(collection),
-    this.getDocChannel(collection, id)
-  ];
-};
-
-function pluckIds(snapshots) {
-  var ids = [];
-  for (var i = 0; i < snapshots.length; i++) {
-    ids.push(snapshots[i].id);
-  }
-  return ids;
-}
-
-
-/***/ }),
-/* 80 */
-/***/ (function(module, exports) {
-
-var hat = module.exports = function (bits, base) {
-    if (!base) base = 16;
-    if (bits === undefined) bits = 128;
-    if (bits <= 0) return '0';
-    
-    var digits = Math.log(Math.pow(2, bits)) / Math.log(base);
-    for (var i = 2; digits === Infinity; i *= 2) {
-        digits = Math.log(Math.pow(2, bits / i)) / Math.log(base) * i;
-    }
-    
-    var rem = digits - Math.floor(digits);
-    
-    var res = '';
-    
-    for (var i = 0; i < Math.floor(digits); i++) {
-        var x = Math.floor(Math.random() * base).toString(base);
-        res = x + res;
-    }
-    
-    if (rem) {
-        var b = Math.pow(base, rem);
-        var x = Math.floor(Math.random() * b).toString(base);
-        res = x + res;
-    }
-    
-    var parsed = parseInt(res, base);
-    if (parsed !== Infinity && parsed >= Math.pow(2, bits)) {
-        return hat(bits, base)
-    }
-    else return res;
-};
-
-hat.rack = function (bits, base, expandBy) {
-    var fn = function (data) {
-        var iters = 0;
-        do {
-            if (iters ++ > 10) {
-                if (expandBy) bits += expandBy;
-                else throw new Error('too many ID collisions, use more bits')
-            }
-            
-            var id = hat(bits, base);
-        } while (Object.hasOwnProperty.call(hats, id));
-        
-        hats[id] = data;
-        return id;
-    };
-    var hats = fn.hats = {};
-    
-    fn.get = function (id) {
-        return fn.hats[id];
-    };
-    
-    fn.set = function (id, value) {
-        fn.hats[id] = value;
-        return fn;
-    };
-    
-    fn.bits = bits || 128;
-    fn.base = base || 16;
-    return fn;
-};
-
-
-/***/ }),
-/* 81 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var inherits = __webpack_require__(34).inherits;
-var Readable = __webpack_require__(35).Readable;
-var util = __webpack_require__(4);
-
-// Stream of operations. Subscribe returns one of these
-function OpStream() {
-  Readable.call(this, {objectMode: true});
-
-  this.id = null;
-  this.backend = null;
-  this.agent = null;
-  this.projection = null;
-
-  this.open = true;
-}
-module.exports = OpStream;
-
-inherits(OpStream, Readable);
-
-// This function is for notifying us that the stream is empty and needs data.
-// For now, we'll just ignore the signal and assume the reader reads as fast
-// as we fill it. I could add a buffer in this function, but really I don't
-// think that is any better than the buffer implementation in nodejs streams
-// themselves.
-OpStream.prototype._read = util.doNothing;
-
-OpStream.prototype.initProjection = function(backend, agent, projection) {
-  this.backend = backend;
-  this.agent = agent;
-  this.projection = projection;
-};
-
-OpStream.prototype.pushOp = function(collection, id, op) {
-  if (this.backend) {
-    var stream = this;
-    this.backend._sanitizeOp(this.agent, this.projection, collection, id, op, function(err) {
-      if (!stream.open) return;
-      stream.push(err ? {error: err} : op);
-    });
-  } else {
-    // Ignore any messages after unsubscribe
-    if (!this.open) return;
-    this.push(op);
-  }
-};
-
-OpStream.prototype.pushOps = function(collection, id, ops) {
-  for (var i = 0; i < ops.length; i++) {
-    this.pushOp(collection, id, ops[i]);
-  }
-};
-
-OpStream.prototype.destroy = function() {
-  if (!this.open) return;
-  this.open = false;
-
-  this.push(null);
-  this.emit('close');
-};
-
-
-/***/ }),
-/* 82 */
-/***/ (function(module, exports) {
-
-module.exports = arrayDiff;
-
-// Based on some rough benchmarking, this algorithm is about O(2n) worst case,
-// and it can compute diffs on random arrays of length 1024 in about 34ms,
-// though just a few changes on an array of length 1024 takes about 0.5ms
-
-arrayDiff.InsertDiff = InsertDiff;
-arrayDiff.RemoveDiff = RemoveDiff;
-arrayDiff.MoveDiff = MoveDiff;
-
-function InsertDiff(index, values) {
-  this.index = index;
-  this.values = values;
-}
-InsertDiff.prototype.type = 'insert';
-InsertDiff.prototype.toJSON = function() {
-  return {
-    type: this.type,
-    index: this.index,
-    values: this.values
-  };
-};
-
-function RemoveDiff(index, howMany) {
-  this.index = index;
-  this.howMany = howMany;
-}
-RemoveDiff.prototype.type = 'remove';
-RemoveDiff.prototype.toJSON = function() {
-  return {
-    type: this.type,
-    index: this.index,
-    howMany: this.howMany
-  };
-};
-
-function MoveDiff(from, to, howMany) {
-  this.from = from;
-  this.to = to;
-  this.howMany = howMany;
-}
-MoveDiff.prototype.type = 'move';
-MoveDiff.prototype.toJSON = function() {
-  return {
-    type: this.type,
-    from: this.from,
-    to: this.to,
-    howMany: this.howMany
-  };
-};
-
-function strictEqual(a, b) {
-  return a === b;
-}
-
-function arrayDiff(before, after, equalFn) {
-  if (!equalFn) equalFn = strictEqual;
-
-  // Find all items in both the before and after array, and represent them
-  // as moves. Many of these "moves" may end up being discarded in the last
-  // pass if they are from an index to the same index, but we don't know this
-  // up front, since we haven't yet offset the indices.
-  //
-  // Also keep a map of all the indices accounted for in the before and after
-  // arrays. These maps are used next to create insert and remove diffs.
-  var beforeLength = before.length;
-  var afterLength = after.length;
-  var moves = [];
-  var beforeMarked = {};
-  var afterMarked = {};
-  for (var beforeIndex = 0; beforeIndex < beforeLength; beforeIndex++) {
-    var beforeItem = before[beforeIndex];
-    for (var afterIndex = 0; afterIndex < afterLength; afterIndex++) {
-      if (afterMarked[afterIndex]) continue;
-      if (!equalFn(beforeItem, after[afterIndex])) continue;
-      var from = beforeIndex;
-      var to = afterIndex;
-      var howMany = 0;
-      do {
-        beforeMarked[beforeIndex++] = afterMarked[afterIndex++] = true;
-        howMany++;
-      } while (
-        beforeIndex < beforeLength &&
-        afterIndex < afterLength &&
-        equalFn(before[beforeIndex], after[afterIndex]) &&
-        !afterMarked[afterIndex]
-      );
-      moves.push(new MoveDiff(from, to, howMany));
-      beforeIndex--;
-      break;
-    }
-  }
-
-  // Create a remove for all of the items in the before array that were
-  // not marked as being matched in the after array as well
-  var removes = [];
-  for (beforeIndex = 0; beforeIndex < beforeLength;) {
-    if (beforeMarked[beforeIndex]) {
-      beforeIndex++;
-      continue;
-    }
-    var index = beforeIndex;
-    var howMany = 0;
-    while (beforeIndex < beforeLength && !beforeMarked[beforeIndex++]) {
-      howMany++;
-    }
-    removes.push(new RemoveDiff(index, howMany));
-  }
-
-  // Create an insert for all of the items in the after array that were
-  // not marked as being matched in the before array as well
-  var inserts = [];
-  for (var afterIndex = 0; afterIndex < afterLength;) {
-    if (afterMarked[afterIndex]) {
-      afterIndex++;
-      continue;
-    }
-    var index = afterIndex;
-    var howMany = 0;
-    while (afterIndex < afterLength && !afterMarked[afterIndex++]) {
-      howMany++;
-    }
-    var values = after.slice(index, index + howMany);
-    inserts.push(new InsertDiff(index, values));
-  }
-
-  var insertsLength = inserts.length;
-  var removesLength = removes.length;
-  var movesLength = moves.length;
-  var i, j;
-
-  // Offset subsequent removes and moves by removes
-  var count = 0;
-  for (i = 0; i < removesLength; i++) {
-    var remove = removes[i];
-    remove.index -= count;
-    count += remove.howMany;
-    for (j = 0; j < movesLength; j++) {
-      var move = moves[j];
-      if (move.from >= remove.index) move.from -= remove.howMany;
-    }
-  }
-
-  // Offset moves by inserts
-  for (i = insertsLength; i--;) {
-    var insert = inserts[i];
-    var howMany = insert.values.length;
-    for (j = movesLength; j--;) {
-      var move = moves[j];
-      if (move.to >= insert.index) move.to -= howMany;
-    }
-  }
-
-  // Offset the to of moves by later moves
-  for (i = movesLength; i-- > 1;) {
-    var move = moves[i];
-    if (move.to === move.from) continue;
-    for (j = i; j--;) {
-      var earlier = moves[j];
-      if (earlier.to >= move.to) earlier.to -= move.howMany;
-      if (earlier.to >= move.from) earlier.to += move.howMany;
-    }
-  }
-
-  // Only output moves that end up having an effect after offsetting
-  var outputMoves = [];
-
-  // Offset the from of moves by earlier moves
-  for (i = 0; i < movesLength; i++) {
-    var move = moves[i];
-    if (move.to === move.from) continue;
-    outputMoves.push(move);
-    for (j = i + 1; j < movesLength; j++) {
-      var later = moves[j];
-      if (later.from >= move.from) later.from -= move.howMany;
-      if (later.from >= move.to) later.from += move.howMany;
-    }
-  }
-
-  return removes.concat(outputMoves, inserts);
-}
-
-
-/***/ }),
-/* 83 */
-/***/ (function(module, exports) {
-
-var pSlice = Array.prototype.slice;
-var Object_keys = typeof Object.keys === 'function'
-    ? Object.keys
-    : function (obj) {
-        var keys = [];
-        for (var key in obj) keys.push(key);
-        return keys;
-    }
-;
-
-var deepEqual = module.exports = function (actual, expected) {
-  // enforce Object.is +0 !== -0
-  if (actual === 0 && expected === 0) {
-    return areZerosEqual(actual, expected);
-
-  // 7.1. All identical values are equivalent, as determined by ===.
-  } else if (actual === expected) {
-    return true;
-
-  } else if (actual instanceof Date && expected instanceof Date) {
-    return actual.getTime() === expected.getTime();
-
-  } else if (isNumberNaN(actual)) {
-    return isNumberNaN(expected);
-
-  // 7.3. Other pairs that do not both pass typeof value == 'object',
-  // equivalence is determined by ==.
-  } else if (typeof actual != 'object' && typeof expected != 'object') {
-    return actual == expected;
-
-  // 7.4. For all other Object pairs, including Array objects, equivalence is
-  // determined by having the same number of owned properties (as verified
-  // with Object.prototype.hasOwnProperty.call), the same set of keys
-  // (although not necessarily the same order), equivalent values for every
-  // corresponding key, and an identical 'prototype' property. Note: this
-  // accounts for both named and indexed properties on Arrays.
-  } else {
-    return objEquiv(actual, expected);
-  }
-};
-
-function isUndefinedOrNull(value) {
-  return value === null || value === undefined;
-}
-
-function isArguments(object) {
-  return Object.prototype.toString.call(object) == '[object Arguments]';
-}
-
-function isNumberNaN(value) {
-  // NaN === NaN -> false
-  return typeof value == 'number' && value !== value;
-}
-
-function areZerosEqual(zeroA, zeroB) {
-  // (1 / +0|0) -> Infinity, but (1 / -0) -> -Infinity and (Infinity !== -Infinity)
-  return (1 / zeroA) === (1 / zeroB);
-}
-
-function objEquiv(a, b) {
-  if (isUndefinedOrNull(a) || isUndefinedOrNull(b))
-    return false;
-
-  // an identical 'prototype' property.
-  if (a.prototype !== b.prototype) return false;
-  //~~~I've managed to break Object.keys through screwy arguments passing.
-  //   Converting to array solves the problem.
-  if (isArguments(a)) {
-    if (!isArguments(b)) {
-      return false;
-    }
-    a = pSlice.call(a);
-    b = pSlice.call(b);
-    return deepEqual(a, b);
-  }
-  try {
-    var ka = Object_keys(a),
-        kb = Object_keys(b),
-        key, i;
-  } catch (e) {//happens when one is a string literal and the other isn't
-    return false;
-  }
-  // having the same number of owned properties (keys incorporates
-  // hasOwnProperty)
-  if (ka.length != kb.length)
-    return false;
-  //the same set of keys (although not necessarily the same order),
-  ka.sort();
-  kb.sort();
-  //~~~cheap key test
-  for (i = ka.length - 1; i >= 0; i--) {
-    if (ka[i] != kb[i])
-      return false;
-  }
-  //equivalent values for every corresponding key, and
-  //~~~possibly expensive deep test
-  for (i = ka.length - 1; i >= 0; i--) {
-    key = ka[i];
-    if (!deepEqual(a[key], b[key])) return false;
-  }
-  return true;
-}
 
 
 /***/ }),
 /* 84 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var Duplex = __webpack_require__(35).Duplex;
-var inherits = __webpack_require__(34).inherits;
-var util = __webpack_require__(4);
 
-function StreamSocket() {
-  this.readyState = 0;
-  this.stream = new ServerStream(this);
-}
-module.exports = StreamSocket;
-
-StreamSocket.prototype._open = function() {
-  if (this.readyState !== 0) return;
-  this.readyState = 1;
-  this.onopen();
-};
-StreamSocket.prototype.close = function(reason) {
-  if (this.readyState === 3) return;
-  this.readyState = 3;
-  // Signal data writing is complete. Emits the 'end' event
-  this.stream.push(null);
-  this.onclose(reason || 'closed');
-};
-StreamSocket.prototype.send = function(data) {
-  // Data is an object
-  this.stream.push(JSON.parse(data));
-};
-StreamSocket.prototype.onmessage = util.doNothing;
-StreamSocket.prototype.onclose = util.doNothing;
-StreamSocket.prototype.onerror = util.doNothing;
-StreamSocket.prototype.onopen = util.doNothing;
-
-
-function ServerStream(socket) {
-  Duplex.call(this, {objectMode: true});
-
-  this.socket = socket;
-
-  this.on('error', function(error) {
-    console.warn('ShareDB client message stream error', error);
-    socket.close('stopped');
-  });
-
-  // The server ended the writable stream. Triggered by calling stream.end()
-  // in agent.close()
-  this.on('finish', function() {
-    socket.close('stopped');
-  });
-}
-inherits(ServerStream, Duplex);
-
-ServerStream.prototype.isServer = true;
-
-ServerStream.prototype._read = util.doNothing;
-
-ServerStream.prototype._write = function(chunk, encoding, callback) {
-  var socket = this.socket;
-  process.nextTick(function() {
-    if (socket.readyState !== 1) return;
-    socket.onmessage({data: JSON.stringify(chunk)});
-    callback();
-  });
-};
-
-
-/***/ }),
-/* 85 */
-/***/ (function(module, exports, __webpack_require__) {
-
-
-var content = __webpack_require__(86);
+var content = __webpack_require__(85);
 
 if(typeof content === 'string') content = [[module.i, content, '']];
 
@@ -30265,7 +30268,7 @@ if(false) {
 }
 
 /***/ }),
-/* 86 */
+/* 85 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(13)(true);

@@ -136,13 +136,13 @@ export class ClientElementNode extends ClientNode {
     private highlighted:boolean = false;
     constructor(sdbNode:ShareDBDOMNode, onCreateNode?:(c:ClientNode)=>void) {
         super(sdbNode, onCreateNode);
-        const {nodeName, isSVG, nodeId} = this.sdbNode;
+        const {nodeName, isSVG} = this.sdbNode;
         if(isSVG) {
             this.element = document.createElementNS('http://www.w3.org/2000/svg', nodeName);
         } else {
             this.element = document.createElement(nodeName)
         }
-        this.element.setAttribute('data-arboretum-node-id', `${nodeId}`);
+        this.element.setAttribute('data-arboretum-node-id', `${this.getNodeID()}`);
         this.initialize();
     };
     private static getHighlightStyleString(color:Color):string {
@@ -165,9 +165,9 @@ export class ClientElementNode extends ClientNode {
         const styleString:string = ClientElementNode.getHighlightStyleString(color);
         const styleValue:string = this.getStyleAttribute();
         if(styleValue) {
-            this.element.setAttribute('style', styleString + this.getStyleAttribute());
+            this.element.setAttribute('style', styleValue + ' ' + styleString);
         } else {
-            this.element.removeAttribute('style');
+            this.element.setAttribute('style', styleString);
         }
     };
     public removeHighlight() {

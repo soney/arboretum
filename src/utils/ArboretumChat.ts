@@ -89,7 +89,7 @@ export class ArboretumChat extends TypedEventEmitter {
     };
     public static getRelevantNodeIDs(pam:PageActionMessage):Array<CRI.NodeID> {
         const {action, data, performed} = pam;
-        const targetNodeID = pam['targetNodeID'];
+        const {targetNodeID} = data;
         if(targetNodeID) {
             return [targetNodeID];
         } else {

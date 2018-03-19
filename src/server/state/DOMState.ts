@@ -713,6 +713,6 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
         }
     };
     public async getTextDescription():Promise<string> {
-        return `${this.getNodeId()}`;
+        return `${this.getNodeValue()}`;
     };
 }

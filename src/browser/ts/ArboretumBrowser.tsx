@@ -1,7 +1,6 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import {BrowserTab} from './BrowserTab';
-import {BrowserSidebar, SetServerActiveValue} from './BrowserSidebar';
 import {BrowserNavigationBar} from '../../utils/browserControls/BrowserNavigationBar';
 import {ipcRenderer, remote, BrowserWindow} from 'electron';
 import * as url from 'url';
@@ -15,6 +14,10 @@ import {copyToClipboard} from '../../utils/copyToClipboard';
 import {ArboretumChatBox} from '../../utils/browserControls/ArboretumChatBox';
 
 export type BrowserTabID = number;
+export interface SetServerActiveValue {
+    shareURL:string,
+    adminURL:string
+};
 
 type ArboretumProps = {
     urls:Array<string>,
@@ -34,7 +37,6 @@ type ArboretumState = {
 
 export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumState> {
     private navBar:BrowserNavigationBar;
-    private sidebar:BrowserSidebar;
     private tabCounter:number = 0;
     private tabs:Map<BrowserTabID, BrowserTab> = new Map<BrowserTabID, BrowserTab>();
     private socket:WebSocket;
@@ -61,6 +63,9 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
             adminURL: '',
             sandbox: true
         };
+        if(this.state.serverActive) {
+            this.setServerActive(this.state.serverActive);
+        }
     };
 
     private goBack = ():void => {
@@ -136,19 +141,12 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
                 }
             });
 
-            if(this.sidebar) {
-                this.sidebar.setSDB(this.sdb);
-            }
-
             [shareURL, adminURL] = await Promise.all([
                 this.getShortcut(fullShareURL), this.getShortcut(fullAdminURL)
             ]);
         } else {
             if(this.doc) {
                 this.doc.destroy();
-            }
-            if(this.sidebar) {
-                this.sidebar.setSDB(null);
             }
             if(this.sdb) {
                 await this.sdb.close();
@@ -161,8 +159,8 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
             await this.sendIPCMessage({message: 'stopServer'});
             [shareURL, adminURL] = ['', ''];
         }
-        if(this.sidebar) {
-            this.sidebar.setState({shareURL, adminURL});
+        if(this.chatbox) {
+            this.chatbox.setSDB(this.sdb);
         }
         this.setState({shareURL, adminURL});
         return {shareURL, adminURL};
@@ -273,10 +271,6 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
     private pageTitleChanged = (tab:BrowserTab, title:string):void => {
         if(tab === this.state.selectedTab) { this.selectedTabPageTitleChanged(title); }
     };
-    private sidebarRef = (sidebar:BrowserSidebar):void => {
-        this.sidebar = sidebar;
-        this.setServerActive(this.state.serverActive);
-    };
     public setSidebarVisible(showingSidebar:boolean):void {
         this.setState({showingSidebar});
     };
@@ -311,13 +305,11 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
     };
     private chatBoxRef = (chatbox:ArboretumChatBox):void => {
         this.chatbox = chatbox;
-    };
-
-    public setSDB(sdb:SDB):void {
-        if(this.chatbox) {
-            this.chatbox.setSDB(sdb);
+        if(this.sdb) {
+            this.chatbox.setSDB(this.sdb);
         }
     };
+
     private onAction = async (pam:PageActionMessage):Promise<void> => {
         await this.sendIPCMessage({
             message:'performAction',
@@ -393,7 +385,7 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
                                 </tr>
                             </tbody>
                         </table>
-                        <ArboretumChatBox isAdmin={true} username="Admin" ref={this.chatBoxRef} onSendMessage={this.sendMessage} onAction={this.onAction} onAddHighlight={this.addHighlight} onRemoveHighlight={this.removeHighlight} />
+                        <ArboretumChatBox isAdmin={true} sdb={this.sdb} username="Admin" ref={this.chatBoxRef} onSendMessage={this.sendMessage} onAction={this.onAction} onAddHighlight={this.addHighlight} onRemoveHighlight={this.removeHighlight} />
                     </div>
                     <div id="browser-pane" className="pane">
                         <div id="content">{this.state.webViews}</div>

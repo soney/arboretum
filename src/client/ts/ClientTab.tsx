@@ -81,7 +81,7 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
         nodeIds.forEach((id) => {
             const node = this.getNode(id);
             if(node) {
-                node.removeHighlight(color);
+                node.removeHighlight();
             }
         });
     };
