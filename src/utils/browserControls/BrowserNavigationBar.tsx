@@ -72,13 +72,13 @@ export class BrowserNavigationBar extends React.Component<BrowserNavigationBarPr
         return <div className="toolbar toolbar-header" id="navBar">
                     <div className="toolbar-actions">
                         <div className="btn-group">
-                            <button disabled={!this.state.canGoBack} onClick={this.backClicked} className = 'btn btn-default btn-mini' id='back'><span className='icon icon-left-open-big'></span></button>
-                            <button disabled={!this.state.canGoForward} onClick={this.forwardClicked} className = 'btn btn-default btn-mini' id='forward'><span className='icon icon-right-open-big'></span></button>
+                            <button aria-label="Back" disabled={!this.state.canGoBack} onClick={this.backClicked} className = 'btn btn-default btn-mini' id='back'><span className='icon icon-left-open-big'></span></button>
+                            <button aria-label="Forward" disabled={!this.state.canGoForward} onClick={this.forwardClicked} className = 'btn btn-default btn-mini' id='forward'><span className='icon icon-right-open-big'></span></button>
                         </div>
-                        <button onClick={this.reloadClicked} className = 'btn btn-default btn-mini' id='reload'><span className={`icon ${this.state.isLoading ? 'icon-cancel' : 'icon-ccw'}`}></span></button>
+                        <button aria-label="Refresh/Stop" onClick={this.reloadClicked} className = 'btn btn-default btn-mini' id='reload'><span className={`icon ${this.state.isLoading ? 'icon-cancel' : 'icon-ccw'}`}></span></button>
                         {toggleSidebarButton}
                     </div>
-                    <input value={this.state.urlText} onChange={this.handleURLChange} onKeyDown={this.urlKeyDown} onFocus={this.onURLBarFocus} onBlur={this.onURLBarBlur} id='url' type="text" placeholder="Enter URL or Term to Search" />
+                    <input aria-label="URL" value={this.state.urlText} onChange={this.handleURLChange} onKeyDown={this.urlKeyDown} onFocus={this.onURLBarFocus} onBlur={this.onURLBarBlur} id='url' type="text" placeholder="Enter URL or Term to Search" />
                 </div>;
     };
 };

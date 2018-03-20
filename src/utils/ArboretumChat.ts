@@ -9,6 +9,7 @@ export const userColors:Array<Array<Color>> = [
     ['#A80000', '#B05E0D', '#C19C00', '#107C10', '#038387', '#004E8C', '#5C126B' ]
 ];
 export enum TypingStatus { IDLE, ACTIVE, IDLE_TYPED };
+export enum PageActionState { NOT_PERFORMED, PERFORMED, REJECTED };
 export type PageAction ='navigate'|'goBack'|'goForward'|'mouse_event'|'keyboard_event'|'element_event'|'focus_event'|'reload';
 
 export type UserID = string;
@@ -31,7 +32,7 @@ export interface PageActionMessage extends Message {
     action:PageAction,
     tabID:CRI.TabID,
     data:any,
-    performed:boolean
+    state:PageActionState
 };
 
 export interface ChatDoc {
@@ -77,7 +78,7 @@ export class ArboretumChat extends TypedEventEmitter {
         });
     };
     public static describePageActionMessage(pam:PageActionMessage):string {
-        const {action, data, performed} = pam;
+        const {action, data, state} = pam;
         if(action === 'navigate') {
             const {url} = data;
             return `navigate to ${url}`;
@@ -89,7 +90,7 @@ export class ArboretumChat extends TypedEventEmitter {
         }
     };
     public static getRelevantNodeIDs(pam:PageActionMessage):Array<CRI.NodeID> {
-        const {action, data, performed} = pam;
+        const {action, data, state} = pam;
         const {targetNodeID} = data;
         if(targetNodeID) {
             return [targetNodeID];
@@ -168,7 +169,7 @@ export class ArboretumChat extends TypedEventEmitter {
         this.addMesssage(message);
     };
     public async addPageActionMessage(action:PageAction, tabID:CRI.TabID, data:any={}, sender:User=this.getMe()):Promise<void> {
-        const message:PageActionMessage = {sender, action, tabID, data, performed:false}
+        const message:PageActionMessage = {sender, action, tabID, data, state:PageActionState.NOT_PERFORMED}
         this.addMesssage(message);
     };
     public async markPerformed(pam:PageActionMessage, performed:boolean=true):Promise<void> {

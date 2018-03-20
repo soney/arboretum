@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {SDB, SDBDoc} from '../ShareDBDoc';
-import {ArboretumChat, Message, User, TextMessage, PageActionMessage} from '../ArboretumChat';
+import {ArboretumChat, Message, User, TextMessage, PageActionMessage, PageActionState} from '../ArboretumChat';
 import {RegisteredEvent} from '../TypedEventEmitter';
 
 require('./ArboretumChat.scss');
@@ -150,22 +150,35 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
                 return <li tabIndex={0} key={i} className='chat-line'><span style={senderStyle} className='from'>{tm.sender.displayName}</span><span className='message'>{tm.content}</span></li>;
             } else if(m['action']) {
                 const pam:PageActionMessage = m as PageActionMessage;
-                const {action, data, performed} = pam;
+                const {action, data, state} = pam;
                 const description:JSX.Element = <span className='description' onMouseEnter={()=>this.addHighlights(pam)} onMouseLeave={()=>this.removeHighlights(pam)}>{ArboretumChat.describePageActionMessage(pam)}</span>;
 
-                let actions:JSX.Element;
-                if(performed) {
-                    actions = <div className=''>(accepted)</div>
-                } else {
-                    actions = <div className='messageAction'>
-                        <a href="javascript:void(0)" onClick={this.performAction.bind(this, pam)}>Accept</a>
-                        <a href="javascript:void(0)" onClick={this.rejectAction.bind(this, pam)}>Reject</a>
-                        <a href="javascript:void(0)" onClick={this.focusAction.bind(this, pam)}>Focus</a>
+                const performed:boolean = state === PageActionState.PERFORMED;
+                const actions:Array<JSX.Element> = [
+                        <a href="javascript:void(0)" onClick={this.focusAction.bind(this, pam)}>Focus</a>,
                         <a href="javascript:void(0)" onClick={this.addLabel.bind(this, pam)}>Label</a>
-                    </div>
+                ];
+                if(state === PageActionState.PERFORMED) {
+                    actions.unshift(
+                        <div className=''>(accepted)</div>
+                    );
+                } else if(state === PageActionState.REJECTED) {
+                    actions.unshift(
+                        <div className=''>(rejected)</div>
+                    );
+                } else {
+                    actions.unshift(
+                        <a href="javascript:void(0)" onClick={this.performAction.bind(this, pam)}>Accept</a>,
+                        <a href="javascript:void(0)" onClick={this.rejectAction.bind(this, pam)}>Reject</a>
+                    );
                 }
 
-                return <li tabIndex={0} key={i} className={'chat-line action'+(performed?' performed':'')+(this.props.isAdmin ? ' admin':' not_admin')}><span style={senderStyle} className='from'>{pam.sender.displayName}</span> wants to {description}.{actions}</li>;
+                return <li tabIndex={0} key={i} className={'chat-line action'+(performed?' performed':'')+(this.props.isAdmin ? ' admin':' not_admin')}>
+                    <span style={senderStyle} className='from'>{pam.sender.displayName}</span> wants to {description}.
+                    <div className='messageActions'>
+                        {actions}
+                    </div>
+                </li>;
             }
         });
 
@@ -182,13 +195,13 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
             return <span key={u.id} className={`participant ${isMe?'me':''}`} style={style}>{u.displayName}</span>;
         });
         return <div className='chat'>
-            <div id="chat-participants">Here now: {users}</div>
-            <ul id="chat-lines">
+            <div id="chat-participants" tabIndex={0}>Here now: {users}</div>
+            <ul id="chat-lines" aria-label="Chat content">
                 {messages.filter(m => !!m)}
                 <li style={{ float:"left", clear: "both" }} ref={(el) => { this.messagesEnd = el; }} />
             </ul>
             <form id="chat-form">
-                <textarea id="chat-box" className="form-control" placeholder="Send a message" onChange={this.onTextareaChange} onKeyDown={this.chatKeyDown} value={this.state.chatText}></textarea>
+                <textarea aria-label="Send a message" id="chat-box" className="form-control" placeholder="Send a message" onChange={this.onTextareaChange} onKeyDown={this.chatKeyDown} value={this.state.chatText}></textarea>
             </form>
         </div>;
     };

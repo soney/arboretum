@@ -44,8 +44,13 @@
             &.action{
                 color: #888;
                 &.not_admin {
-                    .messageAction {
+                    .messageActions {
                         display: none;
+                    }
+                }
+                .messageActions {
+                    a {
+                        margin:2px;
                     }
                 }
             }

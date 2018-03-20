@@ -59,14 +59,14 @@ class BrowserNavigationBar extends React.Component {
         return React.createElement("div", { className: "toolbar toolbar-header", id: "navBar" },
             React.createElement("div", { className: "toolbar-actions" },
                 React.createElement("div", { className: "btn-group" },
-                    React.createElement("button", { disabled: !this.state.canGoBack, onClick: this.backClicked, className: 'btn btn-default btn-mini', id: 'back' },
+                    React.createElement("button", { "aria-label": "Back", disabled: !this.state.canGoBack, onClick: this.backClicked, className: 'btn btn-default btn-mini', id: 'back' },
                         React.createElement("span", { className: 'icon icon-left-open-big' })),
-                    React.createElement("button", { disabled: !this.state.canGoForward, onClick: this.forwardClicked, className: 'btn btn-default btn-mini', id: 'forward' },
+                    React.createElement("button", { "aria-label": "Forward", disabled: !this.state.canGoForward, onClick: this.forwardClicked, className: 'btn btn-default btn-mini', id: 'forward' },
                         React.createElement("span", { className: 'icon icon-right-open-big' }))),
-                React.createElement("button", { onClick: this.reloadClicked, className: 'btn btn-default btn-mini', id: 'reload' },
+                React.createElement("button", { "aria-label": "Refresh/Stop", onClick: this.reloadClicked, className: 'btn btn-default btn-mini', id: 'reload' },
                     React.createElement("span", { className: `icon ${this.state.isLoading ? 'icon-cancel' : 'icon-ccw'}` })),
                 toggleSidebarButton),
-            React.createElement("input", { value: this.state.urlText, onChange: this.handleURLChange, onKeyDown: this.urlKeyDown, onFocus: this.onURLBarFocus, onBlur: this.onURLBarBlur, id: 'url', type: "text", placeholder: "Enter URL or Term to Search" }));
+            React.createElement("input", { "aria-label": "URL", value: this.state.urlText, onChange: this.handleURLChange, onKeyDown: this.urlKeyDown, onFocus: this.onURLBarFocus, onBlur: this.onURLBarBlur, id: 'url', type: "text", placeholder: "Enter URL or Term to Search" }));
     }
     ;
 }

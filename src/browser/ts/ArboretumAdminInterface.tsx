@@ -173,7 +173,7 @@ export class ArboretumAdminInterface extends React.Component<ArboretumAdminProps
                     <tr id="control_content">
                         <td>
                             <h5 className="nav-group-title">Server</h5>
-                            <Switch ariaLabel="Turn on Server" height={24} width={48} onChange={this.handleServerSwitchChange} checked={this.state.serverActive} />
+                            <Switch aria-label="Toggle Server" height={24} width={48} onChange={this.handleServerSwitchChange} checked={this.state.serverActive} />
                         </td>
                         <td className="copy_area">
                             <h5 className="nav-group-title">Share URL</h5>
