@@ -8,7 +8,7 @@ ReactDOM.render(
     <div className="window">
         <div className="window-content">
             <div className="pane-group">
-                <ArboretumAdminInterface  />
+                <ArboretumAdminInterface serverState={"active"}  />
             </div>
         </div>
     </div>,

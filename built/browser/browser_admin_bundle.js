@@ -6282,7 +6282,7 @@ __webpack_require__(80);
 ReactDOM.render(React.createElement("div", { className: "window" },
     React.createElement("div", { className: "window-content" },
         React.createElement("div", { className: "pane-group" },
-            React.createElement(ArboretumAdminInterface_1.ArboretumAdminInterface, null)))), document.getElementById('arboretum_main'));
+            React.createElement(ArboretumAdminInterface_1.ArboretumAdminInterface, { serverState: "active" })))), document.getElementById('arboretum_main'));
 
 
 /***/ }),
