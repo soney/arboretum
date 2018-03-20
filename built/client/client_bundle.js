@@ -31205,6 +31205,9 @@ class SDB {
                         resolve(null);
                     });
                 }
+                else {
+                    resolve(null);
+                }
             });
         });
     }
@@ -31731,7 +31734,6 @@ json.checkList = function(elem) {
 
 json.checkObj = function(elem) {
   if (!isObject(elem)) {
-    debugger;
     throw new Error("Referenced element not an object (it was " + JSON.stringify(elem) + ")");
   }
 };
@@ -31779,7 +31781,6 @@ json.apply = function(snapshot, op) {
 
       parent = elem;
       parentKey = key;
-      if(!elem) { debugger; }
       elem = elem[key];
       key = p;
 

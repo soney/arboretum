@@ -52,6 +52,9 @@ class SDB {
                         resolve(null);
                     });
                 }
+                else {
+                    resolve(null);
+                }
             });
         });
     }

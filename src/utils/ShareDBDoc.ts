@@ -43,6 +43,8 @@ export class SDB {
                 this.share.close(()=> {
                     resolve(null);
                 });
+            } else {
+                resolve(null);
             }
         });
     };

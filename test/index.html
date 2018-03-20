@@ -54,9 +54,10 @@
 	<script>
 		var links = document.getElementsByTagName('a'),
 			link  = links[0];
+		var hovercount = 1;
 		link.addEventListener('mouseover', function() {
 			var message = document.getElementById('message');
-			message.innerText = 'goodbye cruel world';
+			message.innerText = 'hover count: ' + hovercount++;
 			var toRemove = document.getElementById('willRemove');
 			toRemove.parentNode.removeChild(toRemove);
 

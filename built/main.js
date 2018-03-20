@@ -195,7 +195,6 @@ let chromeProcess;
 electron_1.ipcMain.on('asynchronous-message', (event, messageID, arg) => __awaiter(this, void 0, void 0, function* () {
     const { message, data } = arg;
     const replyChannel = `reply-${messageID}`;
-    console.log(message);
     if (message === 'startServer') {
         const info = yield startServer();
         event.sender.send(replyChannel, info);

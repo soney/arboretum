@@ -81,16 +81,14 @@ export class ArboretumAdminInterface extends React.Component<ArboretumAdminProps
             ]);
         } else {
             if(this.sdb) {
-                await this.sdb.close();
+                this.sdb.close();
                 this.sdb = null;
             }
             if(this.socket) {
                 this.socket.close();
                 this.socket = null;
             }
-            console.log('sop');
             await this.sendIPCMessage({message: 'stopServer'});
-            console.log('x');
             [shareURL, adminURL] = ['', ''];
         }
         if(this.chatbox) {

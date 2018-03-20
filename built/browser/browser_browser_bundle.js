@@ -7809,16 +7809,18 @@ SubmitRequest.prototype.maxRetriesError = function() {
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-
+/* WEBPACK VAR INJECTION */(function(__dirname) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(1);
 const ReactDOM = __webpack_require__(41);
 const ArboretumBrowser_1 = __webpack_require__(50);
+const path = __webpack_require__(73);
 __webpack_require__(71);
-const START_URL = 'file:///home/soney/code/arboretum/test/index.html';
+const START_URL = `file://${path.resolve(__dirname, '..', '..', 'test', 'index.html')}`;
 //const START_URL:string = 'http://www.umich.edu/';
 ReactDOM.render(React.createElement(ArboretumBrowser_1.ArboretumBrowser, { urls: [START_URL] }), document.getElementById('arboretum_main'));
 
+/* WEBPACK VAR INJECTION */}.call(exports, "src/browser"))
 
 /***/ }),
 /* 38 */
@@ -25926,6 +25928,9 @@ class SDB {
                         resolve(null);
                     });
                 }
+                else {
+                    resolve(null);
+                }
             });
         });
     }
@@ -26458,7 +26463,6 @@ json.checkList = function(elem) {
 
 json.checkObj = function(elem) {
   if (!isObject(elem)) {
-    debugger;
     throw new Error("Referenced element not an object (it was " + JSON.stringify(elem) + ")");
   }
 };
@@ -26506,7 +26510,6 @@ json.apply = function(snapshot, op) {
 
       parent = elem;
       parentKey = key;
-      if(!elem) { debugger; }
       elem = elem[key];
       key = p;
 
@@ -28384,6 +28387,12 @@ exports.push([module.i, "#buttonSpacer {\n  width: 70px;\n  /*border-bottom: 1px
 
 // exports
 
+
+/***/ }),
+/* 73 */
+/***/ (function(module, exports) {
+
+module.exports = require("path");
 
 /***/ })
 /******/ ]);

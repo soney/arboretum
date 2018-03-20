@@ -189,7 +189,6 @@ let chromeProcess:child.ChildProcess;
 ipcMain.on('asynchronous-message', async (event, messageID:number, arg:{message:string, data:any}) => {
     const {message, data} = arg;
     const replyChannel:string = `reply-${messageID}`;
-    console.log(message);
     if (message === 'startServer') {
         const info = await startServer();
         event.sender.send(replyChannel, info);

@@ -72,6 +72,9 @@ const clientWebpackConfig = _.extend({
 const browserBrowserWebpackConfig = _.extend({
     target: 'electron',
     entry: path.join(__dirname, 'src', 'browser', 'browser_browser_main.tsx'),
+    node: {
+        __dirname:true
+    },
     output: {
         filename: 'browser_browser_bundle.js',
         path: path.resolve(__dirname, 'built', 'browser')
