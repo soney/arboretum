@@ -15,6 +15,19 @@ const ENTER_KEY = 13;
 class ArboretumChatBox extends React.Component {
     constructor(props) {
         super(props);
+        this.messageAdded = (event) => __awaiter(this, void 0, void 0, function* () {
+            const { message } = event;
+            const { sender } = message;
+            if (sender.id !== this.chat.getMe().id) {
+                if (message['action']) {
+                    this.playPageActionMessageChime();
+                }
+                else {
+                    this.playTextMessageChime();
+                }
+            }
+            this.updateMessagesState();
+        });
         this.updateMessagesState = () => __awaiter(this, void 0, void 0, function* () {
             const messages = yield this.chat.getMessages();
             this.setState({ messages });
@@ -73,6 +86,12 @@ class ArboretumChatBox extends React.Component {
             // this.getChat().markPerformed(pam);
             // if(this.props.onAction) { this.props.onAction(pam); }
         };
+        this.lightChimeRef = (el) => {
+            this.lightChimeElement = el;
+        };
+        this.openEndedChimeRef = (el) => {
+            this.openEndedChimeElement = el;
+        };
         this.state = {
             chatText: this.props.chatText || '',
             messages: [],
@@ -93,7 +112,7 @@ class ArboretumChatBox extends React.Component {
                 yield this.chat.join(this.props.username);
                 yield this.updateMessagesState();
                 yield this.updateUsersState();
-                this.chat.messageAdded.addListener(this.updateMessagesState);
+                this.chat.messageAdded.addListener(this.messageAdded);
                 this.chat.userJoined.addListener(this.updateUsersState);
                 this.chat.userNotPresent.addListener(this.updateUsersState);
             }));
@@ -123,6 +142,20 @@ class ArboretumChatBox extends React.Component {
         this.scrollToBottom();
     }
     ;
+    static playAudio(el) {
+        if (el) {
+            el.currentTime = 0;
+            el.play();
+        }
+    }
+    playTextMessageChime() {
+        ArboretumChatBox.playAudio(this.lightChimeElement);
+    }
+    ;
+    playPageActionMessageChime() {
+        ArboretumChatBox.playAudio(this.openEndedChimeElement);
+    }
+    ;
     render() {
         const messages = this.state.messages.map((m, i) => {
             const senderStyle = { color: m.sender.color };
@@ -134,25 +167,28 @@ class ArboretumChatBox extends React.Component {
             }
             else if (m['action']) {
                 const pam = m;
-                const { action, data, performed } = pam;
+                const { action, data, state } = pam;
                 const description = React.createElement("span", { className: 'description', onMouseEnter: () => this.addHighlights(pam), onMouseLeave: () => this.removeHighlights(pam) }, ArboretumChat_1.ArboretumChat.describePageActionMessage(pam));
-                let actions;
-                if (performed) {
-                    actions = React.createElement("div", { className: '' }, "(accepted)");
+                const performed = state === ArboretumChat_1.PageActionState.PERFORMED;
+                const actions = [
+                    React.createElement("a", { href: "javascript:void(0)", onClick: this.focusAction.bind(this, pam) }, "Focus"),
+                    React.createElement("a", { href: "javascript:void(0)", onClick: this.addLabel.bind(this, pam) }, "Label")
+                ];
+                if (state === ArboretumChat_1.PageActionState.PERFORMED) {
+                    actions.unshift(React.createElement("div", { className: '' }, "(accepted)"));
+                }
+                else if (state === ArboretumChat_1.PageActionState.REJECTED) {
+                    actions.unshift(React.createElement("div", { className: '' }, "(rejected)"));
                 }
                 else {
-                    actions = React.createElement("div", { className: 'messageAction' },
-                        React.createElement("a", { href: "javascript:void(0)", onClick: this.performAction.bind(this, pam) }, "Accept"),
-                        React.createElement("a", { href: "javascript:void(0)", onClick: this.rejectAction.bind(this, pam) }, "Reject"),
-                        React.createElement("a", { href: "javascript:void(0)", onClick: this.focusAction.bind(this, pam) }, "Focus"),
-                        React.createElement("a", { href: "javascript:void(0)", onClick: this.addLabel.bind(this, pam) }, "Label"));
+                    actions.unshift(React.createElement("a", { href: "javascript:void(0)", onClick: this.performAction.bind(this, pam) }, "Accept"), React.createElement("a", { href: "javascript:void(0)", onClick: this.rejectAction.bind(this, pam) }, "Reject"));
                 }
                 return React.createElement("li", { tabIndex: 0, key: i, className: 'chat-line action' + (performed ? ' performed' : '') + (this.props.isAdmin ? ' admin' : ' not_admin') },
                     React.createElement("span", { style: senderStyle, className: 'from' }, pam.sender.displayName),
                     " wants to ",
                     description,
                     ".",
-                    actions);
+                    React.createElement("div", { className: 'messageActions' }, actions));
             }
         });
         let meUserID;
@@ -175,7 +211,15 @@ class ArboretumChatBox extends React.Component {
                 messages.filter(m => !!m),
                 React.createElement("li", { style: { float: "left", clear: "both" }, ref: (el) => { this.messagesEnd = el; } })),
             React.createElement("form", { id: "chat-form" },
-                React.createElement("textarea", { "aria-label": "Send a message", id: "chat-box", className: "form-control", placeholder: "Send a message", onChange: this.onTextareaChange, onKeyDown: this.chatKeyDown, value: this.state.chatText })));
+                React.createElement("textarea", { "aria-label": "Send a message", id: "chat-box", className: "form-control", placeholder: "Send a message", onChange: this.onTextareaChange, onKeyDown: this.chatKeyDown, value: this.state.chatText })),
+            React.createElement("audio", { ref: this.lightChimeRef, style: { display: 'none' } },
+                React.createElement("source", { src: "audio/light.ogg", type: "audio/ogg" }),
+                React.createElement("source", { src: "audio/light.mp3", type: "audio/mpeg" }),
+                React.createElement("source", { src: "audio/light.m4r", type: "audio/m4a" })),
+            React.createElement("audio", { ref: this.openEndedChimeRef, style: { display: 'none' } },
+                React.createElement("source", { src: "audio/open-ended.ogg", type: "audio/ogg" }),
+                React.createElement("source", { src: "audio/open-ended.mp3", type: "audio/mpeg" }),
+                React.createElement("source", { src: "audio/open-ended.m4r", type: "audio/m4a" })));
     }
     ;
 }

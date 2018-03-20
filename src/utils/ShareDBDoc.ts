@@ -39,9 +39,11 @@ export class SDB {
 
     public async close():Promise<void> {
         await new Promise((resolve, reject) => {
-            this.share.close(()=> {
-                resolve(null);
-            });
+            if(this.share) {
+                this.share.close(()=> {
+                    resolve(null);
+                });
+            }
         });
     };
 

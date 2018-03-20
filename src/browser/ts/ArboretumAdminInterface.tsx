@@ -88,7 +88,9 @@ export class ArboretumAdminInterface extends React.Component<ArboretumAdminProps
                 this.socket.close();
                 this.socket = null;
             }
+            console.log('sop');
             await this.sendIPCMessage({message: 'stopServer'});
+            console.log('x');
             [shareURL, adminURL] = ['', ''];
         }
         if(this.chatbox) {

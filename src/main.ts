@@ -189,6 +189,7 @@ let chromeProcess:child.ChildProcess;
 ipcMain.on('asynchronous-message', async (event, messageID:number, arg:{message:string, data:any}) => {
     const {message, data} = arg;
     const replyChannel:string = `reply-${messageID}`;
+    console.log(message);
     if (message === 'startServer') {
         const info = await startServer();
         event.sender.send(replyChannel, info);
@@ -196,9 +197,12 @@ ipcMain.on('asynchronous-message', async (event, messageID:number, arg:{message:
         if(OPEN_MIRROR) {
             chromeProcess = await opn(`http://${info.hostname}:${info.port}/`, { app: 'google-chrome' }); // open browser
         }
+        ipcMain.emit('server-active', {active:true});
     } else if (message === 'stopServer') {
         await stopServer();
         event.sender.send(replyChannel, 'ok');
+        ipcMain.emit('server-active', {active:false});
+        console.log(chalk.bgWhite.bold.black(`Stopping server`));
     } else if (message === 'performAction') {
         await browserState.performAction(data);
         event.sender.send(replyChannel, 'ok');

@@ -47,9 +47,11 @@ class SDB {
     close() {
         return __awaiter(this, void 0, void 0, function* () {
             yield new Promise((resolve, reject) => {
-                this.share.close(() => {
-                    resolve(null);
-                });
+                if (this.share) {
+                    this.share.close(() => {
+                        resolve(null);
+                    });
+                }
             });
         });
     }

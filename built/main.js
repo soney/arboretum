@@ -195,6 +195,7 @@ let chromeProcess;
 electron_1.ipcMain.on('asynchronous-message', (event, messageID, arg) => __awaiter(this, void 0, void 0, function* () {
     const { message, data } = arg;
     const replyChannel = `reply-${messageID}`;
+    console.log(message);
     if (message === 'startServer') {
         const info = yield startServer();
         event.sender.send(replyChannel, info);
@@ -202,10 +203,13 @@ electron_1.ipcMain.on('asynchronous-message', (event, messageID, arg) => __await
         if (OPEN_MIRROR) {
             chromeProcess = yield opn(`http://${info.hostname}:${info.port}/`, { app: 'google-chrome' }); // open browser
         }
+        electron_1.ipcMain.emit('server-active', { active: true });
     }
     else if (message === 'stopServer') {
         yield stopServer();
         event.sender.send(replyChannel, 'ok');
+        electron_1.ipcMain.emit('server-active', { active: false });
+        console.log(chalk_1.default.bgWhite.bold.black(`Stopping server`));
     }
     else if (message === 'performAction') {
         yield browserState.performAction(data);

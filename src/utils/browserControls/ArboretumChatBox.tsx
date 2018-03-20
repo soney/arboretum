@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {SDB, SDBDoc} from '../ShareDBDoc';
-import {ArboretumChat, Message, User, TextMessage, PageActionMessage, PageActionState} from '../ArboretumChat';
+import {ArboretumChat, Message, User, TextMessage, PageActionMessage, PageActionState, MessageAddedEvent} from '../ArboretumChat';
 import {RegisteredEvent} from '../TypedEventEmitter';
 
 require('./ArboretumChat.scss');
@@ -34,6 +34,8 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
     private sdb:SDB;
     private chat:ArboretumChat;
     private messagesEnd:HTMLLIElement;
+    private lightChimeElement:HTMLAudioElement;
+    private openEndedChimeElement:HTMLAudioElement;
     constructor(props) {
         super(props);
         this.state = {
@@ -55,10 +57,23 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
             await this.updateMessagesState();
             await this.updateUsersState();
 
-            this.chat.messageAdded.addListener(this.updateMessagesState);
+            this.chat.messageAdded.addListener(this.messageAdded);
             this.chat.userJoined.addListener(this.updateUsersState);
             this.chat.userNotPresent.addListener(this.updateUsersState);
         });
+    };
+    private messageAdded = async (event:MessageAddedEvent):Promise<void> => {
+        const {message} = event;
+        const {sender} = message;
+
+        if(sender.id !== this.chat.getMe().id) {
+            if(message['action']) {
+                this.playPageActionMessageChime();
+            } else {
+                this.playTextMessageChime();
+            }
+        }
+        this.updateMessagesState();
     };
     private updateMessagesState = async ():Promise<void> => {
         const messages = await this.chat.getMessages();
@@ -141,6 +156,24 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
         // this.getChat().markPerformed(pam);
         // if(this.props.onAction) { this.props.onAction(pam); }
     };
+    private static playAudio(el:HTMLAudioElement) {
+        if(el) {
+            el.currentTime = 0;
+            el.play();
+        }
+    }
+    private playTextMessageChime():void {
+        ArboretumChatBox.playAudio(this.lightChimeElement);
+    };
+    private playPageActionMessageChime():void {
+        ArboretumChatBox.playAudio(this.openEndedChimeElement);
+    };
+    private lightChimeRef = (el:HTMLAudioElement):void => {
+        this.lightChimeElement = el;
+    };
+    private openEndedChimeRef = (el:HTMLAudioElement):void => {
+        this.openEndedChimeElement = el;
+    };
 
     public render():React.ReactNode {
         const messages = this.state.messages.map((m:Message, i:number) => {
@@ -203,6 +236,16 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
             <form id="chat-form">
                 <textarea aria-label="Send a message" id="chat-box" className="form-control" placeholder="Send a message" onChange={this.onTextareaChange} onKeyDown={this.chatKeyDown} value={this.state.chatText}></textarea>
             </form>
+            <audio ref={this.lightChimeRef} style={{display:'none'}}>
+                <source src="audio/light.ogg" type="audio/ogg"/>
+                <source src="audio/light.mp3" type="audio/mpeg"/>
+                <source src="audio/light.m4r" type="audio/m4a"/>
+            </audio>
+            <audio ref={this.openEndedChimeRef} style={{display:'none'}}>
+                <source src="audio/open-ended.ogg" type="audio/ogg"/>
+                <source src="audio/open-ended.mp3" type="audio/mpeg"/>
+                <source src="audio/open-ended.m4r" type="audio/m4a"/>
+            </audio>
         </div>;
     };
 };

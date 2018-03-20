@@ -16,8 +16,7 @@ import {} from './ArboretumAdminInterface';
 export type BrowserTabID = number;
 
 type ArboretumProps = {
-    urls:Array<string>,
-    serverActive?:boolean
+    urls:Array<string>
 };
 type ArboretumState = {
     tabs:Array<{url:string, id:number, selected:boolean}>,
@@ -37,8 +36,7 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
     private chatbox:ArboretumChatBox;
     private shareURLElement:HTMLInputElement;
     private static defaultProps:ArboretumProps = {
-        urls:[],
-        serverActive:false
+        urls:[]
     };
     constructor(props) {
         super(props);
@@ -53,11 +51,11 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
             webViews: [],
             selectedTab:null,
             activeWebViewEl:null,
-            serverActive:this.props.serverActive
+            serverActive:false
         };
-        if(this.state.serverActive) {
-            this.setServerActive(this.state.serverActive);
-        }
+        ipcRenderer.on('server-active', (event:Electron.IpcMessageEvent, data:any) => {
+            this.setServerActive(data.active);
+        });
     };
 
     private goBack = ():void => {

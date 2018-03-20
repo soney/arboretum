@@ -21,6 +21,13 @@ var TypingStatus;
     TypingStatus[TypingStatus["IDLE_TYPED"] = 2] = "IDLE_TYPED";
 })(TypingStatus = exports.TypingStatus || (exports.TypingStatus = {}));
 ;
+var PageActionState;
+(function (PageActionState) {
+    PageActionState[PageActionState["NOT_PERFORMED"] = 0] = "NOT_PERFORMED";
+    PageActionState[PageActionState["PERFORMED"] = 1] = "PERFORMED";
+    PageActionState[PageActionState["REJECTED"] = 2] = "REJECTED";
+})(PageActionState = exports.PageActionState || (exports.PageActionState = {}));
+;
 ;
 ;
 ;
@@ -49,7 +56,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
     }
     ;
     static describePageActionMessage(pam) {
-        const { action, data, performed } = pam;
+        const { action, data, state } = pam;
         if (action === 'navigate') {
             const { url } = data;
             return `navigate to ${url}`;
@@ -64,7 +71,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
     }
     ;
     static getRelevantNodeIDs(pam) {
-        const { action, data, performed } = pam;
+        const { action, data, state } = pam;
         const { targetNodeID } = data;
         if (targetNodeID) {
             return [targetNodeID];
@@ -170,7 +177,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
     ;
     addPageActionMessage(action, tabID, data = {}, sender = this.getMe()) {
         return __awaiter(this, void 0, void 0, function* () {
-            const message = { sender, action, tabID, data, performed: false };
+            const message = { sender, action, tabID, data, state: PageActionState.NOT_PERFORMED };
             this.addMesssage(message);
         });
     }
