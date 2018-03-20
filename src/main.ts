@@ -45,7 +45,21 @@ app.commandLine.appendSwitch('remote-debugging-port', `${RDB_PORT}`);
 function createBrowserWindow(extraOptions?: {}): BrowserWindow {
     const options = _.extend({}, defaultBrowswerWindowOptions, extraOptions);
     let newWindow: BrowserWindow = new BrowserWindow(options);
-    newWindow.loadURL(`file://${__dirname}/browser/index.html`);
+    newWindow.loadURL(`file://${__dirname}/browser/index_browser.html`);
+
+    newWindow.on('closed', () => {
+        // Dereference the window object, usually you would store windows
+        // in an array if your app supports multi windows, this is the time
+        // when you should delete the corresponding element.
+        newWindow = null;
+    });
+
+    return newWindow;
+};
+function createAdminWindow(extraOptions?: {}): BrowserWindow {
+    const options = _.extend({}, defaultBrowswerWindowOptions, extraOptions);
+    let newWindow: BrowserWindow = new BrowserWindow(options);
+    newWindow.loadURL(`file://${__dirname}/browser/index_admin.html`);
 
     newWindow.on('closed', () => {
         // Dereference the window object, usually you would store windows
@@ -58,7 +72,8 @@ function createBrowserWindow(extraOptions?: {}): BrowserWindow {
 };
 
 app.on('ready', () => {
-    let wn: BrowserWindow = createBrowserWindow();
+    const browserWindow:BrowserWindow = createBrowserWindow();
+    const adminWindow:BrowserWindow = createAdminWindow();
 });
 
 const sdb:SDB = new SDB(false);

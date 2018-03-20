@@ -70,7 +70,6 @@ export class ArboretumChat extends TypedEventEmitter {
     public ready = this.registerEvent<ReadyEvent>();
     constructor(private sdb:SDB, private browserState?:BrowserState) {
         super();
-        console.log(this.browserState);
         this.doc = this.sdb.get<ChatDoc>('arboretum', 'chat');
         this.initialized = this.initializeDoc();
         this.initialized.catch((err) => {
@@ -125,13 +124,9 @@ export class ArboretumChat extends TypedEventEmitter {
                 this.userNotPresent.emit({ user });
             }
         } else if(p[0] === 'messages') {
-            console.log(li);
-            console.log(this.browserState);
             if(li.action && li.data && this.browserState) {
                 const relevantNodeIDs:Array<CRI.NodeID> = ArboretumChat.getRelevantNodeIDs(li as PageActionMessage);
                 const relevantNodes = relevantNodeIDs.map((id) => this.browserState.getNode(id));
-                console.log(relevantNodes);
-                console.log(li);
             }
             this.messageAdded.emit({
                 message:li

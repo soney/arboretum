@@ -182,7 +182,7 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
             return <span key={u.id} className={`participant ${isMe?'me':''}`} style={style}>{u.displayName}</span>;
         });
         return <div className='chat'>
-            <div id="chat-participants">{users}</div>
+            <div id="chat-participants">Here now: {users}</div>
             <ul id="chat-lines">
                 {messages.filter(m => !!m)}
                 <li style={{ float:"left", clear: "both" }} ref={(el) => { this.messagesEnd = el; }} />

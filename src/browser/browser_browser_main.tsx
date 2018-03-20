@@ -7,6 +7,6 @@ require('./css/browser.scss');
 const START_URL:string = 'file:///home/soney/code/arboretum/test/index.html';
 //const START_URL:string = 'http://www.umich.edu/';
 ReactDOM.render(
-    <ArboretumBrowser serverActive={true} urls={[START_URL]} />,
+    <ArboretumBrowser urls={[START_URL]} />,
     document.getElementById('arboretum_main')
 );

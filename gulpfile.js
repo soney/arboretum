@@ -69,11 +69,19 @@ const clientWebpackConfig = _.extend({
         path: path.resolve(__dirname, 'built', 'client')
     }
 }, webpackCommonConfig);
-const browserWebpackConfig = _.extend({
+const browserBrowserWebpackConfig = _.extend({
     target: 'electron',
-    entry: path.join(__dirname, 'src', 'browser', 'browser_main.tsx'),
+    entry: path.join(__dirname, 'src', 'browser', 'browser_browser_main.tsx'),
     output: {
-        filename: 'browser_bundle.js',
+        filename: 'browser_browser_bundle.js',
+        path: path.resolve(__dirname, 'built', 'browser')
+    }
+}, webpackCommonConfig);
+const browserAdminWebpackConfig = _.extend({
+    target: 'electron',
+    entry: path.join(__dirname, 'src', 'browser', 'browser_admin_main.tsx'),
+    output: {
+        filename: 'browser_admin_bundle.js',
         path: path.resolve(__dirname, 'built', 'browser')
     }
 }, webpackCommonConfig);
@@ -106,17 +114,29 @@ gulp.task('client-watch', ['client-webpack-watch', 'client-resources-watch']);
 // =======
 // BROWSER
 // =======
-gulp.task('browser-webpack', function() {
-    return gulp.src(browserWebpackConfig.entry)
-                .pipe(webpack(browserWebpackConfig))
-                .pipe(gulp.dest(browserWebpackConfig.output.path));
+gulp.task('browser-browser-webpack', function() {
+    return gulp.src(browserBrowserWebpackConfig.entry)
+                .pipe(webpack(browserBrowserWebpackConfig))
+                .pipe(gulp.dest(browserBrowserWebpackConfig.output.path));
 });
-gulp.task('browser-webpack-watch', function() {
-    return gulp.src(browserWebpackConfig.entry)
+gulp.task('browser-browser-webpack-watch', function() {
+    return gulp.src(browserBrowserWebpackConfig.entry)
                 .pipe(webpack(_.extend({
                     watch: true
-                }, browserWebpackConfig)))
-                .pipe(gulp.dest(browserWebpackConfig.output.path));
+                }, browserBrowserWebpackConfig)))
+                .pipe(gulp.dest(browserBrowserWebpackConfig.output.path));
+});
+gulp.task('browser-admin-webpack', function() {
+    return gulp.src(browserAdminWebpackConfig.entry)
+                .pipe(webpack(browserAdminWebpackConfig))
+                .pipe(gulp.dest(browserAdminWebpackConfig.output.path));
+});
+gulp.task('browser-admin-webpack-watch', function() {
+    return gulp.src(browserAdminWebpackConfig.entry)
+                .pipe(webpack(_.extend({
+                    watch: true
+                }, browserAdminWebpackConfig)))
+                .pipe(gulp.dest(browserAdminWebpackConfig.output.path));
 });
 gulp.task('browser-resources', function() {
     return gulp.src(path.join(__dirname, 'src', 'browser', '**/*.{html,htm,css,js,woff,ttf,png}'))
@@ -125,8 +145,8 @@ gulp.task('browser-resources', function() {
 gulp.task('browser-resources-watch', function() {
     return gulp.watch([path.join(__dirname, 'src', 'browser', '**/*.{html,htm,css,js,woff,ttf,png}')], ['browser-resources']);
 });
-gulp.task('browser', ['browser-webpack', 'browser-resources']);
-gulp.task('browser-watch', ['browser-webpack-watch', 'browser-resources-watch']);
+gulp.task('browser', ['browser-browser-webpack', 'browser-admin-webpack', 'browser-resources']);
+gulp.task('browser-watch', ['browser-browser-webpack-watch', 'browser-admin-webpack-watch', 'browser-resources-watch']);
 
 // ======
 // SERVER

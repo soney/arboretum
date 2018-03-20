@@ -60,25 +60,41 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 38);
+/******/ 	return __webpack_require__(__webpack_require__.s = 37);
 /******/ })
 /************************************************************************/
 /******/ ([
 /* 0 */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+var makeError = __webpack_require__(61);
 
-
-if (process.env.NODE_ENV === 'production') {
-  module.exports = __webpack_require__(39);
-} else {
-  module.exports = __webpack_require__(40);
+function ShareDBError(code, message) {
+  ShareDBError.super.call(this, message);
+  this.code = code;
 }
+
+makeError(ShareDBError);
+
+module.exports = ShareDBError;
 
 
 /***/ }),
 /* 1 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+if (process.env.NODE_ENV === 'production') {
+  module.exports = __webpack_require__(38);
+} else {
+  module.exports = __webpack_require__(39);
+}
+
+
+/***/ }),
+/* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -120,27 +136,11 @@ emptyFunction.thatReturnsArgument = function (arg) {
 module.exports = emptyFunction;
 
 /***/ }),
-/* 2 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var makeError = __webpack_require__(61);
-
-function ShareDBError(code, message) {
-  ShareDBError.super.call(this, message);
-  this.code = code;
-}
-
-makeError(ShareDBError);
-
-module.exports = ShareDBError;
-
-
-/***/ }),
 /* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
-exports.defaultType = __webpack_require__(25).type;
+exports.defaultType = __webpack_require__(24).type;
 
 exports.map = {};
 
@@ -278,6 +278,45 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 
 
 
+var emptyObject = {};
+
+if (process.env.NODE_ENV !== 'production') {
+  Object.freeze(emptyObject);
+}
+
+module.exports = emptyObject;
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var EventEmitter = __webpack_require__(60).EventEmitter;
+
+exports.EventEmitter = EventEmitter;
+exports.mixin = mixin;
+
+function mixin(Constructor) {
+  for (var key in EventEmitter.prototype) {
+    Constructor.prototype[key] = EventEmitter.prototype[key];
+  }
+}
+
+
+/***/ }),
+/* 8 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/**
+ * Copyright (c) 2013-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ */
+
+
+
 /**
  * Use invariant() to assert state which your program assumes to be true.
  *
@@ -323,30 +362,7 @@ function invariant(condition, format, a, b, c, d, e, f) {
 module.exports = invariant;
 
 /***/ }),
-/* 7 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/**
- * Copyright (c) 2013-present, Facebook, Inc.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
-
-
-
-var emptyObject = {};
-
-if (process.env.NODE_ENV !== 'production') {
-  Object.freeze(emptyObject);
-}
-
-module.exports = emptyObject;
-
-/***/ }),
-/* 8 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -360,7 +376,7 @@ module.exports = emptyObject;
 
 
 
-var emptyFunction = __webpack_require__(1);
+var emptyFunction = __webpack_require__(2);
 
 /**
  * Similar to invariant but only logs a warning if the condition is not met.
@@ -414,23 +430,286 @@ if (process.env.NODE_ENV !== 'production') {
 module.exports = warning;
 
 /***/ }),
-/* 9 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var EventEmitter = __webpack_require__(60).EventEmitter;
+// This contains the master OT functions for the database. They look like
+// ot-types style operational transform functions, but they're a bit different.
+// These functions understand versions and can deal with out of bound create &
+// delete operations.
 
-exports.EventEmitter = EventEmitter;
-exports.mixin = mixin;
+var types = __webpack_require__(3).map;
 
-function mixin(Constructor) {
-  for (var key in EventEmitter.prototype) {
-    Constructor.prototype[key] = EventEmitter.prototype[key];
+// Returns an error string on failure. Rockin' it C style.
+exports.checkOp = function(op) {
+  if (op == null || typeof op !== 'object') {
+    return {code: 4004, message: 'Missing op'};
   }
+
+  if (op.create != null) {
+    if (typeof op.create !== 'object') {
+      return {code: 4006, message: 'create data must be an object'};
+    }
+    var typeName = op.create.type;
+    if (typeof typeName !== 'string') {
+      return {code: 4007, message: 'Missing create type'};
+    }
+    var type = types[typeName];
+    if (type == null || typeof type !== 'object') {
+      return {code: 4008, message: 'Unknown type'};
+    }
+
+  } else if (op.del != null) {
+    if (op.del !== true) return {code: 4009, message: 'del value must be true'};
+
+  } else if (op.op == null) {
+    return {code: 4010, message: 'Missing op, create, or del'};
+  }
+
+  if (op.src != null && typeof op.src !== 'string') {
+    return {code: 4011, message: 'Invalid src'};
+  }
+  if (op.seq != null && typeof op.seq !== 'number') {
+    return {code: 4012, message: 'Invalid seq'};
+  }
+  if (
+    (op.src == null && op.seq != null) ||
+    (op.src != null && op.seq == null)
+  ) {
+    return {code: 4013, message: 'Both src and seq must be set together'};
+  }
+
+  if (op.m != null && typeof op.m !== 'object') {
+    return {code: 4014, message: 'op.m invalid'};
+  }
+};
+
+// Takes in a string (type name or URI) and returns the normalized name (uri)
+exports.normalizeType = function(typeName) {
+  return types[typeName] && types[typeName].uri;
+};
+
+// This is the super apply function that takes in snapshot data (including the
+// type) and edits it in-place. Returns an error or null for success.
+exports.apply = function(snapshot, op) {
+  if (typeof snapshot !== 'object') {
+    return {code: 5002, message: 'Missing snapshot'};
+  }
+  if (snapshot.v != null && op.v != null && snapshot.v !== op.v) {
+    return {code: 5003, message: 'Version mismatch'};
+  }
+
+  // Create operation
+  if (op.create) {
+    if (snapshot.type) return {code: 4016, message: 'Document already exists'};
+
+    // The document doesn't exist, although it might have once existed
+    var create = op.create;
+    var type = types[create.type];
+    if (!type) return {code: 4008, message: 'Unknown type'};
+
+    try {
+      snapshot.data = type.create(create.data);
+      snapshot.type = type.uri;
+      snapshot.v++;
+    } catch (err) {
+      return err;
+    }
+
+  // Delete operation
+  } else if (op.del) {
+    snapshot.data = undefined;
+    snapshot.type = null;
+    snapshot.v++;
+
+  // Edit operation
+  } else if (op.op) {
+    var err = applyOpEdit(snapshot, op.op);
+    if (err) return err;
+    snapshot.v++;
+
+  // No-op, and we don't have to do anything
+  } else {
+    snapshot.v++;
+  }
+};
+
+function applyOpEdit(snapshot, edit) {
+  if (!snapshot.type) return {code: 4015, message: 'Document does not exist'};
+
+  if (typeof edit !== 'object') return {code: 5004, message: 'Missing op'};
+  var type = types[snapshot.type];
+  if (!type) return {code: 4008, message: 'Unknown type'};
+
+  try {
+    snapshot.data = type.apply(snapshot.data, edit);
+  } catch (err) {
+    return err;
+  }
+}
+
+exports.transform = function(type, op, appliedOp) {
+  // There are 16 cases this function needs to deal with - which are all the
+  // combinations of create/delete/op/noop from both op and appliedOp
+  if (op.v != null && op.v !== appliedOp.v) {
+    return {code: 5006, message: 'Version mismatch'};
+  }
+
+  if (appliedOp.del) {
+    if (op.create || op.op) {
+      return {code: 4017, message: 'Document was deleted'};
+    }
+  } else if (
+    (appliedOp.create && (op.op || op.create || op.del)) ||
+    (appliedOp.op && op.create)
+  ) {
+    // If appliedOp.create is not true, appliedOp contains an op - which
+    // also means the document exists remotely.
+    return {code: 4018, message: 'Document was created remotely'};
+  } else if (appliedOp.op && op.op) {
+    // If we reach here, they both have a .op property.
+    if (!type) return {code: 5005, message: 'Document does not exist'};
+
+    if (typeof type === 'string') {
+      type = types[type];
+      if (!type) return {code: 4008, message: 'Unknown type'};
+    }
+
+    try {
+      op.op = type.transform(op.op, appliedOp.op, 'left');
+    } catch (err) {
+      return err;
+    }
+  }
+
+  if (op.v != null) op.v++;
+};
+
+
+/***/ }),
+/* 11 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var json0 = __webpack_require__(24).type;
+
+exports.projectSnapshot = projectSnapshot;
+exports.projectOp = projectOp;
+exports.isSnapshotAllowed = isSnapshotAllowed;
+exports.isOpAllowed = isOpAllowed;
+
+
+// Project a snapshot in place to only include specified fields
+function projectSnapshot(fields, snapshot) {
+  // Only json0 supported right now
+  if (snapshot.type && snapshot.type !== json0.uri) {
+    throw new Error(4023, 'Cannot project snapshots of type ' + snapshot.type);
+  }
+  snapshot.data = projectData(fields, snapshot.data);
+}
+
+function projectOp(fields, op) {
+  if (op.create) {
+    projectSnapshot(fields, op.create);
+  }
+  if (op.op) {
+    op.op = projectEdit(fields, op.op);
+  }
+}
+
+function projectEdit(fields, op) {
+  // So, we know the op is a JSON op
+  var result = [];
+
+  for (var i = 0; i < op.length; i++) {
+    var c = op[i];
+    var path = c.p;
+
+    if (path.length === 0) {
+      var newC = {p:[]};
+
+      if (c.od !== undefined || c.oi !== undefined) {
+        if (c.od !== undefined) {
+          newC.od = projectData(fields, c.od);
+        }
+        if (c.oi !== undefined) {
+          newC.oi = projectData(fields, c.oi);
+        }
+        result.push(newC);
+      }
+    } else {
+      // The path has a first element. Just check it against the fields.
+      if (fields[path[0]]) {
+        result.push(c);
+      }
+    }
+  }
+  return result;
+}
+
+function isOpAllowed(knownType, fields, op) {
+  if (op.create) {
+    return isSnapshotAllowed(fields, op.create);
+  }
+  if (op.op) {
+    if (knownType && knownType !== json0.uri) return false;
+    return isEditAllowed(fields, op.op);
+  }
+  // Noop and del are both ok.
+  return true;
+}
+
+// Basically, would the projected version of this data be the same as the original?
+function isSnapshotAllowed(fields, snapshot) {
+  if (snapshot.type && snapshot.type !== json0.uri) {
+    return false;
+  }
+  if (snapshot.data == null) {
+    return true;
+  }
+  // Data must be an object if not null
+  if (typeof snapshot.data !== 'object' || Array.isArray(snapshot.data)) {
+    return false;
+  }
+  for (var k in snapshot.data) {
+    if (!fields[k]) return false;
+  }
+  return true;
+}
+
+function isEditAllowed(fields, op) {
+  for (var i = 0; i < op.length; i++) {
+    var c = op[i];
+    if (c.p.length === 0) {
+      return false;
+    } else if (!fields[c.p[0]]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function projectData(fields, data) {
+  // Return back null or undefined
+  if (data == null) {
+    return data;
+  }
+  // If data is not an object, the projected version just looks like null.
+  if (typeof data !== 'object' || Array.isArray(data)) {
+    return null;
+  }
+  // Shallow copy of each field
+  var result = {};
+  for (var key in fields) {
+    if (data.hasOwnProperty(key)) {
+      result[key] = data[key];
+    }
+  }
+  return result;
 }
 
 
 /***/ }),
-/* 10 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -444,9 +723,9 @@ function mixin(Constructor) {
 
 
 if (process.env.NODE_ENV !== 'production') {
-  var invariant = __webpack_require__(6);
-  var warning = __webpack_require__(8);
-  var ReactPropTypesSecret = __webpack_require__(11);
+  var invariant = __webpack_require__(8);
+  var warning = __webpack_require__(9);
+  var ReactPropTypesSecret = __webpack_require__(40);
   var loggedTypeFailures = {};
 }
 
@@ -496,7 +775,7 @@ module.exports = checkPropTypes;
 
 
 /***/ }),
-/* 11 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -505,17 +784,303 @@ module.exports = checkPropTypes;
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
+ *
  */
 
 
 
-var ReactPropTypesSecret = 'SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED';
+var canUseDOM = !!(typeof window !== 'undefined' && window.document && window.document.createElement);
 
-module.exports = ReactPropTypesSecret;
+/**
+ * Simple, lightweight module assisting with the detection and context of
+ * Worker. Helps avoid circular dependencies and allows code to reason about
+ * whether or not they are in a Worker, even if they never include the main
+ * `ReactWorker` dependency.
+ */
+var ExecutionEnvironment = {
 
+  canUseDOM: canUseDOM,
+
+  canUseWorkers: typeof Worker !== 'undefined',
+
+  canUseEventListeners: canUseDOM && !!(window.addEventListener || window.attachEvent),
+
+  canUseViewport: canUseDOM && !!window.screen,
+
+  isInWorker: !canUseDOM // For now, this is true - might change in the future.
+
+};
+
+module.exports = ExecutionEnvironment;
 
 /***/ }),
-/* 12 */
+/* 14 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+/**
+ * Copyright (c) 2013-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @typechecks
+ */
+
+var emptyFunction = __webpack_require__(2);
+
+/**
+ * Upstream version of event listener. Does not take into account specific
+ * nature of platform.
+ */
+var EventListener = {
+  /**
+   * Listen to DOM events during the bubble phase.
+   *
+   * @param {DOMEventTarget} target DOM element to register listener on.
+   * @param {string} eventType Event type, e.g. 'click' or 'mouseover'.
+   * @param {function} callback Callback function.
+   * @return {object} Object with a `remove` method.
+   */
+  listen: function listen(target, eventType, callback) {
+    if (target.addEventListener) {
+      target.addEventListener(eventType, callback, false);
+      return {
+        remove: function remove() {
+          target.removeEventListener(eventType, callback, false);
+        }
+      };
+    } else if (target.attachEvent) {
+      target.attachEvent('on' + eventType, callback);
+      return {
+        remove: function remove() {
+          target.detachEvent('on' + eventType, callback);
+        }
+      };
+    }
+  },
+
+  /**
+   * Listen to DOM events during the capture phase.
+   *
+   * @param {DOMEventTarget} target DOM element to register listener on.
+   * @param {string} eventType Event type, e.g. 'click' or 'mouseover'.
+   * @param {function} callback Callback function.
+   * @return {object} Object with a `remove` method.
+   */
+  capture: function capture(target, eventType, callback) {
+    if (target.addEventListener) {
+      target.addEventListener(eventType, callback, true);
+      return {
+        remove: function remove() {
+          target.removeEventListener(eventType, callback, true);
+        }
+      };
+    } else {
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('Attempted to listen to events during the capture phase on a ' + 'browser that does not support the capture phase. Your application ' + 'will not receive some events.');
+      }
+      return {
+        remove: emptyFunction
+      };
+    }
+  },
+
+  registerDefault: function registerDefault() {}
+};
+
+module.exports = EventListener;
+
+/***/ }),
+/* 15 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+/**
+ * Copyright (c) 2013-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @typechecks
+ */
+
+/* eslint-disable fb-www/typeof-undefined */
+
+/**
+ * Same as document.activeElement but wraps in a try-catch block. In IE it is
+ * not safe to call document.activeElement if there is nothing focused.
+ *
+ * The activeElement will be null only if the document or document body is not
+ * yet defined.
+ *
+ * @param {?DOMDocument} doc Defaults to current document.
+ * @return {?DOMElement}
+ */
+function getActiveElement(doc) /*?DOMElement*/{
+  doc = doc || (typeof document !== 'undefined' ? document : undefined);
+  if (typeof doc === 'undefined') {
+    return null;
+  }
+  try {
+    return doc.activeElement || doc.body;
+  } catch (e) {
+    return doc.body;
+  }
+}
+
+module.exports = getActiveElement;
+
+/***/ }),
+/* 16 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/**
+ * Copyright (c) 2013-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @typechecks
+ * 
+ */
+
+/*eslint-disable no-self-compare */
+
+
+
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+
+/**
+ * inlined Object.is polyfill to avoid requiring consumers ship their own
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/is
+ */
+function is(x, y) {
+  // SameValue algorithm
+  if (x === y) {
+    // Steps 1-5, 7-10
+    // Steps 6.b-6.e: +0 != -0
+    // Added the nonzero y check to make Flow happy, but it is redundant
+    return x !== 0 || y !== 0 || 1 / x === 1 / y;
+  } else {
+    // Step 6.a: NaN == NaN
+    return x !== x && y !== y;
+  }
+}
+
+/**
+ * Performs equality by iterating through keys on an object and returning false
+ * when any key has values which are not strictly equal between the arguments.
+ * Returns true when the values of all keys are strictly equal.
+ */
+function shallowEqual(objA, objB) {
+  if (is(objA, objB)) {
+    return true;
+  }
+
+  if (typeof objA !== 'object' || objA === null || typeof objB !== 'object' || objB === null) {
+    return false;
+  }
+
+  var keysA = Object.keys(objA);
+  var keysB = Object.keys(objB);
+
+  if (keysA.length !== keysB.length) {
+    return false;
+  }
+
+  // Test for A's keys different from B.
+  for (var i = 0; i < keysA.length; i++) {
+    if (!hasOwnProperty.call(objB, keysA[i]) || !is(objA[keysA[i]], objB[keysA[i]])) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+module.exports = shallowEqual;
+
+/***/ }),
+/* 17 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+/**
+ * Copyright (c) 2013-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * 
+ */
+
+var isTextNode = __webpack_require__(43);
+
+/*eslint-disable no-bitwise */
+
+/**
+ * Checks if a given DOM node contains or is another DOM node.
+ */
+function containsNode(outerNode, innerNode) {
+  if (!outerNode || !innerNode) {
+    return false;
+  } else if (outerNode === innerNode) {
+    return true;
+  } else if (isTextNode(outerNode)) {
+    return false;
+  } else if (isTextNode(innerNode)) {
+    return containsNode(outerNode, innerNode.parentNode);
+  } else if ('contains' in outerNode) {
+    return outerNode.contains(innerNode);
+  } else if (outerNode.compareDocumentPosition) {
+    return !!(outerNode.compareDocumentPosition(innerNode) & 16);
+  } else {
+    return false;
+  }
+}
+
+module.exports = containsNode;
+
+/***/ }),
+/* 18 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/**
+ * Copyright (c) 2013-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ */
+
+
+
+/**
+ * @param {DOMElement} node input/textarea to focus
+ */
+
+function focusNode(node) {
+  // IE8 can throw "Can't move focus to the control because it is invisible,
+  // not enabled, or of a type that does not accept the focus." for all kinds of
+  // reasons that are too expensive and fragile to test.
+  try {
+    node.focus();
+  } catch (e) {}
+}
+
+module.exports = focusNode;
+
+/***/ }),
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;//     Underscore.js 1.8.3
@@ -2070,7 +2635,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;//     Underscor
 
 
 /***/ }),
-/* 13 */
+/* 20 */
 /***/ (function(module, exports) {
 
 /*
@@ -2152,7 +2717,7 @@ function toComment(sourceMap) {
 
 
 /***/ }),
-/* 14 */
+/* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /*
@@ -2534,597 +3099,13 @@ function updateLink (link, options, obj) {
 
 
 /***/ }),
-/* 15 */
-/***/ (function(module, exports, __webpack_require__) {
-
-// This contains the master OT functions for the database. They look like
-// ot-types style operational transform functions, but they're a bit different.
-// These functions understand versions and can deal with out of bound create &
-// delete operations.
-
-var types = __webpack_require__(3).map;
-
-// Returns an error string on failure. Rockin' it C style.
-exports.checkOp = function(op) {
-  if (op == null || typeof op !== 'object') {
-    return {code: 4004, message: 'Missing op'};
-  }
-
-  if (op.create != null) {
-    if (typeof op.create !== 'object') {
-      return {code: 4006, message: 'create data must be an object'};
-    }
-    var typeName = op.create.type;
-    if (typeof typeName !== 'string') {
-      return {code: 4007, message: 'Missing create type'};
-    }
-    var type = types[typeName];
-    if (type == null || typeof type !== 'object') {
-      return {code: 4008, message: 'Unknown type'};
-    }
-
-  } else if (op.del != null) {
-    if (op.del !== true) return {code: 4009, message: 'del value must be true'};
-
-  } else if (op.op == null) {
-    return {code: 4010, message: 'Missing op, create, or del'};
-  }
-
-  if (op.src != null && typeof op.src !== 'string') {
-    return {code: 4011, message: 'Invalid src'};
-  }
-  if (op.seq != null && typeof op.seq !== 'number') {
-    return {code: 4012, message: 'Invalid seq'};
-  }
-  if (
-    (op.src == null && op.seq != null) ||
-    (op.src != null && op.seq == null)
-  ) {
-    return {code: 4013, message: 'Both src and seq must be set together'};
-  }
-
-  if (op.m != null && typeof op.m !== 'object') {
-    return {code: 4014, message: 'op.m invalid'};
-  }
-};
-
-// Takes in a string (type name or URI) and returns the normalized name (uri)
-exports.normalizeType = function(typeName) {
-  return types[typeName] && types[typeName].uri;
-};
-
-// This is the super apply function that takes in snapshot data (including the
-// type) and edits it in-place. Returns an error or null for success.
-exports.apply = function(snapshot, op) {
-  if (typeof snapshot !== 'object') {
-    return {code: 5002, message: 'Missing snapshot'};
-  }
-  if (snapshot.v != null && op.v != null && snapshot.v !== op.v) {
-    return {code: 5003, message: 'Version mismatch'};
-  }
-
-  // Create operation
-  if (op.create) {
-    if (snapshot.type) return {code: 4016, message: 'Document already exists'};
-
-    // The document doesn't exist, although it might have once existed
-    var create = op.create;
-    var type = types[create.type];
-    if (!type) return {code: 4008, message: 'Unknown type'};
-
-    try {
-      snapshot.data = type.create(create.data);
-      snapshot.type = type.uri;
-      snapshot.v++;
-    } catch (err) {
-      return err;
-    }
-
-  // Delete operation
-  } else if (op.del) {
-    snapshot.data = undefined;
-    snapshot.type = null;
-    snapshot.v++;
-
-  // Edit operation
-  } else if (op.op) {
-    var err = applyOpEdit(snapshot, op.op);
-    if (err) return err;
-    snapshot.v++;
-
-  // No-op, and we don't have to do anything
-  } else {
-    snapshot.v++;
-  }
-};
-
-function applyOpEdit(snapshot, edit) {
-  if (!snapshot.type) return {code: 4015, message: 'Document does not exist'};
-
-  if (typeof edit !== 'object') return {code: 5004, message: 'Missing op'};
-  var type = types[snapshot.type];
-  if (!type) return {code: 4008, message: 'Unknown type'};
-
-  try {
-    snapshot.data = type.apply(snapshot.data, edit);
-  } catch (err) {
-    return err;
-  }
-}
-
-exports.transform = function(type, op, appliedOp) {
-  // There are 16 cases this function needs to deal with - which are all the
-  // combinations of create/delete/op/noop from both op and appliedOp
-  if (op.v != null && op.v !== appliedOp.v) {
-    return {code: 5006, message: 'Version mismatch'};
-  }
-
-  if (appliedOp.del) {
-    if (op.create || op.op) {
-      return {code: 4017, message: 'Document was deleted'};
-    }
-  } else if (
-    (appliedOp.create && (op.op || op.create || op.del)) ||
-    (appliedOp.op && op.create)
-  ) {
-    // If appliedOp.create is not true, appliedOp contains an op - which
-    // also means the document exists remotely.
-    return {code: 4018, message: 'Document was created remotely'};
-  } else if (appliedOp.op && op.op) {
-    // If we reach here, they both have a .op property.
-    if (!type) return {code: 5005, message: 'Document does not exist'};
-
-    if (typeof type === 'string') {
-      type = types[type];
-      if (!type) return {code: 4008, message: 'Unknown type'};
-    }
-
-    try {
-      op.op = type.transform(op.op, appliedOp.op, 'left');
-    } catch (err) {
-      return err;
-    }
-  }
-
-  if (op.v != null) op.v++;
-};
-
-
-/***/ }),
-/* 16 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var json0 = __webpack_require__(25).type;
-
-exports.projectSnapshot = projectSnapshot;
-exports.projectOp = projectOp;
-exports.isSnapshotAllowed = isSnapshotAllowed;
-exports.isOpAllowed = isOpAllowed;
-
-
-// Project a snapshot in place to only include specified fields
-function projectSnapshot(fields, snapshot) {
-  // Only json0 supported right now
-  if (snapshot.type && snapshot.type !== json0.uri) {
-    throw new Error(4023, 'Cannot project snapshots of type ' + snapshot.type);
-  }
-  snapshot.data = projectData(fields, snapshot.data);
-}
-
-function projectOp(fields, op) {
-  if (op.create) {
-    projectSnapshot(fields, op.create);
-  }
-  if (op.op) {
-    op.op = projectEdit(fields, op.op);
-  }
-}
-
-function projectEdit(fields, op) {
-  // So, we know the op is a JSON op
-  var result = [];
-
-  for (var i = 0; i < op.length; i++) {
-    var c = op[i];
-    var path = c.p;
-
-    if (path.length === 0) {
-      var newC = {p:[]};
-
-      if (c.od !== undefined || c.oi !== undefined) {
-        if (c.od !== undefined) {
-          newC.od = projectData(fields, c.od);
-        }
-        if (c.oi !== undefined) {
-          newC.oi = projectData(fields, c.oi);
-        }
-        result.push(newC);
-      }
-    } else {
-      // The path has a first element. Just check it against the fields.
-      if (fields[path[0]]) {
-        result.push(c);
-      }
-    }
-  }
-  return result;
-}
-
-function isOpAllowed(knownType, fields, op) {
-  if (op.create) {
-    return isSnapshotAllowed(fields, op.create);
-  }
-  if (op.op) {
-    if (knownType && knownType !== json0.uri) return false;
-    return isEditAllowed(fields, op.op);
-  }
-  // Noop and del are both ok.
-  return true;
-}
-
-// Basically, would the projected version of this data be the same as the original?
-function isSnapshotAllowed(fields, snapshot) {
-  if (snapshot.type && snapshot.type !== json0.uri) {
-    return false;
-  }
-  if (snapshot.data == null) {
-    return true;
-  }
-  // Data must be an object if not null
-  if (typeof snapshot.data !== 'object' || Array.isArray(snapshot.data)) {
-    return false;
-  }
-  for (var k in snapshot.data) {
-    if (!fields[k]) return false;
-  }
-  return true;
-}
-
-function isEditAllowed(fields, op) {
-  for (var i = 0; i < op.length; i++) {
-    var c = op[i];
-    if (c.p.length === 0) {
-      return false;
-    } else if (!fields[c.p[0]]) {
-      return false;
-    }
-  }
-  return true;
-}
-
-function projectData(fields, data) {
-  // Return back null or undefined
-  if (data == null) {
-    return data;
-  }
-  // If data is not an object, the projected version just looks like null.
-  if (typeof data !== 'object' || Array.isArray(data)) {
-    return null;
-  }
-  // Shallow copy of each field
-  var result = {};
-  for (var key in fields) {
-    if (data.hasOwnProperty(key)) {
-      result[key] = data[key];
-    }
-  }
-  return result;
-}
-
-
-/***/ }),
-/* 17 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/**
- * Copyright (c) 2013-present, Facebook, Inc.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
-
-
-
-var canUseDOM = !!(typeof window !== 'undefined' && window.document && window.document.createElement);
-
-/**
- * Simple, lightweight module assisting with the detection and context of
- * Worker. Helps avoid circular dependencies and allows code to reason about
- * whether or not they are in a Worker, even if they never include the main
- * `ReactWorker` dependency.
- */
-var ExecutionEnvironment = {
-
-  canUseDOM: canUseDOM,
-
-  canUseWorkers: typeof Worker !== 'undefined',
-
-  canUseEventListeners: canUseDOM && !!(window.addEventListener || window.attachEvent),
-
-  canUseViewport: canUseDOM && !!window.screen,
-
-  isInWorker: !canUseDOM // For now, this is true - might change in the future.
-
-};
-
-module.exports = ExecutionEnvironment;
-
-/***/ }),
-/* 18 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-/**
- * Copyright (c) 2013-present, Facebook, Inc.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- * @typechecks
- */
-
-var emptyFunction = __webpack_require__(1);
-
-/**
- * Upstream version of event listener. Does not take into account specific
- * nature of platform.
- */
-var EventListener = {
-  /**
-   * Listen to DOM events during the bubble phase.
-   *
-   * @param {DOMEventTarget} target DOM element to register listener on.
-   * @param {string} eventType Event type, e.g. 'click' or 'mouseover'.
-   * @param {function} callback Callback function.
-   * @return {object} Object with a `remove` method.
-   */
-  listen: function listen(target, eventType, callback) {
-    if (target.addEventListener) {
-      target.addEventListener(eventType, callback, false);
-      return {
-        remove: function remove() {
-          target.removeEventListener(eventType, callback, false);
-        }
-      };
-    } else if (target.attachEvent) {
-      target.attachEvent('on' + eventType, callback);
-      return {
-        remove: function remove() {
-          target.detachEvent('on' + eventType, callback);
-        }
-      };
-    }
-  },
-
-  /**
-   * Listen to DOM events during the capture phase.
-   *
-   * @param {DOMEventTarget} target DOM element to register listener on.
-   * @param {string} eventType Event type, e.g. 'click' or 'mouseover'.
-   * @param {function} callback Callback function.
-   * @return {object} Object with a `remove` method.
-   */
-  capture: function capture(target, eventType, callback) {
-    if (target.addEventListener) {
-      target.addEventListener(eventType, callback, true);
-      return {
-        remove: function remove() {
-          target.removeEventListener(eventType, callback, true);
-        }
-      };
-    } else {
-      if (process.env.NODE_ENV !== 'production') {
-        console.error('Attempted to listen to events during the capture phase on a ' + 'browser that does not support the capture phase. Your application ' + 'will not receive some events.');
-      }
-      return {
-        remove: emptyFunction
-      };
-    }
-  },
-
-  registerDefault: function registerDefault() {}
-};
-
-module.exports = EventListener;
-
-/***/ }),
-/* 19 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-/**
- * Copyright (c) 2013-present, Facebook, Inc.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- * @typechecks
- */
-
-/* eslint-disable fb-www/typeof-undefined */
-
-/**
- * Same as document.activeElement but wraps in a try-catch block. In IE it is
- * not safe to call document.activeElement if there is nothing focused.
- *
- * The activeElement will be null only if the document or document body is not
- * yet defined.
- *
- * @param {?DOMDocument} doc Defaults to current document.
- * @return {?DOMElement}
- */
-function getActiveElement(doc) /*?DOMElement*/{
-  doc = doc || (typeof document !== 'undefined' ? document : undefined);
-  if (typeof doc === 'undefined') {
-    return null;
-  }
-  try {
-    return doc.activeElement || doc.body;
-  } catch (e) {
-    return doc.body;
-  }
-}
-
-module.exports = getActiveElement;
-
-/***/ }),
-/* 20 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/**
- * Copyright (c) 2013-present, Facebook, Inc.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- * @typechecks
- * 
- */
-
-/*eslint-disable no-self-compare */
-
-
-
-var hasOwnProperty = Object.prototype.hasOwnProperty;
-
-/**
- * inlined Object.is polyfill to avoid requiring consumers ship their own
- * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/is
- */
-function is(x, y) {
-  // SameValue algorithm
-  if (x === y) {
-    // Steps 1-5, 7-10
-    // Steps 6.b-6.e: +0 != -0
-    // Added the nonzero y check to make Flow happy, but it is redundant
-    return x !== 0 || y !== 0 || 1 / x === 1 / y;
-  } else {
-    // Step 6.a: NaN == NaN
-    return x !== x && y !== y;
-  }
-}
-
-/**
- * Performs equality by iterating through keys on an object and returning false
- * when any key has values which are not strictly equal between the arguments.
- * Returns true when the values of all keys are strictly equal.
- */
-function shallowEqual(objA, objB) {
-  if (is(objA, objB)) {
-    return true;
-  }
-
-  if (typeof objA !== 'object' || objA === null || typeof objB !== 'object' || objB === null) {
-    return false;
-  }
-
-  var keysA = Object.keys(objA);
-  var keysB = Object.keys(objB);
-
-  if (keysA.length !== keysB.length) {
-    return false;
-  }
-
-  // Test for A's keys different from B.
-  for (var i = 0; i < keysA.length; i++) {
-    if (!hasOwnProperty.call(objB, keysA[i]) || !is(objA[keysA[i]], objB[keysA[i]])) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-module.exports = shallowEqual;
-
-/***/ }),
-/* 21 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-/**
- * Copyright (c) 2013-present, Facebook, Inc.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- * 
- */
-
-var isTextNode = __webpack_require__(43);
-
-/*eslint-disable no-bitwise */
-
-/**
- * Checks if a given DOM node contains or is another DOM node.
- */
-function containsNode(outerNode, innerNode) {
-  if (!outerNode || !innerNode) {
-    return false;
-  } else if (outerNode === innerNode) {
-    return true;
-  } else if (isTextNode(outerNode)) {
-    return false;
-  } else if (isTextNode(innerNode)) {
-    return containsNode(outerNode, innerNode.parentNode);
-  } else if ('contains' in outerNode) {
-    return outerNode.contains(innerNode);
-  } else if (outerNode.compareDocumentPosition) {
-    return !!(outerNode.compareDocumentPosition(innerNode) & 16);
-  } else {
-    return false;
-  }
-}
-
-module.exports = containsNode;
-
-/***/ }),
 /* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
-/**
- * Copyright (c) 2013-present, Facebook, Inc.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
-
-
-
-/**
- * @param {DOMElement} node input/textarea to focus
- */
-
-function focusNode(node) {
-  // IE8 can throw "Can't move focus to the control because it is invisible,
-  // not enabled, or of a type that does not accept the focus." for all kinds of
-  // reasons that are too expensive and fragile to test.
-  try {
-    node.focus();
-  } catch (e) {}
-}
-
-module.exports = focusNode;
-
-/***/ }),
-/* 23 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var Doc = __webpack_require__(24);
-var Query = __webpack_require__(27);
-var emitter = __webpack_require__(9);
-var ShareDBError = __webpack_require__(2);
+var Doc = __webpack_require__(23);
+var Query = __webpack_require__(26);
+var emitter = __webpack_require__(7);
+var ShareDBError = __webpack_require__(0);
 var types = __webpack_require__(3);
 var util = __webpack_require__(4);
 
@@ -3702,11 +3683,11 @@ Connection.prototype._firstQuery = function(fn) {
 
 
 /***/ }),
-/* 24 */
+/* 23 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var emitter = __webpack_require__(9);
-var ShareDBError = __webpack_require__(2);
+var emitter = __webpack_require__(7);
+var ShareDBError = __webpack_require__(0);
 var types = __webpack_require__(3);
 
 /**
@@ -4618,7 +4599,7 @@ function callEach(callbacks, err) {
 
 
 /***/ }),
-/* 25 */
+/* 24 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // Only the JSON type is exported, because the text type is deprecated
@@ -4631,7 +4612,7 @@ module.exports = {
 
 
 /***/ }),
-/* 26 */
+/* 25 */
 /***/ (function(module, exports) {
 
 // These methods let you build a transform function from a transformComponent
@@ -4715,10 +4696,10 @@ function bootstrapTransform(type, transformComponent, checkValidOp, append) {
 
 
 /***/ }),
-/* 27 */
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var emitter = __webpack_require__(9);
+var emitter = __webpack_require__(7);
 
 // Queries are live requests to the database for particular sets of fields.
 //
@@ -4920,7 +4901,7 @@ Query.prototype._handleExtra = function(extra) {
 
 
 /***/ }),
-/* 28 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
@@ -6192,7 +6173,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
 
 
 /***/ }),
-/* 29 */
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var hat = __webpack_require__(66);
@@ -6782,10 +6763,10 @@ Agent.prototype._createOp = function(request) {
 
 
 /***/ }),
-/* 30 */
+/* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var DB = __webpack_require__(31);
+var DB = __webpack_require__(30);
 
 // In-memory ShareDB database
 //
@@ -6972,11 +6953,11 @@ function clone(obj) {
 
 
 /***/ }),
-/* 31 */
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var async = __webpack_require__(28);
-var ShareDBError = __webpack_require__(2);
+var async = __webpack_require__(27);
+var ShareDBError = __webpack_require__(0);
 
 function DB(options) {
   // pollDebounce is the minimum time in ms between query polls
@@ -7082,10 +7063,10 @@ DB.prototype.skipPoll = function() {
 
 
 /***/ }),
-/* 32 */
+/* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var PubSub = __webpack_require__(33);
+var PubSub = __webpack_require__(32);
 
 // In-memory ShareDB pub/sub
 //
@@ -7126,11 +7107,11 @@ MemoryPubSub.prototype._publish = function(channels, data, callback) {
 
 
 /***/ }),
-/* 33 */
+/* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var OpStream = __webpack_require__(67);
-var ShareDBError = __webpack_require__(2);
+var ShareDBError = __webpack_require__(0);
 var util = __webpack_require__(4);
 
 function PubSub(options) {
@@ -7255,24 +7236,24 @@ function shallowCopy(object) {
 
 
 /***/ }),
-/* 34 */
+/* 33 */
 /***/ (function(module, exports) {
 
 module.exports = require("util");
 
 /***/ }),
-/* 35 */
+/* 34 */
 /***/ (function(module, exports) {
 
 module.exports = require("stream");
 
 /***/ }),
-/* 36 */
+/* 35 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var arraydiff = __webpack_require__(68);
 var deepEquals = __webpack_require__(69);
-var ShareDBError = __webpack_require__(2);
+var ShareDBError = __webpack_require__(0);
 var util = __webpack_require__(4);
 
 function QueryEmitter(request, stream, ids, extra) {
@@ -7570,11 +7551,11 @@ function mapDiff(idsDiff, snapshotMap) {
 
 
 /***/ }),
-/* 37 */
+/* 36 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var ot = __webpack_require__(15);
-var projections = __webpack_require__(16);
+var ot = __webpack_require__(10);
+var projections = __webpack_require__(11);
 
 function SubmitRequest(backend, agent, index, id, op, options) {
   this.backend = backend;
@@ -7824,23 +7805,23 @@ SubmitRequest.prototype.maxRetriesError = function() {
 
 
 /***/ }),
-/* 38 */
+/* 37 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const React = __webpack_require__(0);
+const React = __webpack_require__(1);
 const ReactDOM = __webpack_require__(41);
 const ArboretumBrowser_1 = __webpack_require__(50);
-__webpack_require__(84);
+__webpack_require__(71);
 const START_URL = 'file:///home/soney/code/arboretum/test/index.html';
 //const START_URL:string = 'http://www.umich.edu/';
-ReactDOM.render(React.createElement(ArboretumBrowser_1.ArboretumBrowser, { serverActive: true, urls: [START_URL] }), document.getElementById('arboretum_main'));
+ReactDOM.render(React.createElement(ArboretumBrowser_1.ArboretumBrowser, { urls: [START_URL] }), document.getElementById('arboretum_main'));
 
 
 /***/ }),
-/* 39 */
+/* 38 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7853,7 +7834,7 @@ ReactDOM.render(React.createElement(ArboretumBrowser_1.ArboretumBrowser, { serve
  * LICENSE file in the root directory of this source tree.
  */
 
-var m=__webpack_require__(5),n=__webpack_require__(7),p=__webpack_require__(1),q="function"===typeof Symbol&&Symbol["for"],r=q?Symbol["for"]("react.element"):60103,t=q?Symbol["for"]("react.call"):60104,u=q?Symbol["for"]("react.return"):60105,v=q?Symbol["for"]("react.portal"):60106,w=q?Symbol["for"]("react.fragment"):60107,x="function"===typeof Symbol&&Symbol.iterator;
+var m=__webpack_require__(5),n=__webpack_require__(6),p=__webpack_require__(2),q="function"===typeof Symbol&&Symbol["for"],r=q?Symbol["for"]("react.element"):60103,t=q?Symbol["for"]("react.call"):60104,u=q?Symbol["for"]("react.return"):60105,v=q?Symbol["for"]("react.portal"):60106,w=q?Symbol["for"]("react.fragment"):60107,x="function"===typeof Symbol&&Symbol.iterator;
 function y(a){for(var b=arguments.length-1,e="Minified React error #"+a+"; visit http://facebook.github.io/react/docs/error-decoder.html?invariant\x3d"+a,c=0;c<b;c++)e+="\x26args[]\x3d"+encodeURIComponent(arguments[c+1]);b=Error(e+" for the full message or use the non-minified dev environment for full errors and additional helpful warnings.");b.name="Invariant Violation";b.framesToPop=1;throw b;}
 var z={isMounted:function(){return!1},enqueueForceUpdate:function(){},enqueueReplaceState:function(){},enqueueSetState:function(){}};function A(a,b,e){this.props=a;this.context=b;this.refs=n;this.updater=e||z}A.prototype.isReactComponent={};A.prototype.setState=function(a,b){"object"!==typeof a&&"function"!==typeof a&&null!=a?y("85"):void 0;this.updater.enqueueSetState(this,a,b,"setState")};A.prototype.forceUpdate=function(a){this.updater.enqueueForceUpdate(this,a,"forceUpdate")};
 function B(a,b,e){this.props=a;this.context=b;this.refs=n;this.updater=e||z}function C(){}C.prototype=A.prototype;var D=B.prototype=new C;D.constructor=B;m(D,A.prototype);D.isPureReactComponent=!0;function E(a,b,e){this.props=a;this.context=b;this.refs=n;this.updater=e||z}var F=E.prototype=new C;F.constructor=E;m(F,A.prototype);F.unstable_isAsyncReactComponent=!0;F.render=function(){return this.props.children};var G={current:null},H=Object.prototype.hasOwnProperty,I={key:!0,ref:!0,__self:!0,__source:!0};
@@ -7868,7 +7849,7 @@ isValidElement:K,version:"16.2.0",__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_F
 
 
 /***/ }),
-/* 40 */
+/* 39 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7890,11 +7871,11 @@ if (process.env.NODE_ENV !== "production") {
 'use strict';
 
 var _assign = __webpack_require__(5);
-var emptyObject = __webpack_require__(7);
-var invariant = __webpack_require__(6);
-var warning = __webpack_require__(8);
-var emptyFunction = __webpack_require__(1);
-var checkPropTypes = __webpack_require__(10);
+var emptyObject = __webpack_require__(6);
+var invariant = __webpack_require__(8);
+var warning = __webpack_require__(9);
+var emptyFunction = __webpack_require__(2);
+var checkPropTypes = __webpack_require__(12);
 
 // TODO: this is special because it gets imported during build.
 
@@ -9232,6 +9213,25 @@ module.exports = react;
 
 
 /***/ }),
+/* 40 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/**
+ * Copyright (c) 2013-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+
+
+var ReactPropTypesSecret = 'SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED';
+
+module.exports = ReactPropTypesSecret;
+
+
+/***/ }),
 /* 41 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -9293,7 +9293,7 @@ if (process.env.NODE_ENV === 'production') {
 /*
  Modernizr 3.0.0pre (Custom Build) | MIT
 */
-var aa=__webpack_require__(0),l=__webpack_require__(17),B=__webpack_require__(5),C=__webpack_require__(1),ba=__webpack_require__(18),da=__webpack_require__(19),ea=__webpack_require__(20),fa=__webpack_require__(21),ia=__webpack_require__(22),D=__webpack_require__(7);
+var aa=__webpack_require__(1),l=__webpack_require__(13),B=__webpack_require__(5),C=__webpack_require__(2),ba=__webpack_require__(14),da=__webpack_require__(15),ea=__webpack_require__(16),fa=__webpack_require__(17),ia=__webpack_require__(18),D=__webpack_require__(6);
 function E(a){for(var b=arguments.length-1,c="Minified React error #"+a+"; visit http://facebook.github.io/react/docs/error-decoder.html?invariant\x3d"+a,d=0;d<b;d++)c+="\x26args[]\x3d"+encodeURIComponent(arguments[d+1]);b=Error(c+" for the full message or use the non-minified dev environment for full errors and additional helpful warnings.");b.name="Invariant Violation";b.framesToPop=1;throw b;}aa?void 0:E("227");
 var oa={children:!0,dangerouslySetInnerHTML:!0,defaultValue:!0,defaultChecked:!0,innerHTML:!0,suppressContentEditableWarning:!0,suppressHydrationWarning:!0,style:!0};function pa(a,b){return(a&b)===b}
 var ta={MUST_USE_PROPERTY:1,HAS_BOOLEAN_VALUE:4,HAS_NUMERIC_VALUE:8,HAS_POSITIVE_NUMERIC_VALUE:24,HAS_OVERLOADED_BOOLEAN_VALUE:32,HAS_STRING_BOOLEAN_VALUE:64,injectDOMPropertyConfig:function(a){var b=ta,c=a.Properties||{},d=a.DOMAttributeNamespaces||{},e=a.DOMAttributeNames||{};a=a.DOMMutationMethods||{};for(var f in c){ua.hasOwnProperty(f)?E("48",f):void 0;var g=f.toLowerCase(),h=c[f];g={attributeName:g,attributeNamespace:null,propertyName:f,mutationMethod:null,mustUseProperty:pa(h,b.MUST_USE_PROPERTY),
@@ -9590,19 +9590,19 @@ if (process.env.NODE_ENV !== "production") {
   (function() {
 'use strict';
 
-var React = __webpack_require__(0);
-var invariant = __webpack_require__(6);
-var warning = __webpack_require__(8);
-var ExecutionEnvironment = __webpack_require__(17);
+var React = __webpack_require__(1);
+var invariant = __webpack_require__(8);
+var warning = __webpack_require__(9);
+var ExecutionEnvironment = __webpack_require__(13);
 var _assign = __webpack_require__(5);
-var emptyFunction = __webpack_require__(1);
-var EventListener = __webpack_require__(18);
-var getActiveElement = __webpack_require__(19);
-var shallowEqual = __webpack_require__(20);
-var containsNode = __webpack_require__(21);
-var focusNode = __webpack_require__(22);
-var emptyObject = __webpack_require__(7);
-var checkPropTypes = __webpack_require__(10);
+var emptyFunction = __webpack_require__(2);
+var EventListener = __webpack_require__(14);
+var getActiveElement = __webpack_require__(15);
+var shallowEqual = __webpack_require__(16);
+var containsNode = __webpack_require__(17);
+var focusNode = __webpack_require__(18);
+var emptyObject = __webpack_require__(6);
+var checkPropTypes = __webpack_require__(12);
 var hyphenateStyleName = __webpack_require__(46);
 var camelizeStyleName = __webpack_require__(48);
 
@@ -25140,12 +25140,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const React = __webpack_require__(0);
+const React = __webpack_require__(1);
 const BrowserTab_1 = __webpack_require__(51);
 const BrowserNavigationBar_1 = __webpack_require__(52);
 const electron_1 = __webpack_require__(56);
 const url = __webpack_require__(57);
-const _ = __webpack_require__(12);
+const _ = __webpack_require__(19);
 const ShareDBDoc_1 = __webpack_require__(58);
 class ArboretumBrowser extends React.Component {
     constructor(props) {
@@ -25427,8 +25427,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const React = __webpack_require__(0);
-const _ = __webpack_require__(12);
+const React = __webpack_require__(1);
+const _ = __webpack_require__(19);
 class BrowserTab extends React.Component {
     constructor(props) {
         super(props);
@@ -25623,7 +25623,7 @@ exports.BrowserTab = BrowserTab;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const React = __webpack_require__(0);
+const React = __webpack_require__(1);
 __webpack_require__(53);
 const ENTER_KEY = 13;
 class BrowserNavigationBar extends React.Component {
@@ -25716,7 +25716,7 @@ var options = {"hmr":true}
 options.transform = transform
 options.insertInto = undefined;
 
-var update = __webpack_require__(14)(content, options);
+var update = __webpack_require__(21)(content, options);
 
 if(content.locals) module.exports = content.locals;
 
@@ -25751,7 +25751,7 @@ if(false) {
 /* 54 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(13)(true);
+exports = module.exports = __webpack_require__(20)(true);
 // imports
 
 
@@ -26177,10 +26177,10 @@ exports.SDBArray = SDBArray;
 /* 59 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports.Connection = __webpack_require__(23);
-exports.Doc = __webpack_require__(24);
-exports.Error = __webpack_require__(2);
-exports.Query = __webpack_require__(27);
+exports.Connection = __webpack_require__(22);
+exports.Doc = __webpack_require__(23);
+exports.Error = __webpack_require__(0);
+exports.Query = __webpack_require__(26);
 exports.types = __webpack_require__(3);
 
 
@@ -27000,7 +27000,7 @@ json.transformComponent = function(dest, c, otherC, type) {
   return dest;
 };
 
-__webpack_require__(26)(json, json.transformComponent, json.checkValidOp, json.append);
+__webpack_require__(25)(json, json.transformComponent, json.checkValidOp, json.append);
 
 /**
  * Register a subtype for string operations, using the text0 type.
@@ -27270,7 +27270,7 @@ text.invert = function(op) {
   return op;
 };
 
-__webpack_require__(26)(text, transformComponent, checkValidOp, append);
+__webpack_require__(25)(text, transformComponent, checkValidOp, append);
 
 
 /***/ }),
@@ -27280,17 +27280,17 @@ __webpack_require__(26)(text, transformComponent, checkValidOp, append);
 var Backend = __webpack_require__(65);
 module.exports = Backend;
 
-Backend.Agent = __webpack_require__(29);
+Backend.Agent = __webpack_require__(28);
 Backend.Backend = Backend;
-Backend.DB = __webpack_require__(31);
-Backend.Error = __webpack_require__(2);
-Backend.MemoryDB = __webpack_require__(30);
-Backend.MemoryPubSub = __webpack_require__(32);
-Backend.ot = __webpack_require__(15);
-Backend.projections = __webpack_require__(16);
-Backend.PubSub = __webpack_require__(33);
-Backend.QueryEmitter = __webpack_require__(36);
-Backend.SubmitRequest = __webpack_require__(37);
+Backend.DB = __webpack_require__(30);
+Backend.Error = __webpack_require__(0);
+Backend.MemoryDB = __webpack_require__(29);
+Backend.MemoryPubSub = __webpack_require__(31);
+Backend.ot = __webpack_require__(10);
+Backend.projections = __webpack_require__(11);
+Backend.PubSub = __webpack_require__(32);
+Backend.QueryEmitter = __webpack_require__(35);
+Backend.SubmitRequest = __webpack_require__(36);
 Backend.types = __webpack_require__(3);
 
 
@@ -27298,17 +27298,17 @@ Backend.types = __webpack_require__(3);
 /* 65 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var async = __webpack_require__(28);
-var Agent = __webpack_require__(29);
-var Connection = __webpack_require__(23);
-var emitter = __webpack_require__(9);
-var MemoryDB = __webpack_require__(30);
-var MemoryPubSub = __webpack_require__(32);
-var ot = __webpack_require__(15);
-var projections = __webpack_require__(16);
-var QueryEmitter = __webpack_require__(36);
+var async = __webpack_require__(27);
+var Agent = __webpack_require__(28);
+var Connection = __webpack_require__(22);
+var emitter = __webpack_require__(7);
+var MemoryDB = __webpack_require__(29);
+var MemoryPubSub = __webpack_require__(31);
+var ot = __webpack_require__(10);
+var projections = __webpack_require__(11);
+var QueryEmitter = __webpack_require__(35);
 var StreamSocket = __webpack_require__(70);
-var SubmitRequest = __webpack_require__(37);
+var SubmitRequest = __webpack_require__(36);
 
 function Backend(options) {
   if (!(this instanceof Backend)) return new Backend(options);
@@ -27896,8 +27896,8 @@ hat.rack = function (bits, base, expandBy) {
 /* 67 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var inherits = __webpack_require__(34).inherits;
-var Readable = __webpack_require__(35).Readable;
+var inherits = __webpack_require__(33).inherits;
+var Readable = __webpack_require__(34).Readable;
 var util = __webpack_require__(4);
 
 // Stream of operations. Subscribe returns one of these
@@ -28256,8 +28256,8 @@ function objEquiv(a, b) {
 /* 70 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var Duplex = __webpack_require__(35).Duplex;
-var inherits = __webpack_require__(34).inherits;
+var Duplex = __webpack_require__(34).Duplex;
+var inherits = __webpack_require__(33).inherits;
 var util = __webpack_require__(4);
 
 function StreamSocket() {
@@ -28321,24 +28321,11 @@ ServerStream.prototype._write = function(chunk, encoding, callback) {
 
 
 /***/ }),
-/* 71 */,
-/* 72 */,
-/* 73 */,
-/* 74 */,
-/* 75 */,
-/* 76 */,
-/* 77 */,
-/* 78 */,
-/* 79 */,
-/* 80 */,
-/* 81 */,
-/* 82 */,
-/* 83 */,
-/* 84 */
+/* 71 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
-var content = __webpack_require__(85);
+var content = __webpack_require__(72);
 
 if(typeof content === 'string') content = [[module.i, content, '']];
 
@@ -28352,7 +28339,7 @@ var options = {"hmr":true}
 options.transform = transform
 options.insertInto = undefined;
 
-var update = __webpack_require__(14)(content, options);
+var update = __webpack_require__(21)(content, options);
 
 if(content.locals) module.exports = content.locals;
 
@@ -28384,19 +28371,19 @@ if(false) {
 }
 
 /***/ }),
-/* 85 */
+/* 72 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(13)(true);
+exports = module.exports = __webpack_require__(20)(true);
 // imports
 
 
 // module
-exports.push([module.i, "#buttonSpacer {\n  width: 70px;\n  /*border-bottom: 1px solid #AAA;*/\n  /*background: linear-gradient(to bottom, #BBB 80%, #AAA);*/ }\n\n#tabsBar {\n  display: flex;\n  flex-direction: row;\n  font-size: 13px;\n  font-family: sans-serif;\n  margin: 0px;\n  /*padding: 0px 0px 0px 70px;*/\n  padding: 0px;\n  box-sizing: border-box;\n  -webkit-user-select: none;\n  -webkit-app-region: drag;\n  color: #777;\n  /*height: 23px;*/\n  box-sizing: border-box; }\n  #tabsBar #addTab {\n    display: inline-block;\n    margin: 0;\n    background: linear-gradient(to bottom, #BBB 80%, #AAA); }\n\n/*#tabsBar #addTab:hover {\n    color: #fff;\n    background: rgb(99, 190, 229);\n}\n\n#addTab i {\n    font-size: 12.5px\n}*/\n#tabs {\n  display: flex;\n  flex: 1;\n  padding: 0px;\n  margin: 0px;\n  overflow: hidden; }\n\n.tab {\n  flex: 1;\n  display: flex;\n  border-left: 1px solid #AAA;\n  /*border: 1px solid black;*/\n  list-style: none;\n  white-space: nowrap;\n  /*font-size: 3em;*/\n  border-bottom: 1px solid #aaa;\n  color: #BBB;\n  overflow: hidden;\n  text-overflow: ellipsis; }\n\n.tab:last-child {\n  border-right: 1px solid #AAA; }\n\n.tab.not-selected {\n  background: linear-gradient(to bottom, #BBB 80%, #AAA); }\n\n.tab.not-selected .closeTab {\n  color: #999; }\n\n.tab.selected {\n  /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n  border-bottom: none;\n  color: #777; }\n\n.tab .tab-img {\n  opacity: 0.4; }\n\n.tab.selected .tab-img {\n  opacity: 1.0;\n  flex: 2; }\n\n.tab-img {\n  height: 18px;\n  max-width: 28px;\n  margin: 2px;\n  margin-right: 2px;\n  display: none; }\n\n.tab-title {\n  /*flex: 1;*/\n  /*padding: 5px 0px 4px 3px;*/ }\n\n.closeTab {\n  /*float: right;*/\n  /*color: red;*/\n  /*text-shadow: 0 0 1px rgba(50, 1, 1, 1);*/\n  padding: 5px; }\n\n.closeTab i {\n  font-size: 12.5px; }\n\n.closeTab:hover {\n  background: #f57777;\n  color: #FFF; }\n\n.tab .tab-title {\n  /*font-size: 5em;*/\n  color: #777;\n  text-overflow: ellipsis;\n  overflow: hidden; }\n\n.tab.selected .tab-title {\n  color: #555; }\n\ntable#server-controls {\n  flex-shrink: 0; }\n  table#server-controls .nav-group-title {\n    padding: 0px; }\n  table#server-controls thead td {\n    text-align: center; }\n  table#server-controls td {\n    padding-left: 5px;\n    padding-right: 0px;\n    margin: auto;\n    vertical-align: top; }\n  table#server-controls tr:active {\n    color: inherit;\n    background-color: inherit;\n    /* color: #fff; */\n    /* background-color: #116cd6; */ }\n  table#server-controls #control_content td {\n    padding-bottom: 0px; }\n  table#server-controls label {\n    margin-bottom: 0px;\n    padding-bottom: 0px; }\n\n.sidebar {\n  width: 350px;\n  height: 100%;\n  display: flex;\n  flex-direction: column; }\n\n.copy_area input {\n  background-color: #FAFAFA;\n  border: 1px solid #CCC;\n  padding: 2px;\n  font-size: 0.9em;\n  text-align: center;\n  width: 90px; }\n\n.copy_area .copy_area .icon {\n  cursor: pointer;\n  color: #AAA; }\n  .copy_area .copy_area .icon:hover {\n    color: #999; }\n\n#browser-pane {\n  border-left: none; }\n\nhtml {\n  height: 100%; }\n  html .unselected {\n    display: none; }\n  html #content {\n    height: 100%;\n    overflow: hidden; }\n  html .tab_content {\n    height: 100%; }\n  html webview {\n    display: inline-flex;\n    width: 100%;\n    height: 100%; }\n    html webview.hidden {\n      display: none; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/browser/css/src/browser/css/browser-tabs.scss","/home/soney/code/arboretum/src/browser/css/src/browser/css/browser-sidebar.scss","/home/soney/code/arboretum/src/browser/css/src/browser/css/browser.scss"],"names":[],"mappings":"AAAA;EACI,YAAW;EACX,kCAAkC;EAClC,2DAA2D,EAC9D;;AAED;EACI,cAAa;EACb,oBAAmB;EACnB,gBAAe;EACf,wBAAuB;EACvB,YAAW;EACX,8BAA8B;EAC9B,aAAY;EACZ,uBAAsB;EACtB,0BAAyB;EACzB,yBAAwB;EAExB,YAAW;EACX,iBAAiB;EACjB,uBAAsB,EAMzB;EApBD;IAgBQ,sBAAqB;IACrB,UAAS;IACT,uDAAsD,EACzD;;AAIL;;;;;;;GAOG;AAEH;EACI,cAAa;EACb,QAAO;EACP,aAAY;EACZ,YAAW;EACX,iBAAgB,EACnB;;AAED;EACI,QAAO;EACP,cAAa;EACb,4BAA2B;EAC3B,4BAA4B;EAC5B,iBAAgB;EAChB,oBAAmB;EACnB,mBAAmB;EACnB,8BAA6B;EAC7B,YAAW;EACX,iBAAgB;EAChB,wBAAuB,EAC1B;;AACD;EACI,6BAA4B,EAC/B;;AACD;EACI,uDAAsD,EACzD;;AACD;EACI,YAAW,EACd;;AACD;EACI,8DAA8D;EAC9D,oBAAmB;EACnB,YAAW,EACd;;AAED;EACI,aAAY,EACf;;AACD;EACI,aAAY;EACZ,QAAO,EACV;;AAED;EACI,aAAY;EACZ,gBAAe;EACf,YAAW;EACX,kBAAiB;EACjB,cAAa,EAChB;;AAED;EACI,YAAY;EACZ,6BAA6B,EAChC;;AAED;EACI,iBAAiB;EACjB,eAAe;EACf,2CAA2C;EAC3C,aAAY,EACf;;AAED;EACI,kBACJ,EAAE;;AAEF;EACI,oBAA8B;EAC9B,YAAW,EACd;;AAGD;EACI,mBAAmB;EACnB,YAAW;EACX,wBAAuB;EACvB,iBAAgB,EACnB;;AACD;EACI,YAAW,EACd;;ACxHD;EACI,eAAc,EA6BjB;EA9BD;IAGQ,aAAY,EACf;EAJL;IAMQ,mBAAkB,EACrB;EAPL;IAUQ,kBAAiB;IACjB,mBAAkB;IAClB,aAAY;IACZ,oBAAmB,EACtB;EAdL;IAiBY,eAAc;IACd,0BAAyB;IACzB,kBAAkB;IAClB,gCAAgC,EACnC;EArBT;IAwBQ,oBAAmB,EACtB;EAzBL;IA2BQ,mBAAkB;IAClB,oBAAmB,EACtB;;AAIL;EACI,aAAY;EACZ,aAAY;EACZ,cAAa;EACb,uBAAsB,EACzB;;AAID;EAEQ,0BAAyB;EACzB,uBAAsB;EACtB,aAAW;EACX,iBAAgB;EAChB,mBAAkB;EAClB,YAAW,EACd;;AARL;EAUQ,gBAAe;EACf,YAAW,EAId;EAfL;IAaY,YAAW,EACd;;AAKT;EACI,kBAAiB,EACpB;;AC3DD;EACI,aAAY,EAwBf;EAzBD;IAIQ,cAAa,EAChB;EALL;IAOQ,aAAY;IACZ,iBAAgB,EACnB;EATL;IAaQ,aAAY,EACf;EAdL;IAiBQ,qBAAoB;IACpB,YAAW;IACX,aAAY,EAKf;IAxBL;MAsBY,cAAY,EACf","file":"browser.scss","sourcesContent":["#buttonSpacer {\n    width: 70px;\n    /*border-bottom: 1px solid #AAA;*/\n    /*background: linear-gradient(to bottom, #BBB 80%, #AAA);*/\n}\n\n#tabsBar {\n    display: flex;\n    flex-direction: row;\n    font-size: 13px;\n    font-family: sans-serif;\n    margin: 0px;\n    /*padding: 0px 0px 0px 70px;*/\n    padding: 0px;\n    box-sizing: border-box;\n    -webkit-user-select: none;\n    -webkit-app-region: drag;\n\n    color: #777;\n    /*height: 23px;*/\n    box-sizing: border-box;\n    #addTab {\n        display: inline-block;\n        margin: 0;\n        background: linear-gradient(to bottom, #BBB 80%, #AAA);\n    }\n}\n\n\n/*#tabsBar #addTab:hover {\n    color: #fff;\n    background: rgb(99, 190, 229);\n}\n\n#addTab i {\n    font-size: 12.5px\n}*/\n\n#tabs {\n    display: flex;\n    flex: 1;\n    padding: 0px;\n    margin: 0px;\n    overflow: hidden;\n}\n\n.tab {\n    flex: 1;\n    display: flex;\n    border-left: 1px solid #AAA;\n    /*border: 1px solid black;*/\n    list-style: none;\n    white-space: nowrap;\n    /*font-size: 3em;*/\n    border-bottom: 1px solid #aaa;\n    color: #BBB;\n    overflow: hidden;\n    text-overflow: ellipsis;\n}\n.tab:last-child {\n    border-right: 1px solid #AAA;\n}\n.tab.not-selected {\n    background: linear-gradient(to bottom, #BBB 80%, #AAA);\n}\n.tab.not-selected .closeTab {\n    color: #999;\n}\n.tab.selected {\n    /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n    border-bottom: none;\n    color: #777;\n}\n\n.tab .tab-img {\n    opacity: 0.4;\n}\n.tab.selected .tab-img {\n    opacity: 1.0;\n    flex: 2;\n}\n\n.tab-img {\n    height: 18px;\n    max-width: 28px;\n    margin: 2px;\n    margin-right: 2px;\n    display: none;\n}\n\n.tab-title {\n    /*flex: 1;*/\n    /*padding: 5px 0px 4px 3px;*/\n}\n\n.closeTab {\n    /*float: right;*/\n    /*color: red;*/\n    /*text-shadow: 0 0 1px rgba(50, 1, 1, 1);*/\n    padding: 5px;\n}\n\n.closeTab i {\n    font-size: 12.5px\n}\n\n.closeTab:hover {\n    background: rgb(245, 119, 119);\n    color: #FFF;\n}\n\n\n.tab .tab-title {\n    /*font-size: 5em;*/\n    color: #777;\n    text-overflow: ellipsis;\n    overflow: hidden;\n}\n.tab.selected .tab-title {\n    color: #555;\n}\n","table#server-controls {\n    flex-shrink: 0;\n    .nav-group-title {\n        padding: 0px;\n    }\n    thead td {\n        text-align: center;\n    }\n\n    td {\n        padding-left: 5px;\n        padding-right: 0px;\n        margin: auto;\n        vertical-align: top;\n    }\n    tr {\n        &:active {\n            color: inherit;\n            background-color: inherit;\n            /* color: #fff; */\n            /* background-color: #116cd6; */\n        }\n    }\n    #control_content td {\n        padding-bottom: 0px;\n    }\n    label {\n        margin-bottom: 0px;\n        padding-bottom: 0px;\n    }\n}\n\n\n.sidebar {\n    width: 350px;\n    height: 100%;\n    display: flex;\n    flex-direction: column;\n}\n\n\n\n.copy_area {\n    input {\n        background-color: #FAFAFA;\n        border: 1px solid #CCC;\n        padding:2px;\n        font-size: 0.9em;\n        text-align: center;\n        width: 90px;\n    }\n    .copy_area .icon {\n        cursor: pointer;\n        color: #AAA;\n        &:hover {\n            color: #999;\n        }\n    }\n}\n\n\n#browser-pane {\n    border-left: none;\n}\n","@import \"./browser-tabs\";\n@import \"./browser-sidebar\";\n\n// @import \"../../utils/browserControls/ArboretumChat.scss\";\nhtml {\n    height: 100%;\n\n    .unselected {\n        display: none;\n    }\n    #content {\n        height: 100%;\n        overflow: hidden;\n    }\n\n\n    .tab_content {\n        height: 100%;\n    }\n\n    webview {\n        display: inline-flex;\n        width: 100%;\n        height: 100%;\n\n        &.hidden {\n            display:none;\n        }\n    }\n}\n"],"sourceRoot":""}]);
+exports.push([module.i, "#buttonSpacer {\n  width: 70px;\n  /*border-bottom: 1px solid #AAA;*/\n  /*background: linear-gradient(to bottom, #BBB 80%, #AAA);*/ }\n\n#tabsBar {\n  display: flex;\n  flex-direction: row;\n  font-size: 13px;\n  font-family: sans-serif;\n  margin: 0px;\n  /*padding: 0px 0px 0px 70px;*/\n  padding: 0px;\n  box-sizing: border-box;\n  -webkit-user-select: none;\n  -webkit-app-region: drag;\n  color: #777;\n  /*height: 23px;*/\n  box-sizing: border-box; }\n  #tabsBar #addTab {\n    display: inline-block;\n    margin: 0;\n    background: linear-gradient(to bottom, #BBB 80%, #AAA); }\n\n/*#tabsBar #addTab:hover {\n    color: #fff;\n    background: rgb(99, 190, 229);\n}\n\n#addTab i {\n    font-size: 12.5px\n}*/\n#tabs {\n  display: flex;\n  flex: 1;\n  padding: 0px;\n  margin: 0px;\n  overflow: hidden; }\n\n.tab {\n  flex: 1;\n  display: flex;\n  border-left: 1px solid #AAA;\n  /*border: 1px solid black;*/\n  list-style: none;\n  white-space: nowrap;\n  /*font-size: 3em;*/\n  border-bottom: 1px solid #aaa;\n  color: #BBB;\n  overflow: hidden;\n  text-overflow: ellipsis; }\n\n.tab:last-child {\n  border-right: 1px solid #AAA; }\n\n.tab.not-selected {\n  background: linear-gradient(to bottom, #BBB 80%, #AAA); }\n\n.tab.not-selected .closeTab {\n  color: #999; }\n\n.tab.selected {\n  /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n  border-bottom: none;\n  color: #777; }\n\n.tab .tab-img {\n  opacity: 0.4; }\n\n.tab.selected .tab-img {\n  opacity: 1.0;\n  flex: 2; }\n\n.tab-img {\n  height: 18px;\n  max-width: 28px;\n  margin: 2px;\n  margin-right: 2px;\n  display: none; }\n\n.tab-title {\n  /*flex: 1;*/\n  /*padding: 5px 0px 4px 3px;*/ }\n\n.closeTab {\n  /*float: right;*/\n  /*color: red;*/\n  /*text-shadow: 0 0 1px rgba(50, 1, 1, 1);*/\n  padding: 5px; }\n\n.closeTab i {\n  font-size: 12.5px; }\n\n.closeTab:hover {\n  background: #f57777;\n  color: #FFF; }\n\n.tab .tab-title {\n  /*font-size: 5em;*/\n  color: #777;\n  text-overflow: ellipsis;\n  overflow: hidden; }\n\n.tab.selected .tab-title {\n  color: #555; }\n\n#adminPane {\n  display: flex;\n  flex-direction: column;\n  height: 100%; }\n\ntable#server-controls {\n  flex-shrink: 0; }\n  table#server-controls .nav-group-title {\n    padding: 0px; }\n  table#server-controls thead td {\n    text-align: center; }\n  table#server-controls td {\n    padding-left: 5px;\n    padding-right: 0px;\n    margin: auto;\n    vertical-align: top; }\n  table#server-controls tr:active {\n    color: inherit;\n    background-color: inherit;\n    /* color: #fff; */\n    /* background-color: #116cd6; */ }\n  table#server-controls #control_content td {\n    padding-bottom: 0px; }\n  table#server-controls label {\n    margin-bottom: 0px;\n    padding-bottom: 0px; }\n\n.sidebar {\n  width: 350px;\n  height: 100%;\n  display: flex;\n  flex-direction: column; }\n\n.copy_area input {\n  background-color: #FAFAFA;\n  border: 1px solid #CCC;\n  padding: 2px;\n  font-size: 0.9em;\n  text-align: center;\n  width: 90px; }\n\n.copy_area .copy_area .icon {\n  cursor: pointer;\n  color: #AAA; }\n  .copy_area .copy_area .icon:hover {\n    color: #999; }\n\n#browser-pane {\n  border-left: none; }\n\nhtml {\n  height: 100%; }\n  html .unselected {\n    display: none; }\n  html #content {\n    height: 100%;\n    overflow: hidden; }\n  html .tab_content {\n    height: 100%; }\n  html webview {\n    display: inline-flex;\n    width: 100%;\n    height: 100%; }\n    html webview.hidden {\n      display: none; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/browser/css/src/browser/css/browser-tabs.scss","/home/soney/code/arboretum/src/browser/css/src/browser/css/browser-sidebar.scss","/home/soney/code/arboretum/src/browser/css/src/browser/css/browser.scss"],"names":[],"mappings":"AAAA;EACI,YAAW;EACX,kCAAkC;EAClC,2DAA2D,EAC9D;;AAED;EACI,cAAa;EACb,oBAAmB;EACnB,gBAAe;EACf,wBAAuB;EACvB,YAAW;EACX,8BAA8B;EAC9B,aAAY;EACZ,uBAAsB;EACtB,0BAAyB;EACzB,yBAAwB;EAExB,YAAW;EACX,iBAAiB;EACjB,uBAAsB,EAMzB;EApBD;IAgBQ,sBAAqB;IACrB,UAAS;IACT,uDAAsD,EACzD;;AAIL;;;;;;;GAOG;AAEH;EACI,cAAa;EACb,QAAO;EACP,aAAY;EACZ,YAAW;EACX,iBAAgB,EACnB;;AAED;EACI,QAAO;EACP,cAAa;EACb,4BAA2B;EAC3B,4BAA4B;EAC5B,iBAAgB;EAChB,oBAAmB;EACnB,mBAAmB;EACnB,8BAA6B;EAC7B,YAAW;EACX,iBAAgB;EAChB,wBAAuB,EAC1B;;AACD;EACI,6BAA4B,EAC/B;;AACD;EACI,uDAAsD,EACzD;;AACD;EACI,YAAW,EACd;;AACD;EACI,8DAA8D;EAC9D,oBAAmB;EACnB,YAAW,EACd;;AAED;EACI,aAAY,EACf;;AACD;EACI,aAAY;EACZ,QAAO,EACV;;AAED;EACI,aAAY;EACZ,gBAAe;EACf,YAAW;EACX,kBAAiB;EACjB,cAAa,EAChB;;AAED;EACI,YAAY;EACZ,6BAA6B,EAChC;;AAED;EACI,iBAAiB;EACjB,eAAe;EACf,2CAA2C;EAC3C,aAAY,EACf;;AAED;EACI,kBACJ,EAAE;;AAEF;EACI,oBAA8B;EAC9B,YAAW,EACd;;AAGD;EACI,mBAAmB;EACnB,YAAW;EACX,wBAAuB;EACvB,iBAAgB,EACnB;;AACD;EACI,YAAW,EACd;;ACxHD;EACI,cAAY;EACZ,uBAAqB;EACrB,aACJ,EAAE;;AACF;EACI,eAAc,EA6BjB;EA9BD;IAGQ,aAAY,EACf;EAJL;IAMQ,mBAAkB,EACrB;EAPL;IAUQ,kBAAiB;IACjB,mBAAkB;IAClB,aAAY;IACZ,oBAAmB,EACtB;EAdL;IAiBY,eAAc;IACd,0BAAyB;IACzB,kBAAkB;IAClB,gCAAgC,EACnC;EArBT;IAwBQ,oBAAmB,EACtB;EAzBL;IA2BQ,mBAAkB;IAClB,oBAAmB,EACtB;;AAIL;EACI,aAAY;EACZ,aAAY;EACZ,cAAa;EACb,uBAAsB,EACzB;;AAID;EAEQ,0BAAyB;EACzB,uBAAsB;EACtB,aAAW;EACX,iBAAgB;EAChB,mBAAkB;EAClB,YAAW,EACd;;AARL;EAUQ,gBAAe;EACf,YAAW,EAId;EAfL;IAaY,YAAW,EACd;;AAKT;EACI,kBAAiB,EACpB;;AChED;EACI,aAAY,EAwBf;EAzBD;IAIQ,cAAa,EAChB;EALL;IAOQ,aAAY;IACZ,iBAAgB,EACnB;EATL;IAaQ,aAAY,EACf;EAdL;IAiBQ,qBAAoB;IACpB,YAAW;IACX,aAAY,EAKf;IAxBL;MAsBY,cAAY,EACf","file":"browser.scss","sourcesContent":["#buttonSpacer {\n    width: 70px;\n    /*border-bottom: 1px solid #AAA;*/\n    /*background: linear-gradient(to bottom, #BBB 80%, #AAA);*/\n}\n\n#tabsBar {\n    display: flex;\n    flex-direction: row;\n    font-size: 13px;\n    font-family: sans-serif;\n    margin: 0px;\n    /*padding: 0px 0px 0px 70px;*/\n    padding: 0px;\n    box-sizing: border-box;\n    -webkit-user-select: none;\n    -webkit-app-region: drag;\n\n    color: #777;\n    /*height: 23px;*/\n    box-sizing: border-box;\n    #addTab {\n        display: inline-block;\n        margin: 0;\n        background: linear-gradient(to bottom, #BBB 80%, #AAA);\n    }\n}\n\n\n/*#tabsBar #addTab:hover {\n    color: #fff;\n    background: rgb(99, 190, 229);\n}\n\n#addTab i {\n    font-size: 12.5px\n}*/\n\n#tabs {\n    display: flex;\n    flex: 1;\n    padding: 0px;\n    margin: 0px;\n    overflow: hidden;\n}\n\n.tab {\n    flex: 1;\n    display: flex;\n    border-left: 1px solid #AAA;\n    /*border: 1px solid black;*/\n    list-style: none;\n    white-space: nowrap;\n    /*font-size: 3em;*/\n    border-bottom: 1px solid #aaa;\n    color: #BBB;\n    overflow: hidden;\n    text-overflow: ellipsis;\n}\n.tab:last-child {\n    border-right: 1px solid #AAA;\n}\n.tab.not-selected {\n    background: linear-gradient(to bottom, #BBB 80%, #AAA);\n}\n.tab.not-selected .closeTab {\n    color: #999;\n}\n.tab.selected {\n    /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n    border-bottom: none;\n    color: #777;\n}\n\n.tab .tab-img {\n    opacity: 0.4;\n}\n.tab.selected .tab-img {\n    opacity: 1.0;\n    flex: 2;\n}\n\n.tab-img {\n    height: 18px;\n    max-width: 28px;\n    margin: 2px;\n    margin-right: 2px;\n    display: none;\n}\n\n.tab-title {\n    /*flex: 1;*/\n    /*padding: 5px 0px 4px 3px;*/\n}\n\n.closeTab {\n    /*float: right;*/\n    /*color: red;*/\n    /*text-shadow: 0 0 1px rgba(50, 1, 1, 1);*/\n    padding: 5px;\n}\n\n.closeTab i {\n    font-size: 12.5px\n}\n\n.closeTab:hover {\n    background: rgb(245, 119, 119);\n    color: #FFF;\n}\n\n\n.tab .tab-title {\n    /*font-size: 5em;*/\n    color: #777;\n    text-overflow: ellipsis;\n    overflow: hidden;\n}\n.tab.selected .tab-title {\n    color: #555;\n}\n","#adminPane {\n    display:flex;\n    flex-direction:column;\n    height:100%\n}\ntable#server-controls {\n    flex-shrink: 0;\n    .nav-group-title {\n        padding: 0px;\n    }\n    thead td {\n        text-align: center;\n    }\n\n    td {\n        padding-left: 5px;\n        padding-right: 0px;\n        margin: auto;\n        vertical-align: top;\n    }\n    tr {\n        &:active {\n            color: inherit;\n            background-color: inherit;\n            /* color: #fff; */\n            /* background-color: #116cd6; */\n        }\n    }\n    #control_content td {\n        padding-bottom: 0px;\n    }\n    label {\n        margin-bottom: 0px;\n        padding-bottom: 0px;\n    }\n}\n\n\n.sidebar {\n    width: 350px;\n    height: 100%;\n    display: flex;\n    flex-direction: column;\n}\n\n\n\n.copy_area {\n    input {\n        background-color: #FAFAFA;\n        border: 1px solid #CCC;\n        padding:2px;\n        font-size: 0.9em;\n        text-align: center;\n        width: 90px;\n    }\n    .copy_area .icon {\n        cursor: pointer;\n        color: #AAA;\n        &:hover {\n            color: #999;\n        }\n    }\n}\n\n\n#browser-pane {\n    border-left: none;\n}\n","@import \"./browser-tabs\";\n@import \"./browser-sidebar\";\n\n// @import \"../../utils/browserControls/ArboretumChat.scss\";\nhtml {\n    height: 100%;\n\n    .unselected {\n        display: none;\n    }\n    #content {\n        height: 100%;\n        overflow: hidden;\n    }\n\n\n    .tab_content {\n        height: 100%;\n    }\n\n    webview {\n        display: inline-flex;\n        width: 100%;\n        height: 100%;\n\n        &.hidden {\n            display:none;\n        }\n    }\n}\n"],"sourceRoot":""}]);
 
 // exports
 
 
 /***/ })
 /******/ ]);
-//# sourceMappingURL=browser_bundle.js.map
+//# sourceMappingURL=browser_browser_bundle.js.map

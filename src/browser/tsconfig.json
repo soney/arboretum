@@ -14,7 +14,8 @@
         "lib": [
             "dom",
             "es5",
-            "es6"
+            "es6",
+            "es2015"
         ],
         "typeRoots": ["../../node_modules/@types", "../../types"]
     },

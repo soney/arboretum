@@ -10,29 +10,21 @@ import Switch from 'react-switch';
 import * as ShareDB from 'sharedb';
 import {BrowserDoc} from '../../utils/state_interfaces';
 import {ArboretumChat, Message, User, TextMessage, PageActionMessage} from '../../utils/ArboretumChat';
-import {copyToClipboard} from '../../utils/copyToClipboard';
 import {ArboretumChatBox} from '../../utils/browserControls/ArboretumChatBox';
+import {} from './ArboretumAdminInterface';
 
 export type BrowserTabID = number;
-export interface SetServerActiveValue {
-    shareURL:string,
-    adminURL:string
-};
 
 type ArboretumProps = {
     urls:Array<string>,
-    serverState:"active" | "idle"
+    serverActive?:boolean
 };
 type ArboretumState = {
     tabs:Array<{url:string, id:number, selected:boolean}>,
     webViews:Array<JSX.Element>,
     selectedTab:BrowserTab,
-    showingSidebar:boolean,
     serverActive:boolean,
-    shareURL:string,
-    adminURL:string,
     activeWebViewEl:JSX.Element,
-    sandbox:boolean
 };
 
 export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumState> {
@@ -44,6 +36,10 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
     private doc:SDBDoc<BrowserDoc>;
     private chatbox:ArboretumChatBox;
     private shareURLElement:HTMLInputElement;
+    private static defaultProps:ArboretumProps = {
+        urls:[],
+        serverActive:false
+    };
     constructor(props) {
         super(props);
         this.state = {
@@ -56,12 +52,8 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
             }),
             webViews: [],
             selectedTab:null,
-            showingSidebar:false,
-            serverActive:this.props.serverState === "active",
             activeWebViewEl:null,
-            shareURL: '',
-            adminURL: '',
-            sandbox: true
+            serverActive:this.props.serverActive
         };
         if(this.state.serverActive) {
             this.setServerActive(this.state.serverActive);
@@ -112,12 +104,10 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
         });
         return reply;
     };
-    private setServerActive = async (active:boolean):Promise<SetServerActiveValue> => {
+    private setServerActive = async (active:boolean):Promise<void> => {
         let shareURL:string, adminURL:string;
         if(active) {
             const {hostname, port} = await this.sendIPCMessage({message: 'startServer'});
-            const fullShareURL = url.format({ protocol:'http', hostname, port });
-            const fullAdminURL = url.format({ protocol:'http', hostname, port, pathname:'/admin' });
             const wsAddress = url.format({ protocol:'ws', hostname, port });
             this.socket = new WebSocket(wsAddress);
             this.sdb = new SDB(true, this.socket);
@@ -140,10 +130,6 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
                     tab.setSDBTabID(tabID);
                 }
             });
-
-            [shareURL, adminURL] = await Promise.all([
-                this.getShortcut(fullShareURL), this.getShortcut(fullAdminURL)
-            ]);
         } else {
             if(this.doc) {
                 this.doc.destroy();
@@ -156,14 +142,10 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
                 this.socket.close();
                 this.socket = null;
             }
-            await this.sendIPCMessage({message: 'stopServer'});
-            [shareURL, adminURL] = ['', ''];
         }
         if(this.chatbox) {
             this.chatbox.setSDB(this.sdb);
         }
-        this.setState({shareURL, adminURL});
-        return {shareURL, adminURL};
     };
     private async getShortcut(url:string):Promise<string> {
         return url;
@@ -271,64 +253,6 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
     private pageTitleChanged = (tab:BrowserTab, title:string):void => {
         if(tab === this.state.selectedTab) { this.selectedTabPageTitleChanged(title); }
     };
-    public setSidebarVisible(showingSidebar:boolean):void {
-        this.setState({showingSidebar});
-    };
-    private handleServerSwitchChange = async (serverActive:boolean):Promise<void> => {
-        this.setState({serverActive});
-        const shareURLs = await this.setServerActive(serverActive);
-        if(serverActive) {
-            const {shareURL, adminURL} = shareURLs;
-            this.setState({shareURL, adminURL});
-        } else {
-            this.setState({shareURL:'', adminURL:''});
-        }
-    };
-    private sendMessage = (message:string):void => {
-    };
-    private postToMTurk = ():void => {
-        console.log('post');
-    };
-    private onSandboxChange = (event:React.ChangeEvent<HTMLInputElement>) => {
-        this.setState({sandbox: event.target.checked});
-    };
-    // private adminURLRef = (el:HTMLInputElement):void => {
-    //     if(el) {
-    //         new Clipboard(el);
-    //     }
-    // };
-    private shareURLRef = (el:HTMLInputElement):void => {
-        this.shareURLElement = el;
-        // if(el) {
-        //     new Clipboard(el);
-        // }
-    };
-    private chatBoxRef = (chatbox:ArboretumChatBox):void => {
-        this.chatbox = chatbox;
-        if(this.sdb) {
-            this.chatbox.setSDB(this.sdb);
-        }
-    };
-
-    private onAction = async (pam:PageActionMessage):Promise<void> => {
-        await this.sendIPCMessage({
-            message:'performAction',
-            data:pam
-        });
-    };
-    private selectShareURL = ():void => {
-        this.shareURLElement.select();
-        this.shareURLElement.focus();
-    };
-    private copyShareURL = ():void => {
-        copyToClipboard(this.shareURLElement.value);
-    };
-    private addHighlight = (nodeIds:Array<CRI.NodeID>, color:string):void => {
-        console.log(nodeIds, color);
-    };
-    private removeHighlight = (nodeIds:Array<CRI.NodeID>):void => {
-        console.log(nodeIds);
-    };
 
     public render():React.ReactNode {
         const tabs = this.state.tabs.map((info, index) =>
@@ -346,47 +270,6 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
             </header>
             <div className="window-content">
                 <div className="pane-group">
-                    <div className='sidebar'>
-                        <table id="server-controls">
-                            <thead>
-                                <tr>
-                                    <td>
-                                        <h5 className="nav-group-title">Server</h5>
-                                    </td>
-                                    <td>
-                                        <h5 className="nav-group-title">Share URL</h5>
-                                    </td>
-                                    {/* <td>
-                                        <h5 className="nav-group-title">Admin URL</h5>
-                                    </td> */}
-                                    <td>
-                                        <h5 className="nav-group-title">MTurk</h5>
-                                    </td>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr id="control_content">
-                                    <td>
-                                        <Switch height={24} width={48} onChange={this.handleServerSwitchChange} checked={this.state.serverActive} />
-                                    </td>
-                                    <td className="copy_area">
-                                        <input onClick={this.selectShareURL} ref={this.shareURLRef} value={this.state.shareURL} id="share_url" data-disabled="true"/>
-                                        <a href="javascript:void(0)" onClick={this.copyShareURL}><span ref={(el) => (el)} data-clipboard-target="#share_url" id="share_copy" className="icon icon-clipboard"></span></a>
-                                    </td>
-                                    {/* <td className="copy_area">
-                                        <input ref={this.adminURLRef} value={this.state.adminURL} id="admin_url" data-disabled="true"/>
-                                        <span data-clipboard-target="#admin_url" id="admin_copy" className="icon icon-clipboard"></span>
-                                    </td> */}
-                                    <td>
-                                        <button onClick={this.postToMTurk} id="mturk_post" className='btn btn-default'><span className="icon icon-upload-cloud"></span>&nbsp;Post</button>
-                                        <br />
-                                        <label><input type="checkbox" name="sandbox" value="sandbox" id="sandbox" checked={this.state.sandbox} onChange={this.onSandboxChange}/> Sandbox</label>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        <ArboretumChatBox isAdmin={true} sdb={this.sdb} username="Admin" ref={this.chatBoxRef} onSendMessage={this.sendMessage} onAction={this.onAction} onAddHighlight={this.addHighlight} onRemoveHighlight={this.removeHighlight} />
-                    </div>
                     <div id="browser-pane" className="pane">
                         <div id="content">{this.state.webViews}</div>
                     </div>

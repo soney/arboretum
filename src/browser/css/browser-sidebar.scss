@@ -1,3 +1,8 @@
+#adminPane {
+    display:flex;
+    flex-direction:column;
+    height:100%
+}
 table#server-controls {
     flex-shrink: 0;
     .nav-group-title {

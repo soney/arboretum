@@ -52,7 +52,20 @@ electron_1.app.commandLine.appendSwitch('remote-debugging-port', `${RDB_PORT}`);
 function createBrowserWindow(extraOptions) {
     const options = _.extend({}, defaultBrowswerWindowOptions, extraOptions);
     let newWindow = new electron_1.BrowserWindow(options);
-    newWindow.loadURL(`file://${__dirname}/browser/index.html`);
+    newWindow.loadURL(`file://${__dirname}/browser/index_browser.html`);
+    newWindow.on('closed', () => {
+        // Dereference the window object, usually you would store windows
+        // in an array if your app supports multi windows, this is the time
+        // when you should delete the corresponding element.
+        newWindow = null;
+    });
+    return newWindow;
+}
+;
+function createAdminWindow(extraOptions) {
+    const options = _.extend({}, defaultBrowswerWindowOptions, extraOptions);
+    let newWindow = new electron_1.BrowserWindow(options);
+    newWindow.loadURL(`file://${__dirname}/browser/index_admin.html`);
     newWindow.on('closed', () => {
         // Dereference the window object, usually you would store windows
         // in an array if your app supports multi windows, this is the time
@@ -63,7 +76,8 @@ function createBrowserWindow(extraOptions) {
 }
 ;
 electron_1.app.on('ready', () => {
-    let wn = createBrowserWindow();
+    const browserWindow = createBrowserWindow();
+    const adminWindow = createAdminWindow();
 });
 const sdb = new ShareDBDoc_1.SDB(false);
 // const browserState = null;

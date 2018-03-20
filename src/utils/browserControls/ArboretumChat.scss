@@ -1,6 +1,6 @@
 .chat {
     font-family: system, -apple-system, ".SFNSDisplay-Regular", "Helvetica Neue", Helvetica, "Segoe UI", sans-serif;
-    flex: 1 0 auto;
+    flex: 1;
     display: flex;
     flex-direction: column;
 
@@ -24,7 +24,7 @@
         }
     }
     #chat-lines {
-        flex: 2 0;
+        flex: 2;
         box-sizing: border-box;
         padding: 0px 10px 0px;
         margin: 0px;
