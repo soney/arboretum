@@ -24,7 +24,8 @@ const ip = require("ip");
 const opn = require("opn");
 const request = require("request");
 const URL = require("url");
-const state = { chat: {}, browser: {} };
+const ArboretumChat_1 = require("./utils/ArboretumChat");
+const ShareDBDoc_1 = require("./utils/ShareDBDoc");
 const OPEN_MIRROR = false;
 const RDB_PORT = 9222;
 const HTTP_PORT = 3000;
@@ -64,10 +65,12 @@ function createBrowserWindow(extraOptions) {
 electron_1.app.on('ready', () => {
     let wn = createBrowserWindow();
 });
+const sdb = new ShareDBDoc_1.SDB(false);
 // const browserState = null;
-const browserState = new BrowserState_1.BrowserState({
+const browserState = new BrowserState_1.BrowserState(sdb, {
     port: RDB_PORT
 });
+const chat = new ArboretumChat_1.ArboretumChat(sdb, browserState);
 const expressApp = express();
 const server = http_1.createServer(expressApp);
 const wss = new WebSocket.Server({ server });

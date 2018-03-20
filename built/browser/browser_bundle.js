@@ -29820,14 +29820,16 @@ var TypingStatus;
 ;
 ;
 class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
-    constructor(sdb) {
+    constructor(sdb, browserState) {
         super();
         this.sdb = sdb;
+        this.browserState = browserState;
         this.userJoined = this.registerEvent();
         this.userNotPresent = this.registerEvent();
         this.userTypingStatusChanged = this.registerEvent();
         this.messageAdded = this.registerEvent();
         this.ready = this.registerEvent();
+        console.log(this.browserState);
         this.doc = this.sdb.get('arboretum', 'chat');
         this.initialized = this.initializeDoc();
         this.initialized.catch((err) => {
@@ -29843,7 +29845,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         }
         else if (action === 'mouse_event') {
             const { targetNodeID, type, targetNodeDescription } = data;
-            return `${type} on ${targetNodeID}`;
+            return `${type} ${targetNodeID}`;
         }
         else {
             return `do ${action}`;
@@ -29894,6 +29896,14 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             }
         }
         else if (p[0] === 'messages') {
+            console.log(li);
+            console.log(this.browserState);
+            if (li.action && li.data && this.browserState) {
+                const relevantNodeIDs = ArboretumChat.getRelevantNodeIDs(li);
+                const relevantNodes = relevantNodeIDs.map((id) => this.browserState.getNode(id));
+                console.log(relevantNodes);
+                console.log(li);
+            }
             this.messageAdded.emit({
                 message: li
             });

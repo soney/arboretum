@@ -142,10 +142,10 @@ export class TabState extends ShareDBSharedState<TabDoc> {
             await this.domRoot.markAttachedToShareDBDoc();
         }
     };
-    private getDOMStateWithID(nodeId: CRI.NodeID): DOMState {
+    public getDOMStateWithID(nodeId: CRI.NodeID): DOMState {
         return this.nodeMap.get(nodeId);
     };
-    private hasDOMStateWithID(nodeId: CRI.NodeID): boolean {
+    public hasDOMStateWithID(nodeId: CRI.NodeID): boolean {
         return this.nodeMap.has(nodeId);
     };
     public getOrCreateDOMState(node:CRI.Node, contentDocument?:DOMState, childFrame?:FrameState, parent?:DOMState, previousNode?:DOMState): DOMState {

@@ -3,6 +3,7 @@ import * as _ from 'underscore'
 import * as fileUrl from 'file-url';
 import { join, resolve } from 'path';
 import { TabState } from './TabState';
+import { DOMState } from './DOMState';
 import * as express from 'express';
 import * as http from 'http';
 import * as WebSocket from 'ws';
@@ -26,10 +27,9 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
     private tabs: Map<CRI.TabID, TabState> = new Map<CRI.TabID, TabState>();
     private options = { host: 'localhost', port: 9222 };
     private intervalID: NodeJS.Timer;
-    private sdb:SDB;
     private doc:SDBDoc<BrowserDoc>;
     private chat:ArboretumChat;
-    constructor(private state: any, extraOptions?) {
+    constructor(private sdb:SDB, extraOptions?) {
         super();
         _.extend(this.options, extraOptions);
         this.initialize();
@@ -48,6 +48,14 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
         this.chat = new ArboretumChat(this.sdb);
         this.intervalID = timers.setInterval(_.bind(this.refreshTabs, this), 2000);
         log.debug('=== CREATED BROWSER ===');
+    };
+    public getNode(nodeID:CRI.NodeID):DOMState {
+        for(let tabID in this.tabs) {
+            const tab:TabState = this.tabs.get(tabID);
+            if(tab.hasDOMStateWithID(nodeID)) {
+                return tab.getDOMStateWithID(nodeID);
+            }
+        }
     };
     public async performAction(pam:PageActionMessage):Promise<boolean> {
         const {tabID, action, data} = pam;

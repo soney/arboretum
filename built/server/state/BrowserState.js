@@ -22,9 +22,9 @@ const css_parser_1 = require("../css_parser");
 const log = ColoredLogger_1.getColoredLogger('red');
 const projectFileURLPath = fileUrl(path_1.join(path_1.resolve(__dirname, '..', '..'), 'browser'));
 class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
-    constructor(state, extraOptions) {
+    constructor(sdb, extraOptions) {
         super();
-        this.state = state;
+        this.sdb = sdb;
         this.tabs = new Map();
         this.options = { host: 'localhost', port: 9222 };
         _.extend(this.options, extraOptions);
@@ -52,6 +52,15 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
             this.intervalID = timers.setInterval(_.bind(this.refreshTabs, this), 2000);
             log.debug('=== CREATED BROWSER ===');
         });
+    }
+    ;
+    getNode(nodeID) {
+        for (let tabID in this.tabs) {
+            const tab = this.tabs.get(tabID);
+            if (tab.hasDOMStateWithID(nodeID)) {
+                return tab.getDOMStateWithID(nodeID);
+            }
+        }
     }
     ;
     performAction(pam) {

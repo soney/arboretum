@@ -16,8 +16,8 @@ import * as ip from 'ip';
 import * as opn from 'opn';
 import * as request from 'request';
 import * as URL from 'url';
-
-const state = { chat: {}, browser: {} };
+import {ArboretumChat} from './utils/ArboretumChat';
+import {SDB, SDBDoc} from './utils/ShareDBDoc';
 
 const OPEN_MIRROR: boolean = false;
 const RDB_PORT: number = 9222;
@@ -61,10 +61,12 @@ app.on('ready', () => {
     let wn: BrowserWindow = createBrowserWindow();
 });
 
+const sdb:SDB = new SDB(false);
 // const browserState = null;
-const browserState = new BrowserState({
+const browserState = new BrowserState(sdb, {
     port: RDB_PORT
 });
+const chat = new ArboretumChat(sdb, browserState);
 
 const expressApp = express();
 const server:Server = createServer(expressApp);
