@@ -320,14 +320,13 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             });
             this.chromePromise = new Promise((resolve, reject) => {
                 chromeEventEmitter.once('connect', (chrome) => {
-                    this.chrome = chrome;
                     resolve(chrome);
                 });
             }).catch((err) => {
                 log.error(err);
                 throw (err);
             });
-            yield this.chromePromise;
+            this.chrome = yield this.chromePromise;
             //TODO: Convert getResourceTree call to getFrameTree when supported
             const resourceTree = yield this.getResourceTree();
             const { frameTree } = resourceTree;
@@ -365,9 +364,9 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
     focusAction(action, data) {
         return __awaiter(this, void 0, void 0, function* () {
             const { targetNodeID } = data;
-            console.log(targetNodeID);
             if (this.hasDOMStateWithID(targetNodeID)) {
                 const domState = this.getDOMStateWithID(targetNodeID);
+                yield new Promise((resolve, reject) => setTimeout(resolve, 100));
                 yield domState.focus();
             }
             return true;
@@ -653,6 +652,19 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             // }).catch((err) => {
             //     throw(err);
             // });
+        });
+    }
+    ;
+    createIsolatedWorld(frameId, worldName, grantUniversalAccess) {
+        return new Promise((resolve, reject) => {
+            this.chrome.Page.createIsolatedWorld({ frameId, worldName, grantUniversalAccess }, (err, result) => {
+                if (err) {
+                    reject(result);
+                }
+                else {
+                    resolve(result.executionContextId);
+                }
+            });
         });
     }
     ;

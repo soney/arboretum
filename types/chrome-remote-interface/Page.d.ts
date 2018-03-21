@@ -37,6 +37,32 @@ declare namespace CRI {
             canceled:boolean
         }
     }
+    interface GetResourceTreeOptions {}
+    interface GetResourceTreeResponse {
+        frameTree: Page.FrameResourceTree
+    }
+    interface NavigateOptions {
+        url:string,
+        referrer?:string,
+        transitionType?:TransitionType
+    }
+    interface GetResourceContentParams {
+        frameId:FrameID,
+        url:string
+    }
+    interface GetResourceContentResponse {
+        content:string,
+        base64Encoded:boolean
+    }
+    interface GetFrameTreeOptions{}
+    interface CreateIsolatedWorldOptions {
+        frameId:FrameID,
+        worldName?:string
+        grantUniversalAccess?:boolean
+    }
+    interface CreateIsolatedWorldResult {
+        executionContextId:ExecutionContextID
+    }
 
     interface Page {
         enable:()=>void;
@@ -47,6 +73,7 @@ declare namespace CRI {
         frameNavigated:(callback:(FrameNavigatedEvent)=>void) => void;
         navigate:(options:NavigateOptions, callback:(err:any, result:Page.NavigateResult)=>any) => void;
         getFrameTree:(options:GetFrameTreeOptions, callback:(err:any, result:Page.FrameTree)=>void)=>void;
-        getResourceContent:(params:GetResourceContentParams, callback:(err:any, data:GetResourceContentResponse)=>any) => void
+        getResourceContent:(params:GetResourceContentParams, callback:(err:any, data:GetResourceContentResponse)=>any) => void;
+        createIsolatedWorld:(params:CreateIsolatedWorldOptions, callback:(err:any, data:CreateIsolatedWorldResult)=>any) => void;
     }
 }

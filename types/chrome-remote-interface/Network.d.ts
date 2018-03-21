@@ -7,14 +7,6 @@ declare namespace CRI {
         body:string,
         base64Encoded:boolean
     }
-    interface GetResourceContentParams {
-        frameId:FrameID,
-        url:string
-    }
-    interface GetResourceContentResponse {
-        content:string,
-        base64Encoded:boolean
-    }
     interface RequestWillBeSentEvent {
         requestId:RequestID,
         loaderId:Network.LoaderID,

@@ -24,7 +24,7 @@ function readShallowObject(chrome:CRI.Chrome, objectId:CRI.Runtime.RemoteObjectI
 	});
 }
 
-function callFNOnElement(chrome:CRI.Chrome, fn_promise:Promise<string>, nodeId:CRI.NodeID, additional_args?):Promise<CRI.CallFunctionOnResult> {
+function callFNOnElement(chrome:CRI.Chrome, fn_promise:Promise<string>, nodeId:CRI.NodeID, executionContextId:CRI.ExecutionContextID, additional_args?):Promise<CRI.CallFunctionOnResult> {
 	let objectId, rv;
 	const resolvedNodePromise = resolveNode(chrome, nodeId);
 	return Promise.all([resolvedNodePromise, fn_promise]).then(function(vals) {
@@ -34,6 +34,7 @@ function callFNOnElement(chrome:CRI.Chrome, fn_promise:Promise<string>, nodeId:C
 
 		return callFunctionOn(chrome, objectId, {
 			functionDeclaration: `(${fnText})`,
+			executionContextId,
 			arguments: [{
 				objectId: objectId
 			}].concat(additional_args||[])
@@ -159,30 +160,29 @@ function typedArrayToArray(chrome:CRI.Chrome, objectId:CRI.Runtime.RemoteObjectI
 
 
 export function mouseEvent(chrome:CRI.Chrome, nodeId:CRI.NodeID, eventType:string, event?:any):Promise<CRI.CallFunctionOnResult> {
-	return callFNOnElement(chrome, SIMULATE_MOUSE_EVENT, nodeId, [{value: eventType}]);
+	return callFNOnElement(chrome, SIMULATE_MOUSE_EVENT, nodeId, null, [{value: eventType}]);
 };
-export function focus(chrome:CRI.Chrome, nodeId:CRI.NodeID) {
-	return callFNOnElement(chrome, FOCUS_ELEMENT, nodeId);
+export function focus(chrome:CRI.Chrome, nodeId:CRI.NodeID, executionContextId?:CRI.ExecutionContextID) {
+	return callFNOnElement(chrome, Promise.resolve('function(el){el.focus();}'), nodeId, executionContextId);
 };
 export function getElementValue(chrome:CRI.Chrome, nodeId:CRI.NodeID):Promise<string> {
-	return callFNOnElement(chrome, GET_ELEMENT_VALUE, nodeId).then(function(rv) {
+	return callFNOnElement(chrome, GET_ELEMENT_VALUE, nodeId, null).then(function(rv) {
 		return rv.result.value;
 	});
 };
 export function setElementValue(chrome:CRI.Chrome, nodeId:CRI.NodeID, value:string):Promise<CRI.CallFunctionOnResult> {
-	return callFNOnElement(chrome, SET_ELEMENT_VALUE, nodeId, [{value: value}]);
+	return callFNOnElement(chrome, SET_ELEMENT_VALUE, nodeId, null, [{value: value}]);
 };
 export function getNamespace(chrome:CRI.Chrome, nodeId:CRI.NodeID) {
-	return callFNOnElement(chrome, GET_NAMESPCE, nodeId);
+	return callFNOnElement(chrome, GET_NAMESPCE, nodeId, null);
 };
-export function getUniqueSelector(chrome:CRI.Chrome, nodeId:CRI.NodeID):Promise<string> {
-	return callFNOnElement(chrome, GET_UNIQUE_SELECTOR, nodeId).then((rv) => {
-		return rv.result.value;
-	});
+export async function getUniqueSelector(chrome:CRI.Chrome, nodeId:CRI.NodeID):Promise<string> {
+	const rv = await callFNOnElement(chrome, GET_UNIQUE_SELECTOR, nodeId, null);
+	return rv.result.value;
 };
 export async function getCanvasImage(chrome:CRI.Chrome, nodeId:CRI.NodeID):Promise<{data:Array<number>, width:number, height:number}> {
 	try {
-		const {result} = await callFNOnElement(chrome, GET_CANVAS_IMAGE, nodeId);
+		const {result} = await callFNOnElement(chrome, GET_CANVAS_IMAGE, nodeId, null);
 		const {objectId} = result;
 
 		const propertyValues:Array<CRI.CallFunctionOnResult> = await Promise.all(['data', 'width', 'height'].map((p) => getObjectProperty(chrome, objectId, p)))

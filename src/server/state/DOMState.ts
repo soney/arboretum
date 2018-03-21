@@ -658,8 +658,6 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
     public focus():Promise<void> {
         return new Promise<void>((resolve, reject) => {
             this.getChrome().DOM.focus({nodeId:this.getNodeId()}, (err, value) => {
-                console.log(err, value);
-                console.log(this.getNodeId());
                 if(err) { reject(value); }
                 else { resolve(null); }
             });

@@ -58,14 +58,13 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         });
         this.chromePromise = new Promise<CRI.Chrome>((resolve, reject) => {
             chromeEventEmitter.once('connect', (chrome: CRI.Chrome) => {
-                this.chrome = chrome;
                 resolve(chrome);
             });
         }).catch((err) => {
             log.error(err);
             throw (err);
         });
-        await this.chromePromise;
+        this.chrome = await this.chromePromise;
         //TODO: Convert getResourceTree call to getFrameTree when supported
         const resourceTree:CRI.GetResourceTreeResponse = await this.getResourceTree();
         const { frameTree } = resourceTree;
@@ -94,9 +93,9 @@ export class TabState extends ShareDBSharedState<TabDoc> {
     };
     public async focusAction(action:PageAction, data:any):Promise<boolean> {
         const {targetNodeID} = data;
-        console.log(targetNodeID);
         if(this.hasDOMStateWithID(targetNodeID)) {
             const domState:DOMState = this.getDOMStateWithID(targetNodeID);
+            await new Promise((resolve, reject) => setTimeout(resolve, 100));
             await domState.focus();
         }
         return true;
@@ -376,6 +375,14 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         // }).catch((err) => {
         //     throw(err);
         // });
+    };
+    private createIsolatedWorld(frameId:CRI.FrameID, worldName?:string, grantUniversalAccess?:boolean):Promise<CRI.ExecutionContextID> {
+        return new Promise<CRI.ExecutionContextID>((resolve, reject) => {
+            this.chrome.Page.createIsolatedWorld({frameId, worldName, grantUniversalAccess}, (err, result) => {
+                if(err) { reject(result); }
+                else { resolve(result.executionContextId); }
+            });
+        });
     };
     private pluckResourceFromTree(url:string, resourceTree:CRI.Page.FrameResourceTree):CRI.Page.FrameResource {
         const {resources, childFrames} = resourceTree;

@@ -119,16 +119,6 @@ declare namespace CRI {
         auxData:any
     }
 
-    interface GetResourceTreeOptions {}
-    interface GetResourceTreeResponse {
-        frameTree: Page.FrameResourceTree
-    }
-    interface NavigateOptions {
-        url:string,
-        referrer?:string,
-        transitionType?:TransitionType
-    }
-    interface GetFrameTreeOptions{}
     interface ListTabsOptions {
         host:string,
         port:number,

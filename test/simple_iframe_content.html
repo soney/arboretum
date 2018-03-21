@@ -11,5 +11,9 @@
 			var message = document.getElementById('message');
 			message.innerText = 'goodbye cruel world';
 		});
+		setTimeout(function() {
+			var link = document.getElementsByTagName('a')[0];
+			link.focus();
+		}, 3000);
 	</script>
 </html>
