@@ -75,9 +75,11 @@ function createAdminWindow(extraOptions) {
     return newWindow;
 }
 ;
+let browserWindow;
+let adminWindow;
 electron_1.app.on('ready', () => {
-    const browserWindow = createBrowserWindow();
-    const adminWindow = createAdminWindow();
+    browserWindow = createBrowserWindow();
+    adminWindow = createAdminWindow();
 });
 const sdb = new ShareDBDoc_1.SDB(false);
 // const browserState = null;
@@ -219,6 +221,9 @@ electron_1.ipcMain.on('asynchronous-message', (event, messageID, arg) => __await
         event.sender.send(replyChannel, 'ok');
     }
     else if (message === 'focusAction') {
+        if (browserWindow) {
+            browserWindow.focus();
+        }
         yield browserState.focusAction(data);
         event.sender.send(replyChannel, 'ok');
     }

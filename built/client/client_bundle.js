@@ -31745,6 +31745,7 @@ json.checkList = function(elem) {
 
 json.checkObj = function(elem) {
   if (!isObject(elem)) {
+    debugger;
     throw new Error("Referenced element not an object (it was " + JSON.stringify(elem) + ")");
   }
 };
@@ -31792,6 +31793,7 @@ json.apply = function(snapshot, op) {
 
       parent = elem;
       parentKey = key;
+      if(!elem) { debugger; }
       elem = elem[key];
       key = p;
 
@@ -46213,6 +46215,7 @@ class ArboretumChatBox extends React.Component {
                 this.chat.messageAdded.addListener(this.messageAdded);
                 this.chat.userJoined.addListener(this.updateUsersState);
                 this.chat.userNotPresent.addListener(this.updateUsersState);
+                this.chat.pamStateChanged.addListener(this.updateUsersState);
             }));
         });
     }
@@ -46370,6 +46373,7 @@ var PageActionState;
 ;
 ;
 ;
+;
 class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
     constructor(sdb, browserState) {
         super();
@@ -46379,6 +46383,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         this.userNotPresent = this.registerEvent();
         this.userTypingStatusChanged = this.registerEvent();
         this.messageAdded = this.registerEvent();
+        this.pamStateChanged = this.registerEvent();
         this.ready = this.registerEvent();
         this.doc = this.sdb.get('arboretum', 'chat');
         this.initialized = this.initializeDoc();
@@ -46530,6 +46535,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
                 const message = messages[i];
                 if (message.id === id) {
                     this.doc.submitObjectReplaceOp(['messages', i, 'state'], state);
+                    this.pamStateChanged.emit({});
                     break;
                 }
             }

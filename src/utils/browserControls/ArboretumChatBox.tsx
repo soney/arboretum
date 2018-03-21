@@ -65,6 +65,7 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
             this.chat.messageAdded.addListener(this.messageAdded);
             this.chat.userJoined.addListener(this.updateUsersState);
             this.chat.userNotPresent.addListener(this.updateUsersState);
+            this.chat.pamStateChanged.addListener(this.updateUsersState);
         });
     };
     private messageAdded = async (event:MessageAddedEvent):Promise<void> => {

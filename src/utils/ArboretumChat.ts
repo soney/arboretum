@@ -10,7 +10,7 @@ export const userColors:Array<Array<Color>> = [
 ];
 export enum TypingStatus { IDLE, ACTIVE, IDLE_TYPED };
 export enum PageActionState { NOT_PERFORMED, PERFORMED, REJECTED };
-export type PageAction ='navigate'|'goBack'|'goForward'|'mouse_event'|'keyboard_event'|'element_event'|'focus_event'|'reload';
+export type PageAction ='navigate'|'goBack'|'goForward'|'mouse_event'|'keyboard_event'|'element_event'|'focus_event'|'reload'|'getLabel';
 
 export type UserID = string;
 export interface User {
@@ -58,6 +58,7 @@ export interface MessageAddedEvent {
     after?:Message
 };
 export interface ReadyEvent { };
+export interface PAMStateChanged { };
 
 export class ArboretumChat extends TypedEventEmitter {
     private static userCounter:number = 1;
@@ -69,6 +70,7 @@ export class ArboretumChat extends TypedEventEmitter {
     public userNotPresent = this.registerEvent<UserNotPresentEvent>();
     public userTypingStatusChanged = this.registerEvent<UserTypingStatusChangedEvent>();
     public messageAdded = this.registerEvent<MessageAddedEvent>();
+    public pamStateChanged = this.registerEvent<PAMStateChanged>();
     public ready = this.registerEvent<ReadyEvent>();
     constructor(private sdb:SDB, private browserState?:BrowserState) {
         super();
@@ -188,6 +190,7 @@ export class ArboretumChat extends TypedEventEmitter {
             const message:Message = messages[i];
             if(message.id === id) {
                 this.doc.submitObjectReplaceOp(['messages', i, 'state'], state);
+                this.pamStateChanged.emit({});
                 break;
             }
         }

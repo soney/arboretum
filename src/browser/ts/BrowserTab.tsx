@@ -178,7 +178,7 @@ export class BrowserTab extends React.Component<BrowserTabProps, BrowserTabState
     };
 
     public render():React.ReactNode {
-        return <div onClick={this.onSelect} className={`tab-item ${this.state.selected ? 'active' : 'not-active' }`}>
+        return <div aria-label={`Tab ${this.state.title}`} onClick={this.onSelect} className={`tab-item ${this.state.selected ? 'active' : 'not-active' }`}>
             <span onClick={this.onClose} className='icon icon-cancel icon-close-tab'/>
             <span className='tab-icon'>{ this.state.favIconURL ?
                 <img className='tab-img' src={this.state.favIconURL} /> : null

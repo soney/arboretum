@@ -71,9 +71,11 @@ function createAdminWindow(extraOptions?: {}): BrowserWindow {
     return newWindow;
 };
 
+let browserWindow:BrowserWindow;
+let adminWindow:BrowserWindow;
 app.on('ready', () => {
-    const browserWindow:BrowserWindow = createBrowserWindow();
-    const adminWindow:BrowserWindow = createAdminWindow();
+    browserWindow = createBrowserWindow();
+    adminWindow = createAdminWindow();
 });
 
 const sdb:SDB = new SDB(false);
@@ -209,6 +211,9 @@ ipcMain.on('asynchronous-message', async (event, messageID:number, arg:{message:
         await browserState.rejectAction(data);
         event.sender.send(replyChannel, 'ok');
     } else if (message === 'focusAction') {
+        if(browserWindow) {
+            browserWindow.focus();
+        }
         await browserState.focusAction(data);
         event.sender.send(replyChannel, 'ok');
     } else if (message === 'labelAction') {

@@ -773,6 +773,8 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
     focus() {
         return new Promise((resolve, reject) => {
             this.getChrome().DOM.focus({ nodeId: this.getNodeId() }, (err, value) => {
+                console.log(err, value);
+                console.log(this.getNodeId());
                 if (err) {
                     reject(value);
                 }

@@ -121,6 +121,7 @@ class ArboretumChatBox extends React.Component {
                 this.chat.messageAdded.addListener(this.messageAdded);
                 this.chat.userJoined.addListener(this.updateUsersState);
                 this.chat.userNotPresent.addListener(this.updateUsersState);
+                this.chat.pamStateChanged.addListener(this.updateUsersState);
             }));
         });
     }

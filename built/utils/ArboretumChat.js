@@ -38,6 +38,7 @@ var PageActionState;
 ;
 ;
 ;
+;
 class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
     constructor(sdb, browserState) {
         super();
@@ -47,6 +48,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         this.userNotPresent = this.registerEvent();
         this.userTypingStatusChanged = this.registerEvent();
         this.messageAdded = this.registerEvent();
+        this.pamStateChanged = this.registerEvent();
         this.ready = this.registerEvent();
         this.doc = this.sdb.get('arboretum', 'chat');
         this.initialized = this.initializeDoc();
@@ -62,8 +64,9 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             return `navigate to ${url}`;
         }
         else if (action === 'mouse_event') {
-            const { targetNodeID, type, targetNodeDescriptions, nodeDescriptions } = data;
-            const nodeDescription = targetNodeDescriptions || `element ${targetNodeID}`;
+            const { targetNodeID, type } = data;
+            const nodeDescriptions = data.nodeDescriptions || {};
+            const nodeDescription = nodeDescriptions[targetNodeID] || `element ${targetNodeID}`;
             return `${type} ${nodeDescription}`;
         }
         else {
@@ -101,7 +104,6 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
     }
     ;
     handleOp(op) {
-        console.log(op);
         const { p } = op;
         if (p[0] === 'users') {
             const { li } = op;
@@ -182,8 +184,9 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         });
     }
     ;
-    addPageActionMessage(action, tabID, data = {}, nodeDescriptions = {}, sender = this.getMe()) {
+    addPageActionMessage(action, tabID, data = {}, sender = this.getMe()) {
         return __awaiter(this, void 0, void 0, function* () {
+            const nodeDescriptions = data.nodeDescriptions || {};
             const message = { sender, action, tabID, data, nodeDescriptions, state: PageActionState.NOT_PERFORMED };
             this.addMesssage(message);
         });
@@ -197,6 +200,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
                 const message = messages[i];
                 if (message.id === id) {
                     this.doc.submitObjectReplaceOp(['messages', i, 'state'], state);
+                    this.pamStateChanged.emit({});
                     break;
                 }
             }
