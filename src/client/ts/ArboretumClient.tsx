@@ -41,7 +41,8 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
         this.sdb = new SDB(true, this.socket);
         window['sdb'] = this.sdb;
     };
-    public componentWillUnmount():void {
+    public async componentWillUnmount():Promise<void> {
+        await this.arboretumChat.leave();
         this.sdb.close();
     };
     private onSelectTab = (tabID:CRI.TabID):void => {

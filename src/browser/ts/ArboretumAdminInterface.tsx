@@ -88,6 +88,9 @@ export class ArboretumAdminInterface extends React.Component<ArboretumAdminProps
                 this.socket.close();
                 this.socket = null;
             }
+            if(this.chatbox) {
+                await this.chatbox.leave();
+            }
             await this.sendIPCMessage({message: 'stopServer'});
             [shareURL, adminURL] = ['', ''];
         }
@@ -152,6 +155,24 @@ export class ArboretumAdminInterface extends React.Component<ArboretumAdminProps
             data:pam
         });
     };
+    private onReject = async (pam:PageActionMessage):Promise<void> => {
+        await this.sendIPCMessage({
+            message:'rejectAction',
+            data:pam
+        });
+    };
+    private onFocus = async (pam:PageActionMessage):Promise<void> => {
+        await this.sendIPCMessage({
+            message:'focusAction',
+            data:pam
+        });
+    };
+    private onLabel = async (pam:PageActionMessage):Promise<void> => {
+        await this.sendIPCMessage({
+            message:'labelAction',
+            data:pam
+        });
+    };
     private selectShareURL = ():void => {
         this.shareURLElement.select();
         this.shareURLElement.focus();
@@ -164,6 +185,9 @@ export class ArboretumAdminInterface extends React.Component<ArboretumAdminProps
     };
     private removeHighlight = (nodeIds:Array<CRI.NodeID>):void => {
         console.log(nodeIds);
+    };
+    public async componentWillUnmount():Promise<void> {
+        await this.chatbox.leave();
     };
 
     public render():React.ReactNode {
@@ -189,7 +213,7 @@ export class ArboretumAdminInterface extends React.Component<ArboretumAdminProps
                     </tr>
                 </tbody>
             </table>
-            <ArboretumChatBox isAdmin={true} sdb={this.sdb} username="Admin" ref={this.chatBoxRef} onSendMessage={this.sendMessage} onAction={this.onAction} onAddHighlight={this.addHighlight} onRemoveHighlight={this.removeHighlight} />
+            <ArboretumChatBox isAdmin={true} sdb={this.sdb} username="Admin" ref={this.chatBoxRef} onSendMessage={this.sendMessage} onAction={this.onAction} onReject={this.onReject} onFocus={this.onFocus} onLabel={this.onLabel} onAddHighlight={this.addHighlight} onRemoveHighlight={this.removeHighlight} />
         </div>;
     };
 };

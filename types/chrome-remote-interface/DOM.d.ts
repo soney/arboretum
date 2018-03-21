@@ -132,7 +132,14 @@ declare namespace CRI {
         hostId:NodeID,
         root:Node
     }
+    interface FocusOptions {
+        nodeId:NodeID,
+        backendNodeId?:DOM.BackendNodeID,
+        objectId?:Runtime.RemoteObjectID
+    }
+    interface FocusResult { }
     interface DOM {
+        focus:(params:FocusOptions, callback:(err:any, value:FocusResult)=>void) => void
         getDocument:(params:GetDocumentOptions, callback:(err:any, value:GetDocumentResult)=>void) => void
         requestChildNodes:(params:RequestChildNodesOptions, callback:(err:any, value:RequestChildNodesResult)=>void) => void
         getOuterHTML:(params:GetOuterHTMLOptions, callback:(err:any, value:GetOuterHTMLResult)=>void) => void

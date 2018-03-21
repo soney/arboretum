@@ -655,6 +655,14 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
             });
         });
     };
+    public focus():Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            this.getChrome().DOM.focus({nodeId:this.getNodeId()}, (err, value) => {
+                if(err) { reject(value); }
+                else { resolve(null); }
+            });
+        });
+    };
     public async setChildrenRecursive(children: Array<CRI.Node>=[], shadowRoots:Array<CRI.Node>=[]):Promise<void> {
         const childDOMStates:Array<DOMState> = children.map((child: CRI.Node) => {
             const {contentDocument, frameId} = child;

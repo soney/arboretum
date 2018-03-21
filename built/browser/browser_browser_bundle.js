@@ -7816,7 +7816,7 @@ const ReactDOM = __webpack_require__(41);
 const ArboretumBrowser_1 = __webpack_require__(50);
 const path = __webpack_require__(73);
 __webpack_require__(71);
-const START_URL = `file://${path.resolve(__dirname, '..', '..', 'test', 'index.html')}`;
+const START_URL = `file://${path.resolve(__dirname, '..', '..', 'test', 'simple.html')}`;
 //const START_URL:string = 'http://www.umich.edu/';
 ReactDOM.render(React.createElement(ArboretumBrowser_1.ArboretumBrowser, { urls: [START_URL] }), document.getElementById('arboretum_main'));
 

@@ -89,6 +89,18 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         }
         return true;
     };
+    public async rejectAction(action:PageAction, data:any):Promise<boolean> {
+        return true;
+    };
+    public async focusAction(action:PageAction, data:any):Promise<boolean> {
+        const {targetNodeID} = data;
+        console.log(targetNodeID);
+        if(this.hasDOMStateWithID(targetNodeID)) {
+            const domState:DOMState = this.getDOMStateWithID(targetNodeID);
+            await domState.focus();
+        }
+        return true;
+    };
     public getSDB():SDB { return this.sdb; };
     public getShareDBDoc():SDBDoc<TabDoc> { return this.doc; };
     public getAbsoluteShareDBPath():Array<string|number> { return []; };

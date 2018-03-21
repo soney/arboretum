@@ -214,6 +214,17 @@ electron_1.ipcMain.on('asynchronous-message', (event, messageID, arg) => __await
         yield browserState.performAction(data);
         event.sender.send(replyChannel, 'ok');
     }
+    else if (message === 'rejectAction') {
+        yield browserState.rejectAction(data);
+        event.sender.send(replyChannel, 'ok');
+    }
+    else if (message === 'focusAction') {
+        yield browserState.focusAction(data);
+        event.sender.send(replyChannel, 'ok');
+    }
+    else if (message === 'labelAction') {
+        event.sender.send(replyChannel, 'ok');
+    }
     else {
         event.sender.send(replyChannel, 'not recognized');
     }

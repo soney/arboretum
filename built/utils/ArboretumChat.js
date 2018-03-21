@@ -62,8 +62,9 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             return `navigate to ${url}`;
         }
         else if (action === 'mouse_event') {
-            const { targetNodeID, type, targetNodeDescription } = data;
-            return `${type} ${targetNodeID}`;
+            const { targetNodeID, type, targetNodeDescriptions, nodeDescriptions } = data;
+            const nodeDescription = targetNodeDescriptions || `element ${targetNodeID}`;
+            return `${type} ${nodeDescription}`;
         }
         else {
             return `do ${action}`;
@@ -100,8 +101,10 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
     }
     ;
     handleOp(op) {
-        const { p, li } = op;
+        console.log(op);
+        const { p } = op;
         if (p[0] === 'users') {
+            const { li } = op;
             if (p.length === 2 && li) {
                 this.userJoined.emit({
                     user: li
@@ -109,11 +112,15 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             }
             else if (p.length === 3 && p[2] === 'present') {
                 const userIndex = p[1];
+                const { oi, od } = op;
                 const user = this.doc.getData().users[userIndex];
-                this.userNotPresent.emit({ user });
+                if (oi === false) {
+                    this.userNotPresent.emit({ user });
+                }
             }
         }
         else if (p[0] === 'messages') {
+            const { li } = op;
             if (li.action && li.data && this.browserState) {
                 const relevantNodeIDs = ArboretumChat.getRelevantNodeIDs(li);
                 const relevantNodes = relevantNodeIDs.map((id) => this.browserState.getNode(id));
@@ -175,21 +182,21 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         });
     }
     ;
-    addPageActionMessage(action, tabID, data = {}, sender = this.getMe()) {
+    addPageActionMessage(action, tabID, data = {}, nodeDescriptions = {}, sender = this.getMe()) {
         return __awaiter(this, void 0, void 0, function* () {
-            const message = { sender, action, tabID, data, state: PageActionState.NOT_PERFORMED };
+            const message = { sender, action, tabID, data, nodeDescriptions, state: PageActionState.NOT_PERFORMED };
             this.addMesssage(message);
         });
     }
     ;
-    markPerformed(pam, performed = true) {
+    setState(pam, state) {
         return __awaiter(this, void 0, void 0, function* () {
             const messages = yield this.getMessages();
             const { id } = pam;
             for (let i = 0; i < messages.length; i++) {
                 const message = messages[i];
                 if (message.id === id) {
-                    this.doc.submitObjectReplaceOp(['messages', i, 'performed'], performed);
+                    this.doc.submitObjectReplaceOp(['messages', i, 'state'], state);
                     break;
                 }
             }
@@ -216,6 +223,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             const data = this.doc.getData();
             const userIndex = yield this.getUserIndex(user);
             yield this.doc.submitObjectReplaceOp(['users', userIndex, 'present'], false);
+            // await this.doc.submitObjectDeleteOp(['users', userIndex, 'present']);
         });
     }
     ;

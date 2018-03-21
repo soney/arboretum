@@ -66,6 +66,24 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
             return false;
         }
     };
+    public async rejectAction(pam:PageActionMessage):Promise<boolean> {
+        const {tabID, action, data} = pam;
+        const tab = this.getTab(tabID);
+        if(tab) {
+            return await tab.rejectAction(action, data);
+        } else {
+            return false;
+        }
+    };
+    public async focusAction(pam:PageActionMessage):Promise<boolean> {
+        const {tabID, action, data} = pam;
+        const tab = this.getTab(tabID);
+        if(tab) {
+            return await tab.focusAction(action, data);
+        } else {
+            return false;
+        }
+    };
     public shareDBListen(ws:stream.Duplex):void {
         this.sdb.listen(ws);
     };

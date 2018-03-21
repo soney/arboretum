@@ -205,6 +205,14 @@ ipcMain.on('asynchronous-message', async (event, messageID:number, arg:{message:
     } else if (message === 'performAction') {
         await browserState.performAction(data);
         event.sender.send(replyChannel, 'ok');
+    } else if (message === 'rejectAction') {
+        await browserState.rejectAction(data);
+        event.sender.send(replyChannel, 'ok');
+    } else if (message === 'focusAction') {
+        await browserState.focusAction(data);
+        event.sender.send(replyChannel, 'ok');
+    } else if (message === 'labelAction') {
+        event.sender.send(replyChannel, 'ok');
     } else {
         event.sender.send(replyChannel, 'not recognized');
     }

@@ -31034,6 +31034,14 @@ module.exports = camelize;
 
 "use strict";
 
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const ShareDBDoc_1 = __webpack_require__(69);
 const ClientTab_1 = __webpack_require__(97);
@@ -31120,7 +31128,10 @@ class ArboretumClient extends React.Component {
     }
     ;
     componentWillUnmount() {
-        this.sdb.close();
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.arboretumChat.leave();
+            this.sdb.close();
+        });
     }
     ;
     getChat() { return this.arboretumChat.getChat(); }
@@ -34759,6 +34770,9 @@ class ClientDocumentNode extends ClientNode {
     constructor(sdbNode, onCreateNode, document) {
         super(sdbNode, onCreateNode);
         this.document = document;
+        if (this.document) {
+            this.document.write('<span></span>');
+        }
         this.setChildren(this.getChildren());
     }
     ;
@@ -34812,7 +34826,9 @@ class ClientElementNode extends ClientNode {
         this.highlighted = false;
         this.onChange = (event) => {
             const value = this.element.value;
-            this.elementEvent.emit({ value, type: 'change', targetNodeID: this.sdbNode.nodeId, timeStamp: (new Date()).getTime() });
+            const nodeDescriptions = {};
+            nodeDescriptions[this.getNodeID()] = this.getNodeDescription();
+            this.elementEvent.emit({ nodeDescriptions, value, type: 'change', targetNodeID: this.sdbNode.nodeId, timeStamp: (new Date()).getTime() });
         };
         this.onClick = (event) => {
             // if it isn't looking for a click event already
@@ -34823,22 +34839,28 @@ class ClientElementNode extends ClientNode {
         this.onMouseEvent = (event) => {
             if (this.element === event.target) {
                 const { type, timeStamp, clientX, clientY, which, shiftKey, altKey, ctrlKey, metaKey } = event;
-                const targetNodeID = this.sdbNode.nodeId;
-                this.mouseEvent.emit({ type, targetNodeID, timeStamp, clientX, clientY, which, shiftKey, altKey, ctrlKey, metaKey });
+                const targetNodeID = this.getNodeID();
+                const nodeDescriptions = {};
+                nodeDescriptions[targetNodeID] = this.getNodeDescription();
+                this.mouseEvent.emit({ type, targetNodeID, timeStamp, clientX, clientY, which, shiftKey, altKey, ctrlKey, metaKey, nodeDescriptions });
             }
         };
         this.onKeyboardEvent = (event) => {
             if (this.element === event.target) {
                 const { type, timeStamp, keyCode, metaKey, which, shiftKey, altKey, ctrlKey } = event;
                 const targetNodeID = this.sdbNode.nodeId;
-                this.keyboardEvent.emit({ type, targetNodeID, timeStamp, shiftKey, altKey, ctrlKey, metaKey, keyCode });
+                const nodeDescriptions = {};
+                nodeDescriptions[targetNodeID] = this.getNodeDescription();
+                this.keyboardEvent.emit({ type, targetNodeID, timeStamp, shiftKey, altKey, ctrlKey, metaKey, keyCode, nodeDescriptions });
             }
         };
         this.onElementEvent = (event) => {
             if (this.element === event.target) {
                 const { type, timeStamp } = event;
                 const targetNodeID = this.sdbNode.nodeId;
-                this.elementEvent.emit({ type, targetNodeID, timeStamp });
+                const nodeDescriptions = {};
+                nodeDescriptions[targetNodeID] = this.getNodeDescription();
+                this.elementEvent.emit({ type, targetNodeID, timeStamp, nodeDescriptions });
             }
         };
         const { nodeName, isSVG } = this.sdbNode;
@@ -34971,6 +34993,15 @@ class ClientElementNode extends ClientNode {
         this.element.removeEventListener('click', this.onClick);
     }
     ;
+    getNodeDescription() {
+        if (this.element.hasAttribute('aria-label')) {
+            return this.element.getAttribute('aria-label');
+        }
+        else {
+            return this.element.textContent;
+        }
+    }
+    ;
     setChildren(children) {
         for (let i = this.element.children.length - 1; i >= 0; i--) {
             const c = this.element.children.item(i);
@@ -35089,10 +35120,33 @@ class ClientCommentNode extends ClientNode {
 exports.ClientCommentNode = ClientCommentNode;
 ;
 function iframeLoaded(element) {
+    const checkIfLoaded = () => {
+        let iframeDoc = element.contentDocument;
+        if (!iframeDoc && element.contentWindow) {
+            iframeDoc = element.contentWindow.document;
+        }
+        if (iframeDoc) {
+            const { readyState } = iframeDoc;
+            return readyState === 'complete' || readyState === 'uninitialized';
+        }
+        else {
+            return false;
+        }
+    };
+    const checkInterval = 10;
     return new Promise((resolve, reject) => {
+        const resolveIfLoaded = () => {
+            if (checkIfLoaded()) {
+                resolve(element);
+            }
+            else {
+                setTimeout(resolveIfLoaded, checkInterval);
+            }
+        };
         element.addEventListener('load', () => {
             resolve(element);
         });
+        resolveIfLoaded();
     });
 }
 const mouseEvents = ['mousedown', 'mouseenter', 'mouseleave', 'mousemove', 'mouseout', 'mouseover', 'mouseup', 'click', 'dblclick', 'wheel'];
@@ -46093,12 +46147,6 @@ class ArboretumChatBox extends React.Component {
         this.onTextareaChange = (event) => {
             this.setState({ chatText: event.target.value });
         };
-        this.performAction = (pam) => {
-            this.getChat().markPerformed(pam);
-            if (this.props.onAction) {
-                this.props.onAction(pam);
-            }
-        };
         this.addHighlights = (pam) => {
             if (this.props.onAddHighlight) {
                 const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pam);
@@ -46112,17 +46160,27 @@ class ArboretumChatBox extends React.Component {
                 this.props.onRemoveHighlight(nodeIDs);
             }
         };
+        this.performAction = (pam) => {
+            this.getChat().setState(pam, ArboretumChat_1.PageActionState.PERFORMED);
+            if (this.props.onAction) {
+                this.props.onAction(pam);
+            }
+        };
         this.rejectAction = (pam) => {
-            // this.getChat().markPerformed(pam);
-            // if(this.props.onAction) { this.props.onAction(pam); }
+            this.getChat().setState(pam, ArboretumChat_1.PageActionState.REJECTED);
+            if (this.props.onReject) {
+                this.props.onReject(pam);
+            }
         };
         this.focusAction = (pam) => {
-            // this.getChat().markPerformed(pam);
-            // if(this.props.onAction) { this.props.onAction(pam); }
+            if (this.props.onFocus) {
+                this.props.onFocus(pam);
+            }
         };
         this.addLabel = (pam) => {
-            // this.getChat().markPerformed(pam);
-            // if(this.props.onAction) { this.props.onAction(pam); }
+            if (this.props.onLabel) {
+                this.props.onLabel(pam);
+            }
         };
         this.lightChimeRef = (el) => {
             this.lightChimeElement = el;
@@ -46138,7 +46196,9 @@ class ArboretumChatBox extends React.Component {
         if (this.props.sdb) {
             this.setSDB(this.props.sdb);
         }
-        window.addEventListener('beforeunload', () => this.leave());
+        window.addEventListener('beforeunload', (event) => {
+            this.leave();
+        });
     }
     ;
     getChat() { return this.chat; }
@@ -46209,8 +46269,8 @@ class ArboretumChatBox extends React.Component {
                 const description = React.createElement("span", { className: 'description', onMouseEnter: () => this.addHighlights(pam), onMouseLeave: () => this.removeHighlights(pam) }, ArboretumChat_1.ArboretumChat.describePageActionMessage(pam));
                 const performed = state === ArboretumChat_1.PageActionState.PERFORMED;
                 const actions = [
-                    React.createElement("a", { href: "javascript:void(0)", onClick: this.focusAction.bind(this, pam) }, "Focus"),
-                    React.createElement("a", { href: "javascript:void(0)", onClick: this.addLabel.bind(this, pam) }, "Label")
+                    React.createElement("a", { key: "focus", href: "javascript:void(0)", onClick: this.focusAction.bind(this, pam) }, "Focus"),
+                    React.createElement("a", { key: "label", href: "javascript:void(0)", onClick: this.addLabel.bind(this, pam) }, "Label")
                 ];
                 if (state === ArboretumChat_1.PageActionState.PERFORMED) {
                     actions.unshift(React.createElement("div", { className: '' }, "(accepted)"));
@@ -46219,7 +46279,7 @@ class ArboretumChatBox extends React.Component {
                     actions.unshift(React.createElement("div", { className: '' }, "(rejected)"));
                 }
                 else {
-                    actions.unshift(React.createElement("a", { href: "javascript:void(0)", onClick: this.performAction.bind(this, pam) }, "Accept"), React.createElement("a", { href: "javascript:void(0)", onClick: this.rejectAction.bind(this, pam) }, "Reject"));
+                    actions.unshift(React.createElement("a", { key: "accept", href: "javascript:void(0)", onClick: this.performAction.bind(this, pam) }, "Accept"), React.createElement("a", { key: "reject", href: "javascript:void(0)", onClick: this.rejectAction.bind(this, pam) }, "Reject"));
                 }
                 return React.createElement("li", { tabIndex: 0, key: i, className: 'chat-line action' + (performed ? ' performed' : '') + (this.props.isAdmin ? ' admin' : ' not_admin') },
                     React.createElement("span", { style: senderStyle, className: 'from' }, pam.sender.displayName),
@@ -46334,8 +46394,10 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             return `navigate to ${url}`;
         }
         else if (action === 'mouse_event') {
-            const { targetNodeID, type, targetNodeDescription } = data;
-            return `${type} ${targetNodeID}`;
+            const { targetNodeID, type } = data;
+            const nodeDescriptions = data.nodeDescriptions || {};
+            const nodeDescription = nodeDescriptions[targetNodeID] || `element ${targetNodeID}`;
+            return `${type} ${nodeDescription}`;
         }
         else {
             return `do ${action}`;
@@ -46372,8 +46434,9 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
     }
     ;
     handleOp(op) {
-        const { p, li } = op;
+        const { p } = op;
         if (p[0] === 'users') {
+            const { li } = op;
             if (p.length === 2 && li) {
                 this.userJoined.emit({
                     user: li
@@ -46381,11 +46444,15 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             }
             else if (p.length === 3 && p[2] === 'present') {
                 const userIndex = p[1];
+                const { oi, od } = op;
                 const user = this.doc.getData().users[userIndex];
-                this.userNotPresent.emit({ user });
+                if (oi === false) {
+                    this.userNotPresent.emit({ user });
+                }
             }
         }
         else if (p[0] === 'messages') {
+            const { li } = op;
             if (li.action && li.data && this.browserState) {
                 const relevantNodeIDs = ArboretumChat.getRelevantNodeIDs(li);
                 const relevantNodes = relevantNodeIDs.map((id) => this.browserState.getNode(id));
@@ -46449,19 +46516,20 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
     ;
     addPageActionMessage(action, tabID, data = {}, sender = this.getMe()) {
         return __awaiter(this, void 0, void 0, function* () {
-            const message = { sender, action, tabID, data, state: PageActionState.NOT_PERFORMED };
+            const nodeDescriptions = data.nodeDescriptions || {};
+            const message = { sender, action, tabID, data, nodeDescriptions, state: PageActionState.NOT_PERFORMED };
             this.addMesssage(message);
         });
     }
     ;
-    markPerformed(pam, performed = true) {
+    setState(pam, state) {
         return __awaiter(this, void 0, void 0, function* () {
             const messages = yield this.getMessages();
             const { id } = pam;
             for (let i = 0; i < messages.length; i++) {
                 const message = messages[i];
                 if (message.id === id) {
-                    this.doc.submitObjectReplaceOp(['messages', i, 'performed'], performed);
+                    this.doc.submitObjectReplaceOp(['messages', i, 'state'], state);
                     break;
                 }
             }
@@ -46488,6 +46556,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             const data = this.doc.getData();
             const userIndex = yield this.getUserIndex(user);
             yield this.doc.submitObjectReplaceOp(['users', userIndex, 'present'], false);
+            // await this.doc.submitObjectDeleteOp(['users', userIndex, 'present']);
         });
     }
     ;

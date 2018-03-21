@@ -13,6 +13,9 @@ type ArboretumChatProps = {
     sdb?:SDB,
     username:string,
     onAction?:(pam:PageActionMessage) => void,
+    onReject?:(pam:PageActionMessage) => void,
+    onFocus?:(pam:PageActionMessage) => void,
+    onLabel?:(pam:PageActionMessage) => void,
     onAddHighlight?:(nodeIDs:Array<CRI.NodeID>, color:string)=>void,
     onRemoveHighlight?:(nodeIDs:Array<CRI.NodeID>)=>void,
     isAdmin:boolean
@@ -44,7 +47,9 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
             users:[]
         };
         if(this.props.sdb) { this.setSDB(this.props.sdb); }
-        window.addEventListener('beforeunload', () => this.leave());
+        window.addEventListener('beforeunload', (event) => {
+            this.leave();
+        });
     };
     public getChat():ArboretumChat { return this.chat; }
     public async setSDB(sdb:SDB):Promise<void> {
@@ -114,7 +119,7 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
         this.scrollToBottom();
     };
 
-    private leave():void {
+    public leave():void {
         if(this.chat) {
             this.chat.leave();
         }
@@ -126,10 +131,6 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
 
     public componentDidUpdate():void {
         this.scrollToBottom();
-    };
-    private performAction = (pam:PageActionMessage):void => {
-        this.getChat().markPerformed(pam);
-        if(this.props.onAction) { this.props.onAction(pam); }
     };
     private addHighlights = (pam:PageActionMessage):void => {
         if(this.props.onAddHighlight) {
@@ -144,17 +145,19 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
             this.props.onRemoveHighlight(nodeIDs);
         }
     };
+    private performAction = (pam:PageActionMessage):void => {
+        this.getChat().setState(pam, PageActionState.PERFORMED);
+        if(this.props.onAction) { this.props.onAction(pam); }
+    };
     private rejectAction = (pam:PageActionMessage):void => {
-        // this.getChat().markPerformed(pam);
-        // if(this.props.onAction) { this.props.onAction(pam); }
+        this.getChat().setState(pam, PageActionState.REJECTED);
+        if(this.props.onReject) { this.props.onReject(pam); }
     };
     private focusAction = (pam:PageActionMessage):void => {
-        // this.getChat().markPerformed(pam);
-        // if(this.props.onAction) { this.props.onAction(pam); }
+        if(this.props.onFocus) { this.props.onFocus(pam); }
     };
     private addLabel = (pam:PageActionMessage):void => {
-        // this.getChat().markPerformed(pam);
-        // if(this.props.onAction) { this.props.onAction(pam); }
+        if(this.props.onLabel) { this.props.onLabel(pam); }
     };
     private static playAudio(el:HTMLAudioElement) {
         if(el) {
@@ -188,8 +191,8 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
 
                 const performed:boolean = state === PageActionState.PERFORMED;
                 const actions:Array<JSX.Element> = [
-                        <a href="javascript:void(0)" onClick={this.focusAction.bind(this, pam)}>Focus</a>,
-                        <a href="javascript:void(0)" onClick={this.addLabel.bind(this, pam)}>Label</a>
+                        <a key="focus" href="javascript:void(0)" onClick={this.focusAction.bind(this, pam)}>Focus</a>,
+                        <a key="label" href="javascript:void(0)" onClick={this.addLabel.bind(this, pam)}>Label</a>
                 ];
                 if(state === PageActionState.PERFORMED) {
                     actions.unshift(
@@ -201,8 +204,8 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
                     );
                 } else {
                     actions.unshift(
-                        <a href="javascript:void(0)" onClick={this.performAction.bind(this, pam)}>Accept</a>,
-                        <a href="javascript:void(0)" onClick={this.rejectAction.bind(this, pam)}>Reject</a>
+                        <a key="accept" href="javascript:void(0)" onClick={this.performAction.bind(this, pam)}>Accept</a>,
+                        <a key="reject" href="javascript:void(0)" onClick={this.rejectAction.bind(this, pam)}>Reject</a>
                     );
                 }
 

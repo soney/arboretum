@@ -356,6 +356,24 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
         });
     }
     ;
+    rejectAction(action, data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return true;
+        });
+    }
+    ;
+    focusAction(action, data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { targetNodeID } = data;
+            console.log(targetNodeID);
+            if (this.hasDOMStateWithID(targetNodeID)) {
+                const domState = this.getDOMStateWithID(targetNodeID);
+                yield domState.focus();
+            }
+            return true;
+        });
+    }
+    ;
     getSDB() { return this.sdb; }
     ;
     getShareDBDoc() { return this.doc; }

@@ -23620,6 +23620,9 @@ class ArboretumAdminInterface extends React.Component {
                     this.socket.close();
                     this.socket = null;
                 }
+                if (this.chatbox) {
+                    yield this.chatbox.leave();
+                }
                 yield this.sendIPCMessage({ message: 'stopServer' });
                 [shareURL, adminURL] = ['', ''];
             }
@@ -23677,6 +23680,24 @@ class ArboretumAdminInterface extends React.Component {
                 data: pam
             });
         });
+        this.onReject = (pam) => __awaiter(this, void 0, void 0, function* () {
+            yield this.sendIPCMessage({
+                message: 'rejectAction',
+                data: pam
+            });
+        });
+        this.onFocus = (pam) => __awaiter(this, void 0, void 0, function* () {
+            yield this.sendIPCMessage({
+                message: 'focusAction',
+                data: pam
+            });
+        });
+        this.onLabel = (pam) => __awaiter(this, void 0, void 0, function* () {
+            yield this.sendIPCMessage({
+                message: 'labelAction',
+                data: pam
+            });
+        });
         this.selectShareURL = () => {
             this.shareURLElement.select();
             this.shareURLElement.focus();
@@ -23726,6 +23747,12 @@ class ArboretumAdminInterface extends React.Component {
         console.log('post task', sandbox);
     }
     ;
+    componentWillUnmount() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.chatbox.leave();
+        });
+    }
+    ;
     render() {
         return React.createElement("div", { id: "adminPane", className: 'pane' },
             React.createElement("table", { id: "server-controls" },
@@ -23748,7 +23775,7 @@ class ArboretumAdminInterface extends React.Component {
                             React.createElement("label", null,
                                 React.createElement("input", { "aria-label": "Use Mechanical Turk Sandbox", type: "checkbox", name: "sandbox", value: "sandbox", id: "sandbox", checked: this.state.sandbox, onChange: this.onSandboxChange }),
                                 " Sandbox"))))),
-            React.createElement(ArboretumChatBox_1.ArboretumChatBox, { isAdmin: true, sdb: this.sdb, username: "Admin", ref: this.chatBoxRef, onSendMessage: this.sendMessage, onAction: this.onAction, onAddHighlight: this.addHighlight, onRemoveHighlight: this.removeHighlight }));
+            React.createElement(ArboretumChatBox_1.ArboretumChatBox, { isAdmin: true, sdb: this.sdb, username: "Admin", ref: this.chatBoxRef, onSendMessage: this.sendMessage, onAction: this.onAction, onReject: this.onReject, onFocus: this.onFocus, onLabel: this.onLabel, onAddHighlight: this.addHighlight, onRemoveHighlight: this.removeHighlight }));
     }
     ;
 }
@@ -27465,12 +27492,6 @@ class ArboretumChatBox extends React.Component {
         this.onTextareaChange = (event) => {
             this.setState({ chatText: event.target.value });
         };
-        this.performAction = (pam) => {
-            this.getChat().markPerformed(pam);
-            if (this.props.onAction) {
-                this.props.onAction(pam);
-            }
-        };
         this.addHighlights = (pam) => {
             if (this.props.onAddHighlight) {
                 const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pam);
@@ -27484,17 +27505,27 @@ class ArboretumChatBox extends React.Component {
                 this.props.onRemoveHighlight(nodeIDs);
             }
         };
+        this.performAction = (pam) => {
+            this.getChat().setState(pam, ArboretumChat_1.PageActionState.PERFORMED);
+            if (this.props.onAction) {
+                this.props.onAction(pam);
+            }
+        };
         this.rejectAction = (pam) => {
-            // this.getChat().markPerformed(pam);
-            // if(this.props.onAction) { this.props.onAction(pam); }
+            this.getChat().setState(pam, ArboretumChat_1.PageActionState.REJECTED);
+            if (this.props.onReject) {
+                this.props.onReject(pam);
+            }
         };
         this.focusAction = (pam) => {
-            // this.getChat().markPerformed(pam);
-            // if(this.props.onAction) { this.props.onAction(pam); }
+            if (this.props.onFocus) {
+                this.props.onFocus(pam);
+            }
         };
         this.addLabel = (pam) => {
-            // this.getChat().markPerformed(pam);
-            // if(this.props.onAction) { this.props.onAction(pam); }
+            if (this.props.onLabel) {
+                this.props.onLabel(pam);
+            }
         };
         this.lightChimeRef = (el) => {
             this.lightChimeElement = el;
@@ -27510,7 +27541,9 @@ class ArboretumChatBox extends React.Component {
         if (this.props.sdb) {
             this.setSDB(this.props.sdb);
         }
-        window.addEventListener('beforeunload', () => this.leave());
+        window.addEventListener('beforeunload', (event) => {
+            this.leave();
+        });
     }
     ;
     getChat() { return this.chat; }
@@ -27581,8 +27614,8 @@ class ArboretumChatBox extends React.Component {
                 const description = React.createElement("span", { className: 'description', onMouseEnter: () => this.addHighlights(pam), onMouseLeave: () => this.removeHighlights(pam) }, ArboretumChat_1.ArboretumChat.describePageActionMessage(pam));
                 const performed = state === ArboretumChat_1.PageActionState.PERFORMED;
                 const actions = [
-                    React.createElement("a", { href: "javascript:void(0)", onClick: this.focusAction.bind(this, pam) }, "Focus"),
-                    React.createElement("a", { href: "javascript:void(0)", onClick: this.addLabel.bind(this, pam) }, "Label")
+                    React.createElement("a", { key: "focus", href: "javascript:void(0)", onClick: this.focusAction.bind(this, pam) }, "Focus"),
+                    React.createElement("a", { key: "label", href: "javascript:void(0)", onClick: this.addLabel.bind(this, pam) }, "Label")
                 ];
                 if (state === ArboretumChat_1.PageActionState.PERFORMED) {
                     actions.unshift(React.createElement("div", { className: '' }, "(accepted)"));
@@ -27591,7 +27624,7 @@ class ArboretumChatBox extends React.Component {
                     actions.unshift(React.createElement("div", { className: '' }, "(rejected)"));
                 }
                 else {
-                    actions.unshift(React.createElement("a", { href: "javascript:void(0)", onClick: this.performAction.bind(this, pam) }, "Accept"), React.createElement("a", { href: "javascript:void(0)", onClick: this.rejectAction.bind(this, pam) }, "Reject"));
+                    actions.unshift(React.createElement("a", { key: "accept", href: "javascript:void(0)", onClick: this.performAction.bind(this, pam) }, "Accept"), React.createElement("a", { key: "reject", href: "javascript:void(0)", onClick: this.rejectAction.bind(this, pam) }, "Reject"));
                 }
                 return React.createElement("li", { tabIndex: 0, key: i, className: 'chat-line action' + (performed ? ' performed' : '') + (this.props.isAdmin ? ' admin' : ' not_admin') },
                     React.createElement("span", { style: senderStyle, className: 'from' }, pam.sender.displayName),
@@ -27706,8 +27739,10 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             return `navigate to ${url}`;
         }
         else if (action === 'mouse_event') {
-            const { targetNodeID, type, targetNodeDescription } = data;
-            return `${type} ${targetNodeID}`;
+            const { targetNodeID, type } = data;
+            const nodeDescriptions = data.nodeDescriptions || {};
+            const nodeDescription = nodeDescriptions[targetNodeID] || `element ${targetNodeID}`;
+            return `${type} ${nodeDescription}`;
         }
         else {
             return `do ${action}`;
@@ -27744,8 +27779,9 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
     }
     ;
     handleOp(op) {
-        const { p, li } = op;
+        const { p } = op;
         if (p[0] === 'users') {
+            const { li } = op;
             if (p.length === 2 && li) {
                 this.userJoined.emit({
                     user: li
@@ -27753,11 +27789,15 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             }
             else if (p.length === 3 && p[2] === 'present') {
                 const userIndex = p[1];
+                const { oi, od } = op;
                 const user = this.doc.getData().users[userIndex];
-                this.userNotPresent.emit({ user });
+                if (oi === false) {
+                    this.userNotPresent.emit({ user });
+                }
             }
         }
         else if (p[0] === 'messages') {
+            const { li } = op;
             if (li.action && li.data && this.browserState) {
                 const relevantNodeIDs = ArboretumChat.getRelevantNodeIDs(li);
                 const relevantNodes = relevantNodeIDs.map((id) => this.browserState.getNode(id));
@@ -27821,19 +27861,20 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
     ;
     addPageActionMessage(action, tabID, data = {}, sender = this.getMe()) {
         return __awaiter(this, void 0, void 0, function* () {
-            const message = { sender, action, tabID, data, state: PageActionState.NOT_PERFORMED };
+            const nodeDescriptions = data.nodeDescriptions || {};
+            const message = { sender, action, tabID, data, nodeDescriptions, state: PageActionState.NOT_PERFORMED };
             this.addMesssage(message);
         });
     }
     ;
-    markPerformed(pam, performed = true) {
+    setState(pam, state) {
         return __awaiter(this, void 0, void 0, function* () {
             const messages = yield this.getMessages();
             const { id } = pam;
             for (let i = 0; i < messages.length; i++) {
                 const message = messages[i];
                 if (message.id === id) {
-                    this.doc.submitObjectReplaceOp(['messages', i, 'performed'], performed);
+                    this.doc.submitObjectReplaceOp(['messages', i, 'state'], state);
                     break;
                 }
             }
@@ -27860,6 +27901,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             const data = this.doc.getData();
             const userIndex = yield this.getUserIndex(user);
             yield this.doc.submitObjectReplaceOp(['users', userIndex, 'present'], false);
+            // await this.doc.submitObjectDeleteOp(['users', userIndex, 'present']);
         });
     }
     ;

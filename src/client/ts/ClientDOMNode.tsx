@@ -13,7 +13,8 @@ export interface ClientMouseEvent {
     shiftKey:boolean,
     ctrlKey:boolean,
     altKey:boolean,
-    metaKey:boolean
+    metaKey:boolean,
+    nodeDescriptions:{[id:number]:string}
 };
 export interface ClientKeyboardEvent {
     type:string,
@@ -23,14 +24,16 @@ export interface ClientKeyboardEvent {
     shiftKey:boolean,
     ctrlKey:boolean,
     altKey:boolean,
-    metaKey:boolean
+    metaKey:boolean,
+    nodeDescriptions:{[id:number]:string}
 };
 
 export interface ElementEvent {
     type:string,
     targetNodeID:CRI.NodeID,
     timeStamp:number,
-    value?:any
+    value?:any,
+    nodeDescriptions:{[id:number]:string}
 };
 
 export function createClientNode(sdbNode:ShareDBDOMNode, onCreateNode?:(c:ClientNode)=>void):ClientNode {
@@ -96,6 +99,7 @@ export abstract class ClientNode extends TypedEventEmitter {
 export class ClientDocumentNode extends ClientNode {
     constructor(sdbNode:ShareDBDOMNode, onCreateNode?:((c:ClientNode)=>void), private document?:Document) {
         super(sdbNode, onCreateNode);
+        if(this.document) { this.document.write('<span></span>'); }
         this.setChildren(this.getChildren());
     };
     public getDocument():Document { return this.document; };
@@ -247,9 +251,18 @@ export class ClientElementNode extends ClientNode {
     private removeEventListeners():void {
         this.element.removeEventListener('click', this.onClick);
     };
+    private getNodeDescription():string {
+        if(this.element.hasAttribute('aria-label')) {
+            return this.element.getAttribute('aria-label');
+        } else {
+            return this.element.textContent;
+        }
+    };
     private onChange = (event:Event):void => {
         const value:string = (this.element as HTMLInputElement|HTMLTextAreaElement).value;
-        this.elementEvent.emit({ value, type:'change', targetNodeID:this.sdbNode.nodeId, timeStamp: (new Date()).getTime()});
+        const nodeDescriptions = { };
+        nodeDescriptions[this.getNodeID()] = this.getNodeDescription();
+        this.elementEvent.emit({ nodeDescriptions, value, type:'change', targetNodeID:this.sdbNode.nodeId, timeStamp: (new Date()).getTime()});
     };
     private onClick = (event:MouseEvent):void => {
         // if it isn't looking for a click event already
@@ -260,22 +273,28 @@ export class ClientElementNode extends ClientNode {
     private onMouseEvent = (event:MouseEvent):void => {
         if(this.element === event.target) {
             const {type, timeStamp, clientX, clientY, which, shiftKey, altKey, ctrlKey, metaKey} = event;
-            const targetNodeID = this.sdbNode.nodeId;
-            this.mouseEvent.emit({type, targetNodeID, timeStamp, clientX, clientY, which, shiftKey, altKey, ctrlKey, metaKey});
+            const targetNodeID = this.getNodeID();
+            const nodeDescriptions = { };
+            nodeDescriptions[targetNodeID] = this.getNodeDescription();
+            this.mouseEvent.emit({type, targetNodeID, timeStamp, clientX, clientY, which, shiftKey, altKey, ctrlKey, metaKey, nodeDescriptions});
         }
     };
     private onKeyboardEvent = (event:KeyboardEvent):void => {
         if(this.element === event.target) {
             const {type, timeStamp, keyCode, metaKey, which, shiftKey, altKey, ctrlKey} = event;
             const targetNodeID = this.sdbNode.nodeId;
-            this.keyboardEvent.emit({type, targetNodeID, timeStamp, shiftKey, altKey, ctrlKey, metaKey, keyCode});
+            const nodeDescriptions = { };
+            nodeDescriptions[targetNodeID] = this.getNodeDescription();
+            this.keyboardEvent.emit({type, targetNodeID, timeStamp, shiftKey, altKey, ctrlKey, metaKey, keyCode, nodeDescriptions});
         }
     };
     private onElementEvent = (event:Event):void => {
         if(this.element === event.target) {
             const {type, timeStamp } = event;
             const targetNodeID = this.sdbNode.nodeId;
-            this.elementEvent.emit({type, targetNodeID, timeStamp });
+            const nodeDescriptions = { };
+            nodeDescriptions[targetNodeID] = this.getNodeDescription();
+            this.elementEvent.emit({type, targetNodeID, timeStamp, nodeDescriptions });
         }
     };
     public setChildren(children:Array<ClientNode>):void {
@@ -371,10 +390,31 @@ export class ClientCommentNode extends ClientNode {
     };
 };
 function iframeLoaded(element:HTMLIFrameElement):Promise<HTMLIFrameElement> {
+    const checkIfLoaded = () => {
+        let iframeDoc:Document = element.contentDocument;
+        if(!iframeDoc && element.contentWindow) {
+            iframeDoc = element.contentWindow.document;
+        }
+        if(iframeDoc) {
+            const {readyState} = iframeDoc;
+            return readyState === 'complete' || readyState === 'uninitialized';
+        } else {
+            return false;
+        }
+    };
+    const checkInterval:number = 10;
     return new Promise<HTMLIFrameElement>((resolve, reject) => {
+        const resolveIfLoaded = () => {
+            if(checkIfLoaded()) {
+                resolve(element);
+            } else {
+                setTimeout(resolveIfLoaded, checkInterval);
+            }
+        };
         element.addEventListener('load', () => {
             resolve(element);
         });
+        resolveIfLoaded();
     });
 }
 const mouseEvents = ['mousedown', 'mouseenter', 'mouseleave', 'mousemove', 'mouseout', 'mouseover', 'mouseup', 'click', 'dblclick', 'wheel'];
