@@ -16,7 +16,6 @@ const fs_1 = require("fs");
 const path_1 = require("path");
 const express = require("express");
 const WebSocket = require("ws");
-const WebSocketJSONStream = require("websocket-json-stream");
 const BrowserState_1 = require("./server/state/BrowserState");
 const keypress = require("keypress");
 const chalk_1 = require("chalk");
@@ -24,7 +23,6 @@ const ip = require("ip");
 const opn = require("opn");
 const request = require("request");
 const URL = require("url");
-const ArboretumChat_1 = require("./utils/ArboretumChat");
 const ShareDBDoc_1 = require("./utils/ShareDBDoc");
 const OPEN_MIRROR = false;
 const RDB_PORT = 9222;
@@ -86,13 +84,11 @@ const sdb = new ShareDBDoc_1.SDB(false);
 const browserState = new BrowserState_1.BrowserState(sdb, {
     port: RDB_PORT
 });
-const chat = new ArboretumChat_1.ArboretumChat(sdb, browserState);
 const expressApp = express();
 const server = http_1.createServer(expressApp);
 const wss = new WebSocket.Server({ server });
 wss.on('connection', (ws, req) => {
-    const stream = new WebSocketJSONStream(ws);
-    browserState.shareDBListen(stream);
+    browserState.shareDBListen(ws);
 });
 expressApp.all('/', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
     const contents = yield setClientOptions({

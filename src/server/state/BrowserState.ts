@@ -45,7 +45,7 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
             selectedTab:null
         });
         this.markAttachedToShareDBDoc();
-        this.chat = new ArboretumChat(this.sdb);
+        this.chat = new ArboretumChat(this.sdb, this);
         this.intervalID = timers.setInterval(_.bind(this.refreshTabs, this), 2000);
         log.debug('=== CREATED BROWSER ===');
     };
@@ -84,8 +84,12 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
             return false;
         }
     };
-    public shareDBListen(ws:stream.Duplex):void {
-        this.sdb.listen(ws);
+    public shareDBListen(ws:WebSocket):void {
+        const stream:stream.Duplex = new WebSocketJSONStream(ws);
+        this.sdb.listen(stream);
+        ws.once('close', () => {
+            console.log('disconnect');
+        });
     };
     private async refreshTabs():Promise<void> {
         const tabInfos:Array<CRI.TabInfo> = await this.getTabs();

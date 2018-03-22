@@ -8,7 +8,6 @@ import * as child from 'child_process';
 import * as express from 'express';
 import * as ShareDB from 'sharedb';
 import * as WebSocket from 'ws';
-import * as WebSocketJSONStream from 'websocket-json-stream';
 import { BrowserState } from './server/state/BrowserState';
 import * as keypress from 'keypress';
 import chalk from 'chalk';
@@ -83,14 +82,12 @@ const sdb:SDB = new SDB(false);
 const browserState = new BrowserState(sdb, {
     port: RDB_PORT
 });
-const chat = new ArboretumChat(sdb, browserState);
 
 const expressApp = express();
 const server:Server = createServer(expressApp);
 const wss = new WebSocket.Server({server});
 wss.on('connection', (ws:WebSocket, req) => {
-    const stream = new WebSocketJSONStream(ws);
-    browserState.shareDBListen(stream);
+    browserState.shareDBListen(ws);
 });
 expressApp.all('/', async (req, res, next) => {
         const contents: string = await setClientOptions({

@@ -13,6 +13,7 @@ const _ = require("underscore");
 const fileUrl = require("file-url");
 const path_1 = require("path");
 const TabState_1 = require("./TabState");
+const WebSocketJSONStream = require("websocket-json-stream");
 const ColoredLogger_1 = require("../../utils/ColoredLogger");
 const ShareDBDoc_1 = require("../../utils/ShareDBDoc");
 const ArboretumChat_1 = require("../../utils/ArboretumChat");
@@ -48,7 +49,7 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
                 selectedTab: null
             });
             this.markAttachedToShareDBDoc();
-            this.chat = new ArboretumChat_1.ArboretumChat(this.sdb);
+            this.chat = new ArboretumChat_1.ArboretumChat(this.sdb, this);
             this.intervalID = timers.setInterval(_.bind(this.refreshTabs, this), 2000);
             log.debug('=== CREATED BROWSER ===');
         });
@@ -103,7 +104,11 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
     }
     ;
     shareDBListen(ws) {
-        this.sdb.listen(ws);
+        const stream = new WebSocketJSONStream(ws);
+        this.sdb.listen(stream);
+        ws.once('close', () => {
+            console.log('disconnect');
+        });
     }
     ;
     refreshTabs() {

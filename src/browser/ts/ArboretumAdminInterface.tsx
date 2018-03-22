@@ -106,10 +106,7 @@ export class ArboretumAdminInterface extends React.Component<ArboretumAdminProps
     private postTask(sandbox:boolean):void {
         console.log('post task', sandbox);
     };
-    private selectedTabPageTitleChanged = (title:string):void => {
-        if(!title) {
-            title='Arboretum';
-        }
+    private selectedTabPageTitleChanged = (title:string='Arboretum'):void => {
         document.title = title;
     };
 
