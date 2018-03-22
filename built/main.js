@@ -224,6 +224,8 @@ electron_1.ipcMain.on('asynchronous-message', (event, messageID, arg) => __await
         if (browserWindow) {
             browserWindow.focus();
         }
+        browserWindow.webContents.send("focusWebview");
+        yield new Promise((resolve, reject) => { setTimeout(resolve, 10); });
         yield browserState.focusAction(data);
         event.sender.send(replyChannel, 'ok');
     }

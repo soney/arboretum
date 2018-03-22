@@ -44,7 +44,7 @@ export class BrowserTab extends React.Component<BrowserTabProps, BrowserTabState
             canGoForward:false,
             isLoading:false
         };
-        this.webViewEl = <webview id={`${this.props.tabID}`} key={this.props.tabID} ref={this.webViewRef} src={this.props.startURL}/>;
+        this.webViewEl = <webview className="hidden" id={`${this.props.tabID}`} key={this.props.tabID} ref={this.webViewRef}/>;
     };
     public hasSDBTabID():boolean {
         return !!this.sdbTabId;
@@ -82,6 +82,10 @@ export class BrowserTab extends React.Component<BrowserTabProps, BrowserTabState
     private webViewRef = (el:Electron.WebviewTag):void => {
         if(el) {
             this.webView = el;
+            this.webView.setAttribute('src', this.props.startURL);
+            if(this.props.selected) {
+                setTimeout(() => this.webView.setAttribute('class', ''), 0);
+            }
             this.webView.addEventListener('page-title-updated', async (event:Electron.PageTitleUpdatedEvent) => {
                 const {title} = event;
                 this.setState({title});
@@ -151,7 +155,12 @@ export class BrowserTab extends React.Component<BrowserTabProps, BrowserTabState
         if(this.props.onClose) { this.props.onClose(this); }
     };
     public markSelected(selected:boolean=true):void {
-        this.setState(_.extend(this.state, {selected}));
+        this.setState({selected});
+        if(selected) {
+            this.webView.setAttribute('class', '');
+        } else {
+            this.webView.setAttribute('class', 'hidden');
+        }
     };
     public async goBack():Promise<void> {
         if(this.webView.canGoBack()) {

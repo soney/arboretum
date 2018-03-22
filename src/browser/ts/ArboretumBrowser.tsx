@@ -22,8 +22,7 @@ type ArboretumState = {
     tabs:Array<{url:string, id:number, selected:boolean}>,
     webViews:Array<JSX.Element>,
     selectedTab:BrowserTab,
-    serverActive:boolean,
-    activeWebViewEl:JSX.Element,
+    serverActive:boolean
 };
 
 export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumState> {
@@ -41,20 +40,28 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
     constructor(props) {
         super(props);
         this.state = {
-            tabs: this.props.urls.map((url, index) => {
-                return {
-                    selected: index===0,
-                    id: this.tabCounter++,
-                    url: url
-                };
-            }),
+            tabs: [],
             webViews: [],
             selectedTab:null,
-            activeWebViewEl:null,
             serverActive:false
         };
         ipcRenderer.on('server-active', (event:Electron.IpcMessageEvent, data:any) => {
             this.setServerActive(data.active);
+        });
+        ipcRenderer.on('focusWebview', () => {
+            const {selectedTab} = this.state;
+            if(selectedTab) {
+                const {webView} = selectedTab;
+                if(webView) {
+                    webView.focus();
+                }
+            }
+        });
+    };
+
+    public componentDidMount():void {
+        this.props.urls.forEach((url, index) => {
+            this.addTab(url);
         });
     };
 
@@ -161,14 +168,17 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
         }
         document.title = title;
     };
-    private addTab = ():void => {
+    private addTab = (url:string='http://www.umich.edu', selected:boolean=true):void => {
+        const id:number = this.tabCounter++;
+        if(selected) {
+            this.tabs.forEach((t) => {
+                t.markSelected(false);
+            });
+        }
         const tabs = this.state.tabs.map((tab) => {
-            return _.extend(tab, {selected: false});
-        }).concat([{
-            id: this.tabCounter++,
-            url:'http://www.cmu.edu/',
-            selected: false
-        }]);
+            const wasSelected = tab.selected;
+            return _.extend(tab, {selected: (selected?false:wasSelected)});
+        }).concat([{ url,selected,id }]);
         this.setState({tabs}, () => {
             this.updateWebViews();
         });
@@ -191,19 +201,15 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
         if(selectedTab !== this.state.selectedTab) {
             const tabID = selectedTab.getTabID();
             this.tabs.forEach((t) => {
-                const isSelected = t===selectedTab;
-                t.markSelected(isSelected);
-                if(t.webView) {
-                    t.webView.setAttribute('class', isSelected?'':'hidden');
-                }
+                t.markSelected(t===selectedTab);
             });
-            const activeWebViewEl = selectedTab ? selectedTab.webViewEl : null;
-            this.setState({selectedTab, activeWebViewEl}, () => {
+            this.setState({selectedTab}, () => {
                 this.updateNavBarState();
                 if(this.state.selectedTab) {
                     this.selectedTabPageTitleChanged(selectedTab.state.title);
                 }
             });
+            this.updateWebViews();
         }
     };
 
@@ -231,8 +237,13 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
     private tabRef = (el:BrowserTab):void => {
         if(el) {
             this.tabs.set(el.props.tabID, el);
-            this.selectTab(el);
-            this.updateWebViews();
+            if(el.state.selected) {
+                this.setState({selectedTab:el});
+            }
+            // setTimeout(() => {
+            //     this.selectTab(el);
+            //     this.updateWebViews();
+            // }, 7000);
         }
     };
 
@@ -259,7 +270,7 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
                 <div id="tabsBar" className="tab-group">
                     <div id='buttonSpacer' className="tab-item tab-item-fixed"> </div>
                     {tabs}
-                    <div onClick={this.addTab} className="tab-item tab-item-fixed" id='addTab'>
+                    <div onClick={()=>this.addTab()} className="tab-item tab-item-fixed" id='addTab'>
                         <span className="icon icon-plus"></span>
                     </div>
                 </div>

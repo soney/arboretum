@@ -214,6 +214,8 @@ ipcMain.on('asynchronous-message', async (event, messageID:number, arg:{message:
         if(browserWindow) {
             browserWindow.focus();
         }
+        browserWindow.webContents.send("focusWebview");
+        await new Promise((resolve, reject) => { setTimeout(resolve, 10) });
         await browserState.focusAction(data);
         event.sender.send(replyChannel, 'ok');
     } else if (message === 'labelAction') {
