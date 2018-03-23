@@ -62,16 +62,21 @@ class ArboretumChatBox extends React.Component {
         this.openEndedChimeRef = (el) => {
             this.openEndedChimeElement = el;
         };
-        this.performAction = (pam) => {
-            this.getChat().setState(pam, ArboretumChat_1.PageActionState.PERFORMED);
-            if (this.props.onAction) {
-                this.props.onAction(pam);
+        this.performAction = (action, pam) => {
+            if (action === ArboretumChat_1.PAMAction.ACCEPT) {
+                this.acceptAction(pam);
             }
-        };
-        this.rejectAction = (pam) => {
-            this.getChat().setState(pam, ArboretumChat_1.PageActionState.REJECTED);
-            if (this.props.onReject) {
-                this.props.onReject(pam);
+            else if (action === ArboretumChat_1.PAMAction.REJECT) {
+                this.rejectAction(pam);
+            }
+            else if (action === ArboretumChat_1.PAMAction.FOCUS) {
+                this.focusAction(pam);
+            }
+            else if (action === ArboretumChat_1.PAMAction.REQUEST_LABEL) {
+                this.requestLabel(pam);
+            }
+            else {
+                console.log(action);
             }
         };
         this.onAddLabel = (nodeIDs, label, tabID, nodeDescriptions) => {
@@ -144,6 +149,31 @@ class ArboretumChatBox extends React.Component {
         ArboretumChatBox.playAudio(this.openEndedChimeElement);
     }
     ;
+    acceptAction(pam) {
+        this.getChat().setState(pam, ArboretumChat_1.PageActionState.PERFORMED);
+        if (this.props.onAction) {
+            this.props.onAction(pam);
+        }
+    }
+    ;
+    rejectAction(pam) {
+        this.getChat().setState(pam, ArboretumChat_1.PageActionState.REJECTED);
+        if (this.props.onReject) {
+            this.props.onReject(pam);
+        }
+    }
+    ;
+    focusAction(pam) {
+        if (this.props.onFocus) {
+            this.props.onFocus(pam);
+        }
+    }
+    ;
+    requestLabel(pam) {
+        const { data } = pam;
+        this.chat.addPageActionMessage('getLabel', pam.tabID, data);
+    }
+    ;
     render() {
         const messages = this.state.messages.map((m, i) => {
             const senderStyle = { color: m.sender.color };
@@ -155,7 +185,7 @@ class ArboretumChatBox extends React.Component {
             }
             else if (m['action']) {
                 const pam = m;
-                return React.createElement(PageActionMessageDisplay_1.PageActionMessageDisplay, { pam: pam, key: i, isAdmin: this.props.isAdmin, onAction: this.performAction, onReject: this.rejectAction, onFocus: this.props.onFocus, addLabel: this.onAddLabel, onAddHighlight: this.props.onAddHighlight, onRemoveHighlight: this.props.onRemoveHighlight });
+                return React.createElement(PageActionMessageDisplay_1.PageActionMessageDisplay, { pam: pam, key: i, isAdmin: this.props.isAdmin, performAction: this.performAction, addLabel: this.onAddLabel, onAddHighlight: this.props.onAddHighlight, onRemoveHighlight: this.props.onRemoveHighlight });
             }
         });
         let meUserID;

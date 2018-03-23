@@ -28,6 +28,15 @@ var PageActionState;
     PageActionState[PageActionState["REJECTED"] = 2] = "REJECTED";
 })(PageActionState = exports.PageActionState || (exports.PageActionState = {}));
 ;
+var PAMAction;
+(function (PAMAction) {
+    PAMAction[PAMAction["ACCEPT"] = 0] = "ACCEPT";
+    PAMAction[PAMAction["REJECT"] = 1] = "REJECT";
+    PAMAction[PAMAction["FOCUS"] = 2] = "FOCUS";
+    PAMAction[PAMAction["REQUEST_LABEL"] = 3] = "REQUEST_LABEL";
+    PAMAction[PAMAction["ADD_LABEL"] = 4] = "ADD_LABEL";
+})(PAMAction = exports.PAMAction || (exports.PAMAction = {}));
+;
 ;
 ;
 ;
@@ -103,8 +112,100 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             const nodeDescription = nodeDescriptions[nodeID] || `element ${nodeID}`;
             return `label "${nodeDescription}" as "${label}"`;
         }
+        else if (action === 'getLabel') {
+            const { targetNodeID, label } = data;
+            const nodeDescriptions = data.nodeDescriptions || {};
+            const nodeDescription = nodeDescriptions[targetNodeID] || `element ${targetNodeID}`;
+            return `you to label "${nodeDescription}"`;
+        }
         else {
             return `do ${action}`;
+        }
+    }
+    ;
+    static getActionDescription(action) {
+        if (action === PAMAction.ACCEPT) {
+            return 'accept';
+        }
+        else if (action === PAMAction.REJECT) {
+            return 'reject';
+        }
+        else if (action === PAMAction.FOCUS) {
+            return 'focus';
+        }
+        else if (action === PAMAction.REQUEST_LABEL) {
+            return 'request label';
+        }
+        else if (action === PAMAction.ADD_LABEL) {
+            return 'add label';
+        }
+        else {
+            return '';
+        }
+    }
+    ;
+    static getStateDescription(pam) {
+        const { action, state } = pam;
+        if (state === PageActionState.NOT_PERFORMED) {
+            return '';
+        }
+        else if (state === PageActionState.PERFORMED) {
+            return 'accepted';
+        }
+        else if (state === PageActionState.REJECTED) {
+            return 'rejected';
+        }
+        else {
+            return '';
+        }
+    }
+    ;
+    static getActions(pam, isAdmin) {
+        const { action, state } = pam;
+        if (action === 'navigate' || action === 'goBack' || action === 'goForward' || action === 'reload') {
+            if (isAdmin && state === PageActionState.NOT_PERFORMED) {
+                return [PAMAction.ACCEPT, PAMAction.REJECT];
+            }
+            else {
+                return [];
+            }
+        }
+        else if (action === 'mouse_event' || action === 'keyboard_event' || action === 'element_event') {
+            if (isAdmin) {
+                if (state === PageActionState.NOT_PERFORMED) {
+                    return [PAMAction.ACCEPT, PAMAction.REJECT, PAMAction.FOCUS, PAMAction.REQUEST_LABEL];
+                }
+                else {
+                    return [PAMAction.FOCUS, PAMAction.REQUEST_LABEL];
+                }
+            }
+            else {
+                return [PAMAction.ADD_LABEL];
+            }
+        }
+        else if (action === 'getLabel') {
+            if (isAdmin) {
+                return [PAMAction.FOCUS];
+            }
+            else {
+                return [PAMAction.ADD_LABEL, PAMAction.FOCUS];
+            }
+        }
+        else if (action === 'setLabel') {
+            if (isAdmin) {
+                if (state === PageActionState.NOT_PERFORMED) {
+                    return [PAMAction.ACCEPT, PAMAction.REJECT, PAMAction.FOCUS];
+                }
+                else {
+                    return [PAMAction.FOCUS];
+                }
+            }
+            else {
+                return [];
+            }
+        }
+        else {
+            return [];
         }
     }
     ;

@@ -396,6 +396,7 @@ process.stdin.resume();
 // 	chatServer.destroy();
 // 	return browserState.destroy();
 // }
+
 function processFile(filename:string):Promise<string> {
     return new Promise<string>(function(resolve, reject) {
         fs.readFile(filename, {

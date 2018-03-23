@@ -11,6 +11,7 @@ export const userColors:Array<Array<Color>> = [
 export enum TypingStatus { IDLE, ACTIVE, IDLE_TYPED };
 export enum PageActionState { NOT_PERFORMED, PERFORMED, REJECTED };
 export type PageAction ='navigate'|'goBack'|'goForward'|'mouse_event'|'keyboard_event'|'element_event'|'focus_event'|'reload'|'getLabel'|'setLabel';
+export enum PAMAction { ACCEPT, REJECT, FOCUS, REQUEST_LABEL, ADD_LABEL};
 
 export type UserID = string;
 export interface User {
@@ -127,8 +128,78 @@ export class ArboretumChat extends TypedEventEmitter {
             const nodeDescriptions = data.nodeDescriptions || {};
             const nodeDescription:string = nodeDescriptions[nodeID] || `element ${nodeID}`;
             return `label "${nodeDescription}" as "${label}"`;
+        } else if(action === 'getLabel') {
+            const {targetNodeID, label} = data;
+            const nodeDescriptions = data.nodeDescriptions || {};
+            const nodeDescription:string = nodeDescriptions[targetNodeID] || `element ${targetNodeID}`;
+            return `you to label "${nodeDescription}"`;
         } else {
             return `do ${action}`;
+        }
+    };
+    public static getActionDescription(action:PAMAction):string {
+        if(action === PAMAction.ACCEPT) {
+            return 'accept';
+        } else if(action === PAMAction.REJECT) {
+            return 'reject';
+        } else if(action === PAMAction.FOCUS) {
+            return 'focus';
+        } else if(action === PAMAction.REQUEST_LABEL) {
+            return 'request label';
+        } else if(action === PAMAction.ADD_LABEL) {
+            return 'add label';
+        } else {
+            return '';
+        }
+    };
+    public static getStateDescription(pam:PageActionMessage):string {
+        const {action, state} = pam;
+        if(state === PageActionState.NOT_PERFORMED) {
+            return '';
+        } else if(state === PageActionState.PERFORMED) {
+            return 'accepted';
+        } else if(state === PageActionState.REJECTED) {
+            return 'rejected';
+        } else {
+            return '';
+        }
+    };
+    public static getActions(pam:PageActionMessage, isAdmin:boolean) {
+        const {action, state} = pam;
+        if(action === 'navigate' || action === 'goBack' || action === 'goForward' || action === 'reload') {
+            if(isAdmin && state === PageActionState.NOT_PERFORMED) {
+                return [PAMAction.ACCEPT, PAMAction.REJECT];
+            } else {
+                return [];
+            }
+        } else if(action === 'mouse_event' || action === 'keyboard_event' || action === 'element_event') {
+            if(isAdmin) {
+                if(state === PageActionState.NOT_PERFORMED) {
+                    return [PAMAction.ACCEPT, PAMAction.REJECT, PAMAction.FOCUS, PAMAction.REQUEST_LABEL];
+                } else {
+                    return [PAMAction.FOCUS, PAMAction.REQUEST_LABEL];
+                }
+            } else {
+                return [PAMAction.ADD_LABEL];
+            }
+        } else if(action === 'getLabel') {
+            if(isAdmin) {
+                return [PAMAction.FOCUS];
+            } else {
+                return [PAMAction.ADD_LABEL, PAMAction.FOCUS];
+            }
+        } else if(action === 'setLabel') {
+            if(isAdmin) {
+                if(state === PageActionState.NOT_PERFORMED) {
+                    return [PAMAction.ACCEPT, PAMAction.REJECT, PAMAction.FOCUS];
+                } else {
+                    return [PAMAction.FOCUS];
+                }
+            } else {
+                return [];
+            }
+        } else {
+            return [];
         }
     };
     public static getRelevantNodeIDs(pam:PageActionMessage):Array<CRI.NodeID> {

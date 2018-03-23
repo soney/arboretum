@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {SDB, SDBDoc} from '../ShareDBDoc';
-import {ArboretumChat, Message, User, TextMessage, PageActionMessage, PageActionState, MessageAddedEvent} from '../ArboretumChat';
+import {ArboretumChat, Message, User, TextMessage, PageActionMessage, PageActionState, MessageAddedEvent, PAMAction} from '../ArboretumChat';
 import {RegisteredEvent} from '../TypedEventEmitter';
 import {PageActionMessageDisplay} from './PageActionMessage/PageActionMessageDisplay';
 
@@ -152,13 +152,33 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
     private openEndedChimeRef = (el:HTMLAudioElement):void => {
         this.openEndedChimeElement = el;
     };
-    private performAction = (pam:PageActionMessage):void => {
+    private performAction = (action:PAMAction, pam:PageActionMessage):void => {
+        if(action === PAMAction.ACCEPT) {
+            this.acceptAction(pam);
+        } else if(action === PAMAction.REJECT) {
+            this.rejectAction(pam);
+        } else if(action === PAMAction.FOCUS) {
+            this.focusAction(pam);
+        } else if(action === PAMAction.REQUEST_LABEL) {
+            this.requestLabel(pam);
+        } else {
+            console.log(action);
+        }
+    };
+    private acceptAction(pam:PageActionMessage):void {
         this.getChat().setState(pam, PageActionState.PERFORMED);
         if(this.props.onAction) { this.props.onAction(pam); }
     };
-    private rejectAction = (pam:PageActionMessage):void => {
+    private rejectAction(pam:PageActionMessage):void {
         this.getChat().setState(pam, PageActionState.REJECTED);
         if(this.props.onReject) { this.props.onReject(pam); }
+    };
+    private focusAction(pam:PageActionMessage):void  {
+        if(this.props.onFocus) { this.props.onFocus(pam); }
+    };
+    private requestLabel(pam:PageActionMessage):void {
+        const {data} = pam;
+        this.chat.addPageActionMessage('getLabel', pam.tabID, data);
     };
     private onAddLabel = (nodeIDs:CRI.NodeID[], label:string, tabID:CRI.TabID, nodeDescriptions:{}):void => {
         this.chat.addPageActionMessage('setLabel', tabID, {nodeIDs, label, nodeDescriptions});
@@ -172,7 +192,7 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
                 return <li tabIndex={0} key={i} className='chat-line'><span style={senderStyle} className='from'>{tm.sender.displayName}</span><span className='message'>{tm.content}</span></li>;
             } else if(m['action']) {
                 const pam:PageActionMessage = m as PageActionMessage;
-                return <PageActionMessageDisplay pam={pam} key={i} isAdmin={this.props.isAdmin} onAction={this.performAction} onReject={this.rejectAction} onFocus={this.props.onFocus} addLabel={this.onAddLabel} onAddHighlight={this.props.onAddHighlight} onRemoveHighlight={this.props.onRemoveHighlight} />
+                return <PageActionMessageDisplay pam={pam} key={i} isAdmin={this.props.isAdmin} performAction={this.performAction} addLabel={this.onAddLabel} onAddHighlight={this.props.onAddHighlight} onRemoveHighlight={this.props.onRemoveHighlight} />
             }
         });
 

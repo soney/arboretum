@@ -51,6 +51,9 @@
                 .messageActions {
                     a {
                         margin:2px;
+                        &:first-child { margin-left: 0px; }
+                        &::before { content: '(' }
+                        &::after { content: ')' }
                     }
                 }
             }

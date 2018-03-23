@@ -4004,6 +4004,15 @@ var PageActionState;
     PageActionState[PageActionState["REJECTED"] = 2] = "REJECTED";
 })(PageActionState = exports.PageActionState || (exports.PageActionState = {}));
 ;
+var PAMAction;
+(function (PAMAction) {
+    PAMAction[PAMAction["ACCEPT"] = 0] = "ACCEPT";
+    PAMAction[PAMAction["REJECT"] = 1] = "REJECT";
+    PAMAction[PAMAction["FOCUS"] = 2] = "FOCUS";
+    PAMAction[PAMAction["REQUEST_LABEL"] = 3] = "REQUEST_LABEL";
+    PAMAction[PAMAction["ADD_LABEL"] = 4] = "ADD_LABEL";
+})(PAMAction = exports.PAMAction || (exports.PAMAction = {}));
+;
 ;
 ;
 ;
@@ -4079,8 +4088,100 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             const nodeDescription = nodeDescriptions[nodeID] || `element ${nodeID}`;
             return `label "${nodeDescription}" as "${label}"`;
         }
+        else if (action === 'getLabel') {
+            const { targetNodeID, label } = data;
+            const nodeDescriptions = data.nodeDescriptions || {};
+            const nodeDescription = nodeDescriptions[targetNodeID] || `element ${targetNodeID}`;
+            return `you to label "${nodeDescription}"`;
+        }
         else {
             return `do ${action}`;
+        }
+    }
+    ;
+    static getActionDescription(action) {
+        if (action === PAMAction.ACCEPT) {
+            return 'accept';
+        }
+        else if (action === PAMAction.REJECT) {
+            return 'reject';
+        }
+        else if (action === PAMAction.FOCUS) {
+            return 'focus';
+        }
+        else if (action === PAMAction.REQUEST_LABEL) {
+            return 'request label';
+        }
+        else if (action === PAMAction.ADD_LABEL) {
+            return 'add label';
+        }
+        else {
+            return '';
+        }
+    }
+    ;
+    static getStateDescription(pam) {
+        const { action, state } = pam;
+        if (state === PageActionState.NOT_PERFORMED) {
+            return '';
+        }
+        else if (state === PageActionState.PERFORMED) {
+            return 'accepted';
+        }
+        else if (state === PageActionState.REJECTED) {
+            return 'rejected';
+        }
+        else {
+            return '';
+        }
+    }
+    ;
+    static getActions(pam, isAdmin) {
+        const { action, state } = pam;
+        if (action === 'navigate' || action === 'goBack' || action === 'goForward' || action === 'reload') {
+            if (isAdmin && state === PageActionState.NOT_PERFORMED) {
+                return [PAMAction.ACCEPT, PAMAction.REJECT];
+            }
+            else {
+                return [];
+            }
+        }
+        else if (action === 'mouse_event' || action === 'keyboard_event' || action === 'element_event') {
+            if (isAdmin) {
+                if (state === PageActionState.NOT_PERFORMED) {
+                    return [PAMAction.ACCEPT, PAMAction.REJECT, PAMAction.FOCUS, PAMAction.REQUEST_LABEL];
+                }
+                else {
+                    return [PAMAction.FOCUS, PAMAction.REQUEST_LABEL];
+                }
+            }
+            else {
+                return [PAMAction.ADD_LABEL];
+            }
+        }
+        else if (action === 'getLabel') {
+            if (isAdmin) {
+                return [PAMAction.FOCUS];
+            }
+            else {
+                return [PAMAction.ADD_LABEL, PAMAction.FOCUS];
+            }
+        }
+        else if (action === 'setLabel') {
+            if (isAdmin) {
+                if (state === PageActionState.NOT_PERFORMED) {
+                    return [PAMAction.ACCEPT, PAMAction.REJECT, PAMAction.FOCUS];
+                }
+                else {
+                    return [PAMAction.FOCUS];
+                }
+            }
+            else {
+                return [];
+            }
+        }
+        else {
+            return [];
         }
     }
     ;
@@ -32112,6 +32213,7 @@ json.checkList = function(elem) {
 
 json.checkObj = function(elem) {
   if (!isObject(elem)) {
+    debugger;
     throw new Error("Referenced element not an object (it was " + JSON.stringify(elem) + ")");
   }
 };
@@ -32159,6 +32261,7 @@ json.apply = function(snapshot, op) {
 
       parent = elem;
       parentKey = key;
+      if(!elem) { debugger; }
       elem = elem[key];
       key = p;
 
@@ -46524,16 +46627,21 @@ class ArboretumChatBox extends React.Component {
         this.openEndedChimeRef = (el) => {
             this.openEndedChimeElement = el;
         };
-        this.performAction = (pam) => {
-            this.getChat().setState(pam, ArboretumChat_1.PageActionState.PERFORMED);
-            if (this.props.onAction) {
-                this.props.onAction(pam);
+        this.performAction = (action, pam) => {
+            if (action === ArboretumChat_1.PAMAction.ACCEPT) {
+                this.acceptAction(pam);
             }
-        };
-        this.rejectAction = (pam) => {
-            this.getChat().setState(pam, ArboretumChat_1.PageActionState.REJECTED);
-            if (this.props.onReject) {
-                this.props.onReject(pam);
+            else if (action === ArboretumChat_1.PAMAction.REJECT) {
+                this.rejectAction(pam);
+            }
+            else if (action === ArboretumChat_1.PAMAction.FOCUS) {
+                this.focusAction(pam);
+            }
+            else if (action === ArboretumChat_1.PAMAction.REQUEST_LABEL) {
+                this.requestLabel(pam);
+            }
+            else {
+                console.log(action);
             }
         };
         this.onAddLabel = (nodeIDs, label, tabID, nodeDescriptions) => {
@@ -46606,6 +46714,31 @@ class ArboretumChatBox extends React.Component {
         ArboretumChatBox.playAudio(this.openEndedChimeElement);
     }
     ;
+    acceptAction(pam) {
+        this.getChat().setState(pam, ArboretumChat_1.PageActionState.PERFORMED);
+        if (this.props.onAction) {
+            this.props.onAction(pam);
+        }
+    }
+    ;
+    rejectAction(pam) {
+        this.getChat().setState(pam, ArboretumChat_1.PageActionState.REJECTED);
+        if (this.props.onReject) {
+            this.props.onReject(pam);
+        }
+    }
+    ;
+    focusAction(pam) {
+        if (this.props.onFocus) {
+            this.props.onFocus(pam);
+        }
+    }
+    ;
+    requestLabel(pam) {
+        const { data } = pam;
+        this.chat.addPageActionMessage('getLabel', pam.tabID, data);
+    }
+    ;
     render() {
         const messages = this.state.messages.map((m, i) => {
             const senderStyle = { color: m.sender.color };
@@ -46617,7 +46750,7 @@ class ArboretumChatBox extends React.Component {
             }
             else if (m['action']) {
                 const pam = m;
-                return React.createElement(PageActionMessageDisplay_1.PageActionMessageDisplay, { pam: pam, key: i, isAdmin: this.props.isAdmin, onAction: this.performAction, onReject: this.rejectAction, onFocus: this.props.onFocus, addLabel: this.onAddLabel, onAddHighlight: this.props.onAddHighlight, onRemoveHighlight: this.props.onRemoveHighlight });
+                return React.createElement(PageActionMessageDisplay_1.PageActionMessageDisplay, { pam: pam, key: i, isAdmin: this.props.isAdmin, performAction: this.performAction, addLabel: this.onAddLabel, onAddHighlight: this.props.onAddHighlight, onRemoveHighlight: this.props.onRemoveHighlight });
             }
         });
         let meUserID;
@@ -46709,24 +46842,16 @@ class PageActionMessageDisplay extends React.Component {
                 this.props.onRemoveHighlight(nodeIDs);
             }
         };
-        this.performAction = (pam) => {
-            if (this.props.onAction) {
-                this.props.onAction(pam);
+        this.performAction = (action, pam) => {
+            if (action === ArboretumChat_1.PAMAction.ADD_LABEL) {
+                this.addHighlights(this.props.pam);
+                this.setState({ labeling: true });
             }
-        };
-        this.rejectAction = (pam) => {
-            if (this.props.onReject) {
-                this.props.onReject(pam);
+            else {
+                if (this.props.performAction) {
+                    this.props.performAction(action, pam);
+                }
             }
-        };
-        this.focusAction = (pam) => {
-            if (this.props.onFocus) {
-                this.props.onFocus(pam);
-            }
-        };
-        this.addLabel = (pam) => {
-            this.addHighlights(this.props.pam);
-            this.setState({ labeling: true });
         };
         this.onLabelKeyDown = (event) => {
             const { keyCode } = event;
@@ -46754,30 +46879,22 @@ class PageActionMessageDisplay extends React.Component {
         const pam = this.props.pam;
         const { action, data, state } = pam;
         const description = React.createElement("span", { className: 'description', onMouseEnter: () => this.addHighlights(pam), onMouseLeave: () => this.removeHighlights(pam) }, ArboretumChat_1.ArboretumChat.describePageActionMessage(pam));
-        const performed = state === ArboretumChat_1.PageActionState.PERFORMED;
-        const actions = [
-            React.createElement("a", { key: "focus", href: "javascript:void(0)", onClick: this.focusAction.bind(this, pam) }, "Focus"),
-            React.createElement("a", { key: "label", href: "javascript:void(0)", onClick: this.addLabel.bind(this, pam) }, "Label")
-        ];
-        if (state === ArboretumChat_1.PageActionState.PERFORMED) {
-            actions.unshift(React.createElement("div", { className: '' }, "(accepted)"));
-        }
-        else if (state === ArboretumChat_1.PageActionState.REJECTED) {
-            actions.unshift(React.createElement("div", { className: '' }, "(rejected)"));
-        }
-        else {
-            actions.unshift(React.createElement("a", { key: "accept", href: "javascript:void(0)", onClick: this.performAction.bind(this, pam) }, "Accept"), React.createElement("a", { key: "reject", href: "javascript:void(0)", onClick: this.rejectAction.bind(this, pam) }, "Reject"));
-        }
-        const messageActions = React.createElement("div", { className: 'messageActions' }, actions);
+        const messageActions = ArboretumChat_1.ArboretumChat.getActions(pam, this.props.isAdmin).map((action) => {
+            const description = ArboretumChat_1.ArboretumChat.getActionDescription(action);
+            return React.createElement("a", { key: action, href: "javascript:void(0)", onClick: () => this.performAction(action, pam) }, description);
+        });
+        const stateDescription = ArboretumChat_1.ArboretumChat.getStateDescription(pam);
         const labelInput = React.createElement("input", { onKeyDown: this.onLabelKeyDown, ref: (el) => { if (el) {
                 el.focus();
             } }, type: "text" });
-        return React.createElement("li", { tabIndex: 0, className: 'chat-line action' + (performed ? ' performed' : '') + ( true ? ' admin' : ' not_admin') },
+        return React.createElement("li", { tabIndex: 0, className: 'chat-line action ' + stateDescription },
             React.createElement("span", { style: { color: pam.sender.color }, className: 'from' }, pam.sender.displayName),
             " wants to ",
             description,
             ".",
-            this.state.labeling ? labelInput : messageActions);
+            React.createElement("div", { className: 'messageState' }, stateDescription),
+            React.createElement("div", { className: 'messageActions' }, messageActions),
+            this.state.labeling ? labelInput : null);
     }
     ;
 }
@@ -46844,7 +46961,7 @@ exports = module.exports = __webpack_require__(25)(true);
 
 
 // module
-exports.push([module.i, ".chat {\n  font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n  flex: 1;\n  display: flex;\n  flex-direction: column; }\n  .chat #task_title {\n    flex: 0 0;\n    box-sizing: border-box;\n    padding: 5px 10px 5px;\n    margin: 0px; }\n  .chat #chat-participants {\n    flex: 0 0;\n    border-bottom: 1px solid #CCC;\n    padding: 5px 10px 5px;\n    box-sizing: border-box; }\n    .chat #chat-participants .participant {\n      margin: 2px; }\n      .chat #chat-participants .participant.me {\n        font-weight: bold;\n        text-decoration: underline; }\n  .chat #chat-lines {\n    flex: 2;\n    box-sizing: border-box;\n    padding: 0px 10px 0px;\n    margin: 0px;\n    overflow-y: auto; }\n    .chat #chat-lines li {\n      list-style-type: none; }\n    .chat #chat-lines .chat-line {\n      font-size: 0.9em;\n      list-style-type: none;\n      list-style-type: none;\n      margin-top: 2px;\n      padding-top: 2px;\n      margin-bottom: 2px;\n      padding-bottom: 2px;\n      color: #555; }\n      .chat #chat-lines .chat-line.action {\n        color: #888; }\n        .chat #chat-lines .chat-line.action.not_admin .messageActions {\n          display: none; }\n        .chat #chat-lines .chat-line.action .messageActions a {\n          margin: 2px; }\n      .chat #chat-lines .chat-line:not(.action) .from {\n        font-weight: bold; }\n      .chat #chat-lines .chat-line:not(.action) .from::after {\n        content: \": \"; }\n  .chat #chat-form {\n    padding: 0px 2px 0px;\n    flex: 0; }\n    .chat #chat-form textarea#chat-box {\n      box-sizing: border-box;\n      resize: none;\n      flex-grow: 1;\n      width: 100%;\n      font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n      padding: 5px 10px 5px; }\n    .chat #chat-form .form-actions {\n      text-align: right; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/utils/browserControls/src/utils/browserControls/ArboretumChat.scss"],"names":[],"mappings":"AAAA;EACI,gHAA+G;EAC/G,QAAO;EACP,cAAa;EACb,uBAAsB,EA6EzB;EAjFD;IAOQ,UAAS;IACT,uBAAsB;IACtB,sBAAqB;IACrB,YAAW,EACd;EAXL;IAaQ,UAAS;IACT,8BAA6B;IAC7B,sBAAqB;IACrB,uBAAsB,EAQzB;IAxBL;MAkBY,YAAW,EAKd;MAvBT;QAoBgB,kBAAiB;QACjB,2BAA0B,EAC7B;EAtBb;IA0BQ,QAAO;IACP,uBAAsB;IACtB,sBAAqB;IACrB,YAAW;IACX,iBAAgB,EAmCnB;IAjEL;MAgCY,sBAAqB,EACxB;IAjCT;MAmCY,iBAAgB;MAChB,sBAAqB;MACrB,sBAAqB;MACrB,gBAAe;MACf,iBAAgB;MAChB,mBAAkB;MAClB,oBAAmB;MACnB,YAAW,EAsBd;MAhET;QA4CgB,YAAW,EAWd;QAvDb;UA+CwB,cAAa,EAChB;QAhDrB;UAoDwB,YAAU,EACb;MArDrB;QA0DoB,kBAAiB,EACpB;MA3DjB;QA6DoB,cAAa,EAChB;EA9DjB;IAmEQ,qBAAoB;IACpB,QAAO,EAYV;IAhFL;MAsEY,uBAAsB;MACtB,aAAY;MACZ,aAAY;MACZ,YAAW;MACX,gHAA+G;MAC/G,sBAAqB,EACxB;IA5ET;MA8EY,kBAAiB,EACpB","file":"ArboretumChat.scss","sourcesContent":[".chat {\n    font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n    flex: 1;\n    display: flex;\n    flex-direction: column;\n\n    #task_title {\n        flex: 0 0;\n        box-sizing: border-box;\n        padding: 5px 10px 5px;\n        margin: 0px;\n    }\n    #chat-participants {\n        flex: 0 0;\n        border-bottom: 1px solid #CCC;\n        padding: 5px 10px 5px;\n        box-sizing: border-box;\n        .participant {\n            margin: 2px;\n            &.me {\n                font-weight: bold;\n                text-decoration: underline;\n            }\n        }\n    }\n    #chat-lines {\n        flex: 2;\n        box-sizing: border-box;\n        padding: 0px 10px 0px;\n        margin: 0px;\n        overflow-y: auto;\n        li {\n            list-style-type: none;\n        }\n        .chat-line {\n            font-size: 0.9em;\n            list-style-type: none;\n            list-style-type: none;\n            margin-top: 2px;\n            padding-top: 2px;\n            margin-bottom: 2px;\n            padding-bottom: 2px;\n            color: #555;\n            &.action{\n                color: #888;\n                &.not_admin {\n                    .messageActions {\n                        display: none;\n                    }\n                }\n                .messageActions {\n                    a {\n                        margin:2px;\n                    }\n                }\n            }\n            &:not(.action) {\n                .from {\n                    font-weight: bold;\n                }\n                .from::after {\n                    content: \": \";\n                }\n            }\n        }\n    }\n    #chat-form {\n        padding: 0px 2px 0px;\n        flex: 0;\n        textarea#chat-box {\n            box-sizing: border-box;\n            resize: none;\n            flex-grow: 1;\n            width: 100%;\n            font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n            padding: 5px 10px 5px;\n        }\n        .form-actions {\n            text-align: right;\n        }\n    }\n}\n"],"sourceRoot":""}]);
+exports.push([module.i, ".chat {\n  font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n  flex: 1;\n  display: flex;\n  flex-direction: column; }\n  .chat #task_title {\n    flex: 0 0;\n    box-sizing: border-box;\n    padding: 5px 10px 5px;\n    margin: 0px; }\n  .chat #chat-participants {\n    flex: 0 0;\n    border-bottom: 1px solid #CCC;\n    padding: 5px 10px 5px;\n    box-sizing: border-box; }\n    .chat #chat-participants .participant {\n      margin: 2px; }\n      .chat #chat-participants .participant.me {\n        font-weight: bold;\n        text-decoration: underline; }\n  .chat #chat-lines {\n    flex: 2;\n    box-sizing: border-box;\n    padding: 0px 10px 0px;\n    margin: 0px;\n    overflow-y: auto; }\n    .chat #chat-lines li {\n      list-style-type: none; }\n    .chat #chat-lines .chat-line {\n      font-size: 0.9em;\n      list-style-type: none;\n      list-style-type: none;\n      margin-top: 2px;\n      padding-top: 2px;\n      margin-bottom: 2px;\n      padding-bottom: 2px;\n      color: #555; }\n      .chat #chat-lines .chat-line.action {\n        color: #888; }\n        .chat #chat-lines .chat-line.action.not_admin .messageActions {\n          display: none; }\n        .chat #chat-lines .chat-line.action .messageActions a {\n          margin: 2px; }\n          .chat #chat-lines .chat-line.action .messageActions a:first-child {\n            margin-left: 0px; }\n          .chat #chat-lines .chat-line.action .messageActions a::before {\n            content: '('; }\n          .chat #chat-lines .chat-line.action .messageActions a::after {\n            content: ')'; }\n      .chat #chat-lines .chat-line:not(.action) .from {\n        font-weight: bold; }\n      .chat #chat-lines .chat-line:not(.action) .from::after {\n        content: \": \"; }\n  .chat #chat-form {\n    padding: 0px 2px 0px;\n    flex: 0; }\n    .chat #chat-form textarea#chat-box {\n      box-sizing: border-box;\n      resize: none;\n      flex-grow: 1;\n      width: 100%;\n      font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n      padding: 5px 10px 5px; }\n    .chat #chat-form .form-actions {\n      text-align: right; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/utils/browserControls/src/utils/browserControls/ArboretumChat.scss"],"names":[],"mappings":"AAAA;EACI,gHAA+G;EAC/G,QAAO;EACP,cAAa;EACb,uBAAsB,EAgFzB;EApFD;IAOQ,UAAS;IACT,uBAAsB;IACtB,sBAAqB;IACrB,YAAW,EACd;EAXL;IAaQ,UAAS;IACT,8BAA6B;IAC7B,sBAAqB;IACrB,uBAAsB,EAQzB;IAxBL;MAkBY,YAAW,EAKd;MAvBT;QAoBgB,kBAAiB;QACjB,2BAA0B,EAC7B;EAtBb;IA0BQ,QAAO;IACP,uBAAsB;IACtB,sBAAqB;IACrB,YAAW;IACX,iBAAgB,EAsCnB;IApEL;MAgCY,sBAAqB,EACxB;IAjCT;MAmCY,iBAAgB;MAChB,sBAAqB;MACrB,sBAAqB;MACrB,gBAAe;MACf,iBAAgB;MAChB,mBAAkB;MAClB,oBAAmB;MACnB,YAAW,EAyBd;MAnET;QA4CgB,YAAW,EAcd;QA1Db;UA+CwB,cAAa,EAChB;QAhDrB;UAoDwB,YAAU,EAIb;UAxDrB;YAqDwC,iBAAgB,EAAK;UArD7D;YAsDoC,aAAa,EAAG;UAtDpD;YAuDmC,aAAa,EAAG;MAvDnD;QA6DoB,kBAAiB,EACpB;MA9DjB;QAgEoB,cAAa,EAChB;EAjEjB;IAsEQ,qBAAoB;IACpB,QAAO,EAYV;IAnFL;MAyEY,uBAAsB;MACtB,aAAY;MACZ,aAAY;MACZ,YAAW;MACX,gHAA+G;MAC/G,sBAAqB,EACxB;IA/ET;MAiFY,kBAAiB,EACpB","file":"ArboretumChat.scss","sourcesContent":[".chat {\n    font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n    flex: 1;\n    display: flex;\n    flex-direction: column;\n\n    #task_title {\n        flex: 0 0;\n        box-sizing: border-box;\n        padding: 5px 10px 5px;\n        margin: 0px;\n    }\n    #chat-participants {\n        flex: 0 0;\n        border-bottom: 1px solid #CCC;\n        padding: 5px 10px 5px;\n        box-sizing: border-box;\n        .participant {\n            margin: 2px;\n            &.me {\n                font-weight: bold;\n                text-decoration: underline;\n            }\n        }\n    }\n    #chat-lines {\n        flex: 2;\n        box-sizing: border-box;\n        padding: 0px 10px 0px;\n        margin: 0px;\n        overflow-y: auto;\n        li {\n            list-style-type: none;\n        }\n        .chat-line {\n            font-size: 0.9em;\n            list-style-type: none;\n            list-style-type: none;\n            margin-top: 2px;\n            padding-top: 2px;\n            margin-bottom: 2px;\n            padding-bottom: 2px;\n            color: #555;\n            &.action{\n                color: #888;\n                &.not_admin {\n                    .messageActions {\n                        display: none;\n                    }\n                }\n                .messageActions {\n                    a {\n                        margin:2px;\n                        &:first-child { margin-left: 0px; }\n                        &::before { content: '(' }\n                        &::after { content: ')' }\n                    }\n                }\n            }\n            &:not(.action) {\n                .from {\n                    font-weight: bold;\n                }\n                .from::after {\n                    content: \": \";\n                }\n            }\n        }\n    }\n    #chat-form {\n        padding: 0px 2px 0px;\n        flex: 0;\n        textarea#chat-box {\n            box-sizing: border-box;\n            resize: none;\n            flex-grow: 1;\n            width: 100%;\n            font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n            padding: 5px 10px 5px;\n        }\n        .form-actions {\n            text-align: right;\n        }\n    }\n}\n"],"sourceRoot":""}]);
 
 // exports
 

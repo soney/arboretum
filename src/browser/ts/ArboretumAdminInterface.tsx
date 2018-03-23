@@ -178,10 +178,10 @@ export class ArboretumAdminInterface extends React.Component<ArboretumAdminProps
         copyToClipboard(this.shareURLElement.value);
     };
     private addHighlight = (nodeIds:Array<CRI.NodeID>, color:string):void => {
-        console.log(nodeIds, color);
+        // console.log(nodeIds, color);
     };
     private removeHighlight = (nodeIds:Array<CRI.NodeID>):void => {
-        console.log(nodeIds);
+        // console.log(nodeIds);
     };
     public async componentWillUnmount():Promise<void> {
         await this.chatbox.leave();
