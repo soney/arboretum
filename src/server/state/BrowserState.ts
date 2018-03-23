@@ -18,6 +18,7 @@ import * as ShareDB from 'sharedb';
 import {BrowserDoc} from '../../utils/state_interfaces';
 import * as timers from 'timers';
 import {ShareDBSharedState} from '../../utils/ShareDBSharedState';
+import {guid} from '../../utils/guid';
 import { processCSSURLs } from '../css_parser';
 
 const log = getColoredLogger('red');
@@ -30,11 +31,13 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
     private doc:SDBDoc<BrowserDoc>;
     private chat:ArboretumChat;
     private initialized:Promise<void>;
+    private sessionID:string = guid();
     constructor(private sdb:SDB, extraOptions?:{host?:string,port?:number}) {
         super();
         _.extend(this.options, extraOptions);
         this.initialized = this.initialize();
     };
+    public getSessionID():string { return this.sessionID; };
     public getShareDBDoc():SDBDoc<BrowserDoc> { return this.doc; };
     public getAbsoluteShareDBPath():Array<string|number> { return []; };
     protected async onAttachedToShareDBDoc():Promise<void> { log.debug(`Browser added to ShareDB doc`); };

@@ -19,6 +19,7 @@ const ShareDBDoc_1 = require("../../utils/ShareDBDoc");
 const ArboretumChat_1 = require("../../utils/ArboretumChat");
 const timers = require("timers");
 const ShareDBSharedState_1 = require("../../utils/ShareDBSharedState");
+const guid_1 = require("../../utils/guid");
 const css_parser_1 = require("../css_parser");
 const log = ColoredLogger_1.getColoredLogger('red');
 const projectFileURLPath = fileUrl(path_1.join(path_1.resolve(__dirname, '..', '..'), 'browser'));
@@ -28,9 +29,12 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
         this.sdb = sdb;
         this.tabs = new Map();
         this.options = { host: 'localhost', port: 9222 };
+        this.sessionID = guid_1.guid();
         _.extend(this.options, extraOptions);
         this.initialized = this.initialize();
     }
+    ;
+    getSessionID() { return this.sessionID; }
     ;
     getShareDBDoc() { return this.doc; }
     ;

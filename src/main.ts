@@ -2,8 +2,8 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import * as _ from 'underscore';
 import { platform } from 'os';
 import { createServer, Server } from 'http';
-import { readFile, writeFile, createReadStream } from 'fs';
-import { join } from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 import * as child from 'child_process';
 import * as express from 'express';
 import * as ShareDB from 'sharedb';
@@ -21,6 +21,8 @@ import {SDB, SDBDoc} from './utils/ShareDBDoc';
 const OPEN_MIRROR: boolean = false;
 const RDB_PORT: number = 9222;
 const HTTP_PORT: number = 3000;
+const SAVED_STATES_DIR = path.join('savedStates');
+
 const isMac: boolean = /^dar/.test(platform());
 const defaultBrowswerWindowOptions = {
     'remote-debugging-port': RDB_PORT,
@@ -34,7 +36,12 @@ const defaultBrowswerWindowOptions = {
     title: 'Arboretum',
 };
 
-app.on('window-all-closed', () => {
+const writeBrowserStateInterval = setInterval(() => {
+    writeBrowserState();
+}, 10000);
+app.on('window-all-closed', async () => {
+    clearInterval(writeBrowserStateInterval);
+    await writeBrowserState();
     // On OS X it is common for applications and their menu bar
     // to stay active until the user quits explicitly with Cmd + Q
     if (!isMac) { app.quit(); }
@@ -95,7 +102,7 @@ expressApp.all('/', async (req, res, next) => {
         });
         res.send(contents);
     })
-    .use('/', express.static(join(__dirname, 'client')))
+    .use('/', express.static(path.join(__dirname, 'client')))
     .all('/r', async (req, res, next) => {
         var url = req.query.l,
             tabID = req.query.t,
@@ -123,7 +130,7 @@ expressApp.all('/', async (req, res, next) => {
                 const uri = URL.parse(url);
                 const {protocol, path} = uri;
                 if(protocol === 'file:') {
-                    createReadStream(path).pipe(res);
+                    fs.createReadStream(path).pipe(res);
                 } else {
                     req.pipe(request({uri, method})).pipe(res);
                 }
@@ -224,7 +231,7 @@ ipcMain.on('asynchronous-message', async (event, messageID:number, arg:{message:
 
 keypress(process.stdin);
 
-process.stdin.on('keypress', (ch, key) => {
+process.stdin.on('keypress', async (ch, key) => {
     const { name, ctrl } = key;
     if (ctrl && name === 'c') {
         process.stdin.pause();
@@ -239,6 +246,8 @@ process.stdin.on('keypress', (ch, key) => {
     } else if (name === 'l') {
         browserState.printListeners();
     } else if (name === 'q') {
+        clearInterval(writeBrowserStateInterval);
+        await writeBrowserState();
         if(chromeProcess) {
             chromeProcess.kill();
             chromeProcess = null;
@@ -248,9 +257,11 @@ process.stdin.on('keypress', (ch, key) => {
         process.exit();
     }
 });
-process.on('exit', (code) => {
+process.on('exit', async (code) => {
     process.stdin.pause();
     process.stdin.setRawMode(false);
+    clearInterval(writeBrowserStateInterval);
+    await writeBrowserState();
 });
 process.stdin.setRawMode(true);
 process.stdin.resume();
@@ -387,7 +398,7 @@ process.stdin.resume();
 // }
 function processFile(filename:string):Promise<string> {
     return new Promise<string>(function(resolve, reject) {
-        readFile(filename, {
+        fs.readFile(filename, {
             encoding: 'utf8'
         }, function(err, data) {
             if (err) { reject(err); }
@@ -397,22 +408,59 @@ function processFile(filename:string):Promise<string> {
         throw (err);
     });
 }
-async function writeBrowserState(filename:string):Promise<void> {
+async function writeBrowserState():Promise<string> {
     const stringifiedBrowser:string = await browserState.stringifyAll();
+    const filename:string = `${browserState.getSessionID()}.json`;
+    const outFile:string = path.join(SAVED_STATES_DIR, filename);
+    await makeDirectoryRecursive(SAVED_STATES_DIR);
     await new Promise((resolve, reject) => {
-        writeFile(filename, stringifiedBrowser, (err) => {
+        fs.writeFile(outFile, stringifiedBrowser, (err) => {
             if(err) { reject(err); }
             else { resolve(); }
         });
     });
+    return outFile;
 };
-setTimeout(() => writeBrowserState('FILE.json'), 20000)
 async function setClientOptions(options: {}): Promise<string> {
-    let contents: string = await processFile(join(__dirname, 'client', 'index.html'));
+    let contents: string = await processFile(path.join(__dirname, 'client', 'index.html'));
     _.each(options, function(val, key) {
         contents = contents.replace(key + ': false', key + ': "' + val + '"');
     });
     return contents;
+}
+
+
+async function makeDirectoryRecursive(p:string):Promise<void> {
+    const splitPath:string[] = path.relative(path.resolve('.'), p).split(path.sep);
+    for(let i = 0; i<splitPath.length; i++) {
+        const dirName:string = path.join(...splitPath.slice(0, i+1));
+        if(!(await isDirectory(dirName))) {
+            await makeDirectory(dirName);
+        }
+    }
+};
+
+function makeDirectory(dirName:string):Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+        fs.mkdir(dirName, (err) => {
+            if(err) { reject(err); }
+            else { resolve(); }
+        });
+    });
+}
+function isDirectory(dirName:string):Promise<boolean> {
+    return new Promise<boolean>((resolve, reject) => {
+        fs.access(dirName, fs.constants.F_OK | fs.constants.W_OK, (err) => {
+            if(err) {
+                resolve(false);
+            } else {
+                fs.stat(dirName, (err, stats) => {
+                    if(err) { reject(err); }
+                    else { resolve(stats.isDirectory()); }
+                });
+            }
+        });
+    });
 }
 
 function getUserID(): number {

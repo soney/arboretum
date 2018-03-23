@@ -12,8 +12,8 @@ const electron_1 = require("electron");
 const _ = require("underscore");
 const os_1 = require("os");
 const http_1 = require("http");
-const fs_1 = require("fs");
-const path_1 = require("path");
+const fs = require("fs");
+const path = require("path");
 const express = require("express");
 const WebSocket = require("ws");
 const BrowserState_1 = require("./server/state/BrowserState");
@@ -27,6 +27,7 @@ const ShareDBDoc_1 = require("./utils/ShareDBDoc");
 const OPEN_MIRROR = false;
 const RDB_PORT = 9222;
 const HTTP_PORT = 3000;
+const SAVED_STATES_DIR = path.join('savedStates');
 const isMac = /^dar/.test(os_1.platform());
 const defaultBrowswerWindowOptions = {
     'remote-debugging-port': RDB_PORT,
@@ -39,13 +40,18 @@ const defaultBrowswerWindowOptions = {
     // frame: false,            // removes default frame
     title: 'Arboretum',
 };
-electron_1.app.on('window-all-closed', () => {
+const writeBrowserStateInterval = setInterval(() => {
+    writeBrowserState();
+}, 10000);
+electron_1.app.on('window-all-closed', () => __awaiter(this, void 0, void 0, function* () {
+    clearInterval(writeBrowserStateInterval);
+    yield writeBrowserState();
     // On OS X it is common for applications and their menu bar
     // to stay active until the user quits explicitly with Cmd + Q
     if (!isMac) {
         electron_1.app.quit();
     }
-});
+}));
 electron_1.app.commandLine.appendSwitch('remote-debugging-port', `${RDB_PORT}`);
 function createBrowserWindow(extraOptions) {
     const options = _.extend({}, defaultBrowswerWindowOptions, extraOptions);
@@ -96,7 +102,7 @@ expressApp.all('/', (req, res, next) => __awaiter(this, void 0, void 0, function
     });
     res.send(contents);
 }))
-    .use('/', express.static(path_1.join(__dirname, 'client')))
+    .use('/', express.static(path.join(__dirname, 'client')))
     .all('/r', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
     var url = req.query.l, tabID = req.query.t, frameID = req.query.f;
     try {
@@ -122,7 +128,7 @@ expressApp.all('/', (req, res, next) => __awaiter(this, void 0, void 0, function
             const uri = URL.parse(url);
             const { protocol, path } = uri;
             if (protocol === 'file:') {
-                fs_1.createReadStream(path).pipe(res);
+                fs.createReadStream(path).pipe(res);
             }
             else {
                 req.pipe(request({ uri, method })).pipe(res);
@@ -233,7 +239,7 @@ electron_1.ipcMain.on('asynchronous-message', (event, messageID, arg) => __await
     }
 }));
 keypress(process.stdin);
-process.stdin.on('keypress', (ch, key) => {
+process.stdin.on('keypress', (ch, key) => __awaiter(this, void 0, void 0, function* () {
     const { name, ctrl } = key;
     if (ctrl && name === 'c') {
         process.stdin.pause();
@@ -253,6 +259,8 @@ process.stdin.on('keypress', (ch, key) => {
         browserState.printListeners();
     }
     else if (name === 'q') {
+        clearInterval(writeBrowserStateInterval);
+        yield writeBrowserState();
         if (chromeProcess) {
             chromeProcess.kill();
             chromeProcess = null;
@@ -261,11 +269,13 @@ process.stdin.on('keypress', (ch, key) => {
         process.stdin.setRawMode(false);
         process.exit();
     }
-});
-process.on('exit', (code) => {
+}));
+process.on('exit', (code) => __awaiter(this, void 0, void 0, function* () {
     process.stdin.pause();
     process.stdin.setRawMode(false);
-});
+    clearInterval(writeBrowserStateInterval);
+    yield writeBrowserState();
+}));
 process.stdin.setRawMode(true);
 process.stdin.resume();
 // const stdin = process.openStdin();
@@ -399,7 +409,7 @@ process.stdin.resume();
 // }
 function processFile(filename) {
     return new Promise(function (resolve, reject) {
-        fs_1.readFile(filename, {
+        fs.readFile(filename, {
             encoding: 'utf8'
         }, function (err, data) {
             if (err) {
@@ -413,11 +423,14 @@ function processFile(filename) {
         throw (err);
     });
 }
-function writeBrowserState(filename) {
+function writeBrowserState() {
     return __awaiter(this, void 0, void 0, function* () {
         const stringifiedBrowser = yield browserState.stringifyAll();
+        const filename = `${browserState.getSessionID()}.json`;
+        const outFile = path.join(SAVED_STATES_DIR, filename);
+        yield makeDirectoryRecursive(SAVED_STATES_DIR);
         yield new Promise((resolve, reject) => {
-            fs_1.writeFile(filename, stringifiedBrowser, (err) => {
+            fs.writeFile(outFile, stringifiedBrowser, (err) => {
                 if (err) {
                     reject(err);
                 }
@@ -426,17 +439,60 @@ function writeBrowserState(filename) {
                 }
             });
         });
+        return outFile;
     });
 }
 ;
-setTimeout(() => writeBrowserState('FILE.json'), 20000);
 function setClientOptions(options) {
     return __awaiter(this, void 0, void 0, function* () {
-        let contents = yield processFile(path_1.join(__dirname, 'client', 'index.html'));
+        let contents = yield processFile(path.join(__dirname, 'client', 'index.html'));
         _.each(options, function (val, key) {
             contents = contents.replace(key + ': false', key + ': "' + val + '"');
         });
         return contents;
+    });
+}
+function makeDirectoryRecursive(p) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const splitPath = path.relative(path.resolve('.'), p).split(path.sep);
+        for (let i = 0; i < splitPath.length; i++) {
+            const dirName = path.join(...splitPath.slice(0, i + 1));
+            if (!(yield isDirectory(dirName))) {
+                yield makeDirectory(dirName);
+            }
+        }
+    });
+}
+;
+function makeDirectory(dirName) {
+    return new Promise((resolve, reject) => {
+        fs.mkdir(dirName, (err) => {
+            if (err) {
+                reject(err);
+            }
+            else {
+                resolve();
+            }
+        });
+    });
+}
+function isDirectory(dirName) {
+    return new Promise((resolve, reject) => {
+        fs.access(dirName, fs.constants.F_OK | fs.constants.W_OK, (err) => {
+            if (err) {
+                resolve(false);
+            }
+            else {
+                fs.stat(dirName, (err, stats) => {
+                    if (err) {
+                        reject(err);
+                    }
+                    else {
+                        resolve(stats.isDirectory());
+                    }
+                });
+            }
+        });
     });
 }
 function getUserID() {
