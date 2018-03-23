@@ -398,23 +398,38 @@ process.stdin.resume();
 // 	return browserState.destroy();
 // }
 function processFile(filename) {
+    return new Promise(function (resolve, reject) {
+        fs_1.readFile(filename, {
+            encoding: 'utf8'
+        }, function (err, data) {
+            if (err) {
+                reject(err);
+            }
+            else {
+                resolve(data);
+            }
+        });
+    }).catch((err) => {
+        throw (err);
+    });
+}
+function writeBrowserState(filename) {
     return __awaiter(this, void 0, void 0, function* () {
-        return new Promise(function (resolve, reject) {
-            fs_1.readFile(filename, {
-                encoding: 'utf8'
-            }, function (err, data) {
+        const stringifiedBrowser = yield browserState.stringifyAll();
+        yield new Promise((resolve, reject) => {
+            fs_1.writeFile(filename, stringifiedBrowser, (err) => {
                 if (err) {
                     reject(err);
                 }
                 else {
-                    resolve(data);
+                    resolve();
                 }
             });
-        }).catch((err) => {
-            throw (err);
         });
     });
 }
+;
+setTimeout(() => writeBrowserState('FILE.json'), 20000);
 function setClientOptions(options) {
     return __awaiter(this, void 0, void 0, function* () {
         let contents = yield processFile(path_1.join(__dirname, 'client', 'index.html'));

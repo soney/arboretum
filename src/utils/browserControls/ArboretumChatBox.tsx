@@ -2,6 +2,7 @@ import * as React from 'react';
 import {SDB, SDBDoc} from '../ShareDBDoc';
 import {ArboretumChat, Message, User, TextMessage, PageActionMessage, PageActionState, MessageAddedEvent} from '../ArboretumChat';
 import {RegisteredEvent} from '../TypedEventEmitter';
+import {PageActionMessageDisplay} from './PageActionMessage/PageActionMessageDisplay';
 
 require('./ArboretumChat.scss');
 
@@ -133,33 +134,6 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
     public componentDidUpdate():void {
         this.scrollToBottom();
     };
-    private addHighlights = (pam:PageActionMessage):void => {
-        if(this.props.onAddHighlight) {
-            const nodeIDs:Array<CRI.NodeID> = ArboretumChat.getRelevantNodeIDs(pam);
-            const color:string = pam.sender.color;
-            this.props.onAddHighlight(nodeIDs, color);
-        }
-    };
-    private removeHighlights = (pam:PageActionMessage):void => {
-        if(this.props.onRemoveHighlight) {
-            const nodeIDs:Array<CRI.NodeID> = ArboretumChat.getRelevantNodeIDs(pam);
-            this.props.onRemoveHighlight(nodeIDs);
-        }
-    };
-    private performAction = (pam:PageActionMessage):void => {
-        this.getChat().setState(pam, PageActionState.PERFORMED);
-        if(this.props.onAction) { this.props.onAction(pam); }
-    };
-    private rejectAction = (pam:PageActionMessage):void => {
-        this.getChat().setState(pam, PageActionState.REJECTED);
-        if(this.props.onReject) { this.props.onReject(pam); }
-    };
-    private focusAction = (pam:PageActionMessage):void => {
-        if(this.props.onFocus) { this.props.onFocus(pam); }
-    };
-    private addLabel = (pam:PageActionMessage):void => {
-        if(this.props.onLabel) { this.props.onLabel(pam); }
-    };
     private static playAudio(el:HTMLAudioElement) {
         if(el) {
             el.currentTime = 0;
@@ -178,6 +152,17 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
     private openEndedChimeRef = (el:HTMLAudioElement):void => {
         this.openEndedChimeElement = el;
     };
+    private performAction = (pam:PageActionMessage):void => {
+        this.getChat().setState(pam, PageActionState.PERFORMED);
+        if(this.props.onAction) { this.props.onAction(pam); }
+    };
+    private rejectAction = (pam:PageActionMessage):void => {
+        this.getChat().setState(pam, PageActionState.REJECTED);
+        if(this.props.onReject) { this.props.onReject(pam); }
+    };
+    private onAddLabel = (nodeIDs:CRI.NodeID[], label:string, tabID:CRI.TabID, nodeDescriptions:{}):void => {
+        this.chat.addPageActionMessage('setLabel', tabID, {nodeIDs, label, nodeDescriptions});
+    };
 
     public render():React.ReactNode {
         const messages = this.state.messages.map((m:Message, i:number) => {
@@ -187,35 +172,7 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
                 return <li tabIndex={0} key={i} className='chat-line'><span style={senderStyle} className='from'>{tm.sender.displayName}</span><span className='message'>{tm.content}</span></li>;
             } else if(m['action']) {
                 const pam:PageActionMessage = m as PageActionMessage;
-                const {action, data, state} = pam;
-                const description:JSX.Element = <span className='description' onMouseEnter={()=>this.addHighlights(pam)} onMouseLeave={()=>this.removeHighlights(pam)}>{ArboretumChat.describePageActionMessage(pam)}</span>;
-
-                const performed:boolean = state === PageActionState.PERFORMED;
-                const actions:Array<JSX.Element> = [
-                        <a key="focus" href="javascript:void(0)" onClick={this.focusAction.bind(this, pam)}>Focus</a>,
-                        <a key="label" href="javascript:void(0)" onClick={this.addLabel.bind(this, pam)}>Label</a>
-                ];
-                if(state === PageActionState.PERFORMED) {
-                    actions.unshift(
-                        <div className=''>(accepted)</div>
-                    );
-                } else if(state === PageActionState.REJECTED) {
-                    actions.unshift(
-                        <div className=''>(rejected)</div>
-                    );
-                } else {
-                    actions.unshift(
-                        <a key="accept" href="javascript:void(0)" onClick={this.performAction.bind(this, pam)}>Accept</a>,
-                        <a key="reject" href="javascript:void(0)" onClick={this.rejectAction.bind(this, pam)}>Reject</a>
-                    );
-                }
-
-                return <li tabIndex={0} key={i} className={'chat-line action'+(performed?' performed':'')+(this.props.isAdmin ? ' admin':' not_admin')}>
-                    <span style={senderStyle} className='from'>{pam.sender.displayName}</span> wants to {description}.
-                    <div className='messageActions'>
-                        {actions}
-                    </div>
-                </li>;
+                return <PageActionMessageDisplay pam={pam} key={i} isAdmin={this.props.isAdmin} onAction={this.performAction} onReject={this.rejectAction} onFocus={this.props.onFocus} addLabel={this.onAddLabel} onAddHighlight={this.props.onAddHighlight} onRemoveHighlight={this.props.onRemoveHighlight} />
             }
         });
 

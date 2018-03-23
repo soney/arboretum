@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = require("react");
 const ArboretumChat_1 = require("../ArboretumChat");
+const PageActionMessageDisplay_1 = require("./PageActionMessage/PageActionMessageDisplay");
 require('./ArboretumChat.scss');
 const ENTER_KEY = 13;
 class ArboretumChatBox extends React.Component {
@@ -55,18 +56,11 @@ class ArboretumChatBox extends React.Component {
         this.onTextareaChange = (event) => {
             this.setState({ chatText: event.target.value });
         };
-        this.addHighlights = (pam) => {
-            if (this.props.onAddHighlight) {
-                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pam);
-                const color = pam.sender.color;
-                this.props.onAddHighlight(nodeIDs, color);
-            }
+        this.lightChimeRef = (el) => {
+            this.lightChimeElement = el;
         };
-        this.removeHighlights = (pam) => {
-            if (this.props.onRemoveHighlight) {
-                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pam);
-                this.props.onRemoveHighlight(nodeIDs);
-            }
+        this.openEndedChimeRef = (el) => {
+            this.openEndedChimeElement = el;
         };
         this.performAction = (pam) => {
             this.getChat().setState(pam, ArboretumChat_1.PageActionState.PERFORMED);
@@ -80,21 +74,8 @@ class ArboretumChatBox extends React.Component {
                 this.props.onReject(pam);
             }
         };
-        this.focusAction = (pam) => {
-            if (this.props.onFocus) {
-                this.props.onFocus(pam);
-            }
-        };
-        this.addLabel = (pam) => {
-            if (this.props.onLabel) {
-                this.props.onLabel(pam);
-            }
-        };
-        this.lightChimeRef = (el) => {
-            this.lightChimeElement = el;
-        };
-        this.openEndedChimeRef = (el) => {
-            this.openEndedChimeElement = el;
+        this.onAddLabel = (nodeIDs, label, tabID, nodeDescriptions) => {
+            this.chat.addPageActionMessage('setLabel', tabID, { nodeIDs, label, nodeDescriptions });
         };
         this.state = {
             chatText: this.props.chatText || '',
@@ -174,28 +155,7 @@ class ArboretumChatBox extends React.Component {
             }
             else if (m['action']) {
                 const pam = m;
-                const { action, data, state } = pam;
-                const description = React.createElement("span", { className: 'description', onMouseEnter: () => this.addHighlights(pam), onMouseLeave: () => this.removeHighlights(pam) }, ArboretumChat_1.ArboretumChat.describePageActionMessage(pam));
-                const performed = state === ArboretumChat_1.PageActionState.PERFORMED;
-                const actions = [
-                    React.createElement("a", { key: "focus", href: "javascript:void(0)", onClick: this.focusAction.bind(this, pam) }, "Focus"),
-                    React.createElement("a", { key: "label", href: "javascript:void(0)", onClick: this.addLabel.bind(this, pam) }, "Label")
-                ];
-                if (state === ArboretumChat_1.PageActionState.PERFORMED) {
-                    actions.unshift(React.createElement("div", { className: '' }, "(accepted)"));
-                }
-                else if (state === ArboretumChat_1.PageActionState.REJECTED) {
-                    actions.unshift(React.createElement("div", { className: '' }, "(rejected)"));
-                }
-                else {
-                    actions.unshift(React.createElement("a", { key: "accept", href: "javascript:void(0)", onClick: this.performAction.bind(this, pam) }, "Accept"), React.createElement("a", { key: "reject", href: "javascript:void(0)", onClick: this.rejectAction.bind(this, pam) }, "Reject"));
-                }
-                return React.createElement("li", { tabIndex: 0, key: i, className: 'chat-line action' + (performed ? ' performed' : '') + (this.props.isAdmin ? ' admin' : ' not_admin') },
-                    React.createElement("span", { style: senderStyle, className: 'from' }, pam.sender.displayName),
-                    " wants to ",
-                    description,
-                    ".",
-                    React.createElement("div", { className: 'messageActions' }, actions));
+                return React.createElement(PageActionMessageDisplay_1.PageActionMessageDisplay, { pam: pam, key: i, isAdmin: this.props.isAdmin, onAction: this.performAction, onReject: this.rejectAction, onFocus: this.props.onFocus, addLabel: this.onAddLabel, onAddHighlight: this.props.onAddHighlight, onRemoveHighlight: this.props.onRemoveHighlight });
             }
         });
         let meUserID;

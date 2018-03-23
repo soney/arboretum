@@ -10,7 +10,7 @@ export const userColors:Array<Array<Color>> = [
 ];
 export enum TypingStatus { IDLE, ACTIVE, IDLE_TYPED };
 export enum PageActionState { NOT_PERFORMED, PERFORMED, REJECTED };
-export type PageAction ='navigate'|'goBack'|'goForward'|'mouse_event'|'keyboard_event'|'element_event'|'focus_event'|'reload'|'getLabel';
+export type PageAction ='navigate'|'goBack'|'goForward'|'mouse_event'|'keyboard_event'|'element_event'|'focus_event'|'reload'|'getLabel'|'setLabel';
 
 export type UserID = string;
 export interface User {
@@ -61,6 +61,8 @@ export interface ReadyEvent { };
 export interface PAMStateChanged { };
 
 export class ArboretumChat extends TypedEventEmitter {
+    private static COLLECTION:string = 'arboretum';
+    private static DOC_ID:string = 'chat';
     private static userCounter:number = 1;
     private static messageCounter:number = 1;
     private doc:SDBDoc<ChatDoc>;
@@ -74,7 +76,36 @@ export class ArboretumChat extends TypedEventEmitter {
     public ready = this.registerEvent<ReadyEvent>();
     constructor(private sdb:SDB, private browserState?:BrowserState) {
         super();
-        this.doc = this.sdb.get<ChatDoc>('arboretum', 'chat');
+
+        if(this.sdb.isServer()) {
+            this.sdb.use('op', (request, next) => {
+                if(request.collection === ArboretumChat.COLLECTION && request.id === ArboretumChat.DOC_ID) {
+                    if(request.op) {
+                        const ops = request.op.op;
+                        ops.forEach((op) => {
+                            const {p} = op;
+                            if(p[0] === 'users') {
+                                const li = op['li'];
+                                if(p.length === 2 && li) { // user added
+                                    const {agent} = request;
+                                    const {stream} = agent;
+                                    const {ws} = stream;
+                                    if(ws) {
+                                        ws.once('close', async () => {
+                                            const user:User = await this.getUserByID(li.id);
+                                            this.markUserNotPresent(user);
+                                        });
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+                next();
+            });
+        }
+
+        this.doc = this.sdb.get<ChatDoc>(ArboretumChat.COLLECTION, ArboretumChat.DOC_ID);
         this.initialized = this.initializeDoc();
         this.initialized.catch((err) => {
             console.error(err);
@@ -90,6 +121,12 @@ export class ArboretumChat extends TypedEventEmitter {
             const nodeDescriptions = data.nodeDescriptions || {};
             const nodeDescription:string = nodeDescriptions[targetNodeID] || `element ${targetNodeID}`;
             return `${type} ${nodeDescription}`;
+        } else if(action === 'setLabel') {
+            const {nodeIDs, label} = data;
+            const nodeID = nodeIDs[0];
+            const nodeDescriptions = data.nodeDescriptions || {};
+            const nodeDescription:string = nodeDescriptions[nodeID] || `element ${nodeID}`;
+            return `label "${nodeDescription}" as "${label}"`;
         } else {
             return `do ${action}`;
         }
@@ -147,9 +184,16 @@ export class ArboretumChat extends TypedEventEmitter {
     public getMe():User {
         return this.meUser;
     };
+    public async getUserByID(id:UserID):Promise<User> {
+        const data:ChatDoc = await this.getData();
+        for(let i = 0; i<data.users.length; i++) {
+            const user:User = data.users[i];
+            if(user.id === id) { return user; }
+        }
+        return null;
+    };
     private async getColor(id:UserID):Promise<Color> {
-        await this.initialized;
-        const data:ChatDoc = this.doc.getData();
+        const data:ChatDoc = await this.getData();
         const {colors} = data;
         const index = guidIndex(id) % colors.length;
         return colors[index];
@@ -196,8 +240,7 @@ export class ArboretumChat extends TypedEventEmitter {
         }
     };
     private async getUserIndex(user:User):Promise<number> {
-        await this.initialized;
-        const data:ChatDoc = this.doc.getData();
+        const data:ChatDoc = await this.getData();
         for(let i = 0; i<data.users.length; i++) {
             const u = data.users[i];
             if(user.id === u.id) {
@@ -207,8 +250,7 @@ export class ArboretumChat extends TypedEventEmitter {
         return -1;
     };
     public async markUserNotPresent(user:User):Promise<void> {
-        await this.initialized;
-        const data:ChatDoc = this.doc.getData();
+        const data:ChatDoc = await this.getData();
         const userIndex:number = await this.getUserIndex(user);
         await this.doc.submitObjectReplaceOp(['users', userIndex, 'present'], false);
         // await this.doc.submitObjectDeleteOp(['users', userIndex, 'present']);
@@ -217,24 +259,28 @@ export class ArboretumChat extends TypedEventEmitter {
         await this.markUserNotPresent(this.getMe());
     };
     public async setUserTypingStatus(user:User, typingStatus:TypingStatus):Promise<void> {
-        await this.initialized;
-        const data:ChatDoc = this.doc.getData();
+        const data:ChatDoc = await this.getData();
         const userIndex:number = await this.getUserIndex(user);
         await this.doc.submitObjectReplaceOp(['users', userIndex, 'typing'], typingStatus);
     };
     public async getMessages():Promise<Array<Message>> {
-        await this.initialized;
-        const data:ChatDoc = this.doc.getData();
+        const data:ChatDoc = await this.getData();
         return data.messages;
     };
     public async getUsers(onlyPresent:boolean = true):Promise<Array<User>> {
-        await this.initialized;
-        const data:ChatDoc = this.doc.getData();
+        const data:ChatDoc = await this.getData();
         const {users} = data;
         if(onlyPresent) {
             return users.filter((u) => u.present);
         } else {
             return users;
         }
+    };
+    public async getData():Promise<ChatDoc> {
+        await this.initialized;
+        return this.doc.getData();
+    };
+    public async stringify():Promise<string> {
+        return JSON.stringify(await this.getData());
     };
 };

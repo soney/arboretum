@@ -60,11 +60,25 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 37);
+/******/ 	return __webpack_require__(__webpack_require__.s = 38);
 /******/ })
 /************************************************************************/
 /******/ ([
 /* 0 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+if (process.env.NODE_ENV === 'production') {
+  module.exports = __webpack_require__(39);
+} else {
+  module.exports = __webpack_require__(40);
+}
+
+
+/***/ }),
+/* 1 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -106,24 +120,10 @@ emptyFunction.thatReturnsArgument = function (arg) {
 module.exports = emptyFunction;
 
 /***/ }),
-/* 1 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-if (process.env.NODE_ENV === 'production') {
-  module.exports = __webpack_require__(38);
-} else {
-  module.exports = __webpack_require__(39);
-}
-
-
-/***/ }),
 /* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var makeError = __webpack_require__(55);
+var makeError = __webpack_require__(56);
 
 function ShareDBError(code, message) {
   ShareDBError.super.call(this, message);
@@ -360,7 +360,7 @@ module.exports = emptyObject;
 
 
 
-var emptyFunction = __webpack_require__(0);
+var emptyFunction = __webpack_require__(1);
 
 /**
  * Similar to invariant but only logs a warning if the condition is not met.
@@ -417,7 +417,7 @@ module.exports = warning;
 /* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var EventEmitter = __webpack_require__(54).EventEmitter;
+var EventEmitter = __webpack_require__(55).EventEmitter;
 
 exports.EventEmitter = EventEmitter;
 exports.mixin = mixin;
@@ -848,7 +848,7 @@ module.exports = ExecutionEnvironment;
  * @typechecks
  */
 
-var emptyFunction = __webpack_require__(0);
+var emptyFunction = __webpack_require__(1);
 
 /**
  * Upstream version of event listener. Does not take into account specific
@@ -1041,7 +1041,7 @@ module.exports = shallowEqual;
  * 
  */
 
-var isTextNode = __webpack_require__(42);
+var isTextNode = __webpack_require__(43);
 
 /*eslint-disable no-bitwise */
 
@@ -2607,7 +2607,7 @@ function callEach(callbacks, err) {
 // into a separate module that json0 can depend on).
 
 module.exports = {
-  type: __webpack_require__(56)
+  type: __webpack_require__(57)
 };
 
 
@@ -4176,7 +4176,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
 /* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var hat = __webpack_require__(60);
+var hat = __webpack_require__(61);
 var util = __webpack_require__(4);
 var types = __webpack_require__(3);
 
@@ -5110,7 +5110,7 @@ MemoryPubSub.prototype._publish = function(channels, data, callback) {
 /* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var OpStream = __webpack_require__(61);
+var OpStream = __webpack_require__(62);
 var ShareDBError = __webpack_require__(2);
 var util = __webpack_require__(4);
 
@@ -5251,8 +5251,8 @@ module.exports = require("stream");
 /* 33 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var arraydiff = __webpack_require__(62);
-var deepEquals = __webpack_require__(63);
+var arraydiff = __webpack_require__(63);
+var deepEquals = __webpack_require__(64);
 var ShareDBError = __webpack_require__(2);
 var util = __webpack_require__(4);
 
@@ -5806,6 +5806,344 @@ SubmitRequest.prototype.maxRetriesError = function() {
 
 /***/ }),
 /* 35 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const TypedEventEmitter_1 = __webpack_require__(74);
+const guid_1 = __webpack_require__(75);
+const _ = __webpack_require__(76);
+exports.userColors = [
+    ['#A80000', '#B05E0D', '#C19C00', '#107C10', '#038387', '#004E8C', '#5C126B']
+];
+var TypingStatus;
+(function (TypingStatus) {
+    TypingStatus[TypingStatus["IDLE"] = 0] = "IDLE";
+    TypingStatus[TypingStatus["ACTIVE"] = 1] = "ACTIVE";
+    TypingStatus[TypingStatus["IDLE_TYPED"] = 2] = "IDLE_TYPED";
+})(TypingStatus = exports.TypingStatus || (exports.TypingStatus = {}));
+;
+var PageActionState;
+(function (PageActionState) {
+    PageActionState[PageActionState["NOT_PERFORMED"] = 0] = "NOT_PERFORMED";
+    PageActionState[PageActionState["PERFORMED"] = 1] = "PERFORMED";
+    PageActionState[PageActionState["REJECTED"] = 2] = "REJECTED";
+})(PageActionState = exports.PageActionState || (exports.PageActionState = {}));
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
+    constructor(sdb, browserState) {
+        super();
+        this.sdb = sdb;
+        this.browserState = browserState;
+        this.userJoined = this.registerEvent();
+        this.userNotPresent = this.registerEvent();
+        this.userTypingStatusChanged = this.registerEvent();
+        this.messageAdded = this.registerEvent();
+        this.pamStateChanged = this.registerEvent();
+        this.ready = this.registerEvent();
+        if (this.sdb.isServer()) {
+            this.sdb.use('op', (request, next) => {
+                if (request.collection === ArboretumChat.COLLECTION && request.id === ArboretumChat.DOC_ID) {
+                    if (request.op) {
+                        const ops = request.op.op;
+                        ops.forEach((op) => {
+                            const { p } = op;
+                            if (p[0] === 'users') {
+                                const li = op['li'];
+                                if (p.length === 2 && li) {
+                                    const { agent } = request;
+                                    const { stream } = agent;
+                                    const { ws } = stream;
+                                    if (ws) {
+                                        ws.once('close', () => __awaiter(this, void 0, void 0, function* () {
+                                            const user = yield this.getUserByID(li.id);
+                                            this.markUserNotPresent(user);
+                                        }));
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+                next();
+            });
+        }
+        this.doc = this.sdb.get(ArboretumChat.COLLECTION, ArboretumChat.DOC_ID);
+        this.initialized = this.initializeDoc();
+        this.initialized.catch((err) => {
+            console.error(err);
+        });
+    }
+    ;
+    static describePageActionMessage(pam) {
+        const { action, data, state } = pam;
+        if (action === 'navigate') {
+            const { url } = data;
+            return `navigate to ${url}`;
+        }
+        else if (action === 'mouse_event') {
+            const { targetNodeID, type } = data;
+            const nodeDescriptions = data.nodeDescriptions || {};
+            const nodeDescription = nodeDescriptions[targetNodeID] || `element ${targetNodeID}`;
+            return `${type} ${nodeDescription}`;
+        }
+        else if (action === 'setLabel') {
+            const { nodeIDs, label } = data;
+            const nodeID = nodeIDs[0];
+            const nodeDescriptions = data.nodeDescriptions || {};
+            const nodeDescription = nodeDescriptions[nodeID] || `element ${nodeID}`;
+            return `label "${nodeDescription}" as "${label}"`;
+        }
+        else {
+            return `do ${action}`;
+        }
+    }
+    ;
+    static getRelevantNodeIDs(pam) {
+        const { action, data, state } = pam;
+        const { targetNodeID } = data;
+        if (targetNodeID) {
+            return [targetNodeID];
+        }
+        else {
+            return [];
+        }
+    }
+    ;
+    initializeDoc() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.doc.createIfEmpty({
+                users: [],
+                messages: [],
+                colors: _.shuffle(_.sample(exports.userColors))
+            });
+            this.doc.subscribe((ops, source, data) => {
+                if (ops) {
+                    ops.forEach((op) => this.handleOp(op));
+                }
+                else {
+                    this.ready.emit();
+                }
+            });
+        });
+    }
+    ;
+    handleOp(op) {
+        const { p } = op;
+        if (p[0] === 'users') {
+            const { li } = op;
+            if (p.length === 2 && li) {
+                this.userJoined.emit({
+                    user: li
+                });
+            }
+            else if (p.length === 3 && p[2] === 'present') {
+                const userIndex = p[1];
+                const { oi, od } = op;
+                const user = this.doc.getData().users[userIndex];
+                if (oi === false) {
+                    this.userNotPresent.emit({ user });
+                }
+            }
+        }
+        else if (p[0] === 'messages') {
+            const { li } = op;
+            if (li.action && li.data && this.browserState) {
+                const relevantNodeIDs = ArboretumChat.getRelevantNodeIDs(li);
+                const relevantNodes = relevantNodeIDs.map((id) => this.browserState.getNode(id));
+            }
+            this.messageAdded.emit({
+                message: li
+            });
+        }
+    }
+    ;
+    getMe() {
+        return this.meUser;
+    }
+    ;
+    getUserByID(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = yield this.getData();
+            for (let i = 0; i < data.users.length; i++) {
+                const user = data.users[i];
+                if (user.id === id) {
+                    return user;
+                }
+            }
+            return null;
+        });
+    }
+    ;
+    getColor(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = yield this.getData();
+            const { colors } = data;
+            const index = guid_1.guidIndex(id) % colors.length;
+            return colors[index];
+        });
+    }
+    ;
+    join(displayName) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.addUser(displayName);
+        });
+    }
+    ;
+    addUser(displayName, isMe = true, present = true) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const id = guid_1.guid();
+            const color = yield this.getColor(id);
+            const user = { id, color, displayName, present, typing: TypingStatus.IDLE };
+            yield this.initialized;
+            yield this.doc.submitListPushOp(['users'], user);
+            if (isMe) {
+                this.meUser = user;
+            }
+            return user;
+        });
+    }
+    ;
+    addMesssage(message) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.initialized;
+            const timestamp = (new Date()).getTime();
+            message.timestamp = (new Date()).getTime();
+            message.id = ArboretumChat.messageCounter++;
+            this.doc.submitListPushOp(['messages'], message);
+        });
+    }
+    ;
+    addTextMessage(content, sender = this.getMe()) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const message = { sender, content };
+            this.addMesssage(message);
+        });
+    }
+    ;
+    addPageActionMessage(action, tabID, data = {}, sender = this.getMe()) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const nodeDescriptions = data.nodeDescriptions || {};
+            const message = { sender, action, tabID, data, nodeDescriptions, state: PageActionState.NOT_PERFORMED };
+            this.addMesssage(message);
+        });
+    }
+    ;
+    setState(pam, state) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const messages = yield this.getMessages();
+            const { id } = pam;
+            for (let i = 0; i < messages.length; i++) {
+                const message = messages[i];
+                if (message.id === id) {
+                    this.doc.submitObjectReplaceOp(['messages', i, 'state'], state);
+                    this.pamStateChanged.emit({});
+                    break;
+                }
+            }
+        });
+    }
+    ;
+    getUserIndex(user) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = yield this.getData();
+            for (let i = 0; i < data.users.length; i++) {
+                const u = data.users[i];
+                if (user.id === u.id) {
+                    return i;
+                }
+            }
+            return -1;
+        });
+    }
+    ;
+    markUserNotPresent(user) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = yield this.getData();
+            const userIndex = yield this.getUserIndex(user);
+            yield this.doc.submitObjectReplaceOp(['users', userIndex, 'present'], false);
+            // await this.doc.submitObjectDeleteOp(['users', userIndex, 'present']);
+        });
+    }
+    ;
+    leave() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.markUserNotPresent(this.getMe());
+        });
+    }
+    ;
+    setUserTypingStatus(user, typingStatus) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = yield this.getData();
+            const userIndex = yield this.getUserIndex(user);
+            yield this.doc.submitObjectReplaceOp(['users', userIndex, 'typing'], typingStatus);
+        });
+    }
+    ;
+    getMessages() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = yield this.getData();
+            return data.messages;
+        });
+    }
+    ;
+    getUsers(onlyPresent = true) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = yield this.getData();
+            const { users } = data;
+            if (onlyPresent) {
+                return users.filter((u) => u.present);
+            }
+            else {
+                return users;
+            }
+        });
+    }
+    ;
+    getData() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.initialized;
+            return this.doc.getData();
+        });
+    }
+    ;
+    stringify() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return JSON.stringify(yield this.getData());
+        });
+    }
+    ;
+}
+ArboretumChat.COLLECTION = 'arboretum';
+ArboretumChat.DOC_ID = 'chat';
+ArboretumChat.userCounter = 1;
+ArboretumChat.messageCounter = 1;
+exports.ArboretumChat = ArboretumChat;
+;
+
+
+/***/ }),
+/* 36 */
 /***/ (function(module, exports) {
 
 /*
@@ -5887,7 +6225,7 @@ function toComment(sourceMap) {
 
 
 /***/ }),
-/* 36 */
+/* 37 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /*
@@ -5953,7 +6291,7 @@ var singleton = null;
 var	singletonCounter = 0;
 var	stylesInsertedAtTop = [];
 
-var	fixUrls = __webpack_require__(79);
+var	fixUrls = __webpack_require__(80);
 
 module.exports = function(list, options) {
 	if (typeof DEBUG !== "undefined" && DEBUG) {
@@ -6269,16 +6607,16 @@ function updateLink (link, options, obj) {
 
 
 /***/ }),
-/* 37 */
+/* 38 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const React = __webpack_require__(1);
-const ReactDOM = __webpack_require__(40);
-const ArboretumAdminInterface_1 = __webpack_require__(49);
-__webpack_require__(80);
+const React = __webpack_require__(0);
+const ReactDOM = __webpack_require__(41);
+const ArboretumAdminInterface_1 = __webpack_require__(50);
+__webpack_require__(81);
 ReactDOM.render(React.createElement("div", { className: "window" },
     React.createElement("div", { className: "window-content" },
         React.createElement("div", { className: "pane-group" },
@@ -6286,7 +6624,7 @@ ReactDOM.render(React.createElement("div", { className: "window" },
 
 
 /***/ }),
-/* 38 */
+/* 39 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6299,7 +6637,7 @@ ReactDOM.render(React.createElement("div", { className: "window" },
  * LICENSE file in the root directory of this source tree.
  */
 
-var m=__webpack_require__(5),n=__webpack_require__(7),p=__webpack_require__(0),q="function"===typeof Symbol&&Symbol["for"],r=q?Symbol["for"]("react.element"):60103,t=q?Symbol["for"]("react.call"):60104,u=q?Symbol["for"]("react.return"):60105,v=q?Symbol["for"]("react.portal"):60106,w=q?Symbol["for"]("react.fragment"):60107,x="function"===typeof Symbol&&Symbol.iterator;
+var m=__webpack_require__(5),n=__webpack_require__(7),p=__webpack_require__(1),q="function"===typeof Symbol&&Symbol["for"],r=q?Symbol["for"]("react.element"):60103,t=q?Symbol["for"]("react.call"):60104,u=q?Symbol["for"]("react.return"):60105,v=q?Symbol["for"]("react.portal"):60106,w=q?Symbol["for"]("react.fragment"):60107,x="function"===typeof Symbol&&Symbol.iterator;
 function y(a){for(var b=arguments.length-1,e="Minified React error #"+a+"; visit http://facebook.github.io/react/docs/error-decoder.html?invariant\x3d"+a,c=0;c<b;c++)e+="\x26args[]\x3d"+encodeURIComponent(arguments[c+1]);b=Error(e+" for the full message or use the non-minified dev environment for full errors and additional helpful warnings.");b.name="Invariant Violation";b.framesToPop=1;throw b;}
 var z={isMounted:function(){return!1},enqueueForceUpdate:function(){},enqueueReplaceState:function(){},enqueueSetState:function(){}};function A(a,b,e){this.props=a;this.context=b;this.refs=n;this.updater=e||z}A.prototype.isReactComponent={};A.prototype.setState=function(a,b){"object"!==typeof a&&"function"!==typeof a&&null!=a?y("85"):void 0;this.updater.enqueueSetState(this,a,b,"setState")};A.prototype.forceUpdate=function(a){this.updater.enqueueForceUpdate(this,a,"forceUpdate")};
 function B(a,b,e){this.props=a;this.context=b;this.refs=n;this.updater=e||z}function C(){}C.prototype=A.prototype;var D=B.prototype=new C;D.constructor=B;m(D,A.prototype);D.isPureReactComponent=!0;function E(a,b,e){this.props=a;this.context=b;this.refs=n;this.updater=e||z}var F=E.prototype=new C;F.constructor=E;m(F,A.prototype);F.unstable_isAsyncReactComponent=!0;F.render=function(){return this.props.children};var G={current:null},H=Object.prototype.hasOwnProperty,I={key:!0,ref:!0,__self:!0,__source:!0};
@@ -6314,7 +6652,7 @@ isValidElement:K,version:"16.2.0",__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_F
 
 
 /***/ }),
-/* 39 */
+/* 40 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6339,7 +6677,7 @@ var _assign = __webpack_require__(5);
 var emptyObject = __webpack_require__(7);
 var invariant = __webpack_require__(6);
 var warning = __webpack_require__(8);
-var emptyFunction = __webpack_require__(0);
+var emptyFunction = __webpack_require__(1);
 var checkPropTypes = __webpack_require__(10);
 
 // TODO: this is special because it gets imported during build.
@@ -7678,7 +8016,7 @@ module.exports = react;
 
 
 /***/ }),
-/* 40 */
+/* 41 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7716,14 +8054,14 @@ if (process.env.NODE_ENV === 'production') {
   // DCE check should happen before ReactDOM bundle executes so that
   // DevTools can report bad minification during injection.
   checkDCE();
-  module.exports = __webpack_require__(41);
+  module.exports = __webpack_require__(42);
 } else {
-  module.exports = __webpack_require__(44);
+  module.exports = __webpack_require__(45);
 }
 
 
 /***/ }),
-/* 41 */
+/* 42 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7739,7 +8077,7 @@ if (process.env.NODE_ENV === 'production') {
 /*
  Modernizr 3.0.0pre (Custom Build) | MIT
 */
-var aa=__webpack_require__(1),l=__webpack_require__(14),B=__webpack_require__(5),C=__webpack_require__(0),ba=__webpack_require__(15),da=__webpack_require__(16),ea=__webpack_require__(17),fa=__webpack_require__(18),ia=__webpack_require__(19),D=__webpack_require__(7);
+var aa=__webpack_require__(0),l=__webpack_require__(14),B=__webpack_require__(5),C=__webpack_require__(1),ba=__webpack_require__(15),da=__webpack_require__(16),ea=__webpack_require__(17),fa=__webpack_require__(18),ia=__webpack_require__(19),D=__webpack_require__(7);
 function E(a){for(var b=arguments.length-1,c="Minified React error #"+a+"; visit http://facebook.github.io/react/docs/error-decoder.html?invariant\x3d"+a,d=0;d<b;d++)c+="\x26args[]\x3d"+encodeURIComponent(arguments[d+1]);b=Error(c+" for the full message or use the non-minified dev environment for full errors and additional helpful warnings.");b.name="Invariant Violation";b.framesToPop=1;throw b;}aa?void 0:E("227");
 var oa={children:!0,dangerouslySetInnerHTML:!0,defaultValue:!0,defaultChecked:!0,innerHTML:!0,suppressContentEditableWarning:!0,suppressHydrationWarning:!0,style:!0};function pa(a,b){return(a&b)===b}
 var ta={MUST_USE_PROPERTY:1,HAS_BOOLEAN_VALUE:4,HAS_NUMERIC_VALUE:8,HAS_POSITIVE_NUMERIC_VALUE:24,HAS_OVERLOADED_BOOLEAN_VALUE:32,HAS_STRING_BOOLEAN_VALUE:64,injectDOMPropertyConfig:function(a){var b=ta,c=a.Properties||{},d=a.DOMAttributeNamespaces||{},e=a.DOMAttributeNames||{};a=a.DOMMutationMethods||{};for(var f in c){ua.hasOwnProperty(f)?E("48",f):void 0;var g=f.toLowerCase(),h=c[f];g={attributeName:g,attributeNamespace:null,propertyName:f,mutationMethod:null,mustUseProperty:pa(h,b.MUST_USE_PROPERTY),
@@ -7959,7 +8297,7 @@ Z.injectIntoDevTools({findFiberByHostInstance:pb,bundleType:0,version:"16.2.0",r
 
 
 /***/ }),
-/* 42 */
+/* 43 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7974,7 +8312,7 @@ Z.injectIntoDevTools({findFiberByHostInstance:pb,bundleType:0,version:"16.2.0",r
  * @typechecks
  */
 
-var isNode = __webpack_require__(43);
+var isNode = __webpack_require__(44);
 
 /**
  * @param {*} object The object to check.
@@ -7987,7 +8325,7 @@ function isTextNode(object) {
 module.exports = isTextNode;
 
 /***/ }),
-/* 43 */
+/* 44 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8015,7 +8353,7 @@ function isNode(object) {
 module.exports = isNode;
 
 /***/ }),
-/* 44 */
+/* 45 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8036,12 +8374,12 @@ if (process.env.NODE_ENV !== "production") {
   (function() {
 'use strict';
 
-var React = __webpack_require__(1);
+var React = __webpack_require__(0);
 var invariant = __webpack_require__(6);
 var warning = __webpack_require__(8);
 var ExecutionEnvironment = __webpack_require__(14);
 var _assign = __webpack_require__(5);
-var emptyFunction = __webpack_require__(0);
+var emptyFunction = __webpack_require__(1);
 var EventListener = __webpack_require__(15);
 var getActiveElement = __webpack_require__(16);
 var shallowEqual = __webpack_require__(17);
@@ -8049,8 +8387,8 @@ var containsNode = __webpack_require__(18);
 var focusNode = __webpack_require__(19);
 var emptyObject = __webpack_require__(7);
 var checkPropTypes = __webpack_require__(10);
-var hyphenateStyleName = __webpack_require__(45);
-var camelizeStyleName = __webpack_require__(47);
+var hyphenateStyleName = __webpack_require__(46);
+var camelizeStyleName = __webpack_require__(48);
 
 /**
  * WARNING: DO NOT manually require this module.
@@ -23416,7 +23754,7 @@ module.exports = reactDom;
 
 
 /***/ }),
-/* 45 */
+/* 46 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -23431,7 +23769,7 @@ module.exports = reactDom;
 
 
 
-var hyphenate = __webpack_require__(46);
+var hyphenate = __webpack_require__(47);
 
 var msPattern = /^ms-/;
 
@@ -23458,7 +23796,7 @@ function hyphenateStyleName(string) {
 module.exports = hyphenateStyleName;
 
 /***/ }),
-/* 46 */
+/* 47 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -23494,7 +23832,7 @@ function hyphenate(string) {
 module.exports = hyphenate;
 
 /***/ }),
-/* 47 */
+/* 48 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -23509,7 +23847,7 @@ module.exports = hyphenate;
 
 
 
-var camelize = __webpack_require__(48);
+var camelize = __webpack_require__(49);
 
 var msPattern = /^-ms-/;
 
@@ -23537,7 +23875,7 @@ function camelizeStyleName(string) {
 module.exports = camelizeStyleName;
 
 /***/ }),
-/* 48 */
+/* 49 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -23572,7 +23910,7 @@ function camelize(string) {
 module.exports = camelize;
 
 /***/ }),
-/* 49 */
+/* 50 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -23586,13 +23924,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const React = __webpack_require__(1);
-const electron_1 = __webpack_require__(50);
-const url = __webpack_require__(51);
-const ShareDBDoc_1 = __webpack_require__(52);
-const react_switch_1 = __webpack_require__(65);
-const copyToClipboard_1 = __webpack_require__(71);
-const ArboretumChatBox_1 = __webpack_require__(72);
+const React = __webpack_require__(0);
+const electron_1 = __webpack_require__(51);
+const url = __webpack_require__(52);
+const ShareDBDoc_1 = __webpack_require__(53);
+const react_switch_1 = __webpack_require__(66);
+const copyToClipboard_1 = __webpack_require__(72);
+const ArboretumChatBox_1 = __webpack_require__(73);
 ;
 class ArboretumAdminInterface extends React.Component {
     constructor(props) {
@@ -23785,19 +24123,19 @@ exports.ArboretumAdminInterface = ArboretumAdminInterface;
 
 
 /***/ }),
-/* 50 */
+/* 51 */
 /***/ (function(module, exports) {
 
 module.exports = require("electron");
 
 /***/ }),
-/* 51 */
+/* 52 */
 /***/ (function(module, exports) {
 
 module.exports = require("url");
 
 /***/ }),
-/* 52 */
+/* 53 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -23811,10 +24149,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const ShareDBClient = __webpack_require__(53);
-const ShareDB = __webpack_require__(58);
+const ShareDBClient = __webpack_require__(54);
+const ShareDB = __webpack_require__(59);
 class SDB {
     constructor(client, connection) {
+        this.client = client;
         this.docs = new Map();
         if (client) {
             this.connection = new ShareDBClient.Connection(connection);
@@ -23822,6 +24161,19 @@ class SDB {
         else {
             this.share = new ShareDB();
             this.connection = this.share.connect();
+        }
+    }
+    ;
+    isClient() { return this.client; }
+    ;
+    isServer() { return !this.client; }
+    ;
+    use(action, fn) {
+        if (this.isServer()) {
+            this.share.use(action, fn);
+        }
+        else {
+            throw new Error("Cannot use middleware for clients");
         }
     }
     ;
@@ -24107,7 +24459,7 @@ exports.SDBArray = SDBArray;
 
 
 /***/ }),
-/* 53 */
+/* 54 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports.Connection = __webpack_require__(20);
@@ -24118,13 +24470,13 @@ exports.types = __webpack_require__(3);
 
 
 /***/ }),
-/* 54 */
+/* 55 */
 /***/ (function(module, exports) {
 
 module.exports = require("events");
 
 /***/ }),
-/* 55 */
+/* 56 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -24273,7 +24625,7 @@ exports.BaseError = BaseError
 
 
 /***/ }),
-/* 56 */
+/* 57 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /*
@@ -24390,7 +24742,6 @@ json.checkList = function(elem) {
 
 json.checkObj = function(elem) {
   if (!isObject(elem)) {
-    debugger;
     throw new Error("Referenced element not an object (it was " + JSON.stringify(elem) + ")");
   }
 };
@@ -24438,7 +24789,6 @@ json.apply = function(snapshot, op) {
 
       parent = elem;
       parentKey = key;
-      if(!elem) { debugger; }
       elem = elem[key];
       key = p;
 
@@ -24938,14 +25288,14 @@ __webpack_require__(23)(json, json.transformComponent, json.checkValidOp, json.a
 /**
  * Register a subtype for string operations, using the text0 type.
  */
-var text = __webpack_require__(57);
+var text = __webpack_require__(58);
 
 json.registerSubtype(text);
 module.exports = json;
 
 
 /***/ }),
-/* 57 */
+/* 58 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // DEPRECATED!
@@ -25207,10 +25557,10 @@ __webpack_require__(23)(text, transformComponent, checkValidOp, append);
 
 
 /***/ }),
-/* 58 */
+/* 59 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var Backend = __webpack_require__(59);
+var Backend = __webpack_require__(60);
 module.exports = Backend;
 
 Backend.Agent = __webpack_require__(26);
@@ -25228,7 +25578,7 @@ Backend.types = __webpack_require__(3);
 
 
 /***/ }),
-/* 59 */
+/* 60 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var async = __webpack_require__(25);
@@ -25240,7 +25590,7 @@ var MemoryPubSub = __webpack_require__(29);
 var ot = __webpack_require__(12);
 var projections = __webpack_require__(13);
 var QueryEmitter = __webpack_require__(33);
-var StreamSocket = __webpack_require__(64);
+var StreamSocket = __webpack_require__(65);
 var SubmitRequest = __webpack_require__(34);
 
 function Backend(options) {
@@ -25758,7 +26108,7 @@ function pluckIds(snapshots) {
 
 
 /***/ }),
-/* 60 */
+/* 61 */
 /***/ (function(module, exports) {
 
 var hat = module.exports = function (bits, base) {
@@ -25826,7 +26176,7 @@ hat.rack = function (bits, base, expandBy) {
 
 
 /***/ }),
-/* 61 */
+/* 62 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var inherits = __webpack_require__(31).inherits;
@@ -25891,7 +26241,7 @@ OpStream.prototype.destroy = function() {
 
 
 /***/ }),
-/* 62 */
+/* 63 */
 /***/ (function(module, exports) {
 
 module.exports = arrayDiff;
@@ -26078,7 +26428,7 @@ function arrayDiff(before, after, equalFn) {
 
 
 /***/ }),
-/* 63 */
+/* 64 */
 /***/ (function(module, exports) {
 
 var pSlice = Array.prototype.slice;
@@ -26186,7 +26536,7 @@ function objEquiv(a, b) {
 
 
 /***/ }),
-/* 64 */
+/* 65 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var Duplex = __webpack_require__(32).Duplex;
@@ -26254,7 +26604,7 @@ ServerStream.prototype._write = function(chunk, encoding, callback) {
 
 
 /***/ }),
-/* 65 */
+/* 66 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -26266,17 +26616,17 @@ Object.defineProperty(exports, "__esModule", {
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _react = __webpack_require__(1);
+var _react = __webpack_require__(0);
 
 var _react2 = _interopRequireDefault(_react);
 
-var _propTypes = __webpack_require__(66);
+var _propTypes = __webpack_require__(67);
 
 var _propTypes2 = _interopRequireDefault(_propTypes);
 
-var _icons = __webpack_require__(69);
+var _icons = __webpack_require__(70);
 
-var _getBackgroundColor = __webpack_require__(70);
+var _getBackgroundColor = __webpack_require__(71);
 
 var _getBackgroundColor2 = _interopRequireDefault(_getBackgroundColor);
 
@@ -26639,7 +26989,7 @@ Switch.defaultProps = {
 exports.default = Switch;
 
 /***/ }),
-/* 66 */
+/* 67 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /**
@@ -26664,16 +27014,16 @@ if (process.env.NODE_ENV !== 'production') {
   // By explicitly using `prop-types` you are opting into new development behavior.
   // http://fb.me/prop-types-in-prod
   var throwOnDirectAccess = true;
-  module.exports = __webpack_require__(67)(isValidElement, throwOnDirectAccess);
+  module.exports = __webpack_require__(68)(isValidElement, throwOnDirectAccess);
 } else {
   // By explicitly using `prop-types` you are opting into new production behavior.
   // http://fb.me/prop-types-in-prod
-  module.exports = __webpack_require__(68)();
+  module.exports = __webpack_require__(69)();
 }
 
 
 /***/ }),
-/* 67 */
+/* 68 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -26686,7 +27036,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 
 
-var emptyFunction = __webpack_require__(0);
+var emptyFunction = __webpack_require__(1);
 var invariant = __webpack_require__(6);
 var warning = __webpack_require__(8);
 var assign = __webpack_require__(5);
@@ -27222,7 +27572,7 @@ module.exports = function(isValidElement, throwOnDirectAccess) {
 
 
 /***/ }),
-/* 68 */
+/* 69 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -27235,7 +27585,7 @@ module.exports = function(isValidElement, throwOnDirectAccess) {
 
 
 
-var emptyFunction = __webpack_require__(0);
+var emptyFunction = __webpack_require__(1);
 var invariant = __webpack_require__(6);
 var ReactPropTypesSecret = __webpack_require__(11);
 
@@ -27287,7 +27637,7 @@ module.exports = function() {
 
 
 /***/ }),
-/* 69 */
+/* 70 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -27298,7 +27648,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.checkedIcon = exports.uncheckedIcon = undefined;
 
-var _react = __webpack_require__(1);
+var _react = __webpack_require__(0);
 
 var _react2 = _interopRequireDefault(_react);
 
@@ -27359,7 +27709,7 @@ var checkedIcon = exports.checkedIcon = _react2.default.createElement(
 );
 
 /***/ }),
-/* 70 */
+/* 71 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -27410,7 +27760,7 @@ function getBackgroundColor(pos, checkedPos, uncheckedPos, offColor, onColor) {
 }
 
 /***/ }),
-/* 71 */
+/* 72 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -27430,7 +27780,7 @@ exports.copyToClipboard = copyToClipboard;
 
 
 /***/ }),
-/* 72 */
+/* 73 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -27444,9 +27794,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const React = __webpack_require__(1);
-const ArboretumChat_1 = __webpack_require__(73);
-__webpack_require__(77);
+const React = __webpack_require__(0);
+const ArboretumChat_1 = __webpack_require__(35);
+const PageActionMessageDisplay_1 = __webpack_require__(77);
+__webpack_require__(78);
 const ENTER_KEY = 13;
 class ArboretumChatBox extends React.Component {
     constructor(props) {
@@ -27491,18 +27842,11 @@ class ArboretumChatBox extends React.Component {
         this.onTextareaChange = (event) => {
             this.setState({ chatText: event.target.value });
         };
-        this.addHighlights = (pam) => {
-            if (this.props.onAddHighlight) {
-                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pam);
-                const color = pam.sender.color;
-                this.props.onAddHighlight(nodeIDs, color);
-            }
+        this.lightChimeRef = (el) => {
+            this.lightChimeElement = el;
         };
-        this.removeHighlights = (pam) => {
-            if (this.props.onRemoveHighlight) {
-                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pam);
-                this.props.onRemoveHighlight(nodeIDs);
-            }
+        this.openEndedChimeRef = (el) => {
+            this.openEndedChimeElement = el;
         };
         this.performAction = (pam) => {
             this.getChat().setState(pam, ArboretumChat_1.PageActionState.PERFORMED);
@@ -27516,21 +27860,8 @@ class ArboretumChatBox extends React.Component {
                 this.props.onReject(pam);
             }
         };
-        this.focusAction = (pam) => {
-            if (this.props.onFocus) {
-                this.props.onFocus(pam);
-            }
-        };
-        this.addLabel = (pam) => {
-            if (this.props.onLabel) {
-                this.props.onLabel(pam);
-            }
-        };
-        this.lightChimeRef = (el) => {
-            this.lightChimeElement = el;
-        };
-        this.openEndedChimeRef = (el) => {
-            this.openEndedChimeElement = el;
+        this.onAddLabel = (nodeIDs, label, tabID, nodeDescriptions) => {
+            this.chat.addPageActionMessage('setLabel', tabID, { nodeIDs, label, nodeDescriptions });
         };
         this.state = {
             chatText: this.props.chatText || '',
@@ -27610,28 +27941,7 @@ class ArboretumChatBox extends React.Component {
             }
             else if (m['action']) {
                 const pam = m;
-                const { action, data, state } = pam;
-                const description = React.createElement("span", { className: 'description', onMouseEnter: () => this.addHighlights(pam), onMouseLeave: () => this.removeHighlights(pam) }, ArboretumChat_1.ArboretumChat.describePageActionMessage(pam));
-                const performed = state === ArboretumChat_1.PageActionState.PERFORMED;
-                const actions = [
-                    React.createElement("a", { key: "focus", href: "javascript:void(0)", onClick: this.focusAction.bind(this, pam) }, "Focus"),
-                    React.createElement("a", { key: "label", href: "javascript:void(0)", onClick: this.addLabel.bind(this, pam) }, "Label")
-                ];
-                if (state === ArboretumChat_1.PageActionState.PERFORMED) {
-                    actions.unshift(React.createElement("div", { className: '' }, "(accepted)"));
-                }
-                else if (state === ArboretumChat_1.PageActionState.REJECTED) {
-                    actions.unshift(React.createElement("div", { className: '' }, "(rejected)"));
-                }
-                else {
-                    actions.unshift(React.createElement("a", { key: "accept", href: "javascript:void(0)", onClick: this.performAction.bind(this, pam) }, "Accept"), React.createElement("a", { key: "reject", href: "javascript:void(0)", onClick: this.rejectAction.bind(this, pam) }, "Reject"));
-                }
-                return React.createElement("li", { tabIndex: 0, key: i, className: 'chat-line action' + (performed ? ' performed' : '') + (this.props.isAdmin ? ' admin' : ' not_admin') },
-                    React.createElement("span", { style: senderStyle, className: 'from' }, pam.sender.displayName),
-                    " wants to ",
-                    description,
-                    ".",
-                    React.createElement("div", { className: 'messageActions' }, actions));
+                return React.createElement(PageActionMessageDisplay_1.PageActionMessageDisplay, { pam: pam, key: i, isAdmin: this.props.isAdmin, onAction: this.performAction, onReject: this.rejectAction, onFocus: this.props.onFocus, addLabel: this.onAddLabel, onAddHighlight: this.props.onAddHighlight, onRemoveHighlight: this.props.onRemoveHighlight });
             }
         });
         let meUserID;
@@ -27667,288 +27977,6 @@ class ArboretumChatBox extends React.Component {
     ;
 }
 exports.ArboretumChatBox = ArboretumChatBox;
-;
-
-
-/***/ }),
-/* 73 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const TypedEventEmitter_1 = __webpack_require__(74);
-const guid_1 = __webpack_require__(75);
-const _ = __webpack_require__(76);
-exports.userColors = [
-    ['#A80000', '#B05E0D', '#C19C00', '#107C10', '#038387', '#004E8C', '#5C126B']
-];
-var TypingStatus;
-(function (TypingStatus) {
-    TypingStatus[TypingStatus["IDLE"] = 0] = "IDLE";
-    TypingStatus[TypingStatus["ACTIVE"] = 1] = "ACTIVE";
-    TypingStatus[TypingStatus["IDLE_TYPED"] = 2] = "IDLE_TYPED";
-})(TypingStatus = exports.TypingStatus || (exports.TypingStatus = {}));
-;
-var PageActionState;
-(function (PageActionState) {
-    PageActionState[PageActionState["NOT_PERFORMED"] = 0] = "NOT_PERFORMED";
-    PageActionState[PageActionState["PERFORMED"] = 1] = "PERFORMED";
-    PageActionState[PageActionState["REJECTED"] = 2] = "REJECTED";
-})(PageActionState = exports.PageActionState || (exports.PageActionState = {}));
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
-    constructor(sdb, browserState) {
-        super();
-        this.sdb = sdb;
-        this.browserState = browserState;
-        this.userJoined = this.registerEvent();
-        this.userNotPresent = this.registerEvent();
-        this.userTypingStatusChanged = this.registerEvent();
-        this.messageAdded = this.registerEvent();
-        this.pamStateChanged = this.registerEvent();
-        this.ready = this.registerEvent();
-        this.doc = this.sdb.get('arboretum', 'chat');
-        this.initialized = this.initializeDoc();
-        this.initialized.catch((err) => {
-            console.error(err);
-        });
-    }
-    ;
-    static describePageActionMessage(pam) {
-        const { action, data, state } = pam;
-        if (action === 'navigate') {
-            const { url } = data;
-            return `navigate to ${url}`;
-        }
-        else if (action === 'mouse_event') {
-            const { targetNodeID, type } = data;
-            const nodeDescriptions = data.nodeDescriptions || {};
-            const nodeDescription = nodeDescriptions[targetNodeID] || `element ${targetNodeID}`;
-            return `${type} ${nodeDescription}`;
-        }
-        else {
-            return `do ${action}`;
-        }
-    }
-    ;
-    static getRelevantNodeIDs(pam) {
-        const { action, data, state } = pam;
-        const { targetNodeID } = data;
-        if (targetNodeID) {
-            return [targetNodeID];
-        }
-        else {
-            return [];
-        }
-    }
-    ;
-    initializeDoc() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.doc.createIfEmpty({
-                users: [],
-                messages: [],
-                colors: _.shuffle(_.sample(exports.userColors))
-            });
-            this.doc.subscribe((ops, source, data) => {
-                if (ops) {
-                    ops.forEach((op) => this.handleOp(op));
-                }
-                else {
-                    this.ready.emit();
-                }
-            });
-        });
-    }
-    ;
-    handleOp(op) {
-        const { p } = op;
-        if (p[0] === 'users') {
-            const { li } = op;
-            if (p.length === 2 && li) {
-                this.userJoined.emit({
-                    user: li
-                });
-            }
-            else if (p.length === 3 && p[2] === 'present') {
-                const userIndex = p[1];
-                const { oi, od } = op;
-                const user = this.doc.getData().users[userIndex];
-                if (oi === false) {
-                    this.userNotPresent.emit({ user });
-                }
-            }
-        }
-        else if (p[0] === 'messages') {
-            const { li } = op;
-            if (li.action && li.data && this.browserState) {
-                const relevantNodeIDs = ArboretumChat.getRelevantNodeIDs(li);
-                const relevantNodes = relevantNodeIDs.map((id) => this.browserState.getNode(id));
-            }
-            this.messageAdded.emit({
-                message: li
-            });
-        }
-    }
-    ;
-    getMe() {
-        return this.meUser;
-    }
-    ;
-    getColor(id) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.initialized;
-            const data = this.doc.getData();
-            const { colors } = data;
-            const index = guid_1.guidIndex(id) % colors.length;
-            return colors[index];
-        });
-    }
-    ;
-    join(displayName) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return this.addUser(displayName);
-        });
-    }
-    ;
-    addUser(displayName, isMe = true, present = true) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const id = guid_1.guid();
-            const color = yield this.getColor(id);
-            const user = { id, color, displayName, present, typing: TypingStatus.IDLE };
-            yield this.initialized;
-            yield this.doc.submitListPushOp(['users'], user);
-            if (isMe) {
-                this.meUser = user;
-            }
-            return user;
-        });
-    }
-    ;
-    addMesssage(message) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.initialized;
-            const timestamp = (new Date()).getTime();
-            message.timestamp = (new Date()).getTime();
-            message.id = ArboretumChat.messageCounter++;
-            this.doc.submitListPushOp(['messages'], message);
-        });
-    }
-    ;
-    addTextMessage(content, sender = this.getMe()) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const message = { sender, content };
-            this.addMesssage(message);
-        });
-    }
-    ;
-    addPageActionMessage(action, tabID, data = {}, sender = this.getMe()) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const nodeDescriptions = data.nodeDescriptions || {};
-            const message = { sender, action, tabID, data, nodeDescriptions, state: PageActionState.NOT_PERFORMED };
-            this.addMesssage(message);
-        });
-    }
-    ;
-    setState(pam, state) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const messages = yield this.getMessages();
-            const { id } = pam;
-            for (let i = 0; i < messages.length; i++) {
-                const message = messages[i];
-                if (message.id === id) {
-                    this.doc.submitObjectReplaceOp(['messages', i, 'state'], state);
-                    this.pamStateChanged.emit({});
-                    break;
-                }
-            }
-        });
-    }
-    ;
-    getUserIndex(user) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.initialized;
-            const data = this.doc.getData();
-            for (let i = 0; i < data.users.length; i++) {
-                const u = data.users[i];
-                if (user.id === u.id) {
-                    return i;
-                }
-            }
-            return -1;
-        });
-    }
-    ;
-    markUserNotPresent(user) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.initialized;
-            const data = this.doc.getData();
-            const userIndex = yield this.getUserIndex(user);
-            yield this.doc.submitObjectReplaceOp(['users', userIndex, 'present'], false);
-            // await this.doc.submitObjectDeleteOp(['users', userIndex, 'present']);
-        });
-    }
-    ;
-    leave() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.markUserNotPresent(this.getMe());
-        });
-    }
-    ;
-    setUserTypingStatus(user, typingStatus) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.initialized;
-            const data = this.doc.getData();
-            const userIndex = yield this.getUserIndex(user);
-            yield this.doc.submitObjectReplaceOp(['users', userIndex, 'typing'], typingStatus);
-        });
-    }
-    ;
-    getMessages() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.initialized;
-            const data = this.doc.getData();
-            return data.messages;
-        });
-    }
-    ;
-    getUsers(onlyPresent = true) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.initialized;
-            const data = this.doc.getData();
-            const { users } = data;
-            if (onlyPresent) {
-                return users.filter((u) => u.present);
-            }
-            else {
-                return users;
-            }
-        });
-    }
-    ;
-}
-ArboretumChat.userCounter = 1;
-ArboretumChat.messageCounter = 1;
-exports.ArboretumChat = ArboretumChat;
 ;
 
 
@@ -29625,8 +29653,110 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;//     Underscor
 /* 77 */
 /***/ (function(module, exports, __webpack_require__) {
 
+"use strict";
 
-var content = __webpack_require__(78);
+Object.defineProperty(exports, "__esModule", { value: true });
+const React = __webpack_require__(0);
+const ArboretumChat_1 = __webpack_require__(35);
+const ENTER_KEY = 13;
+class PageActionMessageDisplay extends React.Component {
+    constructor(props) {
+        super(props);
+        this.addHighlights = (pam) => {
+            if (this.props.onAddHighlight) {
+                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pam);
+                const color = pam.sender.color;
+                this.props.onAddHighlight(nodeIDs, color);
+            }
+        };
+        this.removeHighlights = (pam) => {
+            if (this.props.onRemoveHighlight) {
+                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pam);
+                this.props.onRemoveHighlight(nodeIDs);
+            }
+        };
+        this.performAction = (pam) => {
+            if (this.props.onAction) {
+                this.props.onAction(pam);
+            }
+        };
+        this.rejectAction = (pam) => {
+            if (this.props.onReject) {
+                this.props.onReject(pam);
+            }
+        };
+        this.focusAction = (pam) => {
+            if (this.props.onFocus) {
+                this.props.onFocus(pam);
+            }
+        };
+        this.addLabel = (pam) => {
+            this.addHighlights(this.props.pam);
+            this.setState({ labeling: true });
+        };
+        this.onLabelKeyDown = (event) => {
+            const { keyCode } = event;
+            if (keyCode === 13) {
+                const input = event.target;
+                const { value } = input;
+                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(this.props.pam);
+                if (this.props.addLabel) {
+                    this.props.addLabel(nodeIDs, value, this.props.pam.tabID, this.props.pam.nodeDescriptions);
+                }
+                this.removeHighlights(this.props.pam);
+                this.setState({ labeling: false });
+            }
+            else if (keyCode === 27) {
+                this.removeHighlights(this.props.pam);
+                this.setState({ labeling: false });
+            }
+        };
+        this.state = {
+            labeling: false
+        };
+    }
+    ;
+    render() {
+        const pam = this.props.pam;
+        const { action, data, state } = pam;
+        const description = React.createElement("span", { className: 'description', onMouseEnter: () => this.addHighlights(pam), onMouseLeave: () => this.removeHighlights(pam) }, ArboretumChat_1.ArboretumChat.describePageActionMessage(pam));
+        const performed = state === ArboretumChat_1.PageActionState.PERFORMED;
+        const actions = [
+            React.createElement("a", { key: "focus", href: "javascript:void(0)", onClick: this.focusAction.bind(this, pam) }, "Focus"),
+            React.createElement("a", { key: "label", href: "javascript:void(0)", onClick: this.addLabel.bind(this, pam) }, "Label")
+        ];
+        if (state === ArboretumChat_1.PageActionState.PERFORMED) {
+            actions.unshift(React.createElement("div", { className: '' }, "(accepted)"));
+        }
+        else if (state === ArboretumChat_1.PageActionState.REJECTED) {
+            actions.unshift(React.createElement("div", { className: '' }, "(rejected)"));
+        }
+        else {
+            actions.unshift(React.createElement("a", { key: "accept", href: "javascript:void(0)", onClick: this.performAction.bind(this, pam) }, "Accept"), React.createElement("a", { key: "reject", href: "javascript:void(0)", onClick: this.rejectAction.bind(this, pam) }, "Reject"));
+        }
+        const messageActions = React.createElement("div", { className: 'messageActions' }, actions);
+        const labelInput = React.createElement("input", { onKeyDown: this.onLabelKeyDown, ref: (el) => { if (el) {
+                el.focus();
+            } }, type: "text" });
+        return React.createElement("li", { tabIndex: 0, className: 'chat-line action' + (performed ? ' performed' : '') + ( true ? ' admin' : ' not_admin') },
+            React.createElement("span", { style: { color: pam.sender.color }, className: 'from' }, pam.sender.displayName),
+            " wants to ",
+            description,
+            ".",
+            this.state.labeling ? labelInput : messageActions);
+    }
+    ;
+}
+exports.PageActionMessageDisplay = PageActionMessageDisplay;
+;
+
+
+/***/ }),
+/* 78 */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+var content = __webpack_require__(79);
 
 if(typeof content === 'string') content = [[module.i, content, '']];
 
@@ -29640,7 +29770,7 @@ var options = {"hmr":true}
 options.transform = transform
 options.insertInto = undefined;
 
-var update = __webpack_require__(36)(content, options);
+var update = __webpack_require__(37)(content, options);
 
 if(content.locals) module.exports = content.locals;
 
@@ -29672,10 +29802,10 @@ if(false) {
 }
 
 /***/ }),
-/* 78 */
+/* 79 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(35)(true);
+exports = module.exports = __webpack_require__(36)(true);
 // imports
 
 
@@ -29686,7 +29816,7 @@ exports.push([module.i, ".chat {\n  font-family: system, -apple-system, \".SFNSD
 
 
 /***/ }),
-/* 79 */
+/* 80 */
 /***/ (function(module, exports) {
 
 
@@ -29781,11 +29911,11 @@ module.exports = function (css) {
 
 
 /***/ }),
-/* 80 */
+/* 81 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
-var content = __webpack_require__(81);
+var content = __webpack_require__(82);
 
 if(typeof content === 'string') content = [[module.i, content, '']];
 
@@ -29799,7 +29929,7 @@ var options = {"hmr":true}
 options.transform = transform
 options.insertInto = undefined;
 
-var update = __webpack_require__(36)(content, options);
+var update = __webpack_require__(37)(content, options);
 
 if(content.locals) module.exports = content.locals;
 
@@ -29831,10 +29961,10 @@ if(false) {
 }
 
 /***/ }),
-/* 81 */
+/* 82 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(35)(true);
+exports = module.exports = __webpack_require__(36)(true);
 // imports
 
 

@@ -351,6 +351,15 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
                 const { targetNodeID, type } = data;
                 hack_driver_1.mouseEvent(this.chrome, targetNodeID, type, data);
             }
+            else if (action === 'setLabel') {
+                const { nodeIDs, label } = data;
+                nodeIDs.forEach((nodeID) => __awaiter(this, void 0, void 0, function* () {
+                    if (this.hasDOMStateWithID(nodeID)) {
+                        const node = this.getDOMStateWithID(nodeID);
+                        yield node.setLabel(label);
+                    }
+                }));
+            }
             return true;
         });
     }
@@ -826,6 +835,19 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             this.nodeMap.delete(nodeId);
             // this.oldNodeMap.set(nodeId, true);
         }
+    }
+    ;
+    getData() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.initialized;
+            return this.doc.getData();
+        });
+    }
+    ;
+    stringify() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return JSON.stringify(yield this.getData());
+        });
     }
     ;
 }

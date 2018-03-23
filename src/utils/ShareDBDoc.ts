@@ -8,7 +8,7 @@ export class SDB {
     private docs:Map<DocIdentifier, SDBDoc<any>> = new Map<DocIdentifier, SDBDoc<any>>();
     private share:ShareDB|ShareDBClient;
     private connection:ShareDB.Connection;
-    constructor(client:boolean, connection?:WebSocket) {
+    constructor(private client:boolean, connection?:WebSocket) {
         if(client) {
             this.connection = new ShareDBClient.Connection(connection);
         } else {
@@ -16,6 +16,17 @@ export class SDB {
             this.connection = this.share.connect();
         }
     };
+    public isClient():boolean { return this.client; };
+    public isServer():boolean { return !this.client; };
+
+    public use(action:ShareDB.Action, fn:ShareDB.UseCallback):void {
+        if(this.isServer()) {
+            this.share.use(action, fn);
+        } else {
+            throw new Error("Cannot use middleware for clients");
+        }
+    };
+
     private getDocIdentifier(collectionName:string, documentID:string):DocIdentifier {
         return [collectionName, documentID];
     };

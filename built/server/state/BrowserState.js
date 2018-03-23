@@ -29,7 +29,7 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
         this.tabs = new Map();
         this.options = { host: 'localhost', port: 9222 };
         _.extend(this.options, extraOptions);
-        this.initialize();
+        this.initialized = this.initialize();
     }
     ;
     getShareDBDoc() { return this.doc; }
@@ -106,9 +106,6 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
     shareDBListen(ws) {
         const stream = new WebSocketJSONStream(ws);
         this.sdb.listen(stream);
-        ws.once('close', () => {
-            console.log('disconnect');
-        });
     }
     ;
     refreshTabs() {
@@ -236,6 +233,29 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
     printNetworkSummary() {
         this.tabs.forEach((tabState) => {
             tabState.printNetworkSummary();
+        });
+    }
+    ;
+    getData() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.initialized;
+            return this.doc.getData();
+        });
+    }
+    ;
+    stringify() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return JSON.stringify(yield this.getData());
+        });
+    }
+    ;
+    stringifyAll() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return JSON.stringify({
+                browser: yield this.getData(),
+                chat: yield this.chat.getData(),
+                tabs: yield Promise.all(Array.from(this.tabs.values()).map((t) => t.getData()))
+            });
         });
     }
     ;

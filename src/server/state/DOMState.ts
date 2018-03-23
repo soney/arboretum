@@ -28,6 +28,7 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
     private updateListenersInterval: NodeJS.Timer = null;
     private shareDBNode:ShareDBDOMNode;
     private inputValue:string = '';
+    private userLabel:string = null;
     private listenedEvents:SDBArray<string> = new SDBArray<string>();
 
     private static attributesToIgnore: Array<string> = ['onload', 'onclick', 'onmouseover', 'onmouseout', 'onmouseenter', 'onmouseleave', 'action', 'oncontextmenu', 'onfocus'];
@@ -130,8 +131,16 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
             childFrame: this.childFrame ? this.childFrame.getFrameInfo() : null,
             inlineStyle: this.inlineStyle,
             inputValue: this.inputValue,
-            listenedEvents: this.listenedEvents.getValue()
+            listenedEvents: this.listenedEvents.getValue(),
+            userLabel:this.userLabel
         };
+    };
+    public async setLabel(label:string):Promise<void> {
+        this.userLabel = label;
+        if(this.isAttachedToShareDBDoc()) {
+            const doc = this.getShareDBDoc();
+            await doc.submitObjectReplaceOp(this.p('userLabel'), this.userLabel);
+        }
     };
     private computeGroupedAttributes(attributes:Array<string>):Array<[string, string]> {
         if(!attributes) {

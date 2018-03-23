@@ -17,7 +17,8 @@ type ArboretumClientProps = {
     viewType?:string
 };
 type ArboretumClientState = {
-    showControls:boolean
+    showControls:boolean,
+    enteringLabel:boolean
 };
 
 export class ArboretumClient extends React.Component<ArboretumClientProps, ArboretumClientState> {
@@ -35,11 +36,13 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
     constructor(props) {
         super(props);
         this.state = {
-            showControls: !this.props.frameID
+            showControls: !this.props.frameID,
+            enteringLabel:false
         };
+        this.tabID = this.props.tabID;
         this.socket = new WebSocket(this.props.wsAddress);
         this.sdb = new SDB(true, this.socket);
-        window['sdb'] = this.sdb;
+        // window['sdb'] = this.sdb;
     };
     public async componentWillUnmount():Promise<void> {
         await this.arboretumChat.leave();
@@ -69,7 +72,6 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
         this.arboretumChat = arboretumChat;
     };
     private goBack = ():void => {
-        console.log('back');
         this.getChat().addPageActionMessage('goBack', this.tabID);
     };
     private goForward = ():void => {
@@ -105,6 +107,19 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
             this.clientTab.removeHighlight(nodeIds);
         }
     };
+    private onLabel = (pam:PageActionMessage):void => {
+        const {tabID} = pam;
+        const relevantNodeIDs = ArboretumChat.getRelevantNodeIDs(pam);
+        if(this.clientTab) {
+            // console.log(this.tabID);
+            // console.log(this.clientTab.getTabID());
+            if(this.clientTab.getTabID() === tabID) {
+                this.setState({enteringLabel:true})
+                // const domNodes = relevantNodeIDs.map((nid) => this.clientTab.getNode(nid));
+                // console.log(domNodes);
+            }
+        }
+    };
 
     public render():React.ReactNode {
         const {showControls} = this.state;
@@ -116,7 +131,7 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
             <div className="window-content">
                 <div className="pane-group" id="client_body">
                     <div className="pane-sm sidebar" id="client_sidebar">
-                        <ArboretumChatBox onAddHighlight={this.addHighlight} onRemoveHighlight={this.removeHighlight} isAdmin={false} ref={this.chatRef} sdb={this.sdb} username="Steve" />
+                        <ArboretumChatBox onLabel={this.onLabel} onAddHighlight={this.addHighlight} onRemoveHighlight={this.removeHighlight} isAdmin={false} ref={this.chatRef} sdb={this.sdb} username="Steve" />
                     </div>
                     <div className="pane" id="client_content">
                         <ClientTab canGoBackChanged={this.tabCanGoBackChanged} canGoForwardChanged={this.tabCanGoForwardChanged} urlChanged={this.tabURLChanged} titleChanged={this.pageTitleChanged} isLoadingChanged={this.tabIsLoadingChanged} tabID={this.props.tabID} frameID={this.props.frameID} ref={this.clientTabRef} sdb={this.sdb} />

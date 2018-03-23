@@ -167,7 +167,7 @@ gulp.task('server-ts', function() {
 });
 gulp.task('server', ['server-ts', 'server-resources']);
 gulp.task('server-watch', function() {
-    return gulp.watch([path.join(__dirname, 'src', '*.ts'), path.join(__dirname, 'src', 'server', '**/*.{html,htm,css,js,woff,ttf,png,ts}')], ['server-ts', 'server-resources']);
+    return gulp.watch([path.join(__dirname, 'src', '*.ts'), path.join(__dirname, 'src', 'server', '**/*.{html,htm,css,js,woff,ttf,png,ts}'), path.join(__dirname, 'src', 'utils', '**/*.{html,htm,css,js,woff,ttf,png,ts}')], ['server-ts', 'server-resources']);
 });
 
 

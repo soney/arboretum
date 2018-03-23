@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import * as _ from 'underscore';
 import { platform } from 'os';
 import { createServer, Server } from 'http';
-import { readFile, createReadStream } from 'fs';
+import { readFile, writeFile, createReadStream } from 'fs';
 import { join } from 'path';
 import * as child from 'child_process';
 import * as express from 'express';
@@ -385,7 +385,7 @@ process.stdin.resume();
 // 	chatServer.destroy();
 // 	return browserState.destroy();
 // }
-async function processFile(filename: string): Promise<string> {
+function processFile(filename:string):Promise<string> {
     return new Promise<string>(function(resolve, reject) {
         readFile(filename, {
             encoding: 'utf8'
@@ -397,6 +397,16 @@ async function processFile(filename: string): Promise<string> {
         throw (err);
     });
 }
+async function writeBrowserState(filename:string):Promise<void> {
+    const stringifiedBrowser:string = await browserState.stringifyAll();
+    await new Promise((resolve, reject) => {
+        writeFile(filename, stringifiedBrowser, (err) => {
+            if(err) { reject(err); }
+            else { resolve(); }
+        });
+    });
+};
+setTimeout(() => writeBrowserState('FILE.json'), 20000)
 async function setClientOptions(options: {}): Promise<string> {
     let contents: string = await processFile(join(__dirname, 'client', 'index.html'));
     _.each(options, function(val, key) {

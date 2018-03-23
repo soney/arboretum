@@ -50,7 +50,34 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         this.messageAdded = this.registerEvent();
         this.pamStateChanged = this.registerEvent();
         this.ready = this.registerEvent();
-        this.doc = this.sdb.get('arboretum', 'chat');
+        if (this.sdb.isServer()) {
+            this.sdb.use('op', (request, next) => {
+                if (request.collection === ArboretumChat.COLLECTION && request.id === ArboretumChat.DOC_ID) {
+                    if (request.op) {
+                        const ops = request.op.op;
+                        ops.forEach((op) => {
+                            const { p } = op;
+                            if (p[0] === 'users') {
+                                const li = op['li'];
+                                if (p.length === 2 && li) {
+                                    const { agent } = request;
+                                    const { stream } = agent;
+                                    const { ws } = stream;
+                                    if (ws) {
+                                        ws.once('close', () => __awaiter(this, void 0, void 0, function* () {
+                                            const user = yield this.getUserByID(li.id);
+                                            this.markUserNotPresent(user);
+                                        }));
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+                next();
+            });
+        }
+        this.doc = this.sdb.get(ArboretumChat.COLLECTION, ArboretumChat.DOC_ID);
         this.initialized = this.initializeDoc();
         this.initialized.catch((err) => {
             console.error(err);
@@ -68,6 +95,13 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             const nodeDescriptions = data.nodeDescriptions || {};
             const nodeDescription = nodeDescriptions[targetNodeID] || `element ${targetNodeID}`;
             return `${type} ${nodeDescription}`;
+        }
+        else if (action === 'setLabel') {
+            const { nodeIDs, label } = data;
+            const nodeID = nodeIDs[0];
+            const nodeDescriptions = data.nodeDescriptions || {};
+            const nodeDescription = nodeDescriptions[nodeID] || `element ${nodeID}`;
+            return `label "${nodeDescription}" as "${label}"`;
         }
         else {
             return `do ${action}`;
@@ -137,10 +171,22 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         return this.meUser;
     }
     ;
+    getUserByID(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = yield this.getData();
+            for (let i = 0; i < data.users.length; i++) {
+                const user = data.users[i];
+                if (user.id === id) {
+                    return user;
+                }
+            }
+            return null;
+        });
+    }
+    ;
     getColor(id) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.initialized;
-            const data = this.doc.getData();
+            const data = yield this.getData();
             const { colors } = data;
             const index = guid_1.guidIndex(id) % colors.length;
             return colors[index];
@@ -209,8 +255,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
     ;
     getUserIndex(user) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.initialized;
-            const data = this.doc.getData();
+            const data = yield this.getData();
             for (let i = 0; i < data.users.length; i++) {
                 const u = data.users[i];
                 if (user.id === u.id) {
@@ -223,8 +268,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
     ;
     markUserNotPresent(user) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.initialized;
-            const data = this.doc.getData();
+            const data = yield this.getData();
             const userIndex = yield this.getUserIndex(user);
             yield this.doc.submitObjectReplaceOp(['users', userIndex, 'present'], false);
             // await this.doc.submitObjectDeleteOp(['users', userIndex, 'present']);
@@ -239,8 +283,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
     ;
     setUserTypingStatus(user, typingStatus) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.initialized;
-            const data = this.doc.getData();
+            const data = yield this.getData();
             const userIndex = yield this.getUserIndex(user);
             yield this.doc.submitObjectReplaceOp(['users', userIndex, 'typing'], typingStatus);
         });
@@ -248,16 +291,14 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
     ;
     getMessages() {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.initialized;
-            const data = this.doc.getData();
+            const data = yield this.getData();
             return data.messages;
         });
     }
     ;
     getUsers(onlyPresent = true) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.initialized;
-            const data = this.doc.getData();
+            const data = yield this.getData();
             const { users } = data;
             if (onlyPresent) {
                 return users.filter((u) => u.present);
@@ -268,7 +309,22 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         });
     }
     ;
+    getData() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.initialized;
+            return this.doc.getData();
+        });
+    }
+    ;
+    stringify() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return JSON.stringify(yield this.getData());
+        });
+    }
+    ;
 }
+ArboretumChat.COLLECTION = 'arboretum';
+ArboretumChat.DOC_ID = 'chat';
 ArboretumChat.userCounter = 1;
 ArboretumChat.messageCounter = 1;
 exports.ArboretumChat = ArboretumChat;

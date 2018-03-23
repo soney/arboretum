@@ -49,7 +49,7 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
         };
         // this.setTabID(this.props.tabID);
     };
-    private getTabID():CRI.TabID { return this.props.tabID; };
+    public getTabID():CRI.TabID { return this.state.tabID; };
     private hasTabID():boolean { return !!this.getTabID(); };
     public async setTabID(tabID:CRI.TabID):Promise<void> {
         await new Promise((resolve, reject) => {
@@ -63,10 +63,10 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
         if(this.state.tabID) {
             this.tabDoc = this.props.sdb.get<TabDoc>('tab', this.state.tabID);
             this.tabDoc.subscribe(this.docUpdated);
-            window['tabDoc'] = this.tabDoc;
+            // window['tabDoc'] = this.tabDoc;
         }
     };
-    private getNode(nodeId:CRI.NodeID):ClientNode {
+    public getNode(nodeId:CRI.NodeID):ClientNode {
         return this.clientNodes.get(nodeId);
     };
     public addHighlight (nodeIds:Array<CRI.NodeID>, color:string):void {

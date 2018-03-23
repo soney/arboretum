@@ -25,14 +25,15 @@ const log = getColoredLogger('red');
 const projectFileURLPath: string = fileUrl(join(resolve(__dirname, '..', '..'), 'browser'));
 export class BrowserState extends ShareDBSharedState<BrowserDoc> {
     private tabs: Map<CRI.TabID, TabState> = new Map<CRI.TabID, TabState>();
-    private options = { host: 'localhost', port: 9222 };
+    private options:{host:string,port:number} = { host: 'localhost', port: 9222 };
     private intervalID: NodeJS.Timer;
     private doc:SDBDoc<BrowserDoc>;
     private chat:ArboretumChat;
-    constructor(private sdb:SDB, extraOptions?) {
+    private initialized:Promise<void>;
+    constructor(private sdb:SDB, extraOptions?:{host?:string,port?:number}) {
         super();
         _.extend(this.options, extraOptions);
-        this.initialize();
+        this.initialized = this.initialize();
     };
     public getShareDBDoc():SDBDoc<BrowserDoc> { return this.doc; };
     public getAbsoluteShareDBPath():Array<string|number> { return []; };
@@ -87,9 +88,6 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
     public shareDBListen(ws:WebSocket):void {
         const stream:stream.Duplex = new WebSocketJSONStream(ws);
         this.sdb.listen(stream);
-        ws.once('close', () => {
-            console.log('disconnect');
-        });
     };
     private async refreshTabs():Promise<void> {
         const tabInfos:Array<CRI.TabInfo> = await this.getTabs();
@@ -197,6 +195,20 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
     public printNetworkSummary():void {
         this.tabs.forEach((tabState:TabState) => {
             tabState.printNetworkSummary();
+        });
+    };
+    private async getData():Promise<BrowserDoc> {
+        await this.initialized;
+        return this.doc.getData();
+    };
+    public async stringify():Promise<string> {
+        return JSON.stringify(await this.getData());
+    };
+    public async stringifyAll():Promise<string> {
+        return JSON.stringify({
+            browser: await this.getData(),
+            chat: await this.chat.getData(),
+            tabs: await Promise.all(Array.from(this.tabs.values()).map((t)=>t.getData()))
         });
     };
 };

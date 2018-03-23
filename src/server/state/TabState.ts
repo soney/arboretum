@@ -85,6 +85,14 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         } else if(action === 'mouse_event') {
             const {targetNodeID, type} = data;
             mouseEvent(this.chrome, targetNodeID, type, data);
+        } else if(action === 'setLabel') {
+            const {nodeIDs, label} = data;
+            nodeIDs.forEach(async (nodeID) => {
+                if(this.hasDOMStateWithID(nodeID)) {
+                    const node:DOMState = this.getDOMStateWithID(nodeID);
+                    await node.setLabel(label);
+                }
+            });
         }
         return true;
     };
@@ -687,5 +695,12 @@ export class TabState extends ShareDBSharedState<TabDoc> {
             console.error(`Could not find ${hostId} for shadowRootPopped event`);
             // throw new Error(`Could not find ${nodeId}`);
         }
+    };
+    public async getData():Promise<TabDoc> {
+        await this.initialized;
+        return this.doc.getData();
+    };
+    public async stringify():Promise<string> {
+        return JSON.stringify(await this.getData());
     };
 };

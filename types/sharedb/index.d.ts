@@ -9,8 +9,20 @@ declare module 'sharedb' {
         public listen(stream:stream.Duplex):void;
         public close(callback?:(err:ShareDB.Error)=>any):void;
         public connect():ShareDB.Connection;
+        public use(action:ShareDB.Action, fn:ShareDB.UseCallback);
     }
     namespace ShareDB {
+        export type Action = 'connect'|'op'|'doc'|'query'|'submit'|'apply'|'commit'|'after submit'|'receive';
+        interface RawOp {
+            src:string,
+            seq:number,
+            v:number,
+            op:Array<Op>,
+            m:any,
+            c:string,
+            d:string
+        }
+        export type UseCallback = ((request:{action:Action,agent:any,req:any,collection:string,id:string,query:any,op:RawOp}, callback:Function)=>void);
         interface Error {
             code:number,
             message:string

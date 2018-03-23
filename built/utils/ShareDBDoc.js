@@ -12,6 +12,7 @@ const ShareDBClient = require("sharedb/lib/client");
 const ShareDB = require("sharedb");
 class SDB {
     constructor(client, connection) {
+        this.client = client;
         this.docs = new Map();
         if (client) {
             this.connection = new ShareDBClient.Connection(connection);
@@ -19,6 +20,19 @@ class SDB {
         else {
             this.share = new ShareDB();
             this.connection = this.share.connect();
+        }
+    }
+    ;
+    isClient() { return this.client; }
+    ;
+    isServer() { return !this.client; }
+    ;
+    use(action, fn) {
+        if (this.isServer()) {
+            this.share.use(action, fn);
+        }
+        else {
+            throw new Error("Cannot use middleware for clients");
         }
     }
     ;

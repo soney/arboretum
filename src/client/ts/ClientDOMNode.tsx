@@ -252,7 +252,9 @@ export class ClientElementNode extends ClientNode {
         this.element.removeEventListener('click', this.onClick);
     };
     private getNodeDescription():string {
-        if(this.element.hasAttribute('aria-label')) {
+        if(this.sdbNode.userLabel) {
+            return this.sdbNode.userLabel;
+        } else if(this.element.hasAttribute('aria-label')) {
             return this.element.getAttribute('aria-label');
         } else {
             return this.element.textContent;

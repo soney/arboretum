@@ -25909,6 +25909,7 @@ const ShareDBClient = __webpack_require__(59);
 const ShareDB = __webpack_require__(64);
 class SDB {
     constructor(client, connection) {
+        this.client = client;
         this.docs = new Map();
         if (client) {
             this.connection = new ShareDBClient.Connection(connection);
@@ -25916,6 +25917,19 @@ class SDB {
         else {
             this.share = new ShareDB();
             this.connection = this.share.connect();
+        }
+    }
+    ;
+    isClient() { return this.client; }
+    ;
+    isServer() { return !this.client; }
+    ;
+    use(action, fn) {
+        if (this.isServer()) {
+            this.share.use(action, fn);
+        }
+        else {
+            throw new Error("Cannot use middleware for clients");
         }
     }
     ;
@@ -26484,7 +26498,6 @@ json.checkList = function(elem) {
 
 json.checkObj = function(elem) {
   if (!isObject(elem)) {
-    debugger;
     throw new Error("Referenced element not an object (it was " + JSON.stringify(elem) + ")");
   }
 };
@@ -26532,7 +26545,6 @@ json.apply = function(snapshot, op) {
 
       parent = elem;
       parentKey = key;
-      if(!elem) { debugger; }
       elem = elem[key];
       key = p;
 

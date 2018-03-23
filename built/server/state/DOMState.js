@@ -34,6 +34,7 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         this.updateValueInterval = null;
         this.updateListenersInterval = null;
         this.inputValue = '';
+        this.userLabel = null;
         this.listenedEvents = new ShareDBDoc_1.SDBArray();
         this.onDestroyed = this.registerEvent();
         if (this.contentDocument) {
@@ -151,8 +152,19 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
             childFrame: this.childFrame ? this.childFrame.getFrameInfo() : null,
             inlineStyle: this.inlineStyle,
             inputValue: this.inputValue,
-            listenedEvents: this.listenedEvents.getValue()
+            listenedEvents: this.listenedEvents.getValue(),
+            userLabel: this.userLabel
         };
+    }
+    ;
+    setLabel(label) {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.userLabel = label;
+            if (this.isAttachedToShareDBDoc()) {
+                const doc = this.getShareDBDoc();
+                yield doc.submitObjectReplaceOp(this.p('userLabel'), this.userLabel);
+            }
+        });
     }
     ;
     computeGroupedAttributes(attributes) {

@@ -18,7 +18,8 @@ export interface ShareDBDOMNode {
     inputValue:string,
     isSVG:boolean,
     canvasData:ImageData,
-    listenedEvents:Array<string>
+    listenedEvents:Array<string>,
+    userLabel:string
     // node: CRI.Node,
     // shadowRootType:CRI.ShadowRootType,
     // shadowRoots:Array<ShareDBDOMNode>,
