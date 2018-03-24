@@ -1,7 +1,7 @@
 import * as cri from 'chrome-remote-interface';
 import * as _ from 'underscore'
 import * as fileUrl from 'file-url';
-import { join, resolve } from 'path';
+import * as path from 'path';
 import { TabState } from './TabState';
 import { DOMState } from './DOMState';
 import * as express from 'express';
@@ -15,24 +15,33 @@ import { ipcMain } from 'electron';
 import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
 import {ArboretumChat, PageActionMessage, PageAction} from '../../utils/ArboretumChat';
 import * as ShareDB from 'sharedb';
-import {BrowserDoc} from '../../utils/state_interfaces';
+import {BrowserDoc,TabDoc} from '../../utils/state_interfaces';
 import * as timers from 'timers';
 import {ShareDBSharedState} from '../../utils/ShareDBSharedState';
 import {guid} from '../../utils/guid';
 import { processCSSURLs } from '../css_parser';
+import {registerEvent,RegisteredEvent} from '../../utils/TypedEventEmitter';
+import {readDirectory,readFileContents,writeFileContents,makeDirectoryRecursive} from '../../utils/fileFunctions';
 
 const log = getColoredLogger('red');
+export interface ActionPerformed {
+    pam:PageActionMessage,
+    tabData:TabDoc
+};
 
-const projectFileURLPath: string = fileUrl(join(resolve(__dirname, '..', '..'), 'browser'));
+
+const projectFileURLPath: string = fileUrl(path.join(path.resolve(__dirname, '..', '..'), 'browser'));
 export class BrowserState extends ShareDBSharedState<BrowserDoc> {
+    public actionPerformed:RegisteredEvent<ActionPerformed> = new RegisteredEvent<ActionPerformed>();
     private tabs: Map<CRI.TabID, TabState> = new Map<CRI.TabID, TabState>();
-    private options:{host:string,port:number} = { host: 'localhost', port: 9222 };
+    private options:{savedStatesDir:string, host:string,port:number} = { savedStatesDir: 'savedStates', host: 'localhost', port: 9222 };
     private intervalID: NodeJS.Timer;
     private doc:SDBDoc<BrowserDoc>;
     private chat:ArboretumChat;
     private initialized:Promise<void>;
     private sessionID:string = guid();
-    constructor(private sdb:SDB, extraOptions?:{host?:string,port?:number}) {
+    private performedActions:Array<ActionPerformed> = [];
+    constructor(private sdb:SDB, extraOptions?:{savedStatesDir?:string, host?:string,port?:number}) {
         super();
         _.extend(this.options, extraOptions);
         this.initialized = this.initialize();
@@ -65,10 +74,42 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
         const {tabID, action, data} = pam;
         const tab = this.getTab(tabID);
         if(tab) {
-            return await tab.performAction(action, data);
+            const performed = await tab.performAction(action, data);
+            const tabData = await tab.getData();
+            this.performedActions.push({pam, tabData});
+
+            const filename:string = `${this.getSessionID()}.json`;
+            const outFile:string = path.join(this.options.savedStatesDir, filename);
+            await makeDirectoryRecursive(this.options.savedStatesDir);
+            await writeFileContents(outFile, JSON.stringify(this.performedActions));
+
+            return performed;
         } else {
             return false;
         }
+    };
+    private async forEachPreviousAction(callback:(previousAction:ActionPerformed)=>Promise<void>):Promise<void> {
+        const files = await readDirectory(this.options.savedStatesDir);
+        for(let i = 0; i<files.length; i++) {
+            const data:Array<ActionPerformed> = JSON.parse(await readFileContents(files[i]));
+            for(let j = 0; j<data.length; j++) {
+                await callback(data[j]);
+            }
+        }
+    };
+    private async filterPreviousActions(callback:(previousAction:ActionPerformed)=>Promise<boolean>):Promise<Array<ActionPerformed>> {
+        const rv:Array<ActionPerformed> = [];
+        this.forEachPreviousAction(async (ap) => {
+            if(await callback(ap)) {
+                rv.push(ap);
+            }
+        });
+        return rv;
+    };
+    private getActionsForURL(url:string):Promise<ActionPerformed[]> {
+        return this.filterPreviousActions(async (pa) => {
+            return pa.tabData.url === url;
+        });
     };
     public async rejectAction(pam:PageActionMessage):Promise<boolean> {
         const {tabID, action, data} = pam;

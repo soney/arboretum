@@ -8,15 +8,17 @@ import * as child from 'child_process';
 import * as express from 'express';
 import * as ShareDB from 'sharedb';
 import * as WebSocket from 'ws';
-import { BrowserState } from './server/state/BrowserState';
+import { BrowserState, ActionPerformed } from './server/state/BrowserState';
 import * as keypress from 'keypress';
 import chalk from 'chalk';
 import * as ip from 'ip';
 import * as opn from 'opn';
 import * as request from 'request';
 import * as URL from 'url';
-import {ArboretumChat} from './utils/ArboretumChat';
+import {ArboretumChat, PageActionMessage} from './utils/ArboretumChat';
+import {TabDoc, BrowserDoc} from './utils/state_interfaces';
 import {SDB, SDBDoc} from './utils/ShareDBDoc';
+import {readDirectory,readFileContents,writeFileContents,makeDirectoryRecursive} from './utils/fileFunctions';
 
 const OPEN_MIRROR: boolean = false;
 const RDB_PORT: number = 9222;
@@ -36,12 +38,7 @@ const defaultBrowswerWindowOptions = {
     title: 'Arboretum',
 };
 
-const writeBrowserStateInterval = setInterval(() => {
-    writeBrowserState();
-}, 10000);
 app.on('window-all-closed', async () => {
-    clearInterval(writeBrowserStateInterval);
-    await writeBrowserState();
     // On OS X it is common for applications and their menu bar
     // to stay active until the user quits explicitly with Cmd + Q
     if (!isMac) { app.quit(); }
@@ -97,9 +94,7 @@ wss.on('connection', (ws:WebSocket, req) => {
     browserState.shareDBListen(ws);
 });
 expressApp.all('/', async (req, res, next) => {
-        const contents: string = await setClientOptions({
-            userID: getUserID()
-        });
+        const contents: string = await setClientOptions({ });
         res.send(contents);
     })
     .use('/', express.static(path.join(__dirname, 'client')))
@@ -246,8 +241,6 @@ process.stdin.on('keypress', async (ch, key) => {
     } else if (name === 'l') {
         browserState.printListeners();
     } else if (name === 'q') {
-        clearInterval(writeBrowserStateInterval);
-        await writeBrowserState();
         if(chromeProcess) {
             chromeProcess.kill();
             chromeProcess = null;
@@ -260,8 +253,6 @@ process.stdin.on('keypress', async (ch, key) => {
 process.on('exit', async (code) => {
     process.stdin.pause();
     process.stdin.setRawMode(false);
-    clearInterval(writeBrowserStateInterval);
-    await writeBrowserState();
 });
 process.stdin.setRawMode(true);
 process.stdin.resume();
@@ -397,73 +388,11 @@ process.stdin.resume();
 // 	return browserState.destroy();
 // }
 
-function processFile(filename:string):Promise<string> {
-    return new Promise<string>(function(resolve, reject) {
-        fs.readFile(filename, {
-            encoding: 'utf8'
-        }, function(err, data) {
-            if (err) { reject(err); }
-            else { resolve(data); }
-        })
-    }).catch((err) => {
-        throw (err);
-    });
-}
-async function writeBrowserState():Promise<string> {
-    const stringifiedBrowser:string = await browserState.stringifyAll();
-    const filename:string = `${browserState.getSessionID()}.json`;
-    const outFile:string = path.join(SAVED_STATES_DIR, filename);
-    await makeDirectoryRecursive(SAVED_STATES_DIR);
-    await new Promise((resolve, reject) => {
-        fs.writeFile(outFile, stringifiedBrowser, (err) => {
-            if(err) { reject(err); }
-            else { resolve(); }
-        });
-    });
-    return outFile;
-};
+
 async function setClientOptions(options: {}): Promise<string> {
-    let contents: string = await processFile(path.join(__dirname, 'client', 'index.html'));
+    let contents: string = await readFileContents(path.join(__dirname, 'client', 'index.html'));
     _.each(options, function(val, key) {
         contents = contents.replace(key + ': false', key + ': "' + val + '"');
     });
     return contents;
 }
-
-
-async function makeDirectoryRecursive(p:string):Promise<void> {
-    const splitPath:string[] = path.relative(path.resolve('.'), p).split(path.sep);
-    for(let i = 0; i<splitPath.length; i++) {
-        const dirName:string = path.join(...splitPath.slice(0, i+1));
-        if(!(await isDirectory(dirName))) {
-            await makeDirectory(dirName);
-        }
-    }
-};
-
-function makeDirectory(dirName:string):Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-        fs.mkdir(dirName, (err) => {
-            if(err) { reject(err); }
-            else { resolve(); }
-        });
-    });
-}
-function isDirectory(dirName:string):Promise<boolean> {
-    return new Promise<boolean>((resolve, reject) => {
-        fs.access(dirName, fs.constants.F_OK | fs.constants.W_OK, (err) => {
-            if(err) {
-                resolve(false);
-            } else {
-                fs.stat(dirName, (err, stats) => {
-                    if(err) { reject(err); }
-                    else { resolve(stats.isDirectory()); }
-                });
-            }
-        });
-    });
-}
-
-function getUserID(): number {
-    return Math.round(100 * Math.random());
-};
