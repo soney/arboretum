@@ -11,7 +11,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const cri = require("chrome-remote-interface");
 const _ = require("underscore");
 const fileUrl = require("file-url");
-const path_1 = require("path");
+const path = require("path");
 const TabState_1 = require("./TabState");
 const WebSocketJSONStream = require("websocket-json-stream");
 const ColoredLogger_1 = require("../../utils/ColoredLogger");
@@ -21,15 +21,20 @@ const timers = require("timers");
 const ShareDBSharedState_1 = require("../../utils/ShareDBSharedState");
 const guid_1 = require("../../utils/guid");
 const css_parser_1 = require("../css_parser");
+const TypedEventEmitter_1 = require("../../utils/TypedEventEmitter");
+const fileFunctions_1 = require("../../utils/fileFunctions");
 const log = ColoredLogger_1.getColoredLogger('red');
-const projectFileURLPath = fileUrl(path_1.join(path_1.resolve(__dirname, '..', '..'), 'browser'));
+;
+const projectFileURLPath = fileUrl(path.join(path.resolve(__dirname, '..', '..'), 'browser'));
 class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
     constructor(sdb, extraOptions) {
         super();
         this.sdb = sdb;
+        this.actionPerformed = new TypedEventEmitter_1.RegisteredEvent();
         this.tabs = new Map();
-        this.options = { host: 'localhost', port: 9222 };
+        this.options = { savedStatesDir: 'savedStates', host: 'localhost', port: 9222 };
         this.sessionID = guid_1.guid();
+        this.performedActions = [];
         _.extend(this.options, extraOptions);
         this.initialized = this.initialize();
     }
@@ -73,12 +78,49 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
             const { tabID, action, data } = pam;
             const tab = this.getTab(tabID);
             if (tab) {
-                return yield tab.performAction(action, data);
+                const performed = yield tab.performAction(action, data);
+                const tabData = yield tab.getData();
+                this.performedActions.push({ pam, tabData });
+                const filename = `${this.getSessionID()}.json`;
+                const outFile = path.join(this.options.savedStatesDir, filename);
+                yield fileFunctions_1.makeDirectoryRecursive(this.options.savedStatesDir);
+                yield fileFunctions_1.writeFileContents(outFile, JSON.stringify(this.performedActions));
+                return performed;
             }
             else {
                 return false;
             }
         });
+    }
+    ;
+    forEachPreviousAction(callback) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const files = yield fileFunctions_1.readDirectory(this.options.savedStatesDir);
+            for (let i = 0; i < files.length; i++) {
+                const data = JSON.parse(yield fileFunctions_1.readFileContents(path.join(this.options.savedStatesDir, files[i])));
+                for (let j = 0; j < data.length; j++) {
+                    yield callback(data[j]);
+                }
+            }
+        });
+    }
+    ;
+    filterPreviousActions(callback) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const rv = [];
+            yield this.forEachPreviousAction((ap) => __awaiter(this, void 0, void 0, function* () {
+                if (yield callback(ap)) {
+                    rv.push(ap);
+                }
+            }));
+            return rv;
+        });
+    }
+    ;
+    getActionsForURL(url) {
+        return this.filterPreviousActions((pa) => __awaiter(this, void 0, void 0, function* () {
+            return pa.tabData.url === url;
+        }));
     }
     ;
     rejectAction(pam) {
@@ -112,6 +154,8 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
         this.sdb.listen(stream);
     }
     ;
+    getSDB() { return this.sdb; }
+    ;
     refreshTabs() {
         return __awaiter(this, void 0, void 0, function* () {
             const tabInfos = yield this.getTabs();
@@ -127,7 +171,7 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
                 }
                 else {
                     log.trace(`Creating tab ${id}`);
-                    tab = new TabState_1.TabState(tabInfo, this.sdb);
+                    tab = new TabState_1.TabState(this, tabInfo);
                     this.tabs.set(id, tab);
                     yield tab.initialized;
                     yield this.getShareDBDoc().submitObjectInsertOp(['tabs', id], tabInfo);

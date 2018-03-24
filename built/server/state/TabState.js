@@ -19,14 +19,15 @@ const hack_driver_1 = require("../hack_driver/hack_driver");
 const log = ColoredLogger_1.getColoredLogger('yellow');
 ;
 class TabState extends ShareDBSharedState_1.ShareDBSharedState {
-    constructor(info, sdb) {
+    constructor(browserState, info) {
         super();
+        this.browserState = browserState;
         this.info = info;
-        this.sdb = sdb;
         this.frames = new Map();
         this.pendingFrameEvents = new Map();
         this.nodeMap = new Map();
         this.requests = new Map();
+        this.priorActions = [];
         this.loadingFinished = (event) => {
         };
         this.loadingFailed = (event) => {
@@ -292,6 +293,7 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
                 // throw new Error(`Could not find ${nodeId}`);
             }
         });
+        this.sdb = this.browserState.getSDB();
         try {
             this.initialized = this.initialize();
         }
@@ -338,6 +340,7 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             yield this.addDOMListeners();
             // this.addNetworkListeners();
             yield this.addExecutionContextListeners();
+            yield this.updatePriorActions();
         });
     }
     ;
@@ -589,7 +592,19 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
     }
     ;
     setURL(url) {
-        this.info.url = url;
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.info.url !== url) {
+                this.info.url = url;
+                yield this.updatePriorActions();
+            }
+        });
+    }
+    ;
+    updatePriorActions() {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.priorActions = yield this.browserState.getActionsForURL(this.info.url);
+            console.log(this.priorActions);
+        });
     }
     ;
     updateInfo(tabInfo) {

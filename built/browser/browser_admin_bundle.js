@@ -6068,14 +6068,16 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             }
         }
         else if (p[0] === 'messages') {
-            const { li } = op;
-            if (li.action && li.data && this.browserState) {
-                const relevantNodeIDs = ArboretumChat.getRelevantNodeIDs(li);
-                const relevantNodes = relevantNodeIDs.map((id) => this.browserState.getNode(id));
+            if (p.length === 2) {
+                const { li } = op;
+                if (li.action && li.data && this.browserState) {
+                    const relevantNodeIDs = ArboretumChat.getRelevantNodeIDs(li);
+                    const relevantNodes = relevantNodeIDs.map((id) => this.browserState.getNode(id));
+                }
+                this.messageAdded.emit({
+                    message: li
+                });
             }
-            this.messageAdded.emit({
-                message: li
-            });
         }
     }
     ;
@@ -24843,7 +24845,6 @@ json.checkList = function(elem) {
 
 json.checkObj = function(elem) {
   if (!isObject(elem)) {
-    debugger;
     throw new Error("Referenced element not an object (it was " + JSON.stringify(elem) + ")");
   }
 };
@@ -24891,7 +24892,6 @@ json.apply = function(snapshot, op) {
 
       parent = elem;
       parentKey = key;
-      if(!elem) { debugger; }
       elem = elem[key];
       key = p;
 

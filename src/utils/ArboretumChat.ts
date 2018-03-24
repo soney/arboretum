@@ -242,14 +242,16 @@ export class ArboretumChat extends TypedEventEmitter {
                 }
             }
         } else if(p[0] === 'messages') {
-            const {li} = op;
-            if(li.action && li.data && this.browserState) {
-                const relevantNodeIDs:Array<CRI.NodeID> = ArboretumChat.getRelevantNodeIDs(li as PageActionMessage);
-                const relevantNodes = relevantNodeIDs.map((id) => this.browserState.getNode(id));
+            if(p.length === 2) {
+                const {li} = op;
+                if(li.action && li.data && this.browserState) {
+                    const relevantNodeIDs:Array<CRI.NodeID> = ArboretumChat.getRelevantNodeIDs(li as PageActionMessage);
+                    const relevantNodes = relevantNodeIDs.map((id) => this.browserState.getNode(id));
+                }
+                this.messageAdded.emit({
+                    message:li
+                });
             }
-            this.messageAdded.emit({
-                message:li
-            });
         }
     };
     public getMe():User {

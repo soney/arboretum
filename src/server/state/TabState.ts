@@ -1,4 +1,5 @@
 import * as cri from 'chrome-remote-interface';
+import { BrowserState, ActionPerformed } from './BrowserState';
 import { FrameState } from './FrameState';
 import { DOMState } from './DOMState';
 import { getColoredLogger, level, setLevel } from '../../utils/ColoredLogger';
@@ -29,9 +30,12 @@ export class TabState extends ShareDBSharedState<TabDoc> {
     private nodeMap: Map<CRI.NodeID, DOMState> = new Map<CRI.NodeID, DOMState>();
     private doc:SDBDoc<TabDoc>;
     private requests:Map<CRI.RequestID, CRI.Network.Request> = new Map<CRI.RequestID, CRI.Network.Request>();
+    private priorActions:Array<ActionPerformed> = [];
     public initialized:Promise<void>
-    constructor(private info: CRI.TabInfo, private sdb:SDB) {
+    private sdb:SDB;
+    constructor(private browserState:BrowserState, private info: CRI.TabInfo) {
         super();
+        this.sdb = this.browserState.getSDB();
         try {
             this.initialized = this.initialize();
         } catch(err) {
@@ -77,6 +81,7 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         await this.addDOMListeners();
         // this.addNetworkListeners();
         await this.addExecutionContextListeners();
+        await this.updatePriorActions();
     };
     public async performAction(action:PageAction, data:any):Promise<boolean> {
         if(action === 'navigate') {
@@ -293,8 +298,15 @@ export class TabState extends ShareDBSharedState<TabDoc> {
     private setTitle(title: string): void {
         this.info.title = title;
     };
-    private setURL(url: string): void {
-        this.info.url = url;
+    private async setURL(url: string):Promise<void> {
+        if(this.info.url !== url) {
+            this.info.url = url;
+            await this.updatePriorActions();
+        }
+    };
+    private async updatePriorActions():Promise<void> {
+        this.priorActions = await this.browserState.getActionsForURL(this.info.url);
+        console.log(this.priorActions);
     };
     public updateInfo(tabInfo) {
         const { title, url } = tabInfo;

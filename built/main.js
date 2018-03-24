@@ -24,6 +24,7 @@ const opn = require("opn");
 const request = require("request");
 const URL = require("url");
 const ShareDBDoc_1 = require("./utils/ShareDBDoc");
+const fileFunctions_1 = require("./utils/fileFunctions");
 const OPEN_MIRROR = false;
 const RDB_PORT = 9222;
 const HTTP_PORT = 3000;
@@ -40,12 +41,7 @@ const defaultBrowswerWindowOptions = {
     // frame: false,            // removes default frame
     title: 'Arboretum',
 };
-const writeBrowserStateInterval = setInterval(() => {
-    writeBrowserState();
-}, 10000);
 electron_1.app.on('window-all-closed', () => __awaiter(this, void 0, void 0, function* () {
-    clearInterval(writeBrowserStateInterval);
-    yield writeBrowserState();
     // On OS X it is common for applications and their menu bar
     // to stay active until the user quits explicitly with Cmd + Q
     if (!isMac) {
@@ -97,9 +93,7 @@ wss.on('connection', (ws, req) => {
     browserState.shareDBListen(ws);
 });
 expressApp.all('/', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
-    const contents = yield setClientOptions({
-        userID: getUserID()
-    });
+    const contents = yield setClientOptions({});
     res.send(contents);
 }))
     .use('/', express.static(path.join(__dirname, 'client')))
@@ -259,8 +253,6 @@ process.stdin.on('keypress', (ch, key) => __awaiter(this, void 0, void 0, functi
         browserState.printListeners();
     }
     else if (name === 'q') {
-        clearInterval(writeBrowserStateInterval);
-        yield writeBrowserState();
         if (chromeProcess) {
             chromeProcess.kill();
             chromeProcess = null;
@@ -273,8 +265,6 @@ process.stdin.on('keypress', (ch, key) => __awaiter(this, void 0, void 0, functi
 process.on('exit', (code) => __awaiter(this, void 0, void 0, function* () {
     process.stdin.pause();
     process.stdin.setRawMode(false);
-    clearInterval(writeBrowserStateInterval);
-    yield writeBrowserState();
 }));
 process.stdin.setRawMode(true);
 process.stdin.resume();
@@ -407,95 +397,12 @@ process.stdin.resume();
 // 	chatServer.destroy();
 // 	return browserState.destroy();
 // }
-function processFile(filename) {
-    return new Promise(function (resolve, reject) {
-        fs.readFile(filename, {
-            encoding: 'utf8'
-        }, function (err, data) {
-            if (err) {
-                reject(err);
-            }
-            else {
-                resolve(data);
-            }
-        });
-    }).catch((err) => {
-        throw (err);
-    });
-}
-function writeBrowserState() {
-    return __awaiter(this, void 0, void 0, function* () {
-        const stringifiedBrowser = yield browserState.stringifyAll();
-        const filename = `${browserState.getSessionID()}.json`;
-        const outFile = path.join(SAVED_STATES_DIR, filename);
-        yield makeDirectoryRecursive(SAVED_STATES_DIR);
-        yield new Promise((resolve, reject) => {
-            fs.writeFile(outFile, stringifiedBrowser, (err) => {
-                if (err) {
-                    reject(err);
-                }
-                else {
-                    resolve();
-                }
-            });
-        });
-        return outFile;
-    });
-}
-;
 function setClientOptions(options) {
     return __awaiter(this, void 0, void 0, function* () {
-        let contents = yield processFile(path.join(__dirname, 'client', 'index.html'));
+        let contents = yield fileFunctions_1.readFileContents(path.join(__dirname, 'client', 'index.html'));
         _.each(options, function (val, key) {
             contents = contents.replace(key + ': false', key + ': "' + val + '"');
         });
         return contents;
     });
 }
-function makeDirectoryRecursive(p) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const splitPath = path.relative(path.resolve('.'), p).split(path.sep);
-        for (let i = 0; i < splitPath.length; i++) {
-            const dirName = path.join(...splitPath.slice(0, i + 1));
-            if (!(yield isDirectory(dirName))) {
-                yield makeDirectory(dirName);
-            }
-        }
-    });
-}
-;
-function makeDirectory(dirName) {
-    return new Promise((resolve, reject) => {
-        fs.mkdir(dirName, (err) => {
-            if (err) {
-                reject(err);
-            }
-            else {
-                resolve();
-            }
-        });
-    });
-}
-function isDirectory(dirName) {
-    return new Promise((resolve, reject) => {
-        fs.access(dirName, fs.constants.F_OK | fs.constants.W_OK, (err) => {
-            if (err) {
-                resolve(false);
-            }
-            else {
-                fs.stat(dirName, (err, stats) => {
-                    if (err) {
-                        reject(err);
-                    }
-                    else {
-                        resolve(stats.isDirectory());
-                    }
-                });
-            }
-        });
-    });
-}
-function getUserID() {
-    return Math.round(100 * Math.random());
-}
-;

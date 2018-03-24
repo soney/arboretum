@@ -88,10 +88,10 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
             return false;
         }
     };
-    private async forEachPreviousAction(callback:(previousAction:ActionPerformed)=>Promise<void>):Promise<void> {
+    public async forEachPreviousAction(callback:(previousAction:ActionPerformed)=>Promise<void>):Promise<void> {
         const files = await readDirectory(this.options.savedStatesDir);
         for(let i = 0; i<files.length; i++) {
-            const data:Array<ActionPerformed> = JSON.parse(await readFileContents(files[i]));
+            const data:Array<ActionPerformed> = JSON.parse(await readFileContents(path.join(this.options.savedStatesDir, files[i])));
             for(let j = 0; j<data.length; j++) {
                 await callback(data[j]);
             }
@@ -99,14 +99,14 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
     };
     private async filterPreviousActions(callback:(previousAction:ActionPerformed)=>Promise<boolean>):Promise<Array<ActionPerformed>> {
         const rv:Array<ActionPerformed> = [];
-        this.forEachPreviousAction(async (ap) => {
+        await this.forEachPreviousAction(async (ap) => {
             if(await callback(ap)) {
                 rv.push(ap);
             }
         });
         return rv;
     };
-    private getActionsForURL(url:string):Promise<ActionPerformed[]> {
+    public getActionsForURL(url:string):Promise<ActionPerformed[]> {
         return this.filterPreviousActions(async (pa) => {
             return pa.tabData.url === url;
         });
@@ -133,6 +133,7 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
         const stream:stream.Duplex = new WebSocketJSONStream(ws);
         this.sdb.listen(stream);
     };
+    public getSDB():SDB { return this.sdb; };
     private async refreshTabs():Promise<void> {
         const tabInfos:Array<CRI.TabInfo> = await this.getTabs();
         const existingTabs = new Set<CRI.TabID>(this.tabs.keys());
@@ -146,7 +147,7 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
                 tab.updateInfo(tabInfo);
             } else {
                 log.trace(`Creating tab ${id}`);
-                tab = new TabState(tabInfo, this.sdb);
+                tab = new TabState(this, tabInfo);
                 this.tabs.set(id, tab);
 
                 await tab.initialized;
