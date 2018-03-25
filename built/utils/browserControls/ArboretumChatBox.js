@@ -62,13 +62,21 @@ class ArboretumChatBox extends React.Component {
         this.openEndedChimeRef = (el) => {
             this.openEndedChimeElement = el;
         };
-        this.performAction = (a, pam) => {
-            const { action } = pam;
-            if (a === ArboretumChat_1.PAMAction.REQUEST_LABEL) {
+        this.performAction = (action, pam) => {
+            if (action === ArboretumChat_1.PAMAction.ACCEPT) {
+                this.acceptAction(pam);
+            }
+            else if (action === ArboretumChat_1.PAMAction.REJECT) {
+                this.rejectAction(pam);
+            }
+            else if (action === ArboretumChat_1.PAMAction.FOCUS) {
+                this.focusAction(pam);
+            }
+            else if (action === ArboretumChat_1.PAMAction.REQUEST_LABEL) {
                 this.requestLabel(pam);
             }
-            if (this.props.onAction) {
-                this.props.onAction(a, pam.action);
+            else {
+                console.log(action);
             }
         };
         this.onAddLabel = (nodeIDs, label, tabID, nodeDescriptions) => {
@@ -139,6 +147,26 @@ class ArboretumChatBox extends React.Component {
     ;
     playPageActionMessageChime() {
         ArboretumChatBox.playAudio(this.openEndedChimeElement);
+    }
+    ;
+    acceptAction(pam) {
+        this.getChat().setState(pam, ArboretumChat_1.PageActionState.PERFORMED);
+        if (this.props.onAction) {
+            this.props.onAction(pam.action);
+        }
+    }
+    ;
+    rejectAction(pam) {
+        this.getChat().setState(pam, ArboretumChat_1.PageActionState.REJECTED);
+        if (this.props.onReject) {
+            this.props.onReject(pam.action);
+        }
+    }
+    ;
+    focusAction(pam) {
+        if (this.props.onFocus) {
+            this.props.onFocus(pam.action);
+        }
     }
     ;
     requestLabel(pam) {
