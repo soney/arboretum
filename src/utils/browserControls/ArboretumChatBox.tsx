@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {SDB, SDBDoc} from '../ShareDBDoc';
-import {ArboretumChat, Message, User, TextMessage, PageActionMessage, PageActionState, MessageAddedEvent, PAMAction} from '../ArboretumChat';
+import {ArboretumChat, Message, User, TextMessage, PageActionMessage, PageAction, PageActionState, MessageAddedEvent, PAMAction} from '../ArboretumChat';
 import {RegisteredEvent} from '../TypedEventEmitter';
 import {PageActionMessageDisplay} from './PageActionMessage/PageActionMessageDisplay';
 
@@ -13,10 +13,10 @@ type ArboretumChatProps = {
     chatText?:string,
     sdb?:SDB,
     username:string,
-    onAction?:(pam:PageActionMessage) => void,
-    onReject?:(pam:PageActionMessage) => void,
-    onFocus?:(pam:PageActionMessage) => void,
-    onLabel?:(pam:PageActionMessage) => void,
+    onAction?:(action:PageAction) => void,
+    onReject?:(action:PageAction) => void,
+    onFocus?:(action:PageAction) => void,
+    onLabel?:(action:PageAction) => void,
     onAddHighlight?:(nodeIDs:Array<CRI.NodeID>, color:string)=>void,
     onRemoveHighlight?:(nodeIDs:Array<CRI.NodeID>)=>void,
     isAdmin:boolean
@@ -167,18 +167,18 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
     };
     private acceptAction(pam:PageActionMessage):void {
         this.getChat().setState(pam, PageActionState.PERFORMED);
-        if(this.props.onAction) { this.props.onAction(pam); }
+        if(this.props.onAction) { this.props.onAction(pam.action); }
     };
     private rejectAction(pam:PageActionMessage):void {
         this.getChat().setState(pam, PageActionState.REJECTED);
-        if(this.props.onReject) { this.props.onReject(pam); }
+        if(this.props.onReject) { this.props.onReject(pam.action); }
     };
     private focusAction(pam:PageActionMessage):void  {
-        if(this.props.onFocus) { this.props.onFocus(pam); }
+        if(this.props.onFocus) { this.props.onFocus(pam.action); }
     };
     private requestLabel(pam:PageActionMessage):void {
-        const {data} = pam;
-        this.chat.addPageActionMessage('getLabel', pam.tabID, data);
+        const {tabID, data} = pam.action;
+        this.chat.addPageActionMessage('getLabel', tabID, data);
     };
     private onAddLabel = (nodeIDs:CRI.NodeID[], label:string, tabID:CRI.TabID, nodeDescriptions:{}):void => {
         this.chat.addPageActionMessage('setLabel', tabID, {nodeIDs, label, nodeDescriptions});

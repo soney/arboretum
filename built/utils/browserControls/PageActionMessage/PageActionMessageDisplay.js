@@ -8,14 +8,14 @@ class PageActionMessageDisplay extends React.Component {
         super(props);
         this.addHighlights = (pam) => {
             if (this.props.onAddHighlight) {
-                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pam);
+                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pam.action);
                 const color = pam.sender.color;
                 this.props.onAddHighlight(nodeIDs, color);
             }
         };
         this.removeHighlights = (pam) => {
             if (this.props.onRemoveHighlight) {
-                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pam);
+                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pam.action);
                 this.props.onRemoveHighlight(nodeIDs);
             }
         };
@@ -35,9 +35,10 @@ class PageActionMessageDisplay extends React.Component {
             if (keyCode === 13) {
                 const input = event.target;
                 const { value } = input;
-                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(this.props.pam);
+                const { pam } = this.props;
+                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pam.action);
                 if (this.props.addLabel) {
-                    this.props.addLabel(nodeIDs, value, this.props.pam.tabID, this.props.pam.nodeDescriptions);
+                    this.props.addLabel(nodeIDs, value, pam.action.tabID, pam.nodeDescriptions);
                 }
                 this.removeHighlights(this.props.pam);
                 this.setState({ labeling: false });
@@ -54,8 +55,9 @@ class PageActionMessageDisplay extends React.Component {
     ;
     render() {
         const pam = this.props.pam;
-        const { action, data, state } = pam;
-        const description = React.createElement("span", { className: 'description', onMouseEnter: () => this.addHighlights(pam), onMouseLeave: () => this.removeHighlights(pam) }, ArboretumChat_1.ArboretumChat.describePageActionMessage(pam));
+        const { action, state } = pam;
+        const { data } = action;
+        const description = React.createElement("span", { className: 'description', onMouseEnter: () => this.addHighlights(pam), onMouseLeave: () => this.removeHighlights(pam) }, ArboretumChat_1.ArboretumChat.describePageAction(action));
         const messageActions = ArboretumChat_1.ArboretumChat.getActions(pam, this.props.isAdmin).map((action) => {
             const description = ArboretumChat_1.ArboretumChat.getActionDescription(action);
             return React.createElement("a", { key: action, href: "javascript:void(0)", onClick: () => this.performAction(action, pam) }, description);

@@ -73,14 +73,14 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
         }
     }
     ;
-    performAction(pam) {
+    performAction(action) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { tabID, action, data } = pam;
+            const { tabID, data } = action;
             const tab = this.getTab(tabID);
             if (tab) {
                 const performed = yield tab.performAction(action, data);
                 const tabData = yield tab.getData();
-                this.performedActions.push({ pam, tabData });
+                this.performedActions.push({ action, tabData });
                 const filename = `${this.getSessionID()}.json`;
                 const outFile = path.join(this.options.savedStatesDir, filename);
                 yield fileFunctions_1.makeDirectoryRecursive(this.options.savedStatesDir);
@@ -95,11 +95,14 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
     ;
     forEachPreviousAction(callback) {
         return __awaiter(this, void 0, void 0, function* () {
-            const files = yield fileFunctions_1.readDirectory(this.options.savedStatesDir);
-            for (let i = 0; i < files.length; i++) {
-                const data = JSON.parse(yield fileFunctions_1.readFileContents(path.join(this.options.savedStatesDir, files[i])));
-                for (let j = 0; j < data.length; j++) {
-                    yield callback(data[j]);
+            const { savedStatesDir } = this.options;
+            if (yield fileFunctions_1.isDirectory(savedStatesDir)) {
+                const files = yield fileFunctions_1.readDirectory(savedStatesDir);
+                for (let i = 0; i < files.length; i++) {
+                    const data = JSON.parse(yield fileFunctions_1.readFileContents(path.join(savedStatesDir, files[i])));
+                    for (let j = 0; j < data.length; j++) {
+                        yield callback(data[j]);
+                    }
                 }
             }
         });
@@ -123,9 +126,9 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
         }));
     }
     ;
-    rejectAction(pam) {
+    rejectAction(action) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { tabID, action, data } = pam;
+            const { tabID, data } = action;
             const tab = this.getTab(tabID);
             if (tab) {
                 return yield tab.rejectAction(action, data);
@@ -136,9 +139,9 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
         });
     }
     ;
-    focusAction(pam) {
+    focusAction(action) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { tabID, action, data } = pam;
+            const { tabID, data } = action;
             const tab = this.getTab(tabID);
             if (tab) {
                 return yield tab.focusAction(action, data);

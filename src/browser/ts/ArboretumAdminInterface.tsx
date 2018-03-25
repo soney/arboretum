@@ -9,9 +9,10 @@ import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
 import Switch from 'react-switch';
 import * as ShareDB from 'sharedb';
 import {BrowserDoc} from '../../utils/state_interfaces';
-import {ArboretumChat, Message, User, TextMessage, PageActionMessage} from '../../utils/ArboretumChat';
+import {ArboretumChat, Message, User, TextMessage, PageActionMessage, PageAction} from '../../utils/ArboretumChat';
 import {copyToClipboard} from '../../utils/copyToClipboard';
 import {ArboretumChatBox} from '../../utils/browserControls/ArboretumChatBox';
+import {ArboretumSuggestedActions} from './ArboretumSuggestedActions';
 
 export type BrowserTabID = number;
 export interface SetServerActiveValue {
@@ -37,6 +38,7 @@ export class ArboretumAdminInterface extends React.Component<ArboretumAdminProps
     private sdb:SDB;
     private chatbox:ArboretumChatBox;
     private shareURLElement:HTMLInputElement;
+    private suggestedActions:ArboretumSuggestedActions;
     private static defaultProps:ArboretumAdminProps = {
         serverState:"idle"
     };
@@ -97,6 +99,9 @@ export class ArboretumAdminInterface extends React.Component<ArboretumAdminProps
         if(this.chatbox) {
             this.chatbox.setSDB(this.sdb);
         }
+        if(this.suggestedActions) {
+            this.suggestedActions.setSDB(this.sdb);
+        }
         this.setState({shareURL, adminURL});
         return {shareURL, adminURL};
     };
@@ -146,28 +151,28 @@ export class ArboretumAdminInterface extends React.Component<ArboretumAdminProps
         }
     };
 
-    private onAction = async (pam:PageActionMessage):Promise<void> => {
+    private onAction = async (action:PageAction):Promise<void> => {
         await this.sendIPCMessage({
             message:'performAction',
-            data:pam
+            data:action
         });
     };
-    private onReject = async (pam:PageActionMessage):Promise<void> => {
+    private onReject = async (action:PageAction):Promise<void> => {
         await this.sendIPCMessage({
             message:'rejectAction',
-            data:pam
+            data:action
         });
     };
-    private onFocus = async (pam:PageActionMessage):Promise<void> => {
+    private onFocus = async (action:PageAction):Promise<void> => {
         await this.sendIPCMessage({
             message:'focusAction',
-            data:pam
+            data:action
         });
     };
-    private onLabel = async (pam:PageActionMessage):Promise<void> => {
+    private onLabel = async (action:PageAction):Promise<void> => {
         await this.sendIPCMessage({
             message:'labelAction',
-            data:pam
+            data:action
         });
     };
     private selectShareURL = ():void => {
@@ -210,6 +215,7 @@ export class ArboretumAdminInterface extends React.Component<ArboretumAdminProps
                     </tr>
                 </tbody>
             </table>
+            <ArboretumSuggestedActions ref={(el)=>{this.suggestedActions=el;}} onAction={this.onAction} />
             <ArboretumChatBox isAdmin={true} sdb={this.sdb} username="Admin" ref={this.chatBoxRef} onSendMessage={this.sendMessage} onAction={this.onAction} onReject={this.onReject} onFocus={this.onFocus} onLabel={this.onLabel} onAddHighlight={this.addHighlight} onRemoveHighlight={this.removeHighlight} />
         </div>;
     };

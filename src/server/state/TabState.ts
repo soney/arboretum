@@ -10,8 +10,9 @@ import { parse, format } from 'url';
 import * as ShareDB from 'sharedb';
 import {TabDoc } from '../../utils/state_interfaces';
 import {ShareDBSharedState} from '../../utils/ShareDBSharedState';
-import {ArboretumChat, PageActionMessage, PageAction} from '../../utils/ArboretumChat';
+import {ArboretumChat, PageActionMessage, PageAction, PageActionType, PageActionState} from '../../utils/ArboretumChat';
 import {mouseEvent, focus, getElementValue, setElementValue, getNamespace, getUniqueSelector, getCanvasImage} from '../hack_driver/hack_driver';
+import {alignTabDocs} from '../../utils/alignTabDocs';
 
 const log = getColoredLogger('yellow');
 interface PendingFrameEvent {
@@ -30,7 +31,6 @@ export class TabState extends ShareDBSharedState<TabDoc> {
     private nodeMap: Map<CRI.NodeID, DOMState> = new Map<CRI.NodeID, DOMState>();
     private doc:SDBDoc<TabDoc>;
     private requests:Map<CRI.RequestID, CRI.Network.Request> = new Map<CRI.RequestID, CRI.Network.Request>();
-    private priorActions:Array<ActionPerformed> = [];
     public initialized:Promise<void>
     private sdb:SDB;
     constructor(private browserState:BrowserState, private info: CRI.TabInfo) {
@@ -53,7 +53,8 @@ export class TabState extends ShareDBSharedState<TabDoc> {
             canGoForward:false,
             url:this.info.url,
             title:this.info.title,
-            isLoading: false
+            isLoading: false,
+            suggestedActions: []
         });
         await this.markAttachedToShareDBDoc();
 
@@ -81,16 +82,17 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         await this.addDOMListeners();
         // this.addNetworkListeners();
         await this.addExecutionContextListeners();
-        await this.updatePriorActions();
+        this.updatePriorActions(); // do NOT await (because this waits for initialization)
     };
     public async performAction(action:PageAction, data:any):Promise<boolean> {
-        if(action === 'navigate') {
+        const {type} = action;
+        if(type === 'navigate') {
             const {url} = data;
             await this.navigate(url);
-        } else if(action === 'mouse_event') {
+        } else if(type === 'mouse_event') {
             const {targetNodeID, type} = data;
             mouseEvent(this.chrome, targetNodeID, type, data);
-        } else if(action === 'setLabel') {
+        } else if(type === 'setLabel') {
             const {nodeIDs, label} = data;
             nodeIDs.forEach(async (nodeID) => {
                 if(this.hasDOMStateWithID(nodeID)) {
@@ -305,8 +307,31 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         }
     };
     private async updatePriorActions():Promise<void> {
-        this.priorActions = await this.browserState.getActionsForURL(this.info.url);
-        console.log(this.priorActions);
+        const [priorActions, tabDoc] = await Promise.all([
+                this.browserState.getActionsForURL(this.info.url),
+                this.getData()
+            ]);
+        const remappedPriorActions = priorActions.map((priorAction:ActionPerformed) => {
+            const {action, tabData} = priorAction;
+            const [priorToCurrent, currentToPrior] = alignTabDocs(tabData, tabDoc);
+            return ArboretumChat.retargetPageAction(action, this.getTabId(), priorToCurrent);
+        }).filter((a)=>!!a);
+        const uniqueRemappedPriorActions = [];
+        for(let i:number=0; i<remappedPriorActions.length; i++) {
+            let wasFound:boolean = false;
+            const remappedPriorAction = remappedPriorActions[i];
+            for(let j:number=0; j<uniqueRemappedPriorActions.length; j++) {
+                // if(!ArboretumChat.pageActionsEqual(uniqueRemappedPriorActions))
+                if(ArboretumChat.pageActionsEqual(remappedPriorAction, uniqueRemappedPriorActions[j])) {
+                    wasFound = true;
+                    break;
+                }
+            }
+            if(!wasFound) {
+                uniqueRemappedPriorActions.push(remappedPriorAction);
+            }
+        }
+        this.doc.submitObjectReplaceOp(this.p('suggestedActions'), uniqueRemappedPriorActions);
     };
     public updateInfo(tabInfo) {
         const { title, url } = tabInfo;

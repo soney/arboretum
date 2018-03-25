@@ -1,3 +1,4 @@
+import {PageAction} from './ArboretumChat';
 export type CanvasImage = {data:Array<number>, width:number, height:number};
 
 export interface BrowserDoc {
@@ -32,5 +33,6 @@ export interface TabDoc {
     canGoForward:boolean,
     url:string,
     title:string,
-    isLoading:boolean
+    isLoading:boolean,
+    suggestedActions:Array<PageAction>
 };

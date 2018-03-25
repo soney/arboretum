@@ -42,7 +42,7 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
         this.tabID = this.props.tabID;
         this.socket = new WebSocket(this.props.wsAddress);
         this.sdb = new SDB(true, this.socket);
-        // window['sdb'] = this.sdb;
+        window['sdb'] = this.sdb;
     };
     public async componentWillUnmount():Promise<void> {
         await this.arboretumChat.leave();
@@ -59,10 +59,9 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
         if(this.tabID) {
             this.clientTab.setTabID(this.tabID);
         }
-        this.clientTab.pageAction.addListener((event:{pa:PageAction,data:any}) => {
+        this.clientTab.pageAction.addListener((pa:PageAction) => {
             const chat = this.getChat();
-            const {pa, data} = event;
-            chat.addPageActionMessage(pa, this.tabID, data);
+            chat.addPageActionMessage(pa.type, this.tabID, pa.data);
         });
     };
     private navBarRef = (navBar:BrowserNavigationBar):void => {
@@ -107,9 +106,9 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
             this.clientTab.removeHighlight(nodeIds);
         }
     };
-    private onLabel = (pam:PageActionMessage):void => {
-        const {tabID} = pam;
-        const relevantNodeIDs = ArboretumChat.getRelevantNodeIDs(pam);
+    private onLabel = (action:PageAction):void => {
+        const {tabID} = action;
+        const relevantNodeIDs = ArboretumChat.getRelevantNodeIDs(action);
         if(this.clientTab) {
             // console.log(this.tabID);
             // console.log(this.clientTab.getTabID());

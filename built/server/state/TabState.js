@@ -15,7 +15,9 @@ const ColoredLogger_1 = require("../../utils/ColoredLogger");
 const _ = require("underscore");
 const url_1 = require("url");
 const ShareDBSharedState_1 = require("../../utils/ShareDBSharedState");
+const ArboretumChat_1 = require("../../utils/ArboretumChat");
 const hack_driver_1 = require("../hack_driver/hack_driver");
+const alignTabDocs_1 = require("../../utils/alignTabDocs");
 const log = ColoredLogger_1.getColoredLogger('yellow');
 ;
 class TabState extends ShareDBSharedState_1.ShareDBSharedState {
@@ -27,7 +29,6 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
         this.pendingFrameEvents = new Map();
         this.nodeMap = new Map();
         this.requests = new Map();
-        this.priorActions = [];
         this.loadingFinished = (event) => {
         };
         this.loadingFailed = (event) => {
@@ -314,7 +315,8 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
                 canGoForward: false,
                 url: this.info.url,
                 title: this.info.title,
-                isLoading: false
+                isLoading: false,
+                suggestedActions: []
             });
             yield this.markAttachedToShareDBDoc();
             const chromeEventEmitter = cri({
@@ -340,21 +342,22 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             yield this.addDOMListeners();
             // this.addNetworkListeners();
             yield this.addExecutionContextListeners();
-            yield this.updatePriorActions();
+            this.updatePriorActions(); // do NOT await (because this waits for initialization)
         });
     }
     ;
     performAction(action, data) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (action === 'navigate') {
+            const { type } = action;
+            if (type === 'navigate') {
                 const { url } = data;
                 yield this.navigate(url);
             }
-            else if (action === 'mouse_event') {
+            else if (type === 'mouse_event') {
                 const { targetNodeID, type } = data;
                 hack_driver_1.mouseEvent(this.chrome, targetNodeID, type, data);
             }
-            else if (action === 'setLabel') {
+            else if (type === 'setLabel') {
                 const { nodeIDs, label } = data;
                 nodeIDs.forEach((nodeID) => __awaiter(this, void 0, void 0, function* () {
                     if (this.hasDOMStateWithID(nodeID)) {
@@ -602,8 +605,31 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
     ;
     updatePriorActions() {
         return __awaiter(this, void 0, void 0, function* () {
-            this.priorActions = yield this.browserState.getActionsForURL(this.info.url);
-            console.log(this.priorActions);
+            const [priorActions, tabDoc] = yield Promise.all([
+                this.browserState.getActionsForURL(this.info.url),
+                this.getData()
+            ]);
+            const remappedPriorActions = priorActions.map((priorAction) => {
+                const { action, tabData } = priorAction;
+                const [priorToCurrent, currentToPrior] = alignTabDocs_1.alignTabDocs(tabData, tabDoc);
+                return ArboretumChat_1.ArboretumChat.retargetPageAction(action, this.getTabId(), priorToCurrent);
+            }).filter((a) => !!a);
+            const uniqueRemappedPriorActions = [];
+            for (let i = 0; i < remappedPriorActions.length; i++) {
+                let wasFound = false;
+                const remappedPriorAction = remappedPriorActions[i];
+                for (let j = 0; j < uniqueRemappedPriorActions.length; j++) {
+                    // if(!ArboretumChat.pageActionsEqual(uniqueRemappedPriorActions))
+                    if (ArboretumChat_1.ArboretumChat.pageActionsEqual(remappedPriorAction, uniqueRemappedPriorActions[j])) {
+                        wasFound = true;
+                        break;
+                    }
+                }
+                if (!wasFound) {
+                    uniqueRemappedPriorActions.push(remappedPriorAction);
+                }
+            }
+            this.doc.submitObjectReplaceOp(this.p('suggestedActions'), uniqueRemappedPriorActions);
         });
     }
     ;

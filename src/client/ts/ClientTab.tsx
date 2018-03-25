@@ -34,7 +34,7 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
     private rootElement:ClientNode;
     private nodeSelector:NodeSelector = new NodeSelector();
     private iframeElement:HTMLIFrameElement;
-    public pageAction = registerEvent<{pa:PageAction, data:any}>();
+    public pageAction = registerEvent<PageAction>();
 
     constructor(props) {
         super(props);
@@ -63,7 +63,7 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
         if(this.state.tabID) {
             this.tabDoc = this.props.sdb.get<TabDoc>('tab', this.state.tabID);
             this.tabDoc.subscribe(this.docUpdated);
-            // window['tabDoc'] = this.tabDoc;
+            window['tabDoc'] = this.tabDoc;
         }
     };
     public getNode(nodeId:CRI.NodeID):ClientNode {
@@ -121,20 +121,23 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
         this.clientNodes.set(clientNode.getNodeID(), clientNode);
         clientNode.mouseEvent.addListener((event) => {
             this.pageAction.emit({
-                pa:'mouse_event',
-                data:event
+                type:'mouse_event',
+                data:event,
+                tabID: this.getTabID()
             });
         });
         clientNode.keyboardEvent.addListener((event) => {
             this.pageAction.emit({
-                pa:'keyboard_event',
-                data:event
+                type:'keyboard_event',
+                data:event,
+                tabID: this.getTabID()
             });
         });
         clientNode.elementEvent.addListener((event) => {
             this.pageAction.emit({
-                pa: 'element_event',
-                data:event
+                type: 'element_event',
+                data:event,
+                tabID: this.getTabID()
             });
         });
     };

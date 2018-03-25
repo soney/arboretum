@@ -27,14 +27,14 @@ export class PageActionMessageDisplay extends React.Component<PageActionMessageP
     };
     private addHighlights = (pam:PageActionMessage):void => {
         if(this.props.onAddHighlight) {
-            const nodeIDs:Array<CRI.NodeID> = ArboretumChat.getRelevantNodeIDs(pam);
+            const nodeIDs:Array<CRI.NodeID> = ArboretumChat.getRelevantNodeIDs(pam.action);
             const color:string = pam.sender.color;
             this.props.onAddHighlight(nodeIDs, color);
         }
     };
     private removeHighlights = (pam:PageActionMessage):void => {
         if(this.props.onRemoveHighlight) {
-            const nodeIDs:Array<CRI.NodeID> = ArboretumChat.getRelevantNodeIDs(pam);
+            const nodeIDs:Array<CRI.NodeID> = ArboretumChat.getRelevantNodeIDs(pam.action);
             this.props.onRemoveHighlight(nodeIDs);
         }
     };
@@ -52,8 +52,10 @@ export class PageActionMessageDisplay extends React.Component<PageActionMessageP
             const input = event.target as HTMLInputElement;
             const {value} = input;
 
-            const nodeIDs:Array<CRI.NodeID> = ArboretumChat.getRelevantNodeIDs(this.props.pam);
-            if(this.props.addLabel) { this.props.addLabel(nodeIDs, value, this.props.pam.tabID, this.props.pam.nodeDescriptions); }
+            const {pam} = this.props;
+
+            const nodeIDs:Array<CRI.NodeID> = ArboretumChat.getRelevantNodeIDs(pam.action);
+            if(this.props.addLabel) { this.props.addLabel(nodeIDs, value, pam.action.tabID, pam.nodeDescriptions); }
 
             this.removeHighlights(this.props.pam);
             this.setState({labeling:false});
@@ -65,8 +67,9 @@ export class PageActionMessageDisplay extends React.Component<PageActionMessageP
 
     public render():React.ReactNode {
         const pam:PageActionMessage = this.props.pam;
-        const {action, data, state} = pam;
-        const description:JSX.Element = <span className='description' onMouseEnter={()=>this.addHighlights(pam)} onMouseLeave={()=>this.removeHighlights(pam)}>{ArboretumChat.describePageActionMessage(pam)}</span>;
+        const {action, state} = pam;
+        const {data} =  action;
+        const description:JSX.Element = <span className='description' onMouseEnter={()=>this.addHighlights(pam)} onMouseLeave={()=>this.removeHighlights(pam)}>{ArboretumChat.describePageAction(action)}</span>;
 
         const messageActions:Array<JSX.Element> = ArboretumChat.getActions(pam, this.props.isAdmin).map((action:PAMAction) => {
             const description:string = ArboretumChat.getActionDescription(action);

@@ -64,7 +64,8 @@ export class BrowserTab extends React.Component<BrowserTabProps, BrowserTabState
             canGoForward:false,
             url:'',
             title:'',
-            isLoading: false
+            isLoading: false,
+            suggestedActions: []
         });
         await Promise.all([
             this.tabDoc.submitObjectReplaceOp(['canGoBack'], this.state.canGoBack),

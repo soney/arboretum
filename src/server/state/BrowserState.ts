@@ -21,11 +21,11 @@ import {ShareDBSharedState} from '../../utils/ShareDBSharedState';
 import {guid} from '../../utils/guid';
 import { processCSSURLs } from '../css_parser';
 import {registerEvent,RegisteredEvent} from '../../utils/TypedEventEmitter';
-import {readDirectory,readFileContents,writeFileContents,makeDirectoryRecursive} from '../../utils/fileFunctions';
+import {isDirectory, readDirectory,readFileContents,writeFileContents,makeDirectoryRecursive} from '../../utils/fileFunctions';
 
 const log = getColoredLogger('red');
 export interface ActionPerformed {
-    pam:PageActionMessage,
+    action:PageAction,
     tabData:TabDoc
 };
 
@@ -70,13 +70,13 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
             }
         }
     };
-    public async performAction(pam:PageActionMessage):Promise<boolean> {
-        const {tabID, action, data} = pam;
+    public async performAction(action:PageAction):Promise<boolean> {
+        const {tabID, data} = action;
         const tab = this.getTab(tabID);
         if(tab) {
             const performed = await tab.performAction(action, data);
             const tabData = await tab.getData();
-            this.performedActions.push({pam, tabData});
+            this.performedActions.push({action, tabData});
 
             const filename:string = `${this.getSessionID()}.json`;
             const outFile:string = path.join(this.options.savedStatesDir, filename);
@@ -89,11 +89,14 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
         }
     };
     public async forEachPreviousAction(callback:(previousAction:ActionPerformed)=>Promise<void>):Promise<void> {
-        const files = await readDirectory(this.options.savedStatesDir);
-        for(let i = 0; i<files.length; i++) {
-            const data:Array<ActionPerformed> = JSON.parse(await readFileContents(path.join(this.options.savedStatesDir, files[i])));
-            for(let j = 0; j<data.length; j++) {
-                await callback(data[j]);
+        const {savedStatesDir} = this.options;
+        if(await isDirectory(savedStatesDir)) {
+            const files = await readDirectory(savedStatesDir);
+            for(let i = 0; i<files.length; i++) {
+                const data:Array<ActionPerformed> = JSON.parse(await readFileContents(path.join(savedStatesDir, files[i])));
+                for(let j = 0; j<data.length; j++) {
+                    await callback(data[j]);
+                }
             }
         }
     };
@@ -111,8 +114,8 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
             return pa.tabData.url === url;
         });
     };
-    public async rejectAction(pam:PageActionMessage):Promise<boolean> {
-        const {tabID, action, data} = pam;
+    public async rejectAction(action:PageAction):Promise<boolean> {
+        const {tabID, data} = action;
         const tab = this.getTab(tabID);
         if(tab) {
             return await tab.rejectAction(action, data);
@@ -120,8 +123,8 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
             return false;
         }
     };
-    public async focusAction(pam:PageActionMessage):Promise<boolean> {
-        const {tabID, action, data} = pam;
+    public async focusAction(action:PageAction):Promise<boolean> {
+        const {tabID, data} = action;
         const tab = this.getTab(tabID);
         if(tab) {
             return await tab.focusAction(action, data);

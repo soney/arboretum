@@ -10,7 +10,7 @@ export const userColors:Array<Array<Color>> = [
 ];
 export enum TypingStatus { IDLE, ACTIVE, IDLE_TYPED };
 export enum PageActionState { NOT_PERFORMED, PERFORMED, REJECTED };
-export type PageAction ='navigate'|'goBack'|'goForward'|'mouse_event'|'keyboard_event'|'element_event'|'focus_event'|'reload'|'getLabel'|'setLabel';
+export type PageActionType ='navigate'|'goBack'|'goForward'|'mouse_event'|'keyboard_event'|'element_event'|'focus_event'|'reload'|'getLabel'|'setLabel';
 export enum PAMAction { ACCEPT, REJECT, FOCUS, REQUEST_LABEL, ADD_LABEL};
 
 export type UserID = string;
@@ -29,10 +29,13 @@ export interface Message {
 export interface TextMessage extends Message {
     content:string
 };
+export interface PageAction {
+    type:PageActionType,
+    tabID:CRI.TabID,
+    data:any
+}
 export interface PageActionMessage extends Message {
     action:PageAction,
-    tabID:CRI.TabID,
-    data:any,
     state:PageActionState,
     nodeDescriptions:{[id:number]:string;}
 };
@@ -112,29 +115,39 @@ export class ArboretumChat extends TypedEventEmitter {
             console.error(err);
         });
     };
-    public static describePageActionMessage(pam:PageActionMessage):string {
-        const {action, data, state} = pam;
-        if(action === 'navigate') {
+    public static pageActionsEqual(a1:PageAction, a2:PageAction):boolean {
+        if(a1.type === a2.type) {
+            if(a1.data && a2.data) {
+                if(a1.data.targetNodeID === a2.data.targetNodeID) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+    public static describePageAction(action:PageAction):string {
+        const {type, data} = action;
+        if(type === 'navigate') {
             const {url} = data;
             return `navigate to ${url}`;
-        } else if(action === 'mouse_event') {
+        } else if(type === 'mouse_event') {
             const {targetNodeID, type} = data;
             const nodeDescriptions = data.nodeDescriptions || {};
             const nodeDescription:string = nodeDescriptions[targetNodeID] || `element ${targetNodeID}`;
             return `${type} ${nodeDescription}`;
-        } else if(action === 'setLabel') {
+        } else if(type === 'setLabel') {
             const {nodeIDs, label} = data;
             const nodeID = nodeIDs[0];
             const nodeDescriptions = data.nodeDescriptions || {};
             const nodeDescription:string = nodeDescriptions[nodeID] || `element ${nodeID}`;
             return `label "${nodeDescription}" as "${label}"`;
-        } else if(action === 'getLabel') {
+        } else if(type === 'getLabel') {
             const {targetNodeID, label} = data;
             const nodeDescriptions = data.nodeDescriptions || {};
             const nodeDescription:string = nodeDescriptions[targetNodeID] || `element ${targetNodeID}`;
             return `you to label "${nodeDescription}"`;
         } else {
-            return `do ${action}`;
+            return `do ${type}`;
         }
     };
     public static getActionDescription(action:PAMAction):string {
@@ -166,13 +179,14 @@ export class ArboretumChat extends TypedEventEmitter {
     };
     public static getActions(pam:PageActionMessage, isAdmin:boolean) {
         const {action, state} = pam;
-        if(action === 'navigate' || action === 'goBack' || action === 'goForward' || action === 'reload') {
+        const {type} = action;
+        if(type === 'navigate' || type === 'goBack' || type === 'goForward' || type === 'reload') {
             if(isAdmin && state === PageActionState.NOT_PERFORMED) {
                 return [PAMAction.ACCEPT, PAMAction.REJECT];
             } else {
                 return [];
             }
-        } else if(action === 'mouse_event' || action === 'keyboard_event' || action === 'element_event') {
+        } else if(type === 'mouse_event' || type === 'keyboard_event' || type === 'element_event') {
             if(isAdmin) {
                 if(state === PageActionState.NOT_PERFORMED) {
                     return [PAMAction.ACCEPT, PAMAction.REJECT, PAMAction.FOCUS, PAMAction.REQUEST_LABEL];
@@ -182,13 +196,13 @@ export class ArboretumChat extends TypedEventEmitter {
             } else {
                 return [PAMAction.ADD_LABEL];
             }
-        } else if(action === 'getLabel') {
+        } else if(type === 'getLabel') {
             if(isAdmin) {
                 return [PAMAction.FOCUS];
             } else {
                 return [PAMAction.ADD_LABEL, PAMAction.FOCUS];
             }
-        } else if(action === 'setLabel') {
+        } else if(type === 'setLabel') {
             if(isAdmin) {
                 if(state === PageActionState.NOT_PERFORMED) {
                     return [PAMAction.ACCEPT, PAMAction.REJECT, PAMAction.FOCUS];
@@ -202,8 +216,34 @@ export class ArboretumChat extends TypedEventEmitter {
             return [];
         }
     };
-    public static getRelevantNodeIDs(pam:PageActionMessage):Array<CRI.NodeID> {
-        const {action, data, state} = pam;
+    public static retargetPageAction(pa:PageAction, tabID:CRI.TabID, nodeMap:Map<CRI.NodeID, CRI.NodeID>):PageAction {
+        const {type, data} = pa;
+        let newData:any = _.clone(data);
+        if(type === 'navigate' || type === 'goBack' || type === 'goForward' || type === 'reload') {
+            newData = data;
+        } else if(type === 'mouse_event' || type === 'keyboard_event' || type === 'element_event') {
+            const {targetNodeID} = data;
+            const newTarget = nodeMap.get(targetNodeID);
+            if(newTarget) {
+                newData.targetNodeID = newTarget
+            } else {
+                return null;
+            }
+        } else if(type === 'getLabel') {
+            return null;
+        } else if(type === 'setLabel') {
+            const {targetNodeID} = data;
+            const newTarget = nodeMap.get(targetNodeID);
+            if(newTarget) {
+                newData.targetNodeID = newTarget
+            } else {
+                return null;
+            }
+        }
+        return { type, tabID, data:newData };
+    };
+    public static getRelevantNodeIDs(action:PageAction):Array<CRI.NodeID> {
+        const {type, data} = action;
         const {targetNodeID} = data;
         if(targetNodeID) {
             return [targetNodeID];
@@ -245,7 +285,8 @@ export class ArboretumChat extends TypedEventEmitter {
             if(p.length === 2) {
                 const {li} = op;
                 if(li.action && li.data && this.browserState) {
-                    const relevantNodeIDs:Array<CRI.NodeID> = ArboretumChat.getRelevantNodeIDs(li as PageActionMessage);
+                    const pam = li as PageActionMessage;
+                    const relevantNodeIDs:Array<CRI.NodeID> = ArboretumChat.getRelevantNodeIDs(li.action);
                     const relevantNodes = relevantNodeIDs.map((id) => this.browserState.getNode(id));
                 }
                 this.messageAdded.emit({
@@ -295,9 +336,10 @@ export class ArboretumChat extends TypedEventEmitter {
         const message:TextMessage = {sender, content};
         this.addMesssage(message);
     };
-    public async addPageActionMessage(action:PageAction, tabID:CRI.TabID, data:any={}, sender:User=this.getMe()):Promise<void> {
+    public async addPageActionMessage(type:PageActionType, tabID:CRI.TabID, data:any={}, sender:User=this.getMe()):Promise<void> {
         const nodeDescriptions = data.nodeDescriptions || {};
-        const message:PageActionMessage = {sender, action, tabID, data, nodeDescriptions, state:PageActionState.NOT_PERFORMED}
+        const action = { type, tabID, data };
+        const message:PageActionMessage = {sender, action, nodeDescriptions, state:PageActionState.NOT_PERFORMED}
         this.addMesssage(message);
     };
     public async setState(pam:PageActionMessage, state:PageActionState):Promise<void> {

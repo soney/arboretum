@@ -140,7 +140,7 @@ module.exports = ShareDBError;
 /***/ (function(module, exports, __webpack_require__) {
 
 
-exports.defaultType = __webpack_require__(22).type;
+exports.defaultType = __webpack_require__(23).type;
 
 exports.map = {};
 
@@ -675,7 +675,7 @@ exports.transform = function(type, op, appliedOp) {
 /* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var json0 = __webpack_require__(22).type;
+var json0 = __webpack_require__(23).type;
 
 exports.projectSnapshot = projectSnapshot;
 exports.projectOp = projectOp;
@@ -798,6 +798,493 @@ function projectData(fields, data) {
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const TypedEventEmitter_1 = __webpack_require__(74);
+const guid_1 = __webpack_require__(75);
+const _ = __webpack_require__(76);
+exports.userColors = [
+    ['#A80000', '#B05E0D', '#C19C00', '#107C10', '#038387', '#004E8C', '#5C126B']
+];
+var TypingStatus;
+(function (TypingStatus) {
+    TypingStatus[TypingStatus["IDLE"] = 0] = "IDLE";
+    TypingStatus[TypingStatus["ACTIVE"] = 1] = "ACTIVE";
+    TypingStatus[TypingStatus["IDLE_TYPED"] = 2] = "IDLE_TYPED";
+})(TypingStatus = exports.TypingStatus || (exports.TypingStatus = {}));
+;
+var PageActionState;
+(function (PageActionState) {
+    PageActionState[PageActionState["NOT_PERFORMED"] = 0] = "NOT_PERFORMED";
+    PageActionState[PageActionState["PERFORMED"] = 1] = "PERFORMED";
+    PageActionState[PageActionState["REJECTED"] = 2] = "REJECTED";
+})(PageActionState = exports.PageActionState || (exports.PageActionState = {}));
+;
+var PAMAction;
+(function (PAMAction) {
+    PAMAction[PAMAction["ACCEPT"] = 0] = "ACCEPT";
+    PAMAction[PAMAction["REJECT"] = 1] = "REJECT";
+    PAMAction[PAMAction["FOCUS"] = 2] = "FOCUS";
+    PAMAction[PAMAction["REQUEST_LABEL"] = 3] = "REQUEST_LABEL";
+    PAMAction[PAMAction["ADD_LABEL"] = 4] = "ADD_LABEL";
+})(PAMAction = exports.PAMAction || (exports.PAMAction = {}));
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
+    constructor(sdb, browserState) {
+        super();
+        this.sdb = sdb;
+        this.browserState = browserState;
+        this.userJoined = this.registerEvent();
+        this.userNotPresent = this.registerEvent();
+        this.userTypingStatusChanged = this.registerEvent();
+        this.messageAdded = this.registerEvent();
+        this.pamStateChanged = this.registerEvent();
+        this.ready = this.registerEvent();
+        if (this.sdb.isServer()) {
+            this.sdb.use('op', (request, next) => {
+                if (request.collection === ArboretumChat.COLLECTION && request.id === ArboretumChat.DOC_ID) {
+                    if (request.op) {
+                        const ops = request.op.op;
+                        ops.forEach((op) => {
+                            const { p } = op;
+                            if (p[0] === 'users') {
+                                const li = op['li'];
+                                if (p.length === 2 && li) {
+                                    const { agent } = request;
+                                    const { stream } = agent;
+                                    const { ws } = stream;
+                                    if (ws) {
+                                        ws.once('close', () => __awaiter(this, void 0, void 0, function* () {
+                                            const user = yield this.getUserByID(li.id);
+                                            this.markUserNotPresent(user);
+                                        }));
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+                next();
+            });
+        }
+        this.doc = this.sdb.get(ArboretumChat.COLLECTION, ArboretumChat.DOC_ID);
+        this.initialized = this.initializeDoc();
+        this.initialized.catch((err) => {
+            console.error(err);
+        });
+    }
+    ;
+    static pageActionsEqual(a1, a2) {
+        if (a1.type === a2.type) {
+            if (a1.data && a2.data) {
+                if (a1.data.targetNodeID === a2.data.targetNodeID) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    ;
+    static describePageAction(action) {
+        const { type, data } = action;
+        if (type === 'navigate') {
+            const { url } = data;
+            return `navigate to ${url}`;
+        }
+        else if (type === 'mouse_event') {
+            const { targetNodeID, type } = data;
+            const nodeDescriptions = data.nodeDescriptions || {};
+            const nodeDescription = nodeDescriptions[targetNodeID] || `element ${targetNodeID}`;
+            return `${type} ${nodeDescription}`;
+        }
+        else if (type === 'setLabel') {
+            const { nodeIDs, label } = data;
+            const nodeID = nodeIDs[0];
+            const nodeDescriptions = data.nodeDescriptions || {};
+            const nodeDescription = nodeDescriptions[nodeID] || `element ${nodeID}`;
+            return `label "${nodeDescription}" as "${label}"`;
+        }
+        else if (type === 'getLabel') {
+            const { targetNodeID, label } = data;
+            const nodeDescriptions = data.nodeDescriptions || {};
+            const nodeDescription = nodeDescriptions[targetNodeID] || `element ${targetNodeID}`;
+            return `you to label "${nodeDescription}"`;
+        }
+        else {
+            return `do ${type}`;
+        }
+    }
+    ;
+    static getActionDescription(action) {
+        if (action === PAMAction.ACCEPT) {
+            return 'accept';
+        }
+        else if (action === PAMAction.REJECT) {
+            return 'reject';
+        }
+        else if (action === PAMAction.FOCUS) {
+            return 'focus';
+        }
+        else if (action === PAMAction.REQUEST_LABEL) {
+            return 'request label';
+        }
+        else if (action === PAMAction.ADD_LABEL) {
+            return 'add label';
+        }
+        else {
+            return '';
+        }
+    }
+    ;
+    static getStateDescription(pam) {
+        const { action, state } = pam;
+        if (state === PageActionState.NOT_PERFORMED) {
+            return '';
+        }
+        else if (state === PageActionState.PERFORMED) {
+            return 'accepted';
+        }
+        else if (state === PageActionState.REJECTED) {
+            return 'rejected';
+        }
+        else {
+            return '';
+        }
+    }
+    ;
+    static getActions(pam, isAdmin) {
+        const { action, state } = pam;
+        const { type } = action;
+        if (type === 'navigate' || type === 'goBack' || type === 'goForward' || type === 'reload') {
+            if (isAdmin && state === PageActionState.NOT_PERFORMED) {
+                return [PAMAction.ACCEPT, PAMAction.REJECT];
+            }
+            else {
+                return [];
+            }
+        }
+        else if (type === 'mouse_event' || type === 'keyboard_event' || type === 'element_event') {
+            if (isAdmin) {
+                if (state === PageActionState.NOT_PERFORMED) {
+                    return [PAMAction.ACCEPT, PAMAction.REJECT, PAMAction.FOCUS, PAMAction.REQUEST_LABEL];
+                }
+                else {
+                    return [PAMAction.FOCUS, PAMAction.REQUEST_LABEL];
+                }
+            }
+            else {
+                return [PAMAction.ADD_LABEL];
+            }
+        }
+        else if (type === 'getLabel') {
+            if (isAdmin) {
+                return [PAMAction.FOCUS];
+            }
+            else {
+                return [PAMAction.ADD_LABEL, PAMAction.FOCUS];
+            }
+        }
+        else if (type === 'setLabel') {
+            if (isAdmin) {
+                if (state === PageActionState.NOT_PERFORMED) {
+                    return [PAMAction.ACCEPT, PAMAction.REJECT, PAMAction.FOCUS];
+                }
+                else {
+                    return [PAMAction.FOCUS];
+                }
+            }
+            else {
+                return [];
+            }
+        }
+        else {
+            return [];
+        }
+    }
+    ;
+    static retargetPageAction(pa, tabID, nodeMap) {
+        const { type, data } = pa;
+        let newData = _.clone(data);
+        if (type === 'navigate' || type === 'goBack' || type === 'goForward' || type === 'reload') {
+            newData = data;
+        }
+        else if (type === 'mouse_event' || type === 'keyboard_event' || type === 'element_event') {
+            const { targetNodeID } = data;
+            const newTarget = nodeMap.get(targetNodeID);
+            if (newTarget) {
+                newData.targetNodeID = newTarget;
+            }
+            else {
+                return null;
+            }
+        }
+        else if (type === 'getLabel') {
+            return null;
+        }
+        else if (type === 'setLabel') {
+            const { targetNodeID } = data;
+            const newTarget = nodeMap.get(targetNodeID);
+            if (newTarget) {
+                newData.targetNodeID = newTarget;
+            }
+            else {
+                return null;
+            }
+        }
+        return { type, tabID, data: newData };
+    }
+    ;
+    static getRelevantNodeIDs(action) {
+        const { type, data } = action;
+        const { targetNodeID } = data;
+        if (targetNodeID) {
+            return [targetNodeID];
+        }
+        else {
+            return [];
+        }
+    }
+    ;
+    initializeDoc() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.doc.createIfEmpty({
+                users: [],
+                messages: [],
+                colors: _.shuffle(_.sample(exports.userColors))
+            });
+            this.doc.subscribe((ops, source, data) => {
+                if (ops) {
+                    ops.forEach((op) => this.handleOp(op));
+                }
+                else {
+                    this.ready.emit();
+                }
+            });
+        });
+    }
+    ;
+    handleOp(op) {
+        const { p } = op;
+        if (p[0] === 'users') {
+            const { li } = op;
+            if (p.length === 2 && li) {
+                this.userJoined.emit({
+                    user: li
+                });
+            }
+            else if (p.length === 3 && p[2] === 'present') {
+                const userIndex = p[1];
+                const { oi, od } = op;
+                const user = this.doc.getData().users[userIndex];
+                if (oi === false) {
+                    this.userNotPresent.emit({ user });
+                }
+            }
+        }
+        else if (p[0] === 'messages') {
+            if (p.length === 2) {
+                const { li } = op;
+                if (li.action && li.data && this.browserState) {
+                    const pam = li;
+                    const relevantNodeIDs = ArboretumChat.getRelevantNodeIDs(li.action);
+                    const relevantNodes = relevantNodeIDs.map((id) => this.browserState.getNode(id));
+                }
+                this.messageAdded.emit({
+                    message: li
+                });
+            }
+        }
+    }
+    ;
+    getMe() {
+        return this.meUser;
+    }
+    ;
+    getUserByID(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = yield this.getData();
+            for (let i = 0; i < data.users.length; i++) {
+                const user = data.users[i];
+                if (user.id === id) {
+                    return user;
+                }
+            }
+            return null;
+        });
+    }
+    ;
+    getColor(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = yield this.getData();
+            const { colors } = data;
+            const index = guid_1.guidIndex(id) % colors.length;
+            return colors[index];
+        });
+    }
+    ;
+    join(displayName) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.addUser(displayName);
+        });
+    }
+    ;
+    addUser(displayName, isMe = true, present = true) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const id = guid_1.guid();
+            const color = yield this.getColor(id);
+            const user = { id, color, displayName, present, typing: TypingStatus.IDLE };
+            yield this.initialized;
+            yield this.doc.submitListPushOp(['users'], user);
+            if (isMe) {
+                this.meUser = user;
+            }
+            return user;
+        });
+    }
+    ;
+    addMesssage(message) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.initialized;
+            const timestamp = (new Date()).getTime();
+            message.timestamp = (new Date()).getTime();
+            message.id = ArboretumChat.messageCounter++;
+            this.doc.submitListPushOp(['messages'], message);
+        });
+    }
+    ;
+    addTextMessage(content, sender = this.getMe()) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const message = { sender, content };
+            this.addMesssage(message);
+        });
+    }
+    ;
+    addPageActionMessage(type, tabID, data = {}, sender = this.getMe()) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const nodeDescriptions = data.nodeDescriptions || {};
+            const action = { type, tabID, data };
+            const message = { sender, action, nodeDescriptions, state: PageActionState.NOT_PERFORMED };
+            this.addMesssage(message);
+        });
+    }
+    ;
+    setState(pam, state) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const messages = yield this.getMessages();
+            const { id } = pam;
+            for (let i = 0; i < messages.length; i++) {
+                const message = messages[i];
+                if (message.id === id) {
+                    this.doc.submitObjectReplaceOp(['messages', i, 'state'], state);
+                    this.pamStateChanged.emit({});
+                    break;
+                }
+            }
+        });
+    }
+    ;
+    getUserIndex(user) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = yield this.getData();
+            for (let i = 0; i < data.users.length; i++) {
+                const u = data.users[i];
+                if (user.id === u.id) {
+                    return i;
+                }
+            }
+            return -1;
+        });
+    }
+    ;
+    markUserNotPresent(user) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = yield this.getData();
+            const userIndex = yield this.getUserIndex(user);
+            yield this.doc.submitObjectReplaceOp(['users', userIndex, 'present'], false);
+            // await this.doc.submitObjectDeleteOp(['users', userIndex, 'present']);
+        });
+    }
+    ;
+    leave() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.markUserNotPresent(this.getMe());
+        });
+    }
+    ;
+    setUserTypingStatus(user, typingStatus) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = yield this.getData();
+            const userIndex = yield this.getUserIndex(user);
+            yield this.doc.submitObjectReplaceOp(['users', userIndex, 'typing'], typingStatus);
+        });
+    }
+    ;
+    getMessages() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = yield this.getData();
+            return data.messages;
+        });
+    }
+    ;
+    getUsers(onlyPresent = true) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = yield this.getData();
+            const { users } = data;
+            if (onlyPresent) {
+                return users.filter((u) => u.present);
+            }
+            else {
+                return users;
+            }
+        });
+    }
+    ;
+    getData() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.initialized;
+            return this.doc.getData();
+        });
+    }
+    ;
+    stringify() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return JSON.stringify(yield this.getData());
+        });
+    }
+    ;
+}
+ArboretumChat.COLLECTION = 'arboretum';
+ArboretumChat.DOC_ID = 'chat';
+ArboretumChat.userCounter = 1;
+ArboretumChat.messageCounter = 1;
+exports.ArboretumChat = ArboretumChat;
+;
+
+
+/***/ }),
+/* 15 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
  *
@@ -833,7 +1320,7 @@ var ExecutionEnvironment = {
 module.exports = ExecutionEnvironment;
 
 /***/ }),
-/* 15 */
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -913,7 +1400,7 @@ var EventListener = {
 module.exports = EventListener;
 
 /***/ }),
-/* 16 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -955,7 +1442,7 @@ function getActiveElement(doc) /*?DOMElement*/{
 module.exports = getActiveElement;
 
 /***/ }),
-/* 17 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1026,7 +1513,7 @@ function shallowEqual(objA, objB) {
 module.exports = shallowEqual;
 
 /***/ }),
-/* 18 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1069,7 +1556,7 @@ function containsNode(outerNode, innerNode) {
 module.exports = containsNode;
 
 /***/ }),
-/* 19 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1099,11 +1586,11 @@ function focusNode(node) {
 module.exports = focusNode;
 
 /***/ }),
-/* 20 */
+/* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var Doc = __webpack_require__(21);
-var Query = __webpack_require__(24);
+var Doc = __webpack_require__(22);
+var Query = __webpack_require__(25);
 var emitter = __webpack_require__(9);
 var ShareDBError = __webpack_require__(2);
 var types = __webpack_require__(3);
@@ -1683,7 +2170,7 @@ Connection.prototype._firstQuery = function(fn) {
 
 
 /***/ }),
-/* 21 */
+/* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var emitter = __webpack_require__(9);
@@ -2599,7 +3086,7 @@ function callEach(callbacks, err) {
 
 
 /***/ }),
-/* 22 */
+/* 23 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // Only the JSON type is exported, because the text type is deprecated
@@ -2612,7 +3099,7 @@ module.exports = {
 
 
 /***/ }),
-/* 23 */
+/* 24 */
 /***/ (function(module, exports) {
 
 // These methods let you build a transform function from a transformComponent
@@ -2696,7 +3183,7 @@ function bootstrapTransform(type, transformComponent, checkValidOp, append) {
 
 
 /***/ }),
-/* 24 */
+/* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var emitter = __webpack_require__(9);
@@ -2901,7 +3388,7 @@ Query.prototype._handleExtra = function(extra) {
 
 
 /***/ }),
-/* 25 */
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
@@ -4173,7 +4660,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
 
 
 /***/ }),
-/* 26 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var hat = __webpack_require__(61);
@@ -4763,10 +5250,10 @@ Agent.prototype._createOp = function(request) {
 
 
 /***/ }),
-/* 27 */
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var DB = __webpack_require__(28);
+var DB = __webpack_require__(29);
 
 // In-memory ShareDB database
 //
@@ -4953,10 +5440,10 @@ function clone(obj) {
 
 
 /***/ }),
-/* 28 */
+/* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var async = __webpack_require__(25);
+var async = __webpack_require__(26);
 var ShareDBError = __webpack_require__(2);
 
 function DB(options) {
@@ -5063,10 +5550,10 @@ DB.prototype.skipPoll = function() {
 
 
 /***/ }),
-/* 29 */
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var PubSub = __webpack_require__(30);
+var PubSub = __webpack_require__(31);
 
 // In-memory ShareDB pub/sub
 //
@@ -5107,7 +5594,7 @@ MemoryPubSub.prototype._publish = function(channels, data, callback) {
 
 
 /***/ }),
-/* 30 */
+/* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var OpStream = __webpack_require__(62);
@@ -5236,19 +5723,19 @@ function shallowCopy(object) {
 
 
 /***/ }),
-/* 31 */
+/* 32 */
 /***/ (function(module, exports) {
 
 module.exports = require("util");
 
 /***/ }),
-/* 32 */
+/* 33 */
 /***/ (function(module, exports) {
 
 module.exports = require("stream");
 
 /***/ }),
-/* 33 */
+/* 34 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var arraydiff = __webpack_require__(63);
@@ -5551,7 +6038,7 @@ function mapDiff(idsDiff, snapshotMap) {
 
 
 /***/ }),
-/* 34 */
+/* 35 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var ot = __webpack_require__(12);
@@ -5802,447 +6289,6 @@ SubmitRequest.prototype.versionAfterTransformError = function() {
 SubmitRequest.prototype.maxRetriesError = function() {
   return {code: 5004, message: 'Op submit failed. Maximum submit retries exceeded'};
 };
-
-
-/***/ }),
-/* 35 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const TypedEventEmitter_1 = __webpack_require__(74);
-const guid_1 = __webpack_require__(75);
-const _ = __webpack_require__(76);
-exports.userColors = [
-    ['#A80000', '#B05E0D', '#C19C00', '#107C10', '#038387', '#004E8C', '#5C126B']
-];
-var TypingStatus;
-(function (TypingStatus) {
-    TypingStatus[TypingStatus["IDLE"] = 0] = "IDLE";
-    TypingStatus[TypingStatus["ACTIVE"] = 1] = "ACTIVE";
-    TypingStatus[TypingStatus["IDLE_TYPED"] = 2] = "IDLE_TYPED";
-})(TypingStatus = exports.TypingStatus || (exports.TypingStatus = {}));
-;
-var PageActionState;
-(function (PageActionState) {
-    PageActionState[PageActionState["NOT_PERFORMED"] = 0] = "NOT_PERFORMED";
-    PageActionState[PageActionState["PERFORMED"] = 1] = "PERFORMED";
-    PageActionState[PageActionState["REJECTED"] = 2] = "REJECTED";
-})(PageActionState = exports.PageActionState || (exports.PageActionState = {}));
-;
-var PAMAction;
-(function (PAMAction) {
-    PAMAction[PAMAction["ACCEPT"] = 0] = "ACCEPT";
-    PAMAction[PAMAction["REJECT"] = 1] = "REJECT";
-    PAMAction[PAMAction["FOCUS"] = 2] = "FOCUS";
-    PAMAction[PAMAction["REQUEST_LABEL"] = 3] = "REQUEST_LABEL";
-    PAMAction[PAMAction["ADD_LABEL"] = 4] = "ADD_LABEL";
-})(PAMAction = exports.PAMAction || (exports.PAMAction = {}));
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
-    constructor(sdb, browserState) {
-        super();
-        this.sdb = sdb;
-        this.browserState = browserState;
-        this.userJoined = this.registerEvent();
-        this.userNotPresent = this.registerEvent();
-        this.userTypingStatusChanged = this.registerEvent();
-        this.messageAdded = this.registerEvent();
-        this.pamStateChanged = this.registerEvent();
-        this.ready = this.registerEvent();
-        if (this.sdb.isServer()) {
-            this.sdb.use('op', (request, next) => {
-                if (request.collection === ArboretumChat.COLLECTION && request.id === ArboretumChat.DOC_ID) {
-                    if (request.op) {
-                        const ops = request.op.op;
-                        ops.forEach((op) => {
-                            const { p } = op;
-                            if (p[0] === 'users') {
-                                const li = op['li'];
-                                if (p.length === 2 && li) {
-                                    const { agent } = request;
-                                    const { stream } = agent;
-                                    const { ws } = stream;
-                                    if (ws) {
-                                        ws.once('close', () => __awaiter(this, void 0, void 0, function* () {
-                                            const user = yield this.getUserByID(li.id);
-                                            this.markUserNotPresent(user);
-                                        }));
-                                    }
-                                }
-                            }
-                        });
-                    }
-                }
-                next();
-            });
-        }
-        this.doc = this.sdb.get(ArboretumChat.COLLECTION, ArboretumChat.DOC_ID);
-        this.initialized = this.initializeDoc();
-        this.initialized.catch((err) => {
-            console.error(err);
-        });
-    }
-    ;
-    static describePageActionMessage(pam) {
-        const { action, data, state } = pam;
-        if (action === 'navigate') {
-            const { url } = data;
-            return `navigate to ${url}`;
-        }
-        else if (action === 'mouse_event') {
-            const { targetNodeID, type } = data;
-            const nodeDescriptions = data.nodeDescriptions || {};
-            const nodeDescription = nodeDescriptions[targetNodeID] || `element ${targetNodeID}`;
-            return `${type} ${nodeDescription}`;
-        }
-        else if (action === 'setLabel') {
-            const { nodeIDs, label } = data;
-            const nodeID = nodeIDs[0];
-            const nodeDescriptions = data.nodeDescriptions || {};
-            const nodeDescription = nodeDescriptions[nodeID] || `element ${nodeID}`;
-            return `label "${nodeDescription}" as "${label}"`;
-        }
-        else if (action === 'getLabel') {
-            const { targetNodeID, label } = data;
-            const nodeDescriptions = data.nodeDescriptions || {};
-            const nodeDescription = nodeDescriptions[targetNodeID] || `element ${targetNodeID}`;
-            return `you to label "${nodeDescription}"`;
-        }
-        else {
-            return `do ${action}`;
-        }
-    }
-    ;
-    static getActionDescription(action) {
-        if (action === PAMAction.ACCEPT) {
-            return 'accept';
-        }
-        else if (action === PAMAction.REJECT) {
-            return 'reject';
-        }
-        else if (action === PAMAction.FOCUS) {
-            return 'focus';
-        }
-        else if (action === PAMAction.REQUEST_LABEL) {
-            return 'request label';
-        }
-        else if (action === PAMAction.ADD_LABEL) {
-            return 'add label';
-        }
-        else {
-            return '';
-        }
-    }
-    ;
-    static getStateDescription(pam) {
-        const { action, state } = pam;
-        if (state === PageActionState.NOT_PERFORMED) {
-            return '';
-        }
-        else if (state === PageActionState.PERFORMED) {
-            return 'accepted';
-        }
-        else if (state === PageActionState.REJECTED) {
-            return 'rejected';
-        }
-        else {
-            return '';
-        }
-    }
-    ;
-    static getActions(pam, isAdmin) {
-        const { action, state } = pam;
-        if (action === 'navigate' || action === 'goBack' || action === 'goForward' || action === 'reload') {
-            if (isAdmin && state === PageActionState.NOT_PERFORMED) {
-                return [PAMAction.ACCEPT, PAMAction.REJECT];
-            }
-            else {
-                return [];
-            }
-        }
-        else if (action === 'mouse_event' || action === 'keyboard_event' || action === 'element_event') {
-            if (isAdmin) {
-                if (state === PageActionState.NOT_PERFORMED) {
-                    return [PAMAction.ACCEPT, PAMAction.REJECT, PAMAction.FOCUS, PAMAction.REQUEST_LABEL];
-                }
-                else {
-                    return [PAMAction.FOCUS, PAMAction.REQUEST_LABEL];
-                }
-            }
-            else {
-                return [PAMAction.ADD_LABEL];
-            }
-        }
-        else if (action === 'getLabel') {
-            if (isAdmin) {
-                return [PAMAction.FOCUS];
-            }
-            else {
-                return [PAMAction.ADD_LABEL, PAMAction.FOCUS];
-            }
-        }
-        else if (action === 'setLabel') {
-            if (isAdmin) {
-                if (state === PageActionState.NOT_PERFORMED) {
-                    return [PAMAction.ACCEPT, PAMAction.REJECT, PAMAction.FOCUS];
-                }
-                else {
-                    return [PAMAction.FOCUS];
-                }
-            }
-            else {
-                return [];
-            }
-        }
-        else {
-            return [];
-        }
-    }
-    ;
-    static getRelevantNodeIDs(pam) {
-        const { action, data, state } = pam;
-        const { targetNodeID } = data;
-        if (targetNodeID) {
-            return [targetNodeID];
-        }
-        else {
-            return [];
-        }
-    }
-    ;
-    initializeDoc() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.doc.createIfEmpty({
-                users: [],
-                messages: [],
-                colors: _.shuffle(_.sample(exports.userColors))
-            });
-            this.doc.subscribe((ops, source, data) => {
-                if (ops) {
-                    ops.forEach((op) => this.handleOp(op));
-                }
-                else {
-                    this.ready.emit();
-                }
-            });
-        });
-    }
-    ;
-    handleOp(op) {
-        const { p } = op;
-        if (p[0] === 'users') {
-            const { li } = op;
-            if (p.length === 2 && li) {
-                this.userJoined.emit({
-                    user: li
-                });
-            }
-            else if (p.length === 3 && p[2] === 'present') {
-                const userIndex = p[1];
-                const { oi, od } = op;
-                const user = this.doc.getData().users[userIndex];
-                if (oi === false) {
-                    this.userNotPresent.emit({ user });
-                }
-            }
-        }
-        else if (p[0] === 'messages') {
-            if (p.length === 2) {
-                const { li } = op;
-                if (li.action && li.data && this.browserState) {
-                    const relevantNodeIDs = ArboretumChat.getRelevantNodeIDs(li);
-                    const relevantNodes = relevantNodeIDs.map((id) => this.browserState.getNode(id));
-                }
-                this.messageAdded.emit({
-                    message: li
-                });
-            }
-        }
-    }
-    ;
-    getMe() {
-        return this.meUser;
-    }
-    ;
-    getUserByID(id) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const data = yield this.getData();
-            for (let i = 0; i < data.users.length; i++) {
-                const user = data.users[i];
-                if (user.id === id) {
-                    return user;
-                }
-            }
-            return null;
-        });
-    }
-    ;
-    getColor(id) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const data = yield this.getData();
-            const { colors } = data;
-            const index = guid_1.guidIndex(id) % colors.length;
-            return colors[index];
-        });
-    }
-    ;
-    join(displayName) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return this.addUser(displayName);
-        });
-    }
-    ;
-    addUser(displayName, isMe = true, present = true) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const id = guid_1.guid();
-            const color = yield this.getColor(id);
-            const user = { id, color, displayName, present, typing: TypingStatus.IDLE };
-            yield this.initialized;
-            yield this.doc.submitListPushOp(['users'], user);
-            if (isMe) {
-                this.meUser = user;
-            }
-            return user;
-        });
-    }
-    ;
-    addMesssage(message) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.initialized;
-            const timestamp = (new Date()).getTime();
-            message.timestamp = (new Date()).getTime();
-            message.id = ArboretumChat.messageCounter++;
-            this.doc.submitListPushOp(['messages'], message);
-        });
-    }
-    ;
-    addTextMessage(content, sender = this.getMe()) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const message = { sender, content };
-            this.addMesssage(message);
-        });
-    }
-    ;
-    addPageActionMessage(action, tabID, data = {}, sender = this.getMe()) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const nodeDescriptions = data.nodeDescriptions || {};
-            const message = { sender, action, tabID, data, nodeDescriptions, state: PageActionState.NOT_PERFORMED };
-            this.addMesssage(message);
-        });
-    }
-    ;
-    setState(pam, state) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const messages = yield this.getMessages();
-            const { id } = pam;
-            for (let i = 0; i < messages.length; i++) {
-                const message = messages[i];
-                if (message.id === id) {
-                    this.doc.submitObjectReplaceOp(['messages', i, 'state'], state);
-                    this.pamStateChanged.emit({});
-                    break;
-                }
-            }
-        });
-    }
-    ;
-    getUserIndex(user) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const data = yield this.getData();
-            for (let i = 0; i < data.users.length; i++) {
-                const u = data.users[i];
-                if (user.id === u.id) {
-                    return i;
-                }
-            }
-            return -1;
-        });
-    }
-    ;
-    markUserNotPresent(user) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const data = yield this.getData();
-            const userIndex = yield this.getUserIndex(user);
-            yield this.doc.submitObjectReplaceOp(['users', userIndex, 'present'], false);
-            // await this.doc.submitObjectDeleteOp(['users', userIndex, 'present']);
-        });
-    }
-    ;
-    leave() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.markUserNotPresent(this.getMe());
-        });
-    }
-    ;
-    setUserTypingStatus(user, typingStatus) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const data = yield this.getData();
-            const userIndex = yield this.getUserIndex(user);
-            yield this.doc.submitObjectReplaceOp(['users', userIndex, 'typing'], typingStatus);
-        });
-    }
-    ;
-    getMessages() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const data = yield this.getData();
-            return data.messages;
-        });
-    }
-    ;
-    getUsers(onlyPresent = true) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const data = yield this.getData();
-            const { users } = data;
-            if (onlyPresent) {
-                return users.filter((u) => u.present);
-            }
-            else {
-                return users;
-            }
-        });
-    }
-    ;
-    getData() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.initialized;
-            return this.doc.getData();
-        });
-    }
-    ;
-    stringify() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return JSON.stringify(yield this.getData());
-        });
-    }
-    ;
-}
-ArboretumChat.COLLECTION = 'arboretum';
-ArboretumChat.DOC_ID = 'chat';
-ArboretumChat.userCounter = 1;
-ArboretumChat.messageCounter = 1;
-exports.ArboretumChat = ArboretumChat;
-;
 
 
 /***/ }),
@@ -6719,7 +6765,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(0);
 const ReactDOM = __webpack_require__(41);
 const ArboretumAdminInterface_1 = __webpack_require__(50);
-__webpack_require__(81);
+__webpack_require__(82);
 ReactDOM.render(React.createElement("div", { className: "window" },
     React.createElement("div", { className: "window-content" },
         React.createElement("div", { className: "pane-group" },
@@ -8180,7 +8226,7 @@ if (process.env.NODE_ENV === 'production') {
 /*
  Modernizr 3.0.0pre (Custom Build) | MIT
 */
-var aa=__webpack_require__(0),l=__webpack_require__(14),B=__webpack_require__(5),C=__webpack_require__(1),ba=__webpack_require__(15),da=__webpack_require__(16),ea=__webpack_require__(17),fa=__webpack_require__(18),ia=__webpack_require__(19),D=__webpack_require__(7);
+var aa=__webpack_require__(0),l=__webpack_require__(15),B=__webpack_require__(5),C=__webpack_require__(1),ba=__webpack_require__(16),da=__webpack_require__(17),ea=__webpack_require__(18),fa=__webpack_require__(19),ia=__webpack_require__(20),D=__webpack_require__(7);
 function E(a){for(var b=arguments.length-1,c="Minified React error #"+a+"; visit http://facebook.github.io/react/docs/error-decoder.html?invariant\x3d"+a,d=0;d<b;d++)c+="\x26args[]\x3d"+encodeURIComponent(arguments[d+1]);b=Error(c+" for the full message or use the non-minified dev environment for full errors and additional helpful warnings.");b.name="Invariant Violation";b.framesToPop=1;throw b;}aa?void 0:E("227");
 var oa={children:!0,dangerouslySetInnerHTML:!0,defaultValue:!0,defaultChecked:!0,innerHTML:!0,suppressContentEditableWarning:!0,suppressHydrationWarning:!0,style:!0};function pa(a,b){return(a&b)===b}
 var ta={MUST_USE_PROPERTY:1,HAS_BOOLEAN_VALUE:4,HAS_NUMERIC_VALUE:8,HAS_POSITIVE_NUMERIC_VALUE:24,HAS_OVERLOADED_BOOLEAN_VALUE:32,HAS_STRING_BOOLEAN_VALUE:64,injectDOMPropertyConfig:function(a){var b=ta,c=a.Properties||{},d=a.DOMAttributeNamespaces||{},e=a.DOMAttributeNames||{};a=a.DOMMutationMethods||{};for(var f in c){ua.hasOwnProperty(f)?E("48",f):void 0;var g=f.toLowerCase(),h=c[f];g={attributeName:g,attributeNamespace:null,propertyName:f,mutationMethod:null,mustUseProperty:pa(h,b.MUST_USE_PROPERTY),
@@ -8480,14 +8526,14 @@ if (process.env.NODE_ENV !== "production") {
 var React = __webpack_require__(0);
 var invariant = __webpack_require__(6);
 var warning = __webpack_require__(8);
-var ExecutionEnvironment = __webpack_require__(14);
+var ExecutionEnvironment = __webpack_require__(15);
 var _assign = __webpack_require__(5);
 var emptyFunction = __webpack_require__(1);
-var EventListener = __webpack_require__(15);
-var getActiveElement = __webpack_require__(16);
-var shallowEqual = __webpack_require__(17);
-var containsNode = __webpack_require__(18);
-var focusNode = __webpack_require__(19);
+var EventListener = __webpack_require__(16);
+var getActiveElement = __webpack_require__(17);
+var shallowEqual = __webpack_require__(18);
+var containsNode = __webpack_require__(19);
+var focusNode = __webpack_require__(20);
 var emptyObject = __webpack_require__(7);
 var checkPropTypes = __webpack_require__(10);
 var hyphenateStyleName = __webpack_require__(46);
@@ -24034,6 +24080,7 @@ const ShareDBDoc_1 = __webpack_require__(53);
 const react_switch_1 = __webpack_require__(66);
 const copyToClipboard_1 = __webpack_require__(72);
 const ArboretumChatBox_1 = __webpack_require__(73);
+const ArboretumSuggestedActions_1 = __webpack_require__(81);
 ;
 class ArboretumAdminInterface extends React.Component {
     constructor(props) {
@@ -24069,6 +24116,9 @@ class ArboretumAdminInterface extends React.Component {
             }
             if (this.chatbox) {
                 this.chatbox.setSDB(this.sdb);
+            }
+            if (this.suggestedActions) {
+                this.suggestedActions.setSDB(this.sdb);
             }
             this.setState({ shareURL, adminURL });
             return { shareURL, adminURL };
@@ -24112,28 +24162,28 @@ class ArboretumAdminInterface extends React.Component {
                 this.chatbox.setSDB(this.sdb);
             }
         };
-        this.onAction = (pam) => __awaiter(this, void 0, void 0, function* () {
+        this.onAction = (action) => __awaiter(this, void 0, void 0, function* () {
             yield this.sendIPCMessage({
                 message: 'performAction',
-                data: pam
+                data: action
             });
         });
-        this.onReject = (pam) => __awaiter(this, void 0, void 0, function* () {
+        this.onReject = (action) => __awaiter(this, void 0, void 0, function* () {
             yield this.sendIPCMessage({
                 message: 'rejectAction',
-                data: pam
+                data: action
             });
         });
-        this.onFocus = (pam) => __awaiter(this, void 0, void 0, function* () {
+        this.onFocus = (action) => __awaiter(this, void 0, void 0, function* () {
             yield this.sendIPCMessage({
                 message: 'focusAction',
-                data: pam
+                data: action
             });
         });
-        this.onLabel = (pam) => __awaiter(this, void 0, void 0, function* () {
+        this.onLabel = (action) => __awaiter(this, void 0, void 0, function* () {
             yield this.sendIPCMessage({
                 message: 'labelAction',
-                data: pam
+                data: action
             });
         });
         this.selectShareURL = () => {
@@ -24213,6 +24263,7 @@ class ArboretumAdminInterface extends React.Component {
                             React.createElement("label", null,
                                 React.createElement("input", { "aria-label": "Use Mechanical Turk Sandbox", type: "checkbox", name: "sandbox", value: "sandbox", id: "sandbox", checked: this.state.sandbox, onChange: this.onSandboxChange }),
                                 " Sandbox"))))),
+            React.createElement(ArboretumSuggestedActions_1.ArboretumSuggestedActions, { ref: (el) => { this.suggestedActions = el; }, onAction: this.onAction }),
             React.createElement(ArboretumChatBox_1.ArboretumChatBox, { isAdmin: true, sdb: this.sdb, username: "Admin", ref: this.chatBoxRef, onSendMessage: this.sendMessage, onAction: this.onAction, onReject: this.onReject, onFocus: this.onFocus, onLabel: this.onLabel, onAddHighlight: this.addHighlight, onRemoveHighlight: this.removeHighlight }));
     }
     ;
@@ -24565,10 +24616,10 @@ exports.SDBArray = SDBArray;
 /* 54 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports.Connection = __webpack_require__(20);
-exports.Doc = __webpack_require__(21);
+exports.Connection = __webpack_require__(21);
+exports.Doc = __webpack_require__(22);
 exports.Error = __webpack_require__(2);
-exports.Query = __webpack_require__(24);
+exports.Query = __webpack_require__(25);
 exports.types = __webpack_require__(3);
 
 
@@ -25386,7 +25437,7 @@ json.transformComponent = function(dest, c, otherC, type) {
   return dest;
 };
 
-__webpack_require__(23)(json, json.transformComponent, json.checkValidOp, json.append);
+__webpack_require__(24)(json, json.transformComponent, json.checkValidOp, json.append);
 
 /**
  * Register a subtype for string operations, using the text0 type.
@@ -25656,7 +25707,7 @@ text.invert = function(op) {
   return op;
 };
 
-__webpack_require__(23)(text, transformComponent, checkValidOp, append);
+__webpack_require__(24)(text, transformComponent, checkValidOp, append);
 
 
 /***/ }),
@@ -25666,17 +25717,17 @@ __webpack_require__(23)(text, transformComponent, checkValidOp, append);
 var Backend = __webpack_require__(60);
 module.exports = Backend;
 
-Backend.Agent = __webpack_require__(26);
+Backend.Agent = __webpack_require__(27);
 Backend.Backend = Backend;
-Backend.DB = __webpack_require__(28);
+Backend.DB = __webpack_require__(29);
 Backend.Error = __webpack_require__(2);
-Backend.MemoryDB = __webpack_require__(27);
-Backend.MemoryPubSub = __webpack_require__(29);
+Backend.MemoryDB = __webpack_require__(28);
+Backend.MemoryPubSub = __webpack_require__(30);
 Backend.ot = __webpack_require__(12);
 Backend.projections = __webpack_require__(13);
-Backend.PubSub = __webpack_require__(30);
-Backend.QueryEmitter = __webpack_require__(33);
-Backend.SubmitRequest = __webpack_require__(34);
+Backend.PubSub = __webpack_require__(31);
+Backend.QueryEmitter = __webpack_require__(34);
+Backend.SubmitRequest = __webpack_require__(35);
 Backend.types = __webpack_require__(3);
 
 
@@ -25684,17 +25735,17 @@ Backend.types = __webpack_require__(3);
 /* 60 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var async = __webpack_require__(25);
-var Agent = __webpack_require__(26);
-var Connection = __webpack_require__(20);
+var async = __webpack_require__(26);
+var Agent = __webpack_require__(27);
+var Connection = __webpack_require__(21);
 var emitter = __webpack_require__(9);
-var MemoryDB = __webpack_require__(27);
-var MemoryPubSub = __webpack_require__(29);
+var MemoryDB = __webpack_require__(28);
+var MemoryPubSub = __webpack_require__(30);
 var ot = __webpack_require__(12);
 var projections = __webpack_require__(13);
-var QueryEmitter = __webpack_require__(33);
+var QueryEmitter = __webpack_require__(34);
 var StreamSocket = __webpack_require__(65);
-var SubmitRequest = __webpack_require__(34);
+var SubmitRequest = __webpack_require__(35);
 
 function Backend(options) {
   if (!(this instanceof Backend)) return new Backend(options);
@@ -26282,8 +26333,8 @@ hat.rack = function (bits, base, expandBy) {
 /* 62 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var inherits = __webpack_require__(31).inherits;
-var Readable = __webpack_require__(32).Readable;
+var inherits = __webpack_require__(32).inherits;
+var Readable = __webpack_require__(33).Readable;
 var util = __webpack_require__(4);
 
 // Stream of operations. Subscribe returns one of these
@@ -26642,8 +26693,8 @@ function objEquiv(a, b) {
 /* 65 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var Duplex = __webpack_require__(32).Duplex;
-var inherits = __webpack_require__(31).inherits;
+var Duplex = __webpack_require__(33).Duplex;
+var inherits = __webpack_require__(32).inherits;
 var util = __webpack_require__(4);
 
 function StreamSocket() {
@@ -27898,7 +27949,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(0);
-const ArboretumChat_1 = __webpack_require__(35);
+const ArboretumChat_1 = __webpack_require__(14);
 const PageActionMessageDisplay_1 = __webpack_require__(77);
 __webpack_require__(78);
 const ENTER_KEY = 13;
@@ -28041,26 +28092,26 @@ class ArboretumChatBox extends React.Component {
     acceptAction(pam) {
         this.getChat().setState(pam, ArboretumChat_1.PageActionState.PERFORMED);
         if (this.props.onAction) {
-            this.props.onAction(pam);
+            this.props.onAction(pam.action);
         }
     }
     ;
     rejectAction(pam) {
         this.getChat().setState(pam, ArboretumChat_1.PageActionState.REJECTED);
         if (this.props.onReject) {
-            this.props.onReject(pam);
+            this.props.onReject(pam.action);
         }
     }
     ;
     focusAction(pam) {
         if (this.props.onFocus) {
-            this.props.onFocus(pam);
+            this.props.onFocus(pam.action);
         }
     }
     ;
     requestLabel(pam) {
-        const { data } = pam;
-        this.chat.addPageActionMessage('getLabel', pam.tabID, data);
+        const { tabID, data } = pam.action;
+        this.chat.addPageActionMessage('getLabel', tabID, data);
     }
     ;
     render() {
@@ -29790,21 +29841,21 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;//     Underscor
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(0);
-const ArboretumChat_1 = __webpack_require__(35);
+const ArboretumChat_1 = __webpack_require__(14);
 const ENTER_KEY = 13;
 class PageActionMessageDisplay extends React.Component {
     constructor(props) {
         super(props);
         this.addHighlights = (pam) => {
             if (this.props.onAddHighlight) {
-                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pam);
+                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pam.action);
                 const color = pam.sender.color;
                 this.props.onAddHighlight(nodeIDs, color);
             }
         };
         this.removeHighlights = (pam) => {
             if (this.props.onRemoveHighlight) {
-                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pam);
+                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pam.action);
                 this.props.onRemoveHighlight(nodeIDs);
             }
         };
@@ -29824,9 +29875,10 @@ class PageActionMessageDisplay extends React.Component {
             if (keyCode === 13) {
                 const input = event.target;
                 const { value } = input;
-                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(this.props.pam);
+                const { pam } = this.props;
+                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pam.action);
                 if (this.props.addLabel) {
-                    this.props.addLabel(nodeIDs, value, this.props.pam.tabID, this.props.pam.nodeDescriptions);
+                    this.props.addLabel(nodeIDs, value, pam.action.tabID, pam.nodeDescriptions);
                 }
                 this.removeHighlights(this.props.pam);
                 this.setState({ labeling: false });
@@ -29843,8 +29895,9 @@ class PageActionMessageDisplay extends React.Component {
     ;
     render() {
         const pam = this.props.pam;
-        const { action, data, state } = pam;
-        const description = React.createElement("span", { className: 'description', onMouseEnter: () => this.addHighlights(pam), onMouseLeave: () => this.removeHighlights(pam) }, ArboretumChat_1.ArboretumChat.describePageActionMessage(pam));
+        const { action, state } = pam;
+        const { data } = action;
+        const description = React.createElement("span", { className: 'description', onMouseEnter: () => this.addHighlights(pam), onMouseLeave: () => this.removeHighlights(pam) }, ArboretumChat_1.ArboretumChat.describePageAction(action));
         const messageActions = ArboretumChat_1.ArboretumChat.getActions(pam, this.props.isAdmin).map((action) => {
             const description = ArboretumChat_1.ArboretumChat.getActionDescription(action);
             return React.createElement("a", { key: action, href: "javascript:void(0)", onClick: () => this.performAction(action, pam) }, description);
@@ -30031,8 +30084,105 @@ module.exports = function (css) {
 /* 81 */
 /***/ (function(module, exports, __webpack_require__) {
 
+"use strict";
 
-var content = __webpack_require__(82);
+Object.defineProperty(exports, "__esModule", { value: true });
+const React = __webpack_require__(0);
+const ArboretumChat_1 = __webpack_require__(14);
+class ArboretumSuggestedActions extends React.Component {
+    constructor(props) {
+        super(props);
+        this.addHighlights = (pa) => {
+            if (this.props.onAddHighlight) {
+                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pa);
+                const color = '#0000FF';
+                this.props.onAddHighlight(nodeIDs, color);
+            }
+        };
+        this.removeHighlights = (pa) => {
+            if (this.props.onRemoveHighlight) {
+                const nodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(pa);
+                this.props.onRemoveHighlight(nodeIDs);
+            }
+        };
+        this.performAction = (action, pa) => {
+            if (action === ArboretumChat_1.PAMAction.ACCEPT) {
+                if (this.props.onAction) {
+                    this.props.onAction(pa);
+                }
+            }
+        };
+        this.state = {
+            actions: []
+        };
+    }
+    ;
+    setSDB(sdb) {
+        this.sdb = sdb;
+        if (this.sdb) {
+            this.browserDoc = this.sdb.get('arboretum', 'browser');
+            this.browserDoc.subscribe((ops) => {
+                const data = this.browserDoc.getData();
+                const { selectedTab } = data;
+                if (selectedTab !== this.selectedTab) {
+                    this.setSelectedTab(selectedTab);
+                }
+            });
+        }
+        if (this.selectedTab && this.sdb) {
+            this.subscribeToTabDoc();
+        }
+    }
+    ;
+    setSelectedTab(tabID) {
+        this.selectedTab = tabID;
+        if (this.tabDoc) {
+            this.tabDoc.destroy();
+        }
+        if (this.selectedTab && this.sdb) {
+            this.subscribeToTabDoc();
+        }
+    }
+    ;
+    subscribeToTabDoc() {
+        this.tabDoc = this.sdb.get('tab', this.selectedTab);
+        this.tabDoc.subscribe((ops) => {
+            const data = this.tabDoc.getData();
+            if (data) {
+                const { suggestedActions } = data;
+                this.setState({ actions: suggestedActions });
+            }
+        });
+    }
+    ;
+    render() {
+        const suggestedActions = this.state.actions.map((action, i) => {
+            const description = React.createElement("span", { className: 'description', onMouseEnter: () => this.addHighlights(action), onMouseLeave: () => this.removeHighlights(action) }, ArboretumChat_1.ArboretumChat.describePageAction(action));
+            const messageActions = [ArboretumChat_1.PAMAction.ACCEPT].map((a) => {
+                return React.createElement("a", { key: a, href: "javascript:void(0)", onClick: () => this.performAction(a, action) }, ArboretumChat_1.ArboretumChat.getActionDescription(a));
+            });
+            return React.createElement("li", { tabIndex: 0, key: i },
+                description,
+                React.createElement("div", { className: 'messageActions' }, messageActions));
+        });
+        const header = suggestedActions.length > 0 ? React.createElement("h5", null, "Actions") : null;
+        return React.createElement("div", { className: 'suggestedActions' },
+            header,
+            React.createElement("ul", null, suggestedActions));
+    }
+    ;
+}
+ArboretumSuggestedActions.defaultProps = {};
+exports.ArboretumSuggestedActions = ArboretumSuggestedActions;
+;
+
+
+/***/ }),
+/* 82 */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+var content = __webpack_require__(83);
 
 if(typeof content === 'string') content = [[module.i, content, '']];
 
@@ -30078,7 +30228,7 @@ if(false) {
 }
 
 /***/ }),
-/* 82 */
+/* 83 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(36)(true);
@@ -30086,7 +30236,7 @@ exports = module.exports = __webpack_require__(36)(true);
 
 
 // module
-exports.push([module.i, "#buttonSpacer {\n  width: 70px;\n  /*border-bottom: 1px solid #AAA;*/\n  /*background: linear-gradient(to bottom, #BBB 80%, #AAA);*/ }\n\n#tabsBar {\n  display: flex;\n  flex-direction: row;\n  font-size: 13px;\n  font-family: sans-serif;\n  margin: 0px;\n  /*padding: 0px 0px 0px 70px;*/\n  padding: 0px;\n  box-sizing: border-box;\n  -webkit-user-select: none;\n  -webkit-app-region: drag;\n  color: #777;\n  /*height: 23px;*/\n  box-sizing: border-box; }\n  #tabsBar #addTab {\n    display: inline-block;\n    margin: 0;\n    background: linear-gradient(to bottom, #BBB 80%, #AAA); }\n\n/*#tabsBar #addTab:hover {\n    color: #fff;\n    background: rgb(99, 190, 229);\n}\n\n#addTab i {\n    font-size: 12.5px\n}*/\n#tabs {\n  display: flex;\n  flex: 1;\n  padding: 0px;\n  margin: 0px;\n  overflow: hidden; }\n\n.tab {\n  flex: 1;\n  display: flex;\n  border-left: 1px solid #AAA;\n  /*border: 1px solid black;*/\n  list-style: none;\n  white-space: nowrap;\n  /*font-size: 3em;*/\n  border-bottom: 1px solid #aaa;\n  color: #BBB;\n  overflow: hidden;\n  text-overflow: ellipsis; }\n\n.tab:last-child {\n  border-right: 1px solid #AAA; }\n\n.tab.not-selected {\n  background: linear-gradient(to bottom, #BBB 80%, #AAA); }\n\n.tab.not-selected .closeTab {\n  color: #999; }\n\n.tab.selected {\n  /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n  border-bottom: none;\n  color: #777; }\n\n.tab .tab-img {\n  opacity: 0.4; }\n\n.tab.selected .tab-img {\n  opacity: 1.0;\n  flex: 2; }\n\n.tab-img {\n  height: 18px;\n  max-width: 28px;\n  margin: 2px;\n  margin-right: 2px;\n  display: none; }\n\n.tab-title {\n  /*flex: 1;*/\n  /*padding: 5px 0px 4px 3px;*/ }\n\n.closeTab {\n  /*float: right;*/\n  /*color: red;*/\n  /*text-shadow: 0 0 1px rgba(50, 1, 1, 1);*/\n  padding: 5px; }\n\n.closeTab i {\n  font-size: 12.5px; }\n\n.closeTab:hover {\n  background: #f57777;\n  color: #FFF; }\n\n.tab .tab-title {\n  /*font-size: 5em;*/\n  color: #777;\n  text-overflow: ellipsis;\n  overflow: hidden; }\n\n.tab.selected .tab-title {\n  color: #555; }\n\n#adminPane {\n  display: flex;\n  flex-direction: column;\n  height: 100%; }\n\ntable#server-controls {\n  flex-shrink: 0; }\n  table#server-controls .nav-group-title {\n    padding: 0px; }\n  table#server-controls thead td {\n    text-align: center; }\n  table#server-controls td {\n    padding-left: 5px;\n    padding-right: 0px;\n    margin: auto;\n    vertical-align: top; }\n  table#server-controls tr:active {\n    color: inherit;\n    background-color: inherit;\n    /* color: #fff; */\n    /* background-color: #116cd6; */ }\n  table#server-controls #control_content td {\n    padding-bottom: 0px; }\n  table#server-controls label {\n    margin-bottom: 0px;\n    padding-bottom: 0px; }\n\n.sidebar {\n  width: 350px;\n  height: 100%;\n  display: flex;\n  flex-direction: column; }\n\n.copy_area input {\n  background-color: #FAFAFA;\n  border: 1px solid #CCC;\n  padding: 2px;\n  font-size: 0.9em;\n  text-align: center;\n  width: 90px; }\n\n.copy_area .copy_area .icon {\n  cursor: pointer;\n  color: #AAA; }\n  .copy_area .copy_area .icon:hover {\n    color: #999; }\n\n#browser-pane {\n  border-left: none; }\n\nhtml {\n  height: 100%; }\n  html .unselected {\n    display: none; }\n  html #content {\n    height: 100%;\n    overflow: hidden; }\n  html .tab_content {\n    height: 100%; }\n  html webview {\n    display: inline-flex;\n    width: 100%;\n    height: 100%; }\n    html webview.hidden {\n      display: none; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/browser/css/src/browser/css/browser-tabs.scss","/home/soney/code/arboretum/src/browser/css/src/browser/css/browser-sidebar.scss","/home/soney/code/arboretum/src/browser/css/src/browser/css/browser.scss"],"names":[],"mappings":"AAAA;EACI,YAAW;EACX,kCAAkC;EAClC,2DAA2D,EAC9D;;AAED;EACI,cAAa;EACb,oBAAmB;EACnB,gBAAe;EACf,wBAAuB;EACvB,YAAW;EACX,8BAA8B;EAC9B,aAAY;EACZ,uBAAsB;EACtB,0BAAyB;EACzB,yBAAwB;EAExB,YAAW;EACX,iBAAiB;EACjB,uBAAsB,EAMzB;EApBD;IAgBQ,sBAAqB;IACrB,UAAS;IACT,uDAAsD,EACzD;;AAIL;;;;;;;GAOG;AAEH;EACI,cAAa;EACb,QAAO;EACP,aAAY;EACZ,YAAW;EACX,iBAAgB,EACnB;;AAED;EACI,QAAO;EACP,cAAa;EACb,4BAA2B;EAC3B,4BAA4B;EAC5B,iBAAgB;EAChB,oBAAmB;EACnB,mBAAmB;EACnB,8BAA6B;EAC7B,YAAW;EACX,iBAAgB;EAChB,wBAAuB,EAC1B;;AACD;EACI,6BAA4B,EAC/B;;AACD;EACI,uDAAsD,EACzD;;AACD;EACI,YAAW,EACd;;AACD;EACI,8DAA8D;EAC9D,oBAAmB;EACnB,YAAW,EACd;;AAED;EACI,aAAY,EACf;;AACD;EACI,aAAY;EACZ,QAAO,EACV;;AAED;EACI,aAAY;EACZ,gBAAe;EACf,YAAW;EACX,kBAAiB;EACjB,cAAa,EAChB;;AAED;EACI,YAAY;EACZ,6BAA6B,EAChC;;AAED;EACI,iBAAiB;EACjB,eAAe;EACf,2CAA2C;EAC3C,aAAY,EACf;;AAED;EACI,kBACJ,EAAE;;AAEF;EACI,oBAA8B;EAC9B,YAAW,EACd;;AAGD;EACI,mBAAmB;EACnB,YAAW;EACX,wBAAuB;EACvB,iBAAgB,EACnB;;AACD;EACI,YAAW,EACd;;ACxHD;EACI,cAAY;EACZ,uBAAqB;EACrB,aACJ,EAAE;;AACF;EACI,eAAc,EA6BjB;EA9BD;IAGQ,aAAY,EACf;EAJL;IAMQ,mBAAkB,EACrB;EAPL;IAUQ,kBAAiB;IACjB,mBAAkB;IAClB,aAAY;IACZ,oBAAmB,EACtB;EAdL;IAiBY,eAAc;IACd,0BAAyB;IACzB,kBAAkB;IAClB,gCAAgC,EACnC;EArBT;IAwBQ,oBAAmB,EACtB;EAzBL;IA2BQ,mBAAkB;IAClB,oBAAmB,EACtB;;AAIL;EACI,aAAY;EACZ,aAAY;EACZ,cAAa;EACb,uBAAsB,EACzB;;AAID;EAEQ,0BAAyB;EACzB,uBAAsB;EACtB,aAAW;EACX,iBAAgB;EAChB,mBAAkB;EAClB,YAAW,EACd;;AARL;EAUQ,gBAAe;EACf,YAAW,EAId;EAfL;IAaY,YAAW,EACd;;AAKT;EACI,kBAAiB,EACpB;;AChED;EACI,aAAY,EAwBf;EAzBD;IAIQ,cAAa,EAChB;EALL;IAOQ,aAAY;IACZ,iBAAgB,EACnB;EATL;IAaQ,aAAY,EACf;EAdL;IAiBQ,qBAAoB;IACpB,YAAW;IACX,aAAY,EAKf;IAxBL;MAsBY,cAAY,EACf","file":"browser.scss","sourcesContent":["#buttonSpacer {\n    width: 70px;\n    /*border-bottom: 1px solid #AAA;*/\n    /*background: linear-gradient(to bottom, #BBB 80%, #AAA);*/\n}\n\n#tabsBar {\n    display: flex;\n    flex-direction: row;\n    font-size: 13px;\n    font-family: sans-serif;\n    margin: 0px;\n    /*padding: 0px 0px 0px 70px;*/\n    padding: 0px;\n    box-sizing: border-box;\n    -webkit-user-select: none;\n    -webkit-app-region: drag;\n\n    color: #777;\n    /*height: 23px;*/\n    box-sizing: border-box;\n    #addTab {\n        display: inline-block;\n        margin: 0;\n        background: linear-gradient(to bottom, #BBB 80%, #AAA);\n    }\n}\n\n\n/*#tabsBar #addTab:hover {\n    color: #fff;\n    background: rgb(99, 190, 229);\n}\n\n#addTab i {\n    font-size: 12.5px\n}*/\n\n#tabs {\n    display: flex;\n    flex: 1;\n    padding: 0px;\n    margin: 0px;\n    overflow: hidden;\n}\n\n.tab {\n    flex: 1;\n    display: flex;\n    border-left: 1px solid #AAA;\n    /*border: 1px solid black;*/\n    list-style: none;\n    white-space: nowrap;\n    /*font-size: 3em;*/\n    border-bottom: 1px solid #aaa;\n    color: #BBB;\n    overflow: hidden;\n    text-overflow: ellipsis;\n}\n.tab:last-child {\n    border-right: 1px solid #AAA;\n}\n.tab.not-selected {\n    background: linear-gradient(to bottom, #BBB 80%, #AAA);\n}\n.tab.not-selected .closeTab {\n    color: #999;\n}\n.tab.selected {\n    /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n    border-bottom: none;\n    color: #777;\n}\n\n.tab .tab-img {\n    opacity: 0.4;\n}\n.tab.selected .tab-img {\n    opacity: 1.0;\n    flex: 2;\n}\n\n.tab-img {\n    height: 18px;\n    max-width: 28px;\n    margin: 2px;\n    margin-right: 2px;\n    display: none;\n}\n\n.tab-title {\n    /*flex: 1;*/\n    /*padding: 5px 0px 4px 3px;*/\n}\n\n.closeTab {\n    /*float: right;*/\n    /*color: red;*/\n    /*text-shadow: 0 0 1px rgba(50, 1, 1, 1);*/\n    padding: 5px;\n}\n\n.closeTab i {\n    font-size: 12.5px\n}\n\n.closeTab:hover {\n    background: rgb(245, 119, 119);\n    color: #FFF;\n}\n\n\n.tab .tab-title {\n    /*font-size: 5em;*/\n    color: #777;\n    text-overflow: ellipsis;\n    overflow: hidden;\n}\n.tab.selected .tab-title {\n    color: #555;\n}\n","#adminPane {\n    display:flex;\n    flex-direction:column;\n    height:100%\n}\ntable#server-controls {\n    flex-shrink: 0;\n    .nav-group-title {\n        padding: 0px;\n    }\n    thead td {\n        text-align: center;\n    }\n\n    td {\n        padding-left: 5px;\n        padding-right: 0px;\n        margin: auto;\n        vertical-align: top;\n    }\n    tr {\n        &:active {\n            color: inherit;\n            background-color: inherit;\n            /* color: #fff; */\n            /* background-color: #116cd6; */\n        }\n    }\n    #control_content td {\n        padding-bottom: 0px;\n    }\n    label {\n        margin-bottom: 0px;\n        padding-bottom: 0px;\n    }\n}\n\n\n.sidebar {\n    width: 350px;\n    height: 100%;\n    display: flex;\n    flex-direction: column;\n}\n\n\n\n.copy_area {\n    input {\n        background-color: #FAFAFA;\n        border: 1px solid #CCC;\n        padding:2px;\n        font-size: 0.9em;\n        text-align: center;\n        width: 90px;\n    }\n    .copy_area .icon {\n        cursor: pointer;\n        color: #AAA;\n        &:hover {\n            color: #999;\n        }\n    }\n}\n\n\n#browser-pane {\n    border-left: none;\n}\n","@import \"./browser-tabs\";\n@import \"./browser-sidebar\";\n\n// @import \"../../utils/browserControls/ArboretumChat.scss\";\nhtml {\n    height: 100%;\n\n    .unselected {\n        display: none;\n    }\n    #content {\n        height: 100%;\n        overflow: hidden;\n    }\n\n\n    .tab_content {\n        height: 100%;\n    }\n\n    webview {\n        display: inline-flex;\n        width: 100%;\n        height: 100%;\n\n        &.hidden {\n            display:none;\n        }\n    }\n}\n"],"sourceRoot":""}]);
+exports.push([module.i, "#buttonSpacer {\n  width: 70px;\n  /*border-bottom: 1px solid #AAA;*/\n  /*background: linear-gradient(to bottom, #BBB 80%, #AAA);*/ }\n\n#tabsBar {\n  display: flex;\n  flex-direction: row;\n  font-size: 13px;\n  font-family: sans-serif;\n  margin: 0px;\n  /*padding: 0px 0px 0px 70px;*/\n  padding: 0px;\n  box-sizing: border-box;\n  -webkit-user-select: none;\n  -webkit-app-region: drag;\n  color: #777;\n  /*height: 23px;*/\n  box-sizing: border-box; }\n  #tabsBar #addTab {\n    display: inline-block;\n    margin: 0;\n    background: linear-gradient(to bottom, #BBB 80%, #AAA); }\n\n/*#tabsBar #addTab:hover {\n    color: #fff;\n    background: rgb(99, 190, 229);\n}\n\n#addTab i {\n    font-size: 12.5px\n}*/\n#tabs {\n  display: flex;\n  flex: 1;\n  padding: 0px;\n  margin: 0px;\n  overflow: hidden; }\n\n.tab {\n  flex: 1;\n  display: flex;\n  border-left: 1px solid #AAA;\n  /*border: 1px solid black;*/\n  list-style: none;\n  white-space: nowrap;\n  /*font-size: 3em;*/\n  border-bottom: 1px solid #aaa;\n  color: #BBB;\n  overflow: hidden;\n  text-overflow: ellipsis; }\n\n.tab:last-child {\n  border-right: 1px solid #AAA; }\n\n.tab.not-selected {\n  background: linear-gradient(to bottom, #BBB 80%, #AAA); }\n\n.tab.not-selected .closeTab {\n  color: #999; }\n\n.tab.selected {\n  /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n  border-bottom: none;\n  color: #777; }\n\n.tab .tab-img {\n  opacity: 0.4; }\n\n.tab.selected .tab-img {\n  opacity: 1.0;\n  flex: 2; }\n\n.tab-img {\n  height: 18px;\n  max-width: 28px;\n  margin: 2px;\n  margin-right: 2px;\n  display: none; }\n\n.tab-title {\n  /*flex: 1;*/\n  /*padding: 5px 0px 4px 3px;*/ }\n\n.closeTab {\n  /*float: right;*/\n  /*color: red;*/\n  /*text-shadow: 0 0 1px rgba(50, 1, 1, 1);*/\n  padding: 5px; }\n\n.closeTab i {\n  font-size: 12.5px; }\n\n.closeTab:hover {\n  background: #f57777;\n  color: #FFF; }\n\n.tab .tab-title {\n  /*font-size: 5em;*/\n  color: #777;\n  text-overflow: ellipsis;\n  overflow: hidden; }\n\n.tab.selected .tab-title {\n  color: #555; }\n\n#adminPane {\n  display: flex;\n  flex-direction: column;\n  height: 100%; }\n  #adminPane .suggestedActions {\n    padding: 5px; }\n    #adminPane .suggestedActions ul {\n      font-size: 0.9em;\n      padding: 0px; }\n      #adminPane .suggestedActions ul li {\n        list-style: none; }\n\ntable#server-controls {\n  flex-shrink: 0; }\n  table#server-controls .nav-group-title {\n    padding: 0px; }\n  table#server-controls thead td {\n    text-align: center; }\n  table#server-controls td {\n    padding-left: 5px;\n    padding-right: 0px;\n    margin: auto;\n    vertical-align: top; }\n  table#server-controls tr:active {\n    color: inherit;\n    background-color: inherit;\n    /* color: #fff; */\n    /* background-color: #116cd6; */ }\n  table#server-controls #control_content td {\n    padding-bottom: 0px; }\n  table#server-controls label {\n    margin-bottom: 0px;\n    padding-bottom: 0px; }\n\n.sidebar {\n  width: 350px;\n  height: 100%;\n  display: flex;\n  flex-direction: column; }\n\n.copy_area input {\n  background-color: #FAFAFA;\n  border: 1px solid #CCC;\n  padding: 2px;\n  font-size: 0.9em;\n  text-align: center;\n  width: 90px; }\n\n.copy_area .copy_area .icon {\n  cursor: pointer;\n  color: #AAA; }\n  .copy_area .copy_area .icon:hover {\n    color: #999; }\n\n#browser-pane {\n  border-left: none; }\n\nhtml {\n  height: 100%; }\n  html .unselected {\n    display: none; }\n  html #content {\n    height: 100%;\n    overflow: hidden; }\n  html .tab_content {\n    height: 100%; }\n  html webview {\n    display: inline-flex;\n    width: 100%;\n    height: 100%; }\n    html webview.hidden {\n      display: none; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/browser/css/src/browser/css/browser-tabs.scss","/home/soney/code/arboretum/src/browser/css/src/browser/css/browser-sidebar.scss","/home/soney/code/arboretum/src/browser/css/src/browser/css/browser.scss"],"names":[],"mappings":"AAAA;EACI,YAAW;EACX,kCAAkC;EAClC,2DAA2D,EAC9D;;AAED;EACI,cAAa;EACb,oBAAmB;EACnB,gBAAe;EACf,wBAAuB;EACvB,YAAW;EACX,8BAA8B;EAC9B,aAAY;EACZ,uBAAsB;EACtB,0BAAyB;EACzB,yBAAwB;EAExB,YAAW;EACX,iBAAiB;EACjB,uBAAsB,EAMzB;EApBD;IAgBQ,sBAAqB;IACrB,UAAS;IACT,uDAAsD,EACzD;;AAIL;;;;;;;GAOG;AAEH;EACI,cAAa;EACb,QAAO;EACP,aAAY;EACZ,YAAW;EACX,iBAAgB,EACnB;;AAED;EACI,QAAO;EACP,cAAa;EACb,4BAA2B;EAC3B,4BAA4B;EAC5B,iBAAgB;EAChB,oBAAmB;EACnB,mBAAmB;EACnB,8BAA6B;EAC7B,YAAW;EACX,iBAAgB;EAChB,wBAAuB,EAC1B;;AACD;EACI,6BAA4B,EAC/B;;AACD;EACI,uDAAsD,EACzD;;AACD;EACI,YAAW,EACd;;AACD;EACI,8DAA8D;EAC9D,oBAAmB;EACnB,YAAW,EACd;;AAED;EACI,aAAY,EACf;;AACD;EACI,aAAY;EACZ,QAAO,EACV;;AAED;EACI,aAAY;EACZ,gBAAe;EACf,YAAW;EACX,kBAAiB;EACjB,cAAa,EAChB;;AAED;EACI,YAAY;EACZ,6BAA6B,EAChC;;AAED;EACI,iBAAiB;EACjB,eAAe;EACf,2CAA2C;EAC3C,aAAY,EACf;;AAED;EACI,kBACJ,EAAE;;AAEF;EACI,oBAA8B;EAC9B,YAAW,EACd;;AAGD;EACI,mBAAmB;EACnB,YAAW;EACX,wBAAuB;EACvB,iBAAgB,EACnB;;AACD;EACI,YAAW,EACd;;ACxHD;EACI,cAAY;EACZ,uBAAqB;EACrB,aAAW,EAYd;EAfD;IAMQ,aAAY,EAQf;IAdL;MAQY,iBAAe;MACf,aAAW,EAId;MAbT;QAWgB,iBAAgB,EACnB;;AAIb;EACI,eAAc,EA6BjB;EA9BD;IAGQ,aAAY,EACf;EAJL;IAMQ,mBAAkB,EACrB;EAPL;IAUQ,kBAAiB;IACjB,mBAAkB;IAClB,aAAY;IACZ,oBAAmB,EACtB;EAdL;IAiBY,eAAc;IACd,0BAAyB;IACzB,kBAAkB;IAClB,gCAAgC,EACnC;EArBT;IAwBQ,oBAAmB,EACtB;EAzBL;IA2BQ,mBAAkB;IAClB,oBAAmB,EACtB;;AAIL;EACI,aAAY;EACZ,aAAY;EACZ,cAAa;EACb,uBAAsB,EACzB;;AAID;EAEQ,0BAAyB;EACzB,uBAAsB;EACtB,aAAW;EACX,iBAAgB;EAChB,mBAAkB;EAClB,YAAW,EACd;;AARL;EAUQ,gBAAe;EACf,YAAW,EAId;EAfL;IAaY,YAAW,EACd;;AAKT;EACI,kBAAiB,EACpB;;AC3ED;EACI,aAAY,EAwBf;EAzBD;IAIQ,cAAa,EAChB;EALL;IAOQ,aAAY;IACZ,iBAAgB,EACnB;EATL;IAaQ,aAAY,EACf;EAdL;IAiBQ,qBAAoB;IACpB,YAAW;IACX,aAAY,EAKf;IAxBL;MAsBY,cAAY,EACf","file":"browser.scss","sourcesContent":["#buttonSpacer {\n    width: 70px;\n    /*border-bottom: 1px solid #AAA;*/\n    /*background: linear-gradient(to bottom, #BBB 80%, #AAA);*/\n}\n\n#tabsBar {\n    display: flex;\n    flex-direction: row;\n    font-size: 13px;\n    font-family: sans-serif;\n    margin: 0px;\n    /*padding: 0px 0px 0px 70px;*/\n    padding: 0px;\n    box-sizing: border-box;\n    -webkit-user-select: none;\n    -webkit-app-region: drag;\n\n    color: #777;\n    /*height: 23px;*/\n    box-sizing: border-box;\n    #addTab {\n        display: inline-block;\n        margin: 0;\n        background: linear-gradient(to bottom, #BBB 80%, #AAA);\n    }\n}\n\n\n/*#tabsBar #addTab:hover {\n    color: #fff;\n    background: rgb(99, 190, 229);\n}\n\n#addTab i {\n    font-size: 12.5px\n}*/\n\n#tabs {\n    display: flex;\n    flex: 1;\n    padding: 0px;\n    margin: 0px;\n    overflow: hidden;\n}\n\n.tab {\n    flex: 1;\n    display: flex;\n    border-left: 1px solid #AAA;\n    /*border: 1px solid black;*/\n    list-style: none;\n    white-space: nowrap;\n    /*font-size: 3em;*/\n    border-bottom: 1px solid #aaa;\n    color: #BBB;\n    overflow: hidden;\n    text-overflow: ellipsis;\n}\n.tab:last-child {\n    border-right: 1px solid #AAA;\n}\n.tab.not-selected {\n    background: linear-gradient(to bottom, #BBB 80%, #AAA);\n}\n.tab.not-selected .closeTab {\n    color: #999;\n}\n.tab.selected {\n    /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n    border-bottom: none;\n    color: #777;\n}\n\n.tab .tab-img {\n    opacity: 0.4;\n}\n.tab.selected .tab-img {\n    opacity: 1.0;\n    flex: 2;\n}\n\n.tab-img {\n    height: 18px;\n    max-width: 28px;\n    margin: 2px;\n    margin-right: 2px;\n    display: none;\n}\n\n.tab-title {\n    /*flex: 1;*/\n    /*padding: 5px 0px 4px 3px;*/\n}\n\n.closeTab {\n    /*float: right;*/\n    /*color: red;*/\n    /*text-shadow: 0 0 1px rgba(50, 1, 1, 1);*/\n    padding: 5px;\n}\n\n.closeTab i {\n    font-size: 12.5px\n}\n\n.closeTab:hover {\n    background: rgb(245, 119, 119);\n    color: #FFF;\n}\n\n\n.tab .tab-title {\n    /*font-size: 5em;*/\n    color: #777;\n    text-overflow: ellipsis;\n    overflow: hidden;\n}\n.tab.selected .tab-title {\n    color: #555;\n}\n","#adminPane {\n    display:flex;\n    flex-direction:column;\n    height:100%;\n\n    .suggestedActions {\n        padding: 5px;\n        ul {\n            font-size:0.9em;\n            padding:0px;\n            li {\n                list-style: none;\n            }\n        }\n    }\n}\ntable#server-controls {\n    flex-shrink: 0;\n    .nav-group-title {\n        padding: 0px;\n    }\n    thead td {\n        text-align: center;\n    }\n\n    td {\n        padding-left: 5px;\n        padding-right: 0px;\n        margin: auto;\n        vertical-align: top;\n    }\n    tr {\n        &:active {\n            color: inherit;\n            background-color: inherit;\n            /* color: #fff; */\n            /* background-color: #116cd6; */\n        }\n    }\n    #control_content td {\n        padding-bottom: 0px;\n    }\n    label {\n        margin-bottom: 0px;\n        padding-bottom: 0px;\n    }\n}\n\n\n.sidebar {\n    width: 350px;\n    height: 100%;\n    display: flex;\n    flex-direction: column;\n}\n\n\n\n.copy_area {\n    input {\n        background-color: #FAFAFA;\n        border: 1px solid #CCC;\n        padding:2px;\n        font-size: 0.9em;\n        text-align: center;\n        width: 90px;\n    }\n    .copy_area .icon {\n        cursor: pointer;\n        color: #AAA;\n        &:hover {\n            color: #999;\n        }\n    }\n}\n\n\n#browser-pane {\n    border-left: none;\n}\n","@import \"./browser-tabs\";\n@import \"./browser-sidebar\";\n\n// @import \"../../utils/browserControls/ArboretumChat.scss\";\nhtml {\n    height: 100%;\n\n    .unselected {\n        display: none;\n    }\n    #content {\n        height: 100%;\n        overflow: hidden;\n    }\n\n\n    .tab_content {\n        height: 100%;\n    }\n\n    webview {\n        display: inline-flex;\n        width: 100%;\n        height: 100%;\n\n        &.hidden {\n            display:none;\n        }\n    }\n}\n"],"sourceRoot":""}]);
 
 // exports
 

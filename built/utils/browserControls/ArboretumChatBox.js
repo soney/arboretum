@@ -152,26 +152,26 @@ class ArboretumChatBox extends React.Component {
     acceptAction(pam) {
         this.getChat().setState(pam, ArboretumChat_1.PageActionState.PERFORMED);
         if (this.props.onAction) {
-            this.props.onAction(pam);
+            this.props.onAction(pam.action);
         }
     }
     ;
     rejectAction(pam) {
         this.getChat().setState(pam, ArboretumChat_1.PageActionState.REJECTED);
         if (this.props.onReject) {
-            this.props.onReject(pam);
+            this.props.onReject(pam.action);
         }
     }
     ;
     focusAction(pam) {
         if (this.props.onFocus) {
-            this.props.onFocus(pam);
+            this.props.onFocus(pam.action);
         }
     }
     ;
     requestLabel(pam) {
-        const { data } = pam;
-        this.chat.addPageActionMessage('getLabel', pam.tabID, data);
+        const { tabID, data } = pam.action;
+        this.chat.addPageActionMessage('getLabel', tabID, data);
     }
     ;
     render() {
