@@ -35158,6 +35158,8 @@ class ClientTab extends React.Component {
             else if (item === 'listenedEvents') {
                 return { node, property: item, path: p.slice(i + 1) };
             }
+            else if (item === 'suggestedActions') {
+            }
             else if (item === 'shadowRoots') {
                 throw new Error('ShadowRoots not expected to be included');
             }

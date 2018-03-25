@@ -96,7 +96,7 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             }
         };
         this.doHandleDocumentUpdated = (event) => __awaiter(this, void 0, void 0, function* () {
-            log.debug(`Document Updated`);
+            // log.debug(`Document Updated`);
             // if(this.domRoot) {
             //     this.domRoot.destroy();
             //     this.domRoot = null;
@@ -107,7 +107,7 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             const { nodeId } = event;
             const domState = this.getDOMStateWithID(nodeId);
             if (domState) {
-                log.debug(`Character Data Modified ${nodeId}`);
+                // log.debug(`Character Data Modified ${nodeId}`)
                 try {
                     yield domState.setCharacterData(event.characterData);
                 }
@@ -132,7 +132,7 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             if (parent) {
                 try {
                     const { nodes } = event;
-                    log.debug(`Set child nodes ${parentId} -> [${nodes.map((node) => node.nodeId).join(', ')}]`);
+                    // log.debug(`Set child nodes ${parentId} -> [${nodes.map((node) => node.nodeId).join(', ')}]`);
                     parent.setChildrenRecursive(nodes);
                 }
                 catch (err) {
@@ -165,7 +165,7 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             }));
             const handled = yield Promise.all(updatedInlineStyles);
             if (_.every(handled)) {
-                log.debug(`Set inline styles`);
+                // log.debug(`Set inline styles`);
             }
             else {
                 console.error(`Could not find nodes for inlineStyleInvalidated`);
@@ -176,7 +176,7 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             const { nodeId } = event;
             const domState = this.getDOMStateWithID(nodeId);
             if (domState) {
-                log.debug(`Child count updated for ${nodeId}`);
+                // log.debug(`Child count updated for ${nodeId}`);
                 try {
                     yield domState.childCountUpdated(event.childNodeCount);
                 }
@@ -205,7 +205,7 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
                     console.error(err);
                     console.error(err.stack);
                 }
-                log.debug(`Child node inserted ${nodeId} (parent: ${parentNodeId} / previous: ${previousNodeId})`);
+                // log.debug(`Child node inserted ${nodeId} (parent: ${parentNodeId} / previous: ${previousNodeId})`);
                 domState.setChildrenRecursive(node.children, node.shadowRoots);
                 this.requestChildNodes(nodeId, -1, true);
             }
@@ -219,7 +219,7 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             const domState = this.getDOMStateWithID(nodeId);
             const parentDomState = this.getDOMStateWithID(parentNodeId);
             if (domState && parentDomState) {
-                log.debug(`Child node removed ${nodeId} (parent: ${parentNodeId})`);
+                // log.debug(`Child node removed ${nodeId} (parent: ${parentNodeId})`);
                 try {
                     yield parentDomState.removeChild(domState);
                 }
@@ -237,7 +237,7 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             const domState = this.getDOMStateWithID(nodeId);
             if (domState) {
                 const { name, value } = event;
-                log.debug(`Attribute modified ${name} to ${value}`);
+                // log.debug(`Attribute modified ${name} to ${value}`);
                 try {
                     yield domState.setAttribute(name, value);
                 }
@@ -256,7 +256,7 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             const domState = this.getDOMStateWithID(nodeId);
             if (domState) {
                 const { name } = event;
-                log.debug(`Attribute removed ${name}`);
+                // log.debug(`Attribute removed ${name}`);
                 try {
                     yield domState.removeAttribute(name);
                 }
@@ -302,7 +302,7 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             console.error(err);
             throw err;
         }
-        log.debug(`=== CREATED TAB STATE ${this.getTabId()} ====`);
+        // log.debug(`=== CREATED TAB STATE ${this.getTabId()} ====`);
     }
     ;
     initialize() {
@@ -437,7 +437,7 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
     ;
     onAttachedToShareDBDoc() {
         return __awaiter(this, void 0, void 0, function* () {
-            log.debug(`Tab State ${this.getTabId()} added to ShareDB doc`);
+            // log.debug(`Tab State ${this.getTabId()} added to ShareDB doc`);
             if (this.domRoot) {
                 this.domRoot.markAttachedToShareDBDoc();
             }
@@ -859,7 +859,7 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
     ;
     destroy() {
         this.chrome.close();
-        log.debug(`=== DESTROYED TAB STATE ${this.getTabId()} ====`);
+        // log.debug(`=== DESTROYED TAB STATE ${this.getTabId()} ====`);
     }
     ;
     getTabTitle() {

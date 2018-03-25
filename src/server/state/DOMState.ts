@@ -60,7 +60,7 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
     constructor(private node: CRI.Node, private tab:TabState, private contentDocument?:DOMState, private childFrame?:FrameState, private parent?:DOMState) {
         super();
         if(this.contentDocument) { this.contentDocument.setParent(this); }
-        log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
+        // log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     };
     private getSubNodes(type:SubNodeType):Array<DOMState> {
         if(this.subNodes.has(type)) {
@@ -75,7 +75,7 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
     public getShadowRoots():Array<DOMState> { return this.getSubNodes('shadowRoots'); };
     public getPseudoElements():Array<DOMState> { return this.getSubNodes('pseudoElements'); };
     protected async onAttachedToShareDBDoc():Promise<void> {
-        log.debug(`DOM State ${this.getNodeId()} added to ShareDB doc`);
+        // log.debug(`DOM State ${this.getNodeId()} added to ShareDB doc`);
 
         await this.updateNodeValue();
 
@@ -227,7 +227,7 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
         }
         this.destroyed = true;
         this.onDestroyed.emit();
-        log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
+        // log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
     }
     public getTab(): TabState { return this.tab; };
     public getNodeId(): CRI.NodeID { return this.node.nodeId; };

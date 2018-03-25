@@ -49,7 +49,9 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
     public getSessionID():string { return this.sessionID; };
     public getShareDBDoc():SDBDoc<BrowserDoc> { return this.doc; };
     public getAbsoluteShareDBPath():Array<string|number> { return []; };
-    protected async onAttachedToShareDBDoc():Promise<void> { log.debug(`Browser added to ShareDB doc`); };
+    protected async onAttachedToShareDBDoc():Promise<void> {
+        // log.debug(`Browser added to ShareDB doc`);
+    };
     private async initialize():Promise<void> {
         this.sdb = new SDB(false);
         this.doc = this.sdb.get<BrowserDoc>('arboretum', 'browser');
@@ -60,7 +62,7 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
         this.markAttachedToShareDBDoc();
         this.chat = new ArboretumChat(this.sdb, this);
         this.intervalID = timers.setInterval(_.bind(this.refreshTabs, this), 2000);
-        log.debug('=== CREATED BROWSER ===');
+        // log.debug('=== CREATED BROWSER ===');
     };
     public getNode(nodeID:CRI.NodeID):DOMState {
         for(let tabID in this.tabs) {
@@ -149,7 +151,7 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
                 existingTabs.delete(id);
                 tab.updateInfo(tabInfo);
             } else {
-                log.trace(`Creating tab ${id}`);
+                // log.trace(`Creating tab ${id}`);
                 tab = new TabState(this, tabInfo);
                 this.tabs.set(id, tab);
 
@@ -162,7 +164,7 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
         await Promise.all(createPromises);
 
         const destroyPromises = Array.from(existingTabs).map(async (id: CRI.TabID):Promise<void> => {
-            log.trace(`Destroying tab ${id}`);
+            // log.trace(`Destroying tab ${id}`);
             this.destroyTab(id);
             const doc = this.getShareDBDoc();
             await doc.submitObjectDeleteOp(this.p('tabs', id));

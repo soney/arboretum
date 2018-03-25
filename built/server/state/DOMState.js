@@ -40,7 +40,7 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         if (this.contentDocument) {
             this.contentDocument.setParent(this);
         }
-        log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
+        // log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
     }
     static shouldIncludeChild(child) {
         const node = child.getNode();
@@ -89,7 +89,7 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
     ;
     onAttachedToShareDBDoc() {
         return __awaiter(this, void 0, void 0, function* () {
-            log.debug(`DOM State ${this.getNodeId()} added to ShareDB doc`);
+            // log.debug(`DOM State ${this.getNodeId()} added to ShareDB doc`);
             yield this.updateNodeValue();
             this.listenedEvents.markAttachedToShareDBDoc(this.getShareDBDoc(), this.p('listenedEvents'));
             yield this.updateListenedEvents();
@@ -262,7 +262,7 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         }
         this.destroyed = true;
         this.onDestroyed.emit();
-        log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
+        // log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
     }
     getTab() { return this.tab; }
     ;

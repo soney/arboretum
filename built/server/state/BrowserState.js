@@ -46,7 +46,9 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
     getAbsoluteShareDBPath() { return []; }
     ;
     onAttachedToShareDBDoc() {
-        return __awaiter(this, void 0, void 0, function* () { log.debug(`Browser added to ShareDB doc`); });
+        return __awaiter(this, void 0, void 0, function* () {
+            // log.debug(`Browser added to ShareDB doc`);
+        });
     }
     ;
     initialize() {
@@ -60,7 +62,7 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
             this.markAttachedToShareDBDoc();
             this.chat = new ArboretumChat_1.ArboretumChat(this.sdb, this);
             this.intervalID = timers.setInterval(_.bind(this.refreshTabs, this), 2000);
-            log.debug('=== CREATED BROWSER ===');
+            // log.debug('=== CREATED BROWSER ===');
         });
     }
     ;
@@ -173,7 +175,7 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
                     tab.updateInfo(tabInfo);
                 }
                 else {
-                    log.trace(`Creating tab ${id}`);
+                    // log.trace(`Creating tab ${id}`);
                     tab = new TabState_1.TabState(this, tabInfo);
                     this.tabs.set(id, tab);
                     yield tab.initialized;
@@ -183,7 +185,7 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
             }));
             yield Promise.all(createPromises);
             const destroyPromises = Array.from(existingTabs).map((id) => __awaiter(this, void 0, void 0, function* () {
-                log.trace(`Destroying tab ${id}`);
+                // log.trace(`Destroying tab ${id}`);
                 this.destroyTab(id);
                 const doc = this.getShareDBDoc();
                 yield doc.submitObjectDeleteOp(this.p('tabs', id));

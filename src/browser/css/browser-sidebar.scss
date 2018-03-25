@@ -5,6 +5,9 @@
 
     .suggestedActions {
         padding: 5px;
+        .nav-group-title {
+            padding: 0px;
+        }
         ul {
             font-size:0.9em;
             padding:0px;

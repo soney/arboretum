@@ -26,12 +26,12 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
         this.requests = new Map();
         this.responses = new Map();
         this.resourcePromises = new Map();
-        log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
+        // log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
     }
     ;
     onAttachedToShareDBDoc() {
         return __awaiter(this, void 0, void 0, function* () {
-            log.debug(`Frame State ${this.getFrameId()} added to ShareDB doc`);
+            // log.debug(`Frame State ${this.getFrameId()} added to ShareDB doc`);
             if (this.root) {
                 yield this.root.markAttachedToShareDBDoc();
             }
@@ -42,7 +42,7 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
         const { requestId, request } = event;
         const { url } = request;
         this.requests.set(requestId, event);
-        log.debug(`Request will be sent ${url}`);
+        // log.debug(`Request will be sent ${url}`);
     }
     ;
     responseReceived(event) {
@@ -99,7 +99,7 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
         this.requests.clear();
         this.responses.clear();
         this.resourcePromises.clear();
-        log.debug(`=== DESTROYED FRAME STATE ${this.getFrameId()} ====`);
+        // log.debug(`=== DESTROYED FRAME STATE ${this.getFrameId()} ====`);
     }
     ;
     getFrameId() {

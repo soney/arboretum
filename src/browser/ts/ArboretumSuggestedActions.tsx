@@ -101,7 +101,7 @@ export class ArboretumSuggestedActions extends React.Component<SuggestedActionsP
                 <div className='messageActions'>{messageActions}</div>
             </li>
         });
-        const header:JSX.Element = suggestedActions.length > 0 ? <h5>Actions</h5> : null;
+        const header:JSX.Element = suggestedActions.length > 0 ? <h5 className="nav-group-title">Actions</h5> : null;
         return <div className='suggestedActions'>
             {header}
             <ul>{suggestedActions}</ul>

@@ -254,6 +254,7 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
                 return {node, property:item, path:p.slice(i+1)};
             } else if(item === 'listenedEvents') {
                 return {node, property:item, path:p.slice(i+1)};
+            } else if(item === 'suggestedActions') { // do nothing
             } else if(item === 'shadowRoots') {
                 throw new Error('ShadowRoots not expected to be included');
             } else {

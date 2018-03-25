@@ -26,10 +26,10 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
 
     constructor(private chrome, private info: CRI.Frame, private tab: TabState, private parentFrame: FrameState = null, private frameResources: Array<CRI.Page.FrameResource> = []) {
         super();
-        log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
+        // log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
     };
     protected async onAttachedToShareDBDoc():Promise<void> {
-        log.debug(`Frame State ${this.getFrameId()} added to ShareDB doc`);
+        // log.debug(`Frame State ${this.getFrameId()} added to ShareDB doc`);
         if(this.root) {
             await this.root.markAttachedToShareDBDoc();
         }
@@ -39,7 +39,7 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
         const {requestId, request} = event;
         const {url} = request;
         this.requests.set(requestId, event);
-        log.debug(`Request will be sent ${url}`);
+        // log.debug(`Request will be sent ${url}`);
     };
     public responseReceived(event:CRI.ResponseReceivedEvent) {
         this.responses.set(event.requestId, event);
@@ -84,7 +84,7 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
         this.requests.clear();
         this.responses.clear();
 		this.resourcePromises.clear();
-        log.debug(`=== DESTROYED FRAME STATE ${this.getFrameId()} ====`);
+        // log.debug(`=== DESTROYED FRAME STATE ${this.getFrameId()} ====`);
     };
 
     public getFrameId(): CRI.FrameID {
