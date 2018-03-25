@@ -15,7 +15,7 @@ import * as ip from 'ip';
 import * as opn from 'opn';
 import * as request from 'request';
 import * as URL from 'url';
-import {ArboretumChat, PageActionMessage} from './utils/ArboretumChat';
+import {ArboretumChat, PageActionMessage, PageAction, PAMAction} from './utils/ArboretumChat';
 import {TabDoc, BrowserDoc} from './utils/state_interfaces';
 import {SDB, SDBDoc} from './utils/ShareDBDoc';
 import {readDirectory,readFileContents,writeFileContents,makeDirectoryRecursive} from './utils/fileFunctions';
@@ -87,17 +87,49 @@ const browserState = new BrowserState(sdb, {
     port: RDB_PORT
 });
 
+// console.log('use');
+sdb.use('receive', (request, next) => {
+    console.log(request);
+});
+
 const expressApp = express();
 const server:Server = createServer(expressApp);
 const wss = new WebSocket.Server({server});
 wss.on('connection', (ws:WebSocket, req) => {
-    browserState.shareDBListen(ws);
+     browserState.shareDBListen(ws);
+    ws.on('message', (event) => {
+        const messageData = JSON.parse(event as string);
+        if(!messageData.a) { // is a shareDB message
+            const {message, data, messageID} = messageData;
+            if(message === 'pageAction') {
+                const {a, action} = data;
+                const rv = handlePageActionAction(a, action);
+                if(rv) {
+                    ws.send(JSON.stringify({
+                        replyID: messageID,
+                        message: 'ok'
+                    }));
+                } else {
+                    ws.send(JSON.stringify({
+                        replyID: messageID,
+                        message: 'not ok'
+                    }));
+                }
+            }
+        }
+    });
 });
 expressApp.all('/', async (req, res, next) => {
         const contents: string = await setClientOptions({ });
         res.send(contents);
     })
     .use('/', express.static(path.join(__dirname, 'client')))
+    .all('/a', async (req, res, next) => {
+        const contents: string = await setClientOptions({
+            isAdmin: true
+        });
+        res.send(contents);
+    })
     .all('/r', async (req, res, next) => {
         var url = req.query.l,
             tabID = req.query.t,
@@ -185,8 +217,28 @@ async function stopServer(): Promise<void> {
     }
 };
 
-let chromeProcess:child.ChildProcess;
+async function handlePageActionAction(a:PAMAction, action:PageAction):Promise<boolean> {
+    if(a === PAMAction.ACCEPT) {
+        await browserState.performAction(action);
+        return true;
+    } else if(a === PAMAction.REJECT) {
+        await browserState.rejectAction(action);
+        return true;
+    } else if(a === PAMAction.FOCUS) {
+        if(browserWindow) {
+            browserWindow.focus();
+        }
+        browserWindow.webContents.send("focusWebview");
+        await new Promise((resolve, reject) => { setTimeout(resolve, 10) });
+        await browserState.focusAction(action);
+        return true;
+    } else if(a === PAMAction.ADD_LABEL) {
+        return true;
+    }
+    return false;
+};
 
+let chromeProcess:child.ChildProcess;
 ipcMain.on('asynchronous-message', async (event, messageID:number, arg:{message:string, data:any}) => {
     const {message, data} = arg;
     const replyChannel:string = `reply-${messageID}`;
@@ -203,22 +255,14 @@ ipcMain.on('asynchronous-message', async (event, messageID:number, arg:{message:
         event.sender.send(replyChannel, 'ok');
         ipcMain.emit('server-active', {active:false});
         console.log(chalk.bgWhite.bold.black(`Stopping server`));
-    } else if (message === 'performAction') {
-        await browserState.performAction(data);
-        event.sender.send(replyChannel, 'ok');
-    } else if (message === 'rejectAction') {
-        await browserState.rejectAction(data);
-        event.sender.send(replyChannel, 'ok');
-    } else if (message === 'focusAction') {
-        if(browserWindow) {
-            browserWindow.focus();
+    } else if (message === 'pageAction') {
+        const {a, action} = data;
+        const rv = handlePageActionAction(a, action);
+        if(rv) {
+            event.sender.send(replyChannel, 'ok');
+        } else {
+            event.sender.send(replyChannel, 'not ok');
         }
-        browserWindow.webContents.send("focusWebview");
-        await new Promise((resolve, reject) => { setTimeout(resolve, 10) });
-        await browserState.focusAction(data);
-        event.sender.send(replyChannel, 'ok');
-    } else if (message === 'labelAction') {
-        event.sender.send(replyChannel, 'ok');
     } else {
         event.sender.send(replyChannel, 'not recognized');
     }

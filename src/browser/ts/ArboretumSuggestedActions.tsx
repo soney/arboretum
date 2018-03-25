@@ -14,9 +14,7 @@ import {copyToClipboard} from '../../utils/copyToClipboard';
 import {ArboretumChatBox} from '../../utils/browserControls/ArboretumChatBox';
 
 type SuggestedActionsProps = {
-    onAction?:(pa:PageAction) => void,
-    onFocus?:(pam:PageActionMessage) => void,
-    onLabel?:(pam:PageActionMessage) => void,
+    onAction?:(a:PAMAction, action:PageAction) => void,
     onAddHighlight?:(nodeIDs:Array<CRI.NodeID>, color:string)=>void,
     onRemoveHighlight?:(nodeIDs:Array<CRI.NodeID>)=>void,
 };
@@ -84,10 +82,8 @@ export class ArboretumSuggestedActions extends React.Component<SuggestedActionsP
             this.props.onRemoveHighlight(nodeIDs);
         }
     };
-    private performAction = (action:PAMAction, pa:PageAction):void => {
-        if(action === PAMAction.ACCEPT) {
-            if(this.props.onAction) { this.props.onAction(pa); }
-        }
+    private performAction = (a:PAMAction, action:PageAction):void => {
+        if(this.props.onAction) { this.props.onAction(a, action); }
     };
     public render():React.ReactNode {
         const suggestedActions:Array<JSX.Element> = this.state.actions.map((action:PageAction, i:number) => {

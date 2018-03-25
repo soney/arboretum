@@ -13,10 +13,7 @@ type ArboretumChatProps = {
     chatText?:string,
     sdb?:SDB,
     username:string,
-    onAction?:(action:PageAction) => void,
-    onReject?:(action:PageAction) => void,
-    onFocus?:(action:PageAction) => void,
-    onLabel?:(action:PageAction) => void,
+    onAction?:(a:PAMAction, action:PageAction) => void,
     onAddHighlight?:(nodeIDs:Array<CRI.NodeID>, color:string)=>void,
     onRemoveHighlight?:(nodeIDs:Array<CRI.NodeID>)=>void,
     isAdmin:boolean
@@ -152,29 +149,12 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
     private openEndedChimeRef = (el:HTMLAudioElement):void => {
         this.openEndedChimeElement = el;
     };
-    private performAction = (action:PAMAction, pam:PageActionMessage):void => {
-        if(action === PAMAction.ACCEPT) {
-            this.acceptAction(pam);
-        } else if(action === PAMAction.REJECT) {
-            this.rejectAction(pam);
-        } else if(action === PAMAction.FOCUS) {
-            this.focusAction(pam);
-        } else if(action === PAMAction.REQUEST_LABEL) {
+    private performAction = (a:PAMAction, pam:PageActionMessage):void => {
+        const {action} = pam;
+        if(a === PAMAction.REQUEST_LABEL) {
             this.requestLabel(pam);
-        } else {
-            console.log(action);
         }
-    };
-    private acceptAction(pam:PageActionMessage):void {
-        this.getChat().setState(pam, PageActionState.PERFORMED);
-        if(this.props.onAction) { this.props.onAction(pam.action); }
-    };
-    private rejectAction(pam:PageActionMessage):void {
-        this.getChat().setState(pam, PageActionState.REJECTED);
-        if(this.props.onReject) { this.props.onReject(pam.action); }
-    };
-    private focusAction(pam:PageActionMessage):void  {
-        if(this.props.onFocus) { this.props.onFocus(pam.action); }
+        if(this.props.onAction) { this.props.onAction(a, pam.action); }
     };
     private requestLabel(pam:PageActionMessage):void {
         const {tabID, data} = pam.action;

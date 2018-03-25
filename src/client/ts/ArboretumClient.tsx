@@ -4,7 +4,7 @@ import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
 import {ClientTab} from './ClientTab';
 import {ArboretumChatBox} from '../../utils/browserControls/ArboretumChatBox';
 import {BrowserNavigationBar} from '../../utils/browserControls/BrowserNavigationBar';
-import {ArboretumChat, Message, User, TextMessage, PageActionMessage, PageAction} from '../../utils/ArboretumChat';
+import {ArboretumChat, Message, User, TextMessage, PageActionMessage, PageAction, PAMAction} from '../../utils/ArboretumChat';
 import {TabList} from './TabList';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
@@ -14,7 +14,8 @@ type ArboretumClientProps = {
     userID?:string,
     frameID?:string,
     tabID?:string,
-    viewType?:string
+    viewType?:string,
+    isAdmin?:boolean
 };
 type ArboretumClientState = {
     showControls:boolean,
@@ -30,6 +31,7 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
     private arboretumChat:ArboretumChatBox;
 
     protected static defaultProps:ArboretumClientProps = {
+        isAdmin:false,
         wsAddress: `ws://${window.location.hostname}:${window.location.port}`
     };
 
@@ -42,7 +44,25 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
         this.tabID = this.props.tabID;
         this.socket = new WebSocket(this.props.wsAddress);
         this.sdb = new SDB(true, this.socket);
-        window['sdb'] = this.sdb;
+    };
+    private static wsMessageID=1;
+    private async sendWebsocketMessage(message:{message:string, data?:any}):Promise<any> {
+        const messageID:number = ArboretumClient.wsMessageID++;
+        const response = await new Promise((resolve, reject) => {
+            const onMessage = (event) => {
+                const messageData = JSON.parse(event.data);
+                if(!messageData.a) {
+                    const {replyID, data} = messageData;
+                    if(replyID === messageID) {
+                        this.socket.removeEventListener('message', onMessage);
+                        resolve(data);
+                    }
+                }
+            };
+            this.socket.addEventListener('message', onMessage);
+            this.socket.send(JSON.stringify(_.extend(message, {messageID})));
+        });
+        return response;
     };
     public async componentWillUnmount():Promise<void> {
         await this.arboretumChat.leave();
@@ -106,7 +126,19 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
             this.clientTab.removeHighlight(nodeIds);
         }
     };
-    private onLabel = (action:PageAction):void => {
+    private onAction = (a:PAMAction, action:PageAction):void => {
+        if(this.props.isAdmin) {
+            this.sendWebsocketMessage({
+                message: 'pageAction',
+                data: {a, action}
+            });
+        } else {
+            if(a === PAMAction.ADD_LABEL) {
+                this.onLabel(action);
+            }
+        }
+    }
+    private onLabel(action:PageAction):void {
         const {tabID} = action;
         const relevantNodeIDs = ArboretumChat.getRelevantNodeIDs(action);
         if(this.clientTab) {
@@ -130,7 +162,7 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
             <div className="window-content">
                 <div className="pane-group" id="client_body">
                     <div className="pane-sm sidebar" id="client_sidebar">
-                        <ArboretumChatBox onLabel={this.onLabel} onAddHighlight={this.addHighlight} onRemoveHighlight={this.removeHighlight} isAdmin={false} ref={this.chatRef} sdb={this.sdb} username="Steve" />
+                        <ArboretumChatBox onAction={this.onAction} onAddHighlight={this.addHighlight} onRemoveHighlight={this.removeHighlight} isAdmin={this.props.isAdmin} ref={this.chatRef} sdb={this.sdb} username="Steve" />
                     </div>
                     <div className="pane" id="client_content">
                         <ClientTab canGoBackChanged={this.tabCanGoBackChanged} canGoForwardChanged={this.tabCanGoForwardChanged} urlChanged={this.tabURLChanged} titleChanged={this.pageTitleChanged} isLoadingChanged={this.tabIsLoadingChanged} tabID={this.props.tabID} frameID={this.props.frameID} ref={this.clientTabRef} sdb={this.sdb} />

@@ -16,7 +16,8 @@ import {} from './ArboretumAdminInterface';
 export type BrowserTabID = number;
 
 type ArboretumProps = {
-    urls:Array<string>
+    urls?:Array<string>,
+    newTabURL?:string
 };
 type ArboretumState = {
     tabs:Array<{url:string, id:number, selected:boolean}>,
@@ -35,7 +36,8 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
     private chatbox:ArboretumChatBox;
     private shareURLElement:HTMLInputElement;
     private static defaultProps:ArboretumProps = {
-        urls:[]
+        urls:[],
+        newTabURL:'http://www.umich.edu/'
     };
     constructor(props) {
         super(props);
@@ -168,7 +170,7 @@ export class ArboretumBrowser extends React.Component<ArboretumProps, ArboretumS
         }
         document.title = title;
     };
-    private addTab = (url:string='http://www.umich.edu', selected:boolean=true):void => {
+    private addTab = (url:string=this.props.newTabURL, selected:boolean=true):void => {
         const id:number = this.tabCounter++;
         if(selected) {
             this.tabs.forEach((t) => {

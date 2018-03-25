@@ -24162,30 +24162,30 @@ class ArboretumAdminInterface extends React.Component {
                 this.chatbox.setSDB(this.sdb);
             }
         };
-        this.onAction = (action) => __awaiter(this, void 0, void 0, function* () {
+        this.onAction = (a, action) => __awaiter(this, void 0, void 0, function* () {
             yield this.sendIPCMessage({
-                message: 'performAction',
-                data: action
+                message: 'pageAction',
+                data: { a, action }
             });
         });
-        this.onReject = (action) => __awaiter(this, void 0, void 0, function* () {
-            yield this.sendIPCMessage({
-                message: 'rejectAction',
-                data: action
-            });
-        });
-        this.onFocus = (action) => __awaiter(this, void 0, void 0, function* () {
-            yield this.sendIPCMessage({
-                message: 'focusAction',
-                data: action
-            });
-        });
-        this.onLabel = (action) => __awaiter(this, void 0, void 0, function* () {
-            yield this.sendIPCMessage({
-                message: 'labelAction',
-                data: action
-            });
-        });
+        // private onReject = async (action:PageAction):Promise<void> => {
+        //     await this.sendIPCMessage({
+        //         message:'rejectAction',
+        //         data:action
+        //     });
+        // };
+        // private onFocus = async (action:PageAction):Promise<void> => {
+        //     await this.sendIPCMessage({
+        //         message:'focusAction',
+        //         data:action
+        //     });
+        // };
+        // private onLabel = async (action:PageAction):Promise<void> => {
+        //     await this.sendIPCMessage({
+        //         message:'labelAction',
+        //         data:action
+        //     });
+        // };
         this.selectShareURL = () => {
             this.shareURLElement.select();
             this.shareURLElement.focus();
@@ -24264,7 +24264,7 @@ class ArboretumAdminInterface extends React.Component {
                                 React.createElement("input", { "aria-label": "Use Mechanical Turk Sandbox", type: "checkbox", name: "sandbox", value: "sandbox", id: "sandbox", checked: this.state.sandbox, onChange: this.onSandboxChange }),
                                 " Sandbox"))))),
             React.createElement(ArboretumSuggestedActions_1.ArboretumSuggestedActions, { ref: (el) => { this.suggestedActions = el; }, onAction: this.onAction }),
-            React.createElement(ArboretumChatBox_1.ArboretumChatBox, { isAdmin: true, sdb: this.sdb, username: "Admin", ref: this.chatBoxRef, onSendMessage: this.sendMessage, onAction: this.onAction, onReject: this.onReject, onFocus: this.onFocus, onLabel: this.onLabel, onAddHighlight: this.addHighlight, onRemoveHighlight: this.removeHighlight }));
+            React.createElement(ArboretumChatBox_1.ArboretumChatBox, { isAdmin: true, sdb: this.sdb, username: "Admin", ref: this.chatBoxRef, onSendMessage: this.sendMessage, onAction: this.onAction, onAddHighlight: this.addHighlight, onRemoveHighlight: this.removeHighlight }));
     }
     ;
 }
@@ -24896,6 +24896,7 @@ json.checkList = function(elem) {
 
 json.checkObj = function(elem) {
   if (!isObject(elem)) {
+    debugger;
     throw new Error("Referenced element not an object (it was " + JSON.stringify(elem) + ")");
   }
 };
@@ -24943,6 +24944,7 @@ json.apply = function(snapshot, op) {
 
       parent = elem;
       parentKey = key;
+      if(!elem) { debugger; }
       elem = elem[key];
       key = p;
 
@@ -28002,21 +28004,13 @@ class ArboretumChatBox extends React.Component {
         this.openEndedChimeRef = (el) => {
             this.openEndedChimeElement = el;
         };
-        this.performAction = (action, pam) => {
-            if (action === ArboretumChat_1.PAMAction.ACCEPT) {
-                this.acceptAction(pam);
-            }
-            else if (action === ArboretumChat_1.PAMAction.REJECT) {
-                this.rejectAction(pam);
-            }
-            else if (action === ArboretumChat_1.PAMAction.FOCUS) {
-                this.focusAction(pam);
-            }
-            else if (action === ArboretumChat_1.PAMAction.REQUEST_LABEL) {
+        this.performAction = (a, pam) => {
+            const { action } = pam;
+            if (a === ArboretumChat_1.PAMAction.REQUEST_LABEL) {
                 this.requestLabel(pam);
             }
-            else {
-                console.log(action);
+            if (this.props.onAction) {
+                this.props.onAction(a, pam.action);
             }
         };
         this.onAddLabel = (nodeIDs, label, tabID, nodeDescriptions) => {
@@ -28087,26 +28081,6 @@ class ArboretumChatBox extends React.Component {
     ;
     playPageActionMessageChime() {
         ArboretumChatBox.playAudio(this.openEndedChimeElement);
-    }
-    ;
-    acceptAction(pam) {
-        this.getChat().setState(pam, ArboretumChat_1.PageActionState.PERFORMED);
-        if (this.props.onAction) {
-            this.props.onAction(pam.action);
-        }
-    }
-    ;
-    rejectAction(pam) {
-        this.getChat().setState(pam, ArboretumChat_1.PageActionState.REJECTED);
-        if (this.props.onReject) {
-            this.props.onReject(pam.action);
-        }
-    }
-    ;
-    focusAction(pam) {
-        if (this.props.onFocus) {
-            this.props.onFocus(pam.action);
-        }
     }
     ;
     requestLabel(pam) {
@@ -30105,11 +30079,9 @@ class ArboretumSuggestedActions extends React.Component {
                 this.props.onRemoveHighlight(nodeIDs);
             }
         };
-        this.performAction = (action, pa) => {
-            if (action === ArboretumChat_1.PAMAction.ACCEPT) {
-                if (this.props.onAction) {
-                    this.props.onAction(pa);
-                }
+        this.performAction = (a, action) => {
+            if (this.props.onAction) {
+                this.props.onAction(a, action);
             }
         };
         this.state = {

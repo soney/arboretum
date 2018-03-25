@@ -23680,7 +23680,7 @@ class ArboretumBrowser extends React.Component {
             }
             document.title = title;
         };
-        this.addTab = (url = 'http://www.umich.edu', selected = true) => {
+        this.addTab = (url = this.props.newTabURL, selected = true) => {
             const id = this.tabCounter++;
             if (selected) {
                 this.tabs.forEach((t) => {
@@ -23861,7 +23861,8 @@ class ArboretumBrowser extends React.Component {
     ;
 }
 ArboretumBrowser.defaultProps = {
-    urls: []
+    urls: [],
+    newTabURL: 'http://www.umich.edu/'
 };
 ArboretumBrowser.ipcMessageID = 0;
 exports.ArboretumBrowser = ArboretumBrowser;
@@ -26497,6 +26498,7 @@ json.checkList = function(elem) {
 
 json.checkObj = function(elem) {
   if (!isObject(elem)) {
+    debugger;
     throw new Error("Referenced element not an object (it was " + JSON.stringify(elem) + ")");
   }
 };
@@ -26544,6 +26546,7 @@ json.apply = function(snapshot, op) {
 
       parent = elem;
       parentKey = key;
+      if(!elem) { debugger; }
       elem = elem[key];
       key = p;
 
