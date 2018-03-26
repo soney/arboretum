@@ -269,7 +269,6 @@ ipcMain.on('asynchronous-message', async (event, messageID:number, arg:{message:
 });
 
 keypress(process.stdin);
-
 process.stdin.on('keypress', async (ch, key) => {
     const { name, ctrl } = key;
     if (ctrl && name === 'c') {

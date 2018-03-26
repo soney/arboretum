@@ -12,13 +12,9 @@ import * as ReactDOM from 'react-dom';
 type ArboretumClientProps = {
     wsAddress?:string,
     userID?:string,
-    frameID?:string,
-    tabID?:string,
-    viewType?:string,
     isAdmin?:boolean
 };
 type ArboretumClientState = {
-    showControls:boolean,
     enteringLabel:boolean
 };
 
@@ -38,10 +34,8 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
     constructor(props) {
         super(props);
         this.state = {
-            showControls: !this.props.frameID,
             enteringLabel:false
         };
-        this.tabID = this.props.tabID;
         this.socket = new WebSocket(this.props.wsAddress);
         this.sdb = new SDB(true, this.socket);
     };
@@ -79,9 +73,16 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
         if(this.tabID) {
             this.clientTab.setTabID(this.tabID);
         }
-        this.clientTab.pageAction.addListener((pa:PageAction) => {
-            const chat = this.getChat();
-            chat.addPageActionMessage(pa.type, this.tabID, pa.data);
+        this.clientTab.pageAction.addListener((action:PageAction) => {
+            if(this.props.isAdmin) {
+                this.sendWebsocketMessage({
+                    message: 'pageAction',
+                    data: {a:PAMAction.ACCEPT, action}
+                });
+            } else {
+                const chat = this.getChat();
+                chat.addPageActionMessage(action.type, this.tabID, action.data);
+            }
         });
     };
     private navBarRef = (navBar:BrowserNavigationBar):void => {
@@ -153,7 +154,6 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
     };
 
     public render():React.ReactNode {
-        const {showControls} = this.state;
         return <div className="window" id="arboretum_client">
             <TabList sdb={this.sdb} onSelectTab={this.onSelectTab} />
             <header>
@@ -165,7 +165,7 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
                         <ArboretumChatBox onAction={this.onAction} onAddHighlight={this.addHighlight} onRemoveHighlight={this.removeHighlight} isAdmin={this.props.isAdmin} ref={this.chatRef} sdb={this.sdb} username="Steve" />
                     </div>
                     <div className="pane" id="client_content">
-                        <ClientTab canGoBackChanged={this.tabCanGoBackChanged} canGoForwardChanged={this.tabCanGoForwardChanged} urlChanged={this.tabURLChanged} titleChanged={this.pageTitleChanged} isLoadingChanged={this.tabIsLoadingChanged} tabID={this.props.tabID} frameID={this.props.frameID} ref={this.clientTabRef} sdb={this.sdb} />
+                        <ClientTab canGoBackChanged={this.tabCanGoBackChanged} canGoForwardChanged={this.tabCanGoForwardChanged} urlChanged={this.tabURLChanged} titleChanged={this.pageTitleChanged} isLoadingChanged={this.tabIsLoadingChanged} ref={this.clientTabRef} sdb={this.sdb} />
                     </div>
                 </div>
             </div>

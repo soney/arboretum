@@ -9,8 +9,6 @@ import {registerEvent} from '../../utils/TypedEventEmitter';
 import {PageAction, PageActionMessage} from '../../utils/ArboretumChat';
 
 type ClientTabProps = {
-    tabID?:CRI.TabID,
-    frameID?:CRI.FrameID,
     sdb:SDB,
     canGoBackChanged?:(tab:ClientTab, canGoBack:boolean) => void,
     canGoForwardChanged?:(tab:ClientTab, canGoForward:boolean) => void,
@@ -20,7 +18,6 @@ type ClientTabProps = {
 };
 type ClientTabState = {
     tabID:CRI.TabID,
-    frameID:CRI.FrameID,
     canGoBack:boolean,
     canGoForward:boolean,
     isLoading:boolean,
@@ -39,8 +36,7 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
     constructor(props) {
         super(props);
         this.state = {
-            tabID:this.props.tabID,
-            frameID:this.props.frameID,
+            tabID:null,
             canGoBack:false,
             canGoForward:false,
             isLoading:false,
@@ -98,12 +94,9 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
             if(this.props.isLoadingChanged) { this.props.isLoadingChanged(this, isLoading); }
             if(this.props.urlChanged) { this.props.urlChanged(this, url); }
             if(this.props.titleChanged) { this.props.titleChanged(this, title); }
-            if(this.props.frameID) {
-                console.log(this.props.frameID);
-            } else {
-                const data = this.tabDoc.getData();
-                this.setRoot(data.root);
-            }
+
+            const tabDocData = this.tabDoc.getData();
+            this.setRoot(tabDocData.root);
         }
     };
     private setRoot(root:ShareDBDOMNode):void {

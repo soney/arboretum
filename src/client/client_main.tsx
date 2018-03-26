@@ -3,9 +3,9 @@ import * as ReactDOM from 'react-dom';
 import {ArboretumClient} from './ts/ArboretumClient';
 
 require('./css/client.scss');
-const {userID, frameID, tabID, viewType, isAdmin} = window['clientOptions'];
+const {userID, isAdmin} = window['clientOptions'];
 console.log(isAdmin);
 ReactDOM.render(
-    <ArboretumClient isAdmin={isAdmin} userID={userID} frameID={frameID} tabID={tabID} viewType={viewType} />,
+    <ArboretumClient isAdmin={isAdmin} userID={userID} />,
     document.getElementById('client_main')
 );

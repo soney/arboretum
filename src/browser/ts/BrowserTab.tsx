@@ -4,6 +4,8 @@ import {BrowserTabID} from './ArboretumBrowser';
 import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
 import * as ShareDB from 'sharedb';
 import {TabDoc} from '../../utils/state_interfaces';
+import {URL} from 'url';
+import * as querystring from 'querystring';
 
 type BrowserTabProps = {
     startURL:string,
@@ -184,6 +186,11 @@ export class BrowserTab extends React.Component<BrowserTabProps, BrowserTabState
         }
     };
     public navigate(url:string, options?:Electron.LoadURLOptions):void {
+        if(url.indexOf('.')<0 && url.indexOf(':')<0) {
+            url = `http://google.com/search?${querystring.stringify({q:url})}`;
+        } else if (!/^(?:f|ht)tps?\:\/\//.test(url)) {
+            url = `http://${url}`;
+        }
         this.webView.loadURL(url, options);
     };
 

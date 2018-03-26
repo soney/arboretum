@@ -23885,6 +23885,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(1);
+const querystring = __webpack_require__(74);
 class BrowserTab extends React.Component {
     constructor(props) {
         super(props);
@@ -24067,6 +24068,12 @@ class BrowserTab extends React.Component {
     }
     ;
     navigate(url, options) {
+        if (url.indexOf('.') < 0 && url.indexOf(':') < 0) {
+            url = `http://google.com/search?${querystring.stringify({ q: url })}`;
+        }
+        else if (!/^(?:f|ht)tps?\:\/\//.test(url)) {
+            url = `http://${url}`;
+        }
         this.webView.loadURL(url, options);
     }
     ;
@@ -26498,7 +26505,6 @@ json.checkList = function(elem) {
 
 json.checkObj = function(elem) {
   if (!isObject(elem)) {
-    debugger;
     throw new Error("Referenced element not an object (it was " + JSON.stringify(elem) + ")");
   }
 };
@@ -26546,7 +26552,6 @@ json.apply = function(snapshot, op) {
 
       parent = elem;
       parentKey = key;
-      if(!elem) { debugger; }
       elem = elem[key];
       key = p;
 
@@ -28424,6 +28429,13 @@ exports.push([module.i, "#buttonSpacer {\n  width: 70px;\n  /*border-bottom: 1px
 
 // exports
 
+
+/***/ }),
+/* 73 */,
+/* 74 */
+/***/ (function(module, exports) {
+
+module.exports = require("querystring");
 
 /***/ })
 /******/ ]);

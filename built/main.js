@@ -23,6 +23,7 @@ const ip = require("ip");
 const opn = require("opn");
 const request = require("request");
 const URL = require("url");
+const ArboretumChat_1 = require("./utils/ArboretumChat");
 const ShareDBDoc_1 = require("./utils/ShareDBDoc");
 const fileFunctions_1 = require("./utils/fileFunctions");
 const OPEN_MIRROR = false;
@@ -86,17 +87,49 @@ const sdb = new ShareDBDoc_1.SDB(false);
 const browserState = new BrowserState_1.BrowserState(sdb, {
     port: RDB_PORT
 });
+// console.log('use');
+sdb.use('receive', (request, next) => {
+    console.log(request);
+});
 const expressApp = express();
 const server = http_1.createServer(expressApp);
 const wss = new WebSocket.Server({ server });
 wss.on('connection', (ws, req) => {
     browserState.shareDBListen(ws);
+    ws.on('message', (event) => {
+        const messageData = JSON.parse(event);
+        if (!messageData.a) {
+            const { message, data, messageID } = messageData;
+            if (message === 'pageAction') {
+                const { a, action } = data;
+                const rv = handlePageActionAction(a, action);
+                if (rv) {
+                    ws.send(JSON.stringify({
+                        replyID: messageID,
+                        message: 'ok'
+                    }));
+                }
+                else {
+                    ws.send(JSON.stringify({
+                        replyID: messageID,
+                        message: 'not ok'
+                    }));
+                }
+            }
+        }
+    });
 });
 expressApp.all('/', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
     const contents = yield setClientOptions({});
     res.send(contents);
 }))
     .use('/', express.static(path.join(__dirname, 'client')))
+    .all('/a', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
+    const contents = yield setClientOptions({
+        isAdmin: true
+    });
+    res.send(contents);
+}))
     .all('/r', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
     var url = req.query.l, tabID = req.query.t, frameID = req.query.f;
     try {
@@ -189,6 +222,32 @@ function stopServer() {
     });
 }
 ;
+function handlePageActionAction(a, action) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (a === ArboretumChat_1.PAMAction.ACCEPT) {
+            yield browserState.performAction(action);
+            return true;
+        }
+        else if (a === ArboretumChat_1.PAMAction.REJECT) {
+            yield browserState.rejectAction(action);
+            return true;
+        }
+        else if (a === ArboretumChat_1.PAMAction.FOCUS) {
+            if (browserWindow) {
+                browserWindow.focus();
+            }
+            browserWindow.webContents.send("focusWebview");
+            yield new Promise((resolve, reject) => { setTimeout(resolve, 10); });
+            yield browserState.focusAction(action);
+            return true;
+        }
+        else if (a === ArboretumChat_1.PAMAction.ADD_LABEL) {
+            return true;
+        }
+        return false;
+    });
+}
+;
 let chromeProcess;
 electron_1.ipcMain.on('asynchronous-message', (event, messageID, arg) => __awaiter(this, void 0, void 0, function* () {
     const { message, data } = arg;
@@ -208,25 +267,15 @@ electron_1.ipcMain.on('asynchronous-message', (event, messageID, arg) => __await
         electron_1.ipcMain.emit('server-active', { active: false });
         console.log(chalk_1.default.bgWhite.bold.black(`Stopping server`));
     }
-    else if (message === 'performAction') {
-        yield browserState.performAction(data);
-        event.sender.send(replyChannel, 'ok');
-    }
-    else if (message === 'rejectAction') {
-        yield browserState.rejectAction(data);
-        event.sender.send(replyChannel, 'ok');
-    }
-    else if (message === 'focusAction') {
-        if (browserWindow) {
-            browserWindow.focus();
+    else if (message === 'pageAction') {
+        const { a, action } = data;
+        const rv = handlePageActionAction(a, action);
+        if (rv) {
+            event.sender.send(replyChannel, 'ok');
         }
-        browserWindow.webContents.send("focusWebview");
-        yield new Promise((resolve, reject) => { setTimeout(resolve, 10); });
-        yield browserState.focusAction(data);
-        event.sender.send(replyChannel, 'ok');
-    }
-    else if (message === 'labelAction') {
-        event.sender.send(replyChannel, 'ok');
+        else {
+            event.sender.send(replyChannel, 'not ok');
+        }
     }
     else {
         event.sender.send(replyChannel, 'not recognized');
