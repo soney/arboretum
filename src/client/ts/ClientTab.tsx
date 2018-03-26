@@ -275,6 +275,6 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
         // this.updateIFrameContents();
     };
     public render():React.ReactNode {
-        return <iframe id='content' ref={this.contentFrameRef} />;
+        return <iframe tabIndex={0} aria-label="Web Content" id='content' ref={this.contentFrameRef} />;
     };
 };

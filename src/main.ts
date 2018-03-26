@@ -22,6 +22,7 @@ import {readDirectory,readFileContents,writeFileContents,makeDirectoryRecursive}
 
 const OPEN_MIRROR: boolean = false;
 const RDB_PORT: number = 9222;
+const USE_HTTP_PORT:boolean = true;
 const HTTP_PORT: number = 3000;
 const SAVED_STATES_DIR = path.join('savedStates');
 
@@ -126,8 +127,10 @@ expressApp.all('/', async (req, res, next) => {
     })
     .use('/', express.static(path.join(__dirname, 'client')))
     .all('/a', async (req, res, next) => {
+        const url = req.param('url') || false;
         const contents: string = await setClientOptions({
-            isAdmin: true
+            isAdmin: true,
+            url
         });
         res.send(contents);
     })
@@ -183,7 +186,7 @@ async function startServer(): Promise<{hostname:string,port:number}> {
         return {hostname, port};
     } else {
         const port = await new Promise<number>((resolve, reject) => {
-            server.listen(() => {
+            server.listen(USE_HTTP_PORT ? HTTP_PORT : undefined, () => {
                 const addy = server.address();
                 const { port } = addy;
                 resolve(port);

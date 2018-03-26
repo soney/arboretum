@@ -56,7 +56,7 @@ class BrowserNavigationBar extends React.Component {
     render() {
         const toggleSidebarButton = this.props.showSidebarToggle ? React.createElement("button", { onClick: this.toggleSidebarClicked, className: 'btn btn-default btn-mini', id: 'task' },
             React.createElement("span", { className: 'icon icon-publish' })) : null;
-        return React.createElement("div", { className: "toolbar toolbar-header", id: "navBar" },
+        return React.createElement("div", { tabIndex: 0, "aria-label": 'Navigation Bar', className: "toolbar toolbar-header", id: "navBar" },
             React.createElement("div", { className: "toolbar-actions" },
                 React.createElement("div", { className: "btn-group" },
                     React.createElement("button", { "aria-label": "Back", disabled: !this.state.canGoBack, onClick: this.backClicked, className: 'btn btn-default btn-mini', id: 'back' },

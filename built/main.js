@@ -28,6 +28,7 @@ const ShareDBDoc_1 = require("./utils/ShareDBDoc");
 const fileFunctions_1 = require("./utils/fileFunctions");
 const OPEN_MIRROR = false;
 const RDB_PORT = 9222;
+const USE_HTTP_PORT = true;
 const HTTP_PORT = 3000;
 const SAVED_STATES_DIR = path.join('savedStates');
 const isMac = /^dar/.test(os_1.platform());
@@ -126,8 +127,10 @@ expressApp.all('/', (req, res, next) => __awaiter(this, void 0, void 0, function
 }))
     .use('/', express.static(path.join(__dirname, 'client')))
     .all('/a', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
+    const url = req.param('url') || false;
     const contents = yield setClientOptions({
-        isAdmin: true
+        isAdmin: true,
+        url
     });
     res.send(contents);
 }))
@@ -184,7 +187,7 @@ function startServer() {
         }
         else {
             const port = yield new Promise((resolve, reject) => {
-                server.listen(() => {
+                server.listen(USE_HTTP_PORT ? HTTP_PORT : undefined, () => {
                     const addy = server.address();
                     const { port } = addy;
                     resolve(port);

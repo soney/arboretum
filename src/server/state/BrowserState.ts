@@ -29,19 +29,32 @@ export interface ActionPerformed {
     tabData:TabDoc
 };
 
+export interface BrowserOptions {
+    savedStatesDir?:string,
+    host?:string,
+    port?:number,
+    priorActions?:boolean,
+    suppressErrors?:boolean
+}
 
 const projectFileURLPath: string = fileUrl(path.join(path.resolve(__dirname, '..', '..'), 'browser'));
 export class BrowserState extends ShareDBSharedState<BrowserDoc> {
     public actionPerformed:RegisteredEvent<ActionPerformed> = new RegisteredEvent<ActionPerformed>();
     private tabs: Map<CRI.TabID, TabState> = new Map<CRI.TabID, TabState>();
-    private options:{savedStatesDir:string, host:string,port:number,priorActions:boolean} = { savedStatesDir: 'savedStates', host: 'localhost', port: 9222, priorActions:true };
+    private options:BrowserOptions = {
+        host: 'localhost',
+        port: 9222,
+        savedStatesDir: 'savedStates',
+        suppressErrors: true,
+        priorActions:true,
+    };
     private intervalID: NodeJS.Timer;
     private doc:SDBDoc<BrowserDoc>;
     private chat:ArboretumChat;
     private initialized:Promise<void>;
     private sessionID:string = guid();
     private performedActions:Array<ActionPerformed> = [];
-    constructor(private sdb:SDB, extraOptions?:{savedStatesDir?:string, host?:string,port?:number,priorActions?:boolean}) {
+    constructor(private sdb:SDB, extraOptions?:BrowserOptions) {
         super();
         _.extend(this.options, extraOptions);
         this.initialized = this.initialize();
@@ -194,7 +207,8 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
     }
     private async getTabs(): Promise<Array<CRI.TabInfo>> {
         return new Promise<Array<CRI.TabInfo>>((resolve, reject) => {
-            cri.listTabs(this.options, (err, tabs) => {
+            const {host, port} = this.options;
+            cri.listTabs({host, port}, (err, tabs) => {
                 if (err) { reject(err); }
                 else { resolve(_.filter(tabs, (tab) => this.tabIsInspectable(tab))); }
             });

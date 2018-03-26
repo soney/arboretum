@@ -32,7 +32,13 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
         this.sdb = sdb;
         this.actionPerformed = new TypedEventEmitter_1.RegisteredEvent();
         this.tabs = new Map();
-        this.options = { savedStatesDir: 'savedStates', host: 'localhost', port: 9222, priorActions: true };
+        this.options = {
+            host: 'localhost',
+            port: 9222,
+            savedStatesDir: 'savedStates',
+            suppressErrors: true,
+            priorActions: true,
+        };
         this.sessionID = guid_1.guid();
         this.performedActions = [];
         _.extend(this.options, extraOptions);
@@ -222,7 +228,8 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
     getTabs() {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((resolve, reject) => {
-                cri.listTabs(this.options, (err, tabs) => {
+                const { host, port } = this.options;
+                cri.listTabs({ host, port }, (err, tabs) => {
                     if (err) {
                         reject(err);
                     }

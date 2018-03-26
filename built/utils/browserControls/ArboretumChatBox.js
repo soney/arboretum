@@ -174,10 +174,10 @@ class ArboretumChatBox extends React.Component {
             return React.createElement("span", { key: u.id, className: `participant ${isMe ? 'me' : ''}`, style: style }, u.displayName);
         });
         return React.createElement("div", { className: 'chat' },
-            React.createElement("div", { id: "chat-participants", tabIndex: 0 },
+            React.createElement("div", { id: "chat-participants", tabIndex: 0, "aria-label": "Chat participants" },
                 "Here now: ",
                 users),
-            React.createElement("ul", { id: "chat-lines", "aria-label": "Chat content" },
+            React.createElement("ul", { id: "chat-lines", tabIndex: 0, "aria-label": "Chat content" },
                 messages.filter(m => !!m),
                 React.createElement("li", { style: { float: "left", clear: "both" }, ref: (el) => { this.messagesEnd = el; } })),
             React.createElement("form", { id: "chat-form" },

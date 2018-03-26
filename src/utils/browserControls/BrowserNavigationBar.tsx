@@ -69,7 +69,7 @@ export class BrowserNavigationBar extends React.Component<BrowserNavigationBarPr
 
     public render():React.ReactNode {
         const toggleSidebarButton = this.props.showSidebarToggle ? <button onClick={this.toggleSidebarClicked} className = 'btn btn-default btn-mini' id='task'><span className='icon icon-publish'></span></button> : null;
-        return <div className="toolbar toolbar-header" id="navBar">
+        return <div tabIndex={0} aria-label='Navigation Bar' className="toolbar toolbar-header" id="navBar">
                     <div className="toolbar-actions">
                         <div className="btn-group">
                             <button aria-label="Back" disabled={!this.state.canGoBack} onClick={this.backClicked} className = 'btn btn-default btn-mini' id='back'><span className='icon icon-left-open-big'></span></button>

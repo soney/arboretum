@@ -12,7 +12,8 @@ import * as ReactDOM from 'react-dom';
 type ArboretumClientProps = {
     wsAddress?:string,
     userID?:string,
-    isAdmin?:boolean
+    isAdmin?:boolean,
+    url?:string
 };
 type ArboretumClientState = {
     enteringLabel:boolean
@@ -25,8 +26,10 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
     private clientTab:ClientTab;
     private navBar:BrowserNavigationBar;
     private arboretumChat:ArboretumChatBox;
+    private hasNavigatedInitially:boolean = false;
 
     protected static defaultProps:ArboretumClientProps = {
+        url:null,
         isAdmin:false,
         wsAddress: `ws://${window.location.hostname}:${window.location.port}`
     };
@@ -64,6 +67,10 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
     };
     private onSelectTab = (tabID:CRI.TabID):void => {
         this.tabID = tabID;
+        if(this.props.isAdmin && this.props.url && !this.hasNavigatedInitially) {
+            this.hasNavigatedInitially = true;
+            this.navigate(this.props.url);
+        }
         if(this.clientTab) {
             this.clientTab.setTabID(this.tabID);
         }
@@ -193,7 +200,7 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
             </header>
             <div className="window-content">
                 <div className="pane-group" id="client_body">
-                    <div className="pane-sm sidebar" id="client_sidebar">
+                    <div className="pane-sm sidebar" tabIndex={0} aria-label="Chat" id="client_sidebar">
                         <ArboretumChatBox onAction={this.onAction} onAddHighlight={this.addHighlight} onRemoveHighlight={this.removeHighlight} isAdmin={this.props.isAdmin} ref={this.chatRef} sdb={this.sdb} username="Steve" />
                     </div>
                     <div className="pane" id="client_content">
