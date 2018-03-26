@@ -21,15 +21,21 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
     private executionContext: CRI.ExecutionContextDescription = null;
     private requests:Map<CRI.RequestID, CRI.RequestWillBeSentEvent> = new Map<CRI.RequestID, CRI.RequestWillBeSentEvent>();
     private responses:Map<CRI.RequestID, CRI.ResponseReceivedEvent> = new Map<CRI.RequestID, CRI.ResponseReceivedEvent>();
+    private chrome:CRI.Chrome;
 
 	private resourcePromises:Map<string, Promise<CRI.GetResourceContentResponse>> = new Map<string, Promise<CRI.GetResourceContentResponse>>();
 
-    constructor(private chrome, private info: CRI.Frame, private tab: TabState, private parentFrame: FrameState = null, private frameResources: Array<CRI.Page.FrameResource> = []) {
+    constructor(private tab:TabState, private info: CRI.Frame, private parentFrame: FrameState = null, private frameResources: Array<CRI.Page.FrameResource> = []) {
         super();
-        // log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
+        this.chrome = this.tab.getChrome();
+        if(this.showDebug()) {
+            log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
+        }
     };
     protected async onAttachedToShareDBDoc():Promise<void> {
-        // log.debug(`Frame State ${this.getFrameId()} added to ShareDB doc`);
+        if(this.showDebug()) {
+            log.debug(`Frame State ${this.getFrameId()} added to ShareDB doc`);
+        }
         if(this.root) {
             await this.root.markAttachedToShareDBDoc();
         }
@@ -39,7 +45,9 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
         const {requestId, request} = event;
         const {url} = request;
         this.requests.set(requestId, event);
-        // log.debug(`Request will be sent ${url}`);
+        if(this.showDebug()) {
+            log.debug(`Request will be sent ${url}`);
+        }
     };
     public responseReceived(event:CRI.ResponseReceivedEvent) {
         this.responses.set(event.requestId, event);
@@ -84,7 +92,9 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
         this.requests.clear();
         this.responses.clear();
 		this.resourcePromises.clear();
-        // log.debug(`=== DESTROYED FRAME STATE ${this.getFrameId()} ====`);
+        if(this.showDebug()) {
+            log.debug(`=== DESTROYED FRAME STATE ${this.getFrameId()} ====`);
+        }
     };
 
     public getFrameId(): CRI.FrameID {
@@ -166,4 +176,8 @@ export class FrameState extends ShareDBSharedState<TabDoc> {
             });
         }
     }
+    public shouldSuppressErrors():boolean { return this.tab.shouldSuppressErrors(); }
+    public shouldShowErrors():boolean { return !this.shouldSuppressErrors(); }
+    public showDebug():boolean { return this.tab.showDebug(); }
+    public hideDebug():boolean { return !this.showDebug(); }
 }

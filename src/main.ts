@@ -25,6 +25,9 @@ const RDB_PORT: number = 9222;
 const USE_HTTP_PORT:boolean = true;
 const HTTP_PORT: number = 3000;
 const SAVED_STATES_DIR = path.join('savedStates');
+const READ_PRIOR_ACTIONS:boolean = false;
+const DEBUG:boolean = true;
+
 
 const isMac: boolean = /^dar/.test(platform());
 const defaultBrowswerWindowOptions = {
@@ -86,7 +89,9 @@ const sdb:SDB = new SDB(false);
 // const browserState = null;
 const browserState = new BrowserState(sdb, {
     port: RDB_PORT,
-    priorActions: false
+    priorActions: READ_PRIOR_ACTIONS,
+    showDebug: DEBUG,
+    suppressErrors: !DEBUG
 });
 
 // console.log('use');
@@ -272,37 +277,40 @@ ipcMain.on('asynchronous-message', async (event, messageID:number, arg:{message:
     }
 });
 
-keypress(process.stdin);
-process.stdin.on('keypress', async (ch, key) => {
-    const { name, ctrl } = key;
-    if (ctrl && name === 'c') {
-        process.stdin.pause();
-        process.stdin.setRawMode(false);
-        process.exit();
-    } else if (name === 'd') {
-        browserState.print();
-    } else if (name === 't') {
-        browserState.printTabSummaries();
-    } else if (name === 'n') {
-        browserState.printNetworkSummary();
-    } else if (name === 'l') {
-        browserState.printListeners();
-    } else if (name === 'q') {
-        if(chromeProcess) {
-            chromeProcess.kill();
-            chromeProcess = null;
+
+if(DEBUG) {
+    keypress(process.stdin);
+    process.stdin.on('keypress', async (ch, key) => {
+        const { name, ctrl } = key;
+        if (ctrl && name === 'c') {
+            process.stdin.pause();
+            process.stdin.setRawMode(false);
+            process.exit();
+        } else if (name === 'd') {
+            browserState.print();
+        } else if (name === 't') {
+            browserState.printTabSummaries();
+        } else if (name === 'n') {
+            browserState.printNetworkSummary();
+        } else if (name === 'l') {
+            browserState.printListeners();
+        } else if (name === 'q') {
+            if(chromeProcess) {
+                chromeProcess.kill();
+                chromeProcess = null;
+            }
+            process.stdin.pause();
+            process.stdin.setRawMode(false);
+            process.exit();
         }
+    });
+    process.on('exit', async (code) => {
         process.stdin.pause();
         process.stdin.setRawMode(false);
-        process.exit();
-    }
-});
-process.on('exit', async (code) => {
-    process.stdin.pause();
-    process.stdin.setRawMode(false);
-});
-process.stdin.setRawMode(true);
-process.stdin.resume();
+    });
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+}
 
 // const stdin = process.openStdin();
 // require('tty').setRawMode(true);

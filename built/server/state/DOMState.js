@@ -20,10 +20,10 @@ const ShareDBSharedState_1 = require("../../utils/ShareDBSharedState");
 const log = ColoredLogger_1.getColoredLogger('magenta');
 ;
 class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
-    constructor(node, tab, contentDocument, childFrame, parent) {
+    constructor(tab, node, contentDocument, childFrame, parent) {
         super();
-        this.node = node;
         this.tab = tab;
+        this.node = node;
         this.contentDocument = contentDocument;
         this.childFrame = childFrame;
         this.parent = parent;
@@ -40,7 +40,9 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         if (this.contentDocument) {
             this.contentDocument.setParent(this);
         }
-        // log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
+        if (this.showDebug()) {
+            log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
+        }
     }
     static shouldIncludeChild(child) {
         const node = child.getNode();
@@ -89,7 +91,9 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
     ;
     onAttachedToShareDBDoc() {
         return __awaiter(this, void 0, void 0, function* () {
-            // log.debug(`DOM State ${this.getNodeId()} added to ShareDB doc`);
+            if (this.showDebug()) {
+                log.debug(`DOM State ${this.getNodeId()} added to ShareDB doc`);
+            }
             yield this.updateNodeValue();
             this.listenedEvents.markAttachedToShareDBDoc(this.getShareDBDoc(), this.p('listenedEvents'));
             yield this.updateListenedEvents();
@@ -262,7 +266,9 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         }
         this.destroyed = true;
         this.onDestroyed.emit();
-        // log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
+        if (this.showDebug()) {
+            log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
+        }
     }
     getTab() { return this.tab; }
     ;
@@ -319,8 +325,11 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
                     resolve(nodeValue);
                 }
             }).catch((err) => {
-                log.error(err);
-                throw (err);
+                if (this.shouldShowErrors()) {
+                    log.error(err);
+                    throw (err);
+                }
+                return null;
             });
         });
     }
@@ -408,7 +417,9 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
                 }
             }
             else {
-                throw new Error(`Chould not find shadow root ${root.getNodeId()} in ${this.getNodeId()}`);
+                if (this.shouldShowErrors()) {
+                    throw new Error(`Chould not find shadow root ${root.getNodeId()} in ${this.getNodeId()}`);
+                }
             }
         });
     }
@@ -613,8 +624,11 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
                         }
                     });
                 }).catch((err) => {
-                    log.error(err);
-                    throw (err);
+                    if (this.shouldShowErrors()) {
+                        log.error(err);
+                        throw (err);
+                    }
+                    return null;
                 });
             }
             ;
@@ -851,6 +865,10 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         });
     }
     ;
+    shouldSuppressErrors() { return this.tab.shouldSuppressErrors(); }
+    shouldShowErrors() { return !this.shouldSuppressErrors(); }
+    showDebug() { return this.tab.showDebug(); }
+    hideDebug() { return !this.showDebug(); }
 }
 DOMState.attributesToIgnore = ['onload', 'onclick', 'onmouseover', 'onmouseout', 'onmouseenter', 'onmouseleave', 'action', 'oncontextmenu', 'onfocus'];
 exports.DOMState = DOMState;

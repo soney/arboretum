@@ -39,10 +39,14 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         try {
             this.initialized = this.initialize();
         } catch(err) {
-            console.error(err);
-            throw err;
+            if(this.shouldShowErrors()) {
+                console.error(err);
+                throw err;
+            }
         }
-        // log.debug(`=== CREATED TAB STATE ${this.getTabId()} ====`);
+        if(this.showDebug()) {
+            log.debug(`=== CREATED TAB STATE ${this.getTabId()} ====`);
+        }
     };
     private async initialize():Promise<void> {
         this.doc = await this.sdb.get<TabDoc>('tab', this.getTabId());
@@ -66,8 +70,11 @@ export class TabState extends ShareDBSharedState<TabDoc> {
                 resolve(chrome);
             });
         }).catch((err) => {
-            log.error(err);
-            throw (err);
+            if(this.shouldShowErrors()) {
+                log.error(err);
+                throw (err);
+            }
+            return null;
         });
         this.chrome = await this.chromePromise;
         //TODO: Convert getResourceTree call to getFrameTree when supported
@@ -122,7 +129,9 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         if(child === this.domRoot) {
             return ['root'];
         } else {
-            throw new Error(`Could not find path to node ${child.getNodeId()} from tab ${this.getTabId()}`);
+            if(this.shouldShowErrors()) {
+                throw new Error(`Could not find path to node ${child.getNodeId()} from tab ${this.getTabId()}`);
+            }
         }
     };
     public getRootFrame(): FrameState {
@@ -179,7 +188,7 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         if (this.hasDOMStateWithID(nodeId)) {
             return this.getDOMStateWithID(nodeId);
         } else {
-            const domState = new DOMState(node, this, contentDocument, childFrame, parent);
+            const domState = new DOMState(this, node, contentDocument, childFrame, parent);
             this.nodeMap.set(nodeId, domState);
             domState.onDestroyed.addListener(() => {
                 this.nodeMap.delete(nodeId);
@@ -194,7 +203,7 @@ export class TabState extends ShareDBSharedState<TabDoc> {
     };
     private createFrameState(info: CRI.Frame, parentFrame: FrameState = null, childFrames: Array<CRI.Page.FrameResourceTree> = [], resources: Array<CRI.Page.FrameResource> = []): FrameState {
         const { id, parentId } = info;
-        const frameState: FrameState = new FrameState(this.chrome, info, this, parentFrame, resources);
+        const frameState: FrameState = new FrameState(this, info, parentFrame, resources);
         this.frames.set(id, frameState);
         childFrames.forEach((childFrame) => {
             const { frame, childFrames, resources } = childFrame;
@@ -291,8 +300,11 @@ export class TabState extends ShareDBSharedState<TabDoc> {
                 else { resolve(val); }
             });
         }).catch((err) => {
-            log.error(err);
-            throw (err);
+            if(this.shouldShowErrors()) {
+                log.error(err);
+                throw (err);
+            }
+            return null;
         });
     };
     public getTitle(): string { return this.info.title; };
@@ -322,7 +334,6 @@ export class TabState extends ShareDBSharedState<TabDoc> {
                 let wasFound:boolean = false;
                 const remappedPriorAction = remappedPriorActions[i];
                 for(let j:number=0; j<uniqueRemappedPriorActions.length; j++) {
-                    // if(!ArboretumChat.pageActionsEqual(uniqueRemappedPriorActions))
                     if(ArboretumChat.pageActionsEqual(remappedPriorAction, uniqueRemappedPriorActions[j])) {
                         wasFound = true;
                         break;
@@ -349,8 +360,11 @@ export class TabState extends ShareDBSharedState<TabDoc> {
                 else { resolve(result.node); }
             });
         }).catch((err) => {
-            console.error(err);
-            throw(err);
+            if(this.shouldShowErrors()) {
+                console.error(err);
+                throw(err);
+            }
+            return null;
         });
     };
     public async navigate(url: string): Promise<CRI.FrameID> {
@@ -363,8 +377,11 @@ export class TabState extends ShareDBSharedState<TabDoc> {
                 else { resolve(result.frameId); }
             })
         }).catch((err) => {
-            log.error(err);
-            throw (err);
+            if(this.showDebug()) {
+                log.error(err);
+                throw (err);
+            }
+            return null;
         });
     }
 
@@ -399,7 +416,9 @@ export class TabState extends ShareDBSharedState<TabDoc> {
             const frameState = this.getFrame(frameId);
             frameState.executionContextCreated(context);
         } else {
-            log.error(`Could not find frame ${frameId} for execution context`);
+            if(this.showDebug()) {
+                log.error(`Could not find frame ${frameId} for execution context`);
+            }
         }
     };
     // private addPendingFrameEvent(eventInfo: PendingFrameEvent): void {
@@ -537,7 +556,9 @@ export class TabState extends ShareDBSharedState<TabDoc> {
     };
     public destroy() {
         this.chrome.close();
-        // log.debug(`=== DESTROYED TAB STATE ${this.getTabId()} ====`);
+        if(this.showDebug()) {
+            log.debug(`=== DESTROYED TAB STATE ${this.getTabId()} ====`);
+        }
     };
     public getTabTitle():string {
         return this.info.title;
@@ -555,7 +576,9 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         }
     };
     private doHandleDocumentUpdated = async (event: CRI.DocumentUpdatedEvent):Promise<void> => {
-        // log.debug(`Document Updated`);
+        if(this.showDebug()) {
+            log.debug(`Document Updated`);
+        }
         // if(this.domRoot) {
         //     this.domRoot.destroy();
         //     this.domRoot = null;
@@ -570,8 +593,10 @@ export class TabState extends ShareDBSharedState<TabDoc> {
             try {
                 await domState.setCharacterData(event.characterData);
             } catch(err) {
-                console.error(err);
-                console.error(err.stack);
+                if(this.shouldShowErrors()) {
+                    console.error(err);
+                    console.error(err.stack);
+                }
             }
         } else {
             // const doc = await this.getDocument(-1, true);
@@ -579,8 +604,10 @@ export class TabState extends ShareDBSharedState<TabDoc> {
             // this.chrome.DOM.resolveNode({nodeId}, (err, node) => {
             //     console.log(node);
             // });
-            console.error(`Could not find ${nodeId} for characterDataModified`);
-            // throw new Error(`Could not find ${nodeId}`);
+            if(this.shouldShowErrors()) {
+                console.error(`Could not find ${nodeId} for characterDataModified`);
+                throw new Error(`Could not find ${nodeId}`);
+            }
         }
     }
     private doHandleSetChildNodes = (event:CRI.SetChildNodesEvent):void => {
@@ -589,15 +616,21 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         if (parent) {
             try {
                 const { nodes } = event;
-                // log.debug(`Set child nodes ${parentId} -> [${nodes.map((node) => node.nodeId).join(', ')}]`);
                 parent.setChildrenRecursive(nodes);
+                if(this.showDebug()) {
+                    log.debug(`Set child nodes ${parentId} -> [${nodes.map((node) => node.nodeId).join(', ')}]`);
+                }
             } catch(err) {
-                console.error(err);
-                console.error(err.stack);
+                if(this.shouldShowErrors()) {
+                    console.error(err);
+                    console.error(err.stack);
+                }
             }
         } else {
-            console.error(`Could not find ${parentId} for setChildNodes`);
-            // throw new Error(`Could not find ${parentId}`);
+            if(this.shouldShowErrors()) {
+                console.error(`Could not find ${parentId} for setChildNodes`);
+                throw new Error(`Could not find ${parentId}`);
+            }
         }
     };
     private doHandleInlineStyleInvalidated = async (event:CRI.InlineStyleInvalidatedEvent):Promise<void> => {
@@ -618,26 +651,36 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         });
         const handled:Array<boolean> = await Promise.all(updatedInlineStyles);
         if(_.every(handled)) {
-            // log.debug(`Set inline styles`);
+            if(this.showDebug()) {
+                log.debug(`Set inline styles`);
+            }
         } else {
-            console.error(`Could not find nodes for inlineStyleInvalidated`);
-            // throw new Error(`Could not find nodes for inlineStyleInvalidated`);
+            if(this.shouldShowErrors()) {
+                console.error(`Could not find nodes for inlineStyleInvalidated`);
+                throw new Error(`Could not find nodes for inlineStyleInvalidated`);
+            }
         }
     };
     private doHandleChildNodeCountUpdated = async (event:CRI.ChildNodeCountUpdatedEvent):Promise<void> => {
         const { nodeId } = event;
         const domState = this.getDOMStateWithID(nodeId);
         if (domState) {
-            // log.debug(`Child count updated for ${nodeId}`);
+            if(this.showDebug()) {
+                log.debug(`Child count updated for ${nodeId}`);
+            }
             try {
                 await domState.childCountUpdated(event.childNodeCount);
             } catch(err) {
-                console.error(err);
-                console.error(err.stack);
+                if(this.shouldShowErrors()) {
+                    console.error(err);
+                    console.error(err.stack);
+                }
             }
         } else {
-            log.error(`Could not find ${nodeId} for childNodeCouldUpdated`);
-            // throw new Error(`Could not find ${nodeId}`);
+            if(this.shouldShowErrors()) {
+                log.error(`Could not find ${nodeId} for childNodeCouldUpdated`);
+                throw new Error(`Could not find ${nodeId}`);
+            }
         }
     };
     private doHandleChildNodeInserted = async (event:CRI.ChildNodeInsertedEvent):Promise<void> => {
@@ -655,12 +698,16 @@ export class TabState extends ShareDBSharedState<TabDoc> {
                 console.error(err.stack);
             }
 
-            // log.debug(`Child node inserted ${nodeId} (parent: ${parentNodeId} / previous: ${previousNodeId})`);
+            if(this.showDebug()) {
+                log.debug(`Child node inserted ${nodeId} (parent: ${parentNodeId} / previous: ${previousNodeId})`);
+            }
             domState.setChildrenRecursive(node.children, node.shadowRoots);
             this.requestChildNodes(nodeId, -1, true);
         } else {
-            console.error(`Could not find ${parentNodeId} for childNodeInserted`);
-            // throw new Error(`Could not find ${parentNodeId}`);
+            if(this.shouldShowErrors()) {
+                console.error(`Could not find ${parentNodeId} for childNodeInserted`);
+                throw new Error(`Could not find ${parentNodeId}`);
+            }
         }
     };
     private doHandleChildNodeRemoved = async (event:CRI.ChildNodeRemovedEvent):Promise<void> => {
@@ -668,15 +715,21 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         const domState = this.getDOMStateWithID(nodeId);
         const parentDomState = this.getDOMStateWithID(parentNodeId);
         if (domState && parentDomState) {
-            // log.debug(`Child node removed ${nodeId} (parent: ${parentNodeId})`);
+            if(this.showDebug()) {
+                log.debug(`Child node removed ${nodeId} (parent: ${parentNodeId})`);
+            }
             try {
                 await parentDomState.removeChild(domState);
             } catch(err) {
-                console.error(err);
-                console.error(err.stack);
+                if(this.shouldShowErrors()) {
+                    console.error(err);
+                    console.error(err.stack);
+                }
             }
         } else {
-            throw new Error(`Could not find ${parentNodeId} or ${nodeId} for childNodeRemoved event`);
+            if(this.shouldShowErrors()) {
+                throw new Error(`Could not find ${parentNodeId} or ${nodeId} for childNodeRemoved event`);
+            }
         }
     };
     private doHandleAttributeModified = async (event:CRI.AttributeModifiedEvent):Promise<void> => {
@@ -684,16 +737,22 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         const domState = this.getDOMStateWithID(nodeId);
         if (domState) {
             const { name, value } = event;
-            // log.debug(`Attribute modified ${name} to ${value}`);
+            if(this.showDebug()) {
+                log.debug(`Attribute modified ${name} to ${value}`);
+            }
             try {
                 await domState.setAttribute(name, value);
             } catch(err) {
-                console.error(err);
-                console.error(err.stack);
+                if(this.shouldShowErrors()) {
+                    console.error(err);
+                    console.error(err.stack);
+                }
             }
         } else {
-            console.error(`Could not find ${nodeId} for attributeModified event`);
-            // throw new Error(`Could not find ${nodeId}`);
+            if(this.shouldShowErrors()) {
+                console.error(`Could not find ${nodeId} for attributeModified event`);
+                throw new Error(`Could not find ${nodeId}`);
+            }
         }
     };
     private doHandleAttributeRemoved = async (event:CRI.AttributeRemovedEvent):Promise<void> => {
@@ -701,7 +760,9 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         const domState = this.getDOMStateWithID(nodeId);
         if (domState) {
             const { name } = event;
-            // log.debug(`Attribute removed ${name}`);
+            if(this.showDebug()) {
+                log.debug(`Attribute removed ${name}`);
+            }
             try {
                 await domState.removeAttribute(name);
             } catch(err) {
@@ -709,8 +770,10 @@ export class TabState extends ShareDBSharedState<TabDoc> {
                 console.error(err.stack);
             }
         } else {
-            console.error(`Could not find ${nodeId} for attributeRemoved event`);
-            // throw new Error(`Could not find ${nodeId}`);
+            if(this.shouldShowErrors()) {
+                console.error(`Could not find ${nodeId} for attributeRemoved event`);
+                throw new Error(`Could not find ${nodeId}`);
+            }
         }
     };
     private doHandleShadowRootPopped = async (event:CRI.ShadowRootPoppedEvent):Promise<void> => {
@@ -720,8 +783,10 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         if (domState && root) {
             domState.popShadowRoot(root);
         } else {
-            console.error(`Could not find ${hostId} (or possible root ${rootId}) for shadowRootPopped event`);
-            // throw new Error(`Could not find ${nodeId}`);
+            if(this.shouldShowErrors()) {
+                console.error(`Could not find ${hostId} (or possible root ${rootId}) for shadowRootPopped event`);
+                throw new Error(`Could not find ${hostId}`);
+            }
         }
     };
     private doHandleShadowRootPushed = async (event:CRI.ShadowRootPushedEvent):Promise<void> => {
@@ -731,8 +796,10 @@ export class TabState extends ShareDBSharedState<TabDoc> {
             const shadowRoot = this.getOrCreateDOMState(root);
             domState.pushShadowRoot(shadowRoot);
         } else {
-            console.error(`Could not find ${hostId} for shadowRootPopped event`);
-            // throw new Error(`Could not find ${nodeId}`);
+            if(this.shouldShowErrors()) {
+                console.error(`Could not find ${hostId} for shadowRootPopped event`);
+                throw new Error(`Could not find ${hostId} for shadowRootPopped`);
+            }
         }
     };
     public async getData():Promise<TabDoc> {
@@ -742,4 +809,8 @@ export class TabState extends ShareDBSharedState<TabDoc> {
     public async stringify():Promise<string> {
         return JSON.stringify(await this.getData());
     };
+    public shouldSuppressErrors():boolean { return this.browserState.shouldSuppressErrors(); }
+    public shouldShowErrors():boolean { return !this.shouldSuppressErrors(); }
+    public showDebug():boolean { return this.browserState.showDebug(); }
+    public hideDebug():boolean { return !this.showDebug(); }
 };

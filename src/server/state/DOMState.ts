@@ -57,10 +57,12 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
     };
 
     public onDestroyed = this.registerEvent<void>();
-    constructor(private node: CRI.Node, private tab:TabState, private contentDocument?:DOMState, private childFrame?:FrameState, private parent?:DOMState) {
+    constructor(private tab:TabState, private node: CRI.Node, private contentDocument?:DOMState, private childFrame?:FrameState, private parent?:DOMState) {
         super();
         if(this.contentDocument) { this.contentDocument.setParent(this); }
-        // log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
+        if(this.showDebug()) {
+            log.debug(`=== CREATED DOM STATE ${this.getNodeId()} ====`);
+        }
     };
     private getSubNodes(type:SubNodeType):Array<DOMState> {
         if(this.subNodes.has(type)) {
@@ -75,7 +77,9 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
     public getShadowRoots():Array<DOMState> { return this.getSubNodes('shadowRoots'); };
     public getPseudoElements():Array<DOMState> { return this.getSubNodes('pseudoElements'); };
     protected async onAttachedToShareDBDoc():Promise<void> {
-        // log.debug(`DOM State ${this.getNodeId()} added to ShareDB doc`);
+        if(this.showDebug()) {
+            log.debug(`DOM State ${this.getNodeId()} added to ShareDB doc`);
+        }
 
         await this.updateNodeValue();
 
@@ -227,7 +231,10 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
         }
         this.destroyed = true;
         this.onDestroyed.emit();
-        // log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
+
+        if(this.showDebug()) {
+            log.debug(`=== DESTROYED DOM STATE ${this.getNodeId()} ====`);
+        }
     }
     public getTab(): TabState { return this.tab; };
     public getNodeId(): CRI.NodeID { return this.node.nodeId; };
@@ -266,8 +273,11 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
                 resolve(nodeValue);
             }
         }).catch((err) => {
-            log.error(err);
-            throw (err);
+            if(this.shouldShowErrors()) {
+                log.error(err);
+                throw (err);
+            }
+            return null;
         });
     };
     private addListenersInterval():void {
@@ -348,7 +358,9 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
                 doc.submitListDeleteOp(p);
             }
         } else {
-            throw new Error(`Chould not find shadow root ${root.getNodeId()} in ${this.getNodeId()}`);
+            if(this.shouldShowErrors()) {
+                throw new Error(`Chould not find shadow root ${root.getNodeId()} in ${this.getNodeId()}`);
+            }
         }
     };
 
@@ -529,8 +541,11 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
                     }
                 });
             }).catch((err) => {
-                log.error(err);
-                throw (err);
+                if(this.shouldShowErrors()) {
+                    log.error(err);
+                    throw (err);
+                }
+                return null;
             });
         };
     };
@@ -686,7 +701,6 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
         this.node.children = childDOMStates.map((c) => c.getNode() );
         this.node.childNodeCount = this.node.children.length;
 
-
         childDOMStates.map((domState:DOMState) => {
             const child:CRI.Node = domState.getNode();
             const {children, shadowRoots} = child;
@@ -732,4 +746,8 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
     public async getTextDescription():Promise<string> {
         return `${this.getNodeValue()}`;
     };
+    public shouldSuppressErrors():boolean { return this.tab.shouldSuppressErrors(); }
+    public shouldShowErrors():boolean { return !this.shouldSuppressErrors(); }
+    public showDebug():boolean { return this.tab.showDebug(); }
+    public hideDebug():boolean { return !this.showDebug(); }
 }

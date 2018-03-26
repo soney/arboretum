@@ -12,11 +12,10 @@ const ColoredLogger_1 = require("../../utils/ColoredLogger");
 const ShareDBSharedState_1 = require("../../utils/ShareDBSharedState");
 const log = ColoredLogger_1.getColoredLogger('green');
 class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
-    constructor(chrome, info, tab, parentFrame = null, frameResources = []) {
+    constructor(tab, info, parentFrame = null, frameResources = []) {
         super();
-        this.chrome = chrome;
-        this.info = info;
         this.tab = tab;
+        this.info = info;
         this.parentFrame = parentFrame;
         this.frameResources = frameResources;
         this.setMainFrameExecuted = false;
@@ -26,12 +25,17 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
         this.requests = new Map();
         this.responses = new Map();
         this.resourcePromises = new Map();
-        // log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
+        this.chrome = this.tab.getChrome();
+        if (this.showDebug()) {
+            log.debug(`=== CREATED FRAME STATE ${this.getFrameId()} ====`);
+        }
     }
     ;
     onAttachedToShareDBDoc() {
         return __awaiter(this, void 0, void 0, function* () {
-            // log.debug(`Frame State ${this.getFrameId()} added to ShareDB doc`);
+            if (this.showDebug()) {
+                log.debug(`Frame State ${this.getFrameId()} added to ShareDB doc`);
+            }
             if (this.root) {
                 yield this.root.markAttachedToShareDBDoc();
             }
@@ -42,7 +46,9 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
         const { requestId, request } = event;
         const { url } = request;
         this.requests.set(requestId, event);
-        // log.debug(`Request will be sent ${url}`);
+        if (this.showDebug()) {
+            log.debug(`Request will be sent ${url}`);
+        }
     }
     ;
     responseReceived(event) {
@@ -99,7 +105,9 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
         this.requests.clear();
         this.responses.clear();
         this.resourcePromises.clear();
-        // log.debug(`=== DESTROYED FRAME STATE ${this.getFrameId()} ====`);
+        if (this.showDebug()) {
+            log.debug(`=== DESTROYED FRAME STATE ${this.getFrameId()} ====`);
+        }
     }
     ;
     getFrameId() {
@@ -186,5 +194,9 @@ class FrameState extends ShareDBSharedState_1.ShareDBSharedState {
             }
         });
     }
+    shouldSuppressErrors() { return this.tab.shouldSuppressErrors(); }
+    shouldShowErrors() { return !this.shouldSuppressErrors(); }
+    showDebug() { return this.tab.showDebug(); }
+    hideDebug() { return !this.showDebug(); }
 }
 exports.FrameState = FrameState;

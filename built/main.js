@@ -31,6 +31,8 @@ const RDB_PORT = 9222;
 const USE_HTTP_PORT = true;
 const HTTP_PORT = 3000;
 const SAVED_STATES_DIR = path.join('savedStates');
+const READ_PRIOR_ACTIONS = false;
+const DEBUG = true;
 const isMac = /^dar/.test(os_1.platform());
 const defaultBrowswerWindowOptions = {
     'remote-debugging-port': RDB_PORT,
@@ -87,7 +89,9 @@ const sdb = new ShareDBDoc_1.SDB(false);
 // const browserState = null;
 const browserState = new BrowserState_1.BrowserState(sdb, {
     port: RDB_PORT,
-    priorActions: false
+    priorActions: READ_PRIOR_ACTIONS,
+    showDebug: DEBUG,
+    suppressErrors: !DEBUG
 });
 // console.log('use');
 sdb.use('receive', (request, next) => {
@@ -285,42 +289,44 @@ electron_1.ipcMain.on('asynchronous-message', (event, messageID, arg) => __await
         event.sender.send(replyChannel, 'not recognized');
     }
 }));
-keypress(process.stdin);
-process.stdin.on('keypress', (ch, key) => __awaiter(this, void 0, void 0, function* () {
-    const { name, ctrl } = key;
-    if (ctrl && name === 'c') {
-        process.stdin.pause();
-        process.stdin.setRawMode(false);
-        process.exit();
-    }
-    else if (name === 'd') {
-        browserState.print();
-    }
-    else if (name === 't') {
-        browserState.printTabSummaries();
-    }
-    else if (name === 'n') {
-        browserState.printNetworkSummary();
-    }
-    else if (name === 'l') {
-        browserState.printListeners();
-    }
-    else if (name === 'q') {
-        if (chromeProcess) {
-            chromeProcess.kill();
-            chromeProcess = null;
+if (DEBUG) {
+    keypress(process.stdin);
+    process.stdin.on('keypress', (ch, key) => __awaiter(this, void 0, void 0, function* () {
+        const { name, ctrl } = key;
+        if (ctrl && name === 'c') {
+            process.stdin.pause();
+            process.stdin.setRawMode(false);
+            process.exit();
         }
+        else if (name === 'd') {
+            browserState.print();
+        }
+        else if (name === 't') {
+            browserState.printTabSummaries();
+        }
+        else if (name === 'n') {
+            browserState.printNetworkSummary();
+        }
+        else if (name === 'l') {
+            browserState.printListeners();
+        }
+        else if (name === 'q') {
+            if (chromeProcess) {
+                chromeProcess.kill();
+                chromeProcess = null;
+            }
+            process.stdin.pause();
+            process.stdin.setRawMode(false);
+            process.exit();
+        }
+    }));
+    process.on('exit', (code) => __awaiter(this, void 0, void 0, function* () {
         process.stdin.pause();
         process.stdin.setRawMode(false);
-        process.exit();
-    }
-}));
-process.on('exit', (code) => __awaiter(this, void 0, void 0, function* () {
-    process.stdin.pause();
-    process.stdin.setRawMode(false);
-}));
-process.stdin.setRawMode(true);
-process.stdin.resume();
+    }));
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+}
 // const stdin = process.openStdin();
 // require('tty').setRawMode(true);
 // process.stdin.setRawMode(true);

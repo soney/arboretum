@@ -38,6 +38,7 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
             savedStatesDir: 'savedStates',
             suppressErrors: true,
             priorActions: true,
+            showDebug: false
         };
         this.sessionID = guid_1.guid();
         this.performedActions = [];
@@ -53,7 +54,9 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
     ;
     onAttachedToShareDBDoc() {
         return __awaiter(this, void 0, void 0, function* () {
-            // log.debug(`Browser added to ShareDB doc`);
+            if (this.showDebug()) {
+                log.debug(`Browser added to ShareDB doc`);
+            }
         });
     }
     ;
@@ -68,7 +71,9 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
             this.markAttachedToShareDBDoc();
             this.chat = new ArboretumChat_1.ArboretumChat(this.sdb, this);
             this.intervalID = timers.setInterval(_.bind(this.refreshTabs, this), 2000);
-            // log.debug('=== CREATED BROWSER ===');
+            if (this.showDebug()) {
+                log.debug('=== CREATED BROWSER ===');
+            }
         });
     }
     ;
@@ -323,6 +328,11 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
         });
     }
     ;
+    shouldSuppressErrors() { return this.options.suppressErrors; }
+    ;
+    shouldShowErrors() { return !this.shouldSuppressErrors(); }
+    showDebug() { return this.options.showDebug; }
+    hideDebug() { return !this.showDebug(); }
 }
 exports.BrowserState = BrowserState;
 ;

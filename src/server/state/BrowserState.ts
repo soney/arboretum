@@ -34,7 +34,8 @@ export interface BrowserOptions {
     host?:string,
     port?:number,
     priorActions?:boolean,
-    suppressErrors?:boolean
+    suppressErrors?:boolean,
+    showDebug?:boolean
 }
 
 const projectFileURLPath: string = fileUrl(path.join(path.resolve(__dirname, '..', '..'), 'browser'));
@@ -47,6 +48,7 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
         savedStatesDir: 'savedStates',
         suppressErrors: true,
         priorActions:true,
+        showDebug:false
     };
     private intervalID: NodeJS.Timer;
     private doc:SDBDoc<BrowserDoc>;
@@ -63,7 +65,9 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
     public getShareDBDoc():SDBDoc<BrowserDoc> { return this.doc; };
     public getAbsoluteShareDBPath():Array<string|number> { return []; };
     protected async onAttachedToShareDBDoc():Promise<void> {
-        // log.debug(`Browser added to ShareDB doc`);
+        if(this.showDebug()) {
+            log.debug(`Browser added to ShareDB doc`);
+        }
     };
     private async initialize():Promise<void> {
         this.sdb = new SDB(false);
@@ -75,7 +79,9 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
         this.markAttachedToShareDBDoc();
         this.chat = new ArboretumChat(this.sdb, this);
         this.intervalID = timers.setInterval(_.bind(this.refreshTabs, this), 2000);
-        // log.debug('=== CREATED BROWSER ===');
+        if(this.showDebug()) {
+            log.debug('=== CREATED BROWSER ===');
+        }
     };
     public showingPriorActions():boolean {
         return this.options.priorActions;
@@ -278,4 +284,8 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
             tabs: await Promise.all(Array.from(this.tabs.values()).map((t)=>t.getData()))
         });
     };
+    public shouldSuppressErrors():boolean { return this.options.suppressErrors; };
+    public shouldShowErrors():boolean { return !this.shouldSuppressErrors(); }
+    public showDebug():boolean { return this.options.showDebug; }
+    public hideDebug():boolean { return !this.showDebug(); }
 };
