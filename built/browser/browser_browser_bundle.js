@@ -67,7 +67,7 @@
 /* 0 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var makeError = __webpack_require__(61);
+var makeError = __webpack_require__(62);
 
 function ShareDBError(code, message) {
   ShareDBError.super.call(this, message);
@@ -290,7 +290,7 @@ module.exports = emptyObject;
 /* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var EventEmitter = __webpack_require__(60).EventEmitter;
+var EventEmitter = __webpack_require__(61).EventEmitter;
 
 exports.EventEmitter = EventEmitter;
 exports.mixin = mixin;
@@ -1228,7 +1228,7 @@ var singleton = null;
 var	singletonCounter = 0;
 var	stylesInsertedAtTop = [];
 
-var	fixUrls = __webpack_require__(54);
+var	fixUrls = __webpack_require__(55);
 
 module.exports = function(list, options) {
 	if (typeof DEBUG !== "undefined" && DEBUG) {
@@ -3052,7 +3052,7 @@ function callEach(callbacks, err) {
 // into a separate module that json0 can depend on).
 
 module.exports = {
-  type: __webpack_require__(62)
+  type: __webpack_require__(63)
 };
 
 
@@ -4621,7 +4621,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
 /* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var hat = __webpack_require__(66);
+var hat = __webpack_require__(67);
 var util = __webpack_require__(4);
 var types = __webpack_require__(3);
 
@@ -5555,7 +5555,7 @@ MemoryPubSub.prototype._publish = function(channels, data, callback) {
 /* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var OpStream = __webpack_require__(67);
+var OpStream = __webpack_require__(68);
 var ShareDBError = __webpack_require__(0);
 var util = __webpack_require__(4);
 
@@ -5696,8 +5696,8 @@ module.exports = require("stream");
 /* 34 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var arraydiff = __webpack_require__(68);
-var deepEquals = __webpack_require__(69);
+var arraydiff = __webpack_require__(69);
+var deepEquals = __webpack_require__(70);
 var ShareDBError = __webpack_require__(0);
 var util = __webpack_require__(4);
 
@@ -6259,7 +6259,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(1);
 const ReactDOM = __webpack_require__(40);
 const ArboretumBrowser_1 = __webpack_require__(49);
-__webpack_require__(71);
+__webpack_require__(72);
 // const START_URL:string = `file://${path.resolve(__dirname, '..', '..', 'test', 'simple.html')}`;
 const START_URL = 'http://www.umich.edu/';
 ReactDOM.render(React.createElement(ArboretumBrowser_1.ArboretumBrowser, { urls: [START_URL] }), document.getElementById('arboretum_main'));
@@ -23587,11 +23587,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(1);
 const BrowserTab_1 = __webpack_require__(50);
-const BrowserNavigationBar_1 = __webpack_require__(51);
-const electron_1 = __webpack_require__(55);
-const url = __webpack_require__(56);
-const _ = __webpack_require__(57);
-const ShareDBDoc_1 = __webpack_require__(58);
+const BrowserNavigationBar_1 = __webpack_require__(52);
+const electron_1 = __webpack_require__(56);
+const url = __webpack_require__(57);
+const _ = __webpack_require__(58);
+const ShareDBDoc_1 = __webpack_require__(59);
 class ArboretumBrowser extends React.Component {
     constructor(props) {
         super(props);
@@ -23885,7 +23885,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(1);
-const querystring = __webpack_require__(74);
+const querystring = __webpack_require__(51);
 class BrowserTab extends React.Component {
     constructor(props) {
         super(props);
@@ -24092,13 +24092,19 @@ exports.BrowserTab = BrowserTab;
 
 /***/ }),
 /* 51 */
+/***/ (function(module, exports) {
+
+module.exports = require("querystring");
+
+/***/ }),
+/* 52 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(1);
-__webpack_require__(52);
+__webpack_require__(53);
 const ENTER_KEY = 13;
 class BrowserNavigationBar extends React.Component {
     constructor(props) {
@@ -24172,11 +24178,11 @@ exports.BrowserNavigationBar = BrowserNavigationBar;
 
 
 /***/ }),
-/* 52 */
+/* 53 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
-var content = __webpack_require__(53);
+var content = __webpack_require__(54);
 
 if(typeof content === 'string') content = [[module.i, content, '']];
 
@@ -24222,7 +24228,7 @@ if(false) {
 }
 
 /***/ }),
-/* 53 */
+/* 54 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(19)(true);
@@ -24236,7 +24242,7 @@ exports.push([module.i, "#navBar {\n  display: flex; }\n  #navBar input#url {\n 
 
 
 /***/ }),
-/* 54 */
+/* 55 */
 /***/ (function(module, exports) {
 
 
@@ -24331,19 +24337,19 @@ module.exports = function (css) {
 
 
 /***/ }),
-/* 55 */
+/* 56 */
 /***/ (function(module, exports) {
 
 module.exports = require("electron");
 
 /***/ }),
-/* 56 */
+/* 57 */
 /***/ (function(module, exports) {
 
 module.exports = require("url");
 
 /***/ }),
-/* 57 */
+/* 58 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;//     Underscore.js 1.8.3
@@ -25898,7 +25904,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;//     Underscor
 
 
 /***/ }),
-/* 58 */
+/* 59 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -25912,8 +25918,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const ShareDBClient = __webpack_require__(59);
-const ShareDB = __webpack_require__(64);
+const ShareDBClient = __webpack_require__(60);
+const ShareDB = __webpack_require__(65);
 class SDB {
     constructor(client, connection) {
         this.client = client;
@@ -26222,7 +26228,7 @@ exports.SDBArray = SDBArray;
 
 
 /***/ }),
-/* 59 */
+/* 60 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports.Connection = __webpack_require__(21);
@@ -26233,13 +26239,13 @@ exports.types = __webpack_require__(3);
 
 
 /***/ }),
-/* 60 */
+/* 61 */
 /***/ (function(module, exports) {
 
 module.exports = require("events");
 
 /***/ }),
-/* 61 */
+/* 62 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -26388,7 +26394,7 @@ exports.BaseError = BaseError
 
 
 /***/ }),
-/* 62 */
+/* 63 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /*
@@ -27051,14 +27057,14 @@ __webpack_require__(24)(json, json.transformComponent, json.checkValidOp, json.a
 /**
  * Register a subtype for string operations, using the text0 type.
  */
-var text = __webpack_require__(63);
+var text = __webpack_require__(64);
 
 json.registerSubtype(text);
 module.exports = json;
 
 
 /***/ }),
-/* 63 */
+/* 64 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // DEPRECATED!
@@ -27320,10 +27326,10 @@ __webpack_require__(24)(text, transformComponent, checkValidOp, append);
 
 
 /***/ }),
-/* 64 */
+/* 65 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var Backend = __webpack_require__(65);
+var Backend = __webpack_require__(66);
 module.exports = Backend;
 
 Backend.Agent = __webpack_require__(27);
@@ -27341,7 +27347,7 @@ Backend.types = __webpack_require__(3);
 
 
 /***/ }),
-/* 65 */
+/* 66 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var async = __webpack_require__(26);
@@ -27353,7 +27359,7 @@ var MemoryPubSub = __webpack_require__(30);
 var ot = __webpack_require__(10);
 var projections = __webpack_require__(11);
 var QueryEmitter = __webpack_require__(34);
-var StreamSocket = __webpack_require__(70);
+var StreamSocket = __webpack_require__(71);
 var SubmitRequest = __webpack_require__(35);
 
 function Backend(options) {
@@ -27871,7 +27877,7 @@ function pluckIds(snapshots) {
 
 
 /***/ }),
-/* 66 */
+/* 67 */
 /***/ (function(module, exports) {
 
 var hat = module.exports = function (bits, base) {
@@ -27939,7 +27945,7 @@ hat.rack = function (bits, base, expandBy) {
 
 
 /***/ }),
-/* 67 */
+/* 68 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var inherits = __webpack_require__(32).inherits;
@@ -28004,7 +28010,7 @@ OpStream.prototype.destroy = function() {
 
 
 /***/ }),
-/* 68 */
+/* 69 */
 /***/ (function(module, exports) {
 
 module.exports = arrayDiff;
@@ -28191,7 +28197,7 @@ function arrayDiff(before, after, equalFn) {
 
 
 /***/ }),
-/* 69 */
+/* 70 */
 /***/ (function(module, exports) {
 
 var pSlice = Array.prototype.slice;
@@ -28299,7 +28305,7 @@ function objEquiv(a, b) {
 
 
 /***/ }),
-/* 70 */
+/* 71 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var Duplex = __webpack_require__(33).Duplex;
@@ -28367,11 +28373,11 @@ ServerStream.prototype._write = function(chunk, encoding, callback) {
 
 
 /***/ }),
-/* 71 */
+/* 72 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
-var content = __webpack_require__(72);
+var content = __webpack_require__(73);
 
 if(typeof content === 'string') content = [[module.i, content, '']];
 
@@ -28417,7 +28423,7 @@ if(false) {
 }
 
 /***/ }),
-/* 72 */
+/* 73 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(19)(true);
@@ -28429,13 +28435,6 @@ exports.push([module.i, "#buttonSpacer {\n  width: 70px;\n  /*border-bottom: 1px
 
 // exports
 
-
-/***/ }),
-/* 73 */,
-/* 74 */
-/***/ (function(module, exports) {
-
-module.exports = require("querystring");
 
 /***/ })
 /******/ ]);

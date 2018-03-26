@@ -1178,10 +1178,10 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         });
     }
     ;
-    addPageActionMessage(type, tabID, data = {}, sender = this.getMe()) {
+    addPageActionMessage(action, nodeDescriptions = {}, sender = this.getMe()) {
         return __awaiter(this, void 0, void 0, function* () {
-            const nodeDescriptions = data.nodeDescriptions || {};
-            const action = { type, tabID, data };
+            // const nodeDescriptions = data.nodeDescriptions || {};
+            // const action = { type, tabID, data };
             const message = { sender, action, nodeDescriptions, state: PageActionState.NOT_PERFORMED };
             this.addMesssage(message);
         });
@@ -28012,7 +28012,8 @@ class ArboretumChatBox extends React.Component {
             }
         };
         this.onAddLabel = (nodeIDs, label, tabID, nodeDescriptions) => {
-            this.chat.addPageActionMessage('setLabel', tabID, { nodeIDs, label, nodeDescriptions });
+            const action = { type: 'setLabel', tabID, data: { nodeIDs, label, nodeDescriptions } };
+            this.chat.addPageActionMessage(action, action.data.nodeDescriptions);
         };
         this.state = {
             chatText: this.props.chatText || '',
@@ -28082,8 +28083,8 @@ class ArboretumChatBox extends React.Component {
     }
     ;
     requestLabel(pam) {
-        const { tabID, data } = pam.action;
-        this.chat.addPageActionMessage('getLabel', tabID, data);
+        const action = { type: 'getLabel', tabID: pam.action.tabID, data: pam.action.data };
+        this.chat.addPageActionMessage(action, action.data.nodeDescriptions);
     }
     ;
     render() {

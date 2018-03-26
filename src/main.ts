@@ -84,7 +84,8 @@ app.on('ready', () => {
 const sdb:SDB = new SDB(false);
 // const browserState = null;
 const browserState = new BrowserState(sdb, {
-    port: RDB_PORT
+    port: RDB_PORT,
+    priorActions: false
 });
 
 // console.log('use');

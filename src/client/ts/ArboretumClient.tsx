@@ -81,7 +81,7 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
                 });
             } else {
                 const chat = this.getChat();
-                chat.addPageActionMessage(action.type, this.tabID, action.data);
+                chat.addPageActionMessage(action, action.data.nodeDescriptions);
             }
         });
     };
@@ -92,16 +92,48 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
         this.arboretumChat = arboretumChat;
     };
     private goBack = ():void => {
-        this.getChat().addPageActionMessage('goBack', this.tabID);
+        const action:PageAction = {type:'goBack', tabID: this.tabID, data:{}};
+        if(this.props.isAdmin) {
+            this.sendWebsocketMessage({
+                message: 'pageAction',
+                data: {a:PAMAction.ACCEPT, action }
+            });
+        } else {
+            this.getChat().addPageActionMessage(action);
+        }
     };
     private goForward = ():void => {
-        this.getChat().addPageActionMessage('goForward', this.tabID);
+        const action:PageAction = {type:'goForward', tabID: this.tabID, data:{}};
+        if(this.props.isAdmin) {
+            this.sendWebsocketMessage({
+                message: 'pageAction',
+                data: {a:PAMAction.ACCEPT, action }
+            });
+        } else {
+            this.getChat().addPageActionMessage(action);
+        }
     };
     private reload = ():void => {
-        this.getChat().addPageActionMessage('reload', this.tabID);
+        const action:PageAction = {type:'reload', tabID: this.tabID, data:{}};
+        if(this.props.isAdmin) {
+            this.sendWebsocketMessage({
+                message: 'pageAction',
+                data: {a:PAMAction.ACCEPT, action }
+            });
+        } else {
+            this.getChat().addPageActionMessage(action);
+        }
     };
     private navigate = (url:string):void => {
-        this.getChat().addPageActionMessage('navigate', this.tabID, {url});
+        const action:PageAction = {type:'navigate', tabID: this.tabID, data:{url}};
+        if(this.props.isAdmin) {
+            this.sendWebsocketMessage({
+                message: 'pageAction',
+                data: {a:PAMAction.ACCEPT, action }
+            });
+        } else {
+            this.getChat().addPageActionMessage(action);
+        }
     };
     private tabIsLoadingChanged = (tab:ClientTab, isLoading:boolean):void => {
         if(this.navBar) { this.navBar.setState({isLoading}); }

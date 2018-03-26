@@ -157,11 +157,12 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
         if(this.props.onAction) { this.props.onAction(a, pam.action); }
     };
     private requestLabel(pam:PageActionMessage):void {
-        const {tabID, data} = pam.action;
-        this.chat.addPageActionMessage('getLabel', tabID, data);
+        const action:PageAction = {type:'getLabel', tabID: pam.action.tabID, data: pam.action.data}
+        this.chat.addPageActionMessage(action, action.data.nodeDescriptions);
     };
     private onAddLabel = (nodeIDs:CRI.NodeID[], label:string, tabID:CRI.TabID, nodeDescriptions:{}):void => {
-        this.chat.addPageActionMessage('setLabel', tabID, {nodeIDs, label, nodeDescriptions});
+        const action:PageAction = {type:'setLabel', tabID, data:{nodeIDs, label, nodeDescriptions}};
+        this.chat.addPageActionMessage(action, action.data.nodeDescriptions);
     };
 
     public render():React.ReactNode {

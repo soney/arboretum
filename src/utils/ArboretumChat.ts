@@ -336,9 +336,9 @@ export class ArboretumChat extends TypedEventEmitter {
         const message:TextMessage = {sender, content};
         this.addMesssage(message);
     };
-    public async addPageActionMessage(type:PageActionType, tabID:CRI.TabID, data:any={}, sender:User=this.getMe()):Promise<void> {
-        const nodeDescriptions = data.nodeDescriptions || {};
-        const action = { type, tabID, data };
+    public async addPageActionMessage(action:PageAction, nodeDescriptions={}, sender:User=this.getMe()):Promise<void> {
+        // const nodeDescriptions = data.nodeDescriptions || {};
+        // const action = { type, tabID, data };
         const message:PageActionMessage = {sender, action, nodeDescriptions, state:PageActionState.NOT_PERFORMED}
         this.addMesssage(message);
     };

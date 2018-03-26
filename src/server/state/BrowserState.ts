@@ -34,14 +34,14 @@ const projectFileURLPath: string = fileUrl(path.join(path.resolve(__dirname, '..
 export class BrowserState extends ShareDBSharedState<BrowserDoc> {
     public actionPerformed:RegisteredEvent<ActionPerformed> = new RegisteredEvent<ActionPerformed>();
     private tabs: Map<CRI.TabID, TabState> = new Map<CRI.TabID, TabState>();
-    private options:{savedStatesDir:string, host:string,port:number} = { savedStatesDir: 'savedStates', host: 'localhost', port: 9222 };
+    private options:{savedStatesDir:string, host:string,port:number,priorActions:boolean} = { savedStatesDir: 'savedStates', host: 'localhost', port: 9222, priorActions:true };
     private intervalID: NodeJS.Timer;
     private doc:SDBDoc<BrowserDoc>;
     private chat:ArboretumChat;
     private initialized:Promise<void>;
     private sessionID:string = guid();
     private performedActions:Array<ActionPerformed> = [];
-    constructor(private sdb:SDB, extraOptions?:{savedStatesDir?:string, host?:string,port?:number}) {
+    constructor(private sdb:SDB, extraOptions?:{savedStatesDir?:string, host?:string,port?:number,priorActions?:boolean}) {
         super();
         _.extend(this.options, extraOptions);
         this.initialized = this.initialize();
@@ -63,6 +63,9 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
         this.chat = new ArboretumChat(this.sdb, this);
         this.intervalID = timers.setInterval(_.bind(this.refreshTabs, this), 2000);
         // log.debug('=== CREATED BROWSER ===');
+    };
+    public showingPriorActions():boolean {
+        return this.options.priorActions;
     };
     public getNode(nodeID:CRI.NodeID):DOMState {
         for(let tabID in this.tabs) {

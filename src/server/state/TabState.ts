@@ -307,31 +307,33 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         }
     };
     private async updatePriorActions():Promise<void> {
-        const [priorActions, tabDoc] = await Promise.all([
-                this.browserState.getActionsForURL(this.info.url),
-                this.getData()
-            ]);
-        const remappedPriorActions = priorActions.map((priorAction:ActionPerformed) => {
-            const {action, tabData} = priorAction;
-            const [priorToCurrent, currentToPrior] = alignTabDocs(tabData, tabDoc);
-            return ArboretumChat.retargetPageAction(action, this.getTabId(), priorToCurrent);
-        }).filter((a)=>!!a);
-        const uniqueRemappedPriorActions = [];
-        for(let i:number=0; i<remappedPriorActions.length; i++) {
-            let wasFound:boolean = false;
-            const remappedPriorAction = remappedPriorActions[i];
-            for(let j:number=0; j<uniqueRemappedPriorActions.length; j++) {
-                // if(!ArboretumChat.pageActionsEqual(uniqueRemappedPriorActions))
-                if(ArboretumChat.pageActionsEqual(remappedPriorAction, uniqueRemappedPriorActions[j])) {
-                    wasFound = true;
-                    break;
+        if(this.browserState.showingPriorActions()) {
+            const [priorActions, tabDoc] = await Promise.all([
+                    this.browserState.getActionsForURL(this.info.url),
+                    this.getData()
+                ]);
+            const remappedPriorActions = priorActions.map((priorAction:ActionPerformed) => {
+                const {action, tabData} = priorAction;
+                const [priorToCurrent, currentToPrior] = alignTabDocs(tabData, tabDoc);
+                return ArboretumChat.retargetPageAction(action, this.getTabId(), priorToCurrent);
+            }).filter((a)=>!!a);
+            const uniqueRemappedPriorActions = [];
+            for(let i:number=0; i<remappedPriorActions.length; i++) {
+                let wasFound:boolean = false;
+                const remappedPriorAction = remappedPriorActions[i];
+                for(let j:number=0; j<uniqueRemappedPriorActions.length; j++) {
+                    // if(!ArboretumChat.pageActionsEqual(uniqueRemappedPriorActions))
+                    if(ArboretumChat.pageActionsEqual(remappedPriorAction, uniqueRemappedPriorActions[j])) {
+                        wasFound = true;
+                        break;
+                    }
+                }
+                if(!wasFound) {
+                    uniqueRemappedPriorActions.push(remappedPriorAction);
                 }
             }
-            if(!wasFound) {
-                uniqueRemappedPriorActions.push(remappedPriorAction);
-            }
+            this.doc.submitObjectReplaceOp(this.p('suggestedActions'), uniqueRemappedPriorActions);
         }
-        this.doc.submitObjectReplaceOp(this.p('suggestedActions'), uniqueRemappedPriorActions);
     };
     public updateInfo(tabInfo) {
         const { title, url } = tabInfo;

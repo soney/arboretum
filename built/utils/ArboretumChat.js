@@ -378,10 +378,10 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         });
     }
     ;
-    addPageActionMessage(type, tabID, data = {}, sender = this.getMe()) {
+    addPageActionMessage(action, nodeDescriptions = {}, sender = this.getMe()) {
         return __awaiter(this, void 0, void 0, function* () {
-            const nodeDescriptions = data.nodeDescriptions || {};
-            const action = { type, tabID, data };
+            // const nodeDescriptions = data.nodeDescriptions || {};
+            // const action = { type, tabID, data };
             const message = { sender, action, nodeDescriptions, state: PageActionState.NOT_PERFORMED };
             this.addMesssage(message);
         });

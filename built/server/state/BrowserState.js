@@ -32,7 +32,7 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
         this.sdb = sdb;
         this.actionPerformed = new TypedEventEmitter_1.RegisteredEvent();
         this.tabs = new Map();
-        this.options = { savedStatesDir: 'savedStates', host: 'localhost', port: 9222 };
+        this.options = { savedStatesDir: 'savedStates', host: 'localhost', port: 9222, priorActions: true };
         this.sessionID = guid_1.guid();
         this.performedActions = [];
         _.extend(this.options, extraOptions);
@@ -64,6 +64,10 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
             this.intervalID = timers.setInterval(_.bind(this.refreshTabs, this), 2000);
             // log.debug('=== CREATED BROWSER ===');
         });
+    }
+    ;
+    showingPriorActions() {
+        return this.options.priorActions;
     }
     ;
     getNode(nodeID) {
