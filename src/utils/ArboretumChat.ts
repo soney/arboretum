@@ -120,6 +120,16 @@ export class ArboretumChat extends TypedEventEmitter {
             console.error(err);
         });
     };
+    private async hasUser(name:string):Promise<boolean> {
+        const data:ChatDoc = await this.getData();
+        for(let i = 0; i<data.users.length; i++) {
+            const u = data.users[i];
+            if(u.displayName === name) {
+                return true;
+            }
+        }
+        return false;
+    };
     public async validateUsername(name:string):Promise<{valid:boolean, feedback?:string}> {
         name = name.trim();
         if(name.length < 2) {
@@ -128,6 +138,8 @@ export class ArboretumChat extends TypedEventEmitter {
             return {valid: false, feedback: 'Must be less than 20 characters long'};
         } else if(!name.match(/^[a-z0-9\s]+$/i)) {
             return {valid: false, feedback: 'May only contain letters, numbers, and spaces'};
+        } else if(await this.hasUser(name)) {
+            return {valid: false, feedback: `There is already a user with name ${name}`};
         } else {
             return {valid: true};
         }

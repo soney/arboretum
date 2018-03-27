@@ -4071,6 +4071,19 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         });
     }
     ;
+    hasUser(name) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = yield this.getData();
+            for (let i = 0; i < data.users.length; i++) {
+                const u = data.users[i];
+                if (u.displayName === name) {
+                    return true;
+                }
+            }
+            return false;
+        });
+    }
+    ;
     validateUsername(name) {
         return __awaiter(this, void 0, void 0, function* () {
             name = name.trim();
@@ -4082,6 +4095,9 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             }
             else if (!name.match(/^[a-z0-9\s]+$/i)) {
                 return { valid: false, feedback: 'May only contain letters, numbers, and spaces' };
+            }
+            else if (yield this.hasUser(name)) {
+                return { valid: false, feedback: `There is already a user with name ${name}` };
             }
             else {
                 return { valid: true };
@@ -14237,7 +14253,7 @@ const ReactDOM = __webpack_require__(60);
 const ArboretumClient_1 = __webpack_require__(69);
 __webpack_require__(114);
 const { url, username, isAdmin } = window['clientOptions'];
-ReactDOM.render(React.createElement(ArboretumClient_1.ArboretumClient, { url: url, isAdmin: isAdmin, username: username }), document.getElementById('client_main'));
+ReactDOM.render(React.createElement(ArboretumClient_1.ArboretumClient, { hideNavBar: true, url: url, isAdmin: isAdmin, username: username }), document.getElementById('client_main'));
 
 
 /***/ }),
@@ -31780,6 +31796,11 @@ class ArboretumClient extends React.Component {
         this.setState({ modalIsOpen: false });
     }
     render() {
+        const navigationBar = this.props.hideNavBar ? [] : [
+            React.createElement(TabList_1.TabList, { sdb: this.sdb, onSelectTab: this.onSelectTab }),
+            React.createElement("header", null,
+                React.createElement(BrowserNavigationBar_1.BrowserNavigationBar, { ref: this.navBarRef, onBack: this.goBack, onForward: this.goForward, onReload: this.reload, showSidebarToggle: false, onNavigate: this.navigate }))
+        ];
         return React.createElement("div", { className: "window", id: "arboretum_client" },
             React.createElement(Modal, { isOpen: this.state.modalIsOpen },
                 React.createElement("form", { className: 'usernameInput', onSubmit: this.onSubmitUsername },
@@ -31791,9 +31812,7 @@ class ArboretumClient extends React.Component {
                         React.createElement("p", null, this.state.usernameFeedback)),
                     React.createElement("div", { className: "form-actions" },
                         React.createElement("button", { type: "submit", className: "btn btn-form btn-primary" }, "OK")))),
-            React.createElement(TabList_1.TabList, { sdb: this.sdb, onSelectTab: this.onSelectTab }),
-            React.createElement("header", null,
-                React.createElement(BrowserNavigationBar_1.BrowserNavigationBar, { ref: this.navBarRef, onBack: this.goBack, onForward: this.goForward, onReload: this.reload, showSidebarToggle: false, onNavigate: this.navigate })),
+            navigationBar,
             React.createElement("div", { className: "window-content" },
                 React.createElement("div", { className: "pane-group", id: "client_body" },
                     React.createElement("div", { className: "pane-sm sidebar", tabIndex: 0, "aria-label": "Chat", id: "client_sidebar" },
@@ -35244,6 +35263,7 @@ class ClientTab extends React.Component {
                 }
             }
             else if (property === 'url') {
+                console.log(oi);
                 this.setState({ url: oi });
                 if (this.props.urlChanged) {
                     this.props.urlChanged(this, oi);

@@ -5,6 +5,6 @@ import {ArboretumClient} from './ts/ArboretumClient';
 require('./css/client.scss');
 const {url, username, isAdmin} = window['clientOptions'];
 ReactDOM.render(
-    <ArboretumClient url={url} isAdmin={isAdmin} username={username} />,
+    <ArboretumClient hideNavBar={true} url={url} isAdmin={isAdmin} username={username} />,
     document.getElementById('client_main')
 );

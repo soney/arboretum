@@ -16,7 +16,8 @@ type ArboretumClientProps = {
     wsAddress?:string,
     username?:string,
     isAdmin?:boolean,
-    url?:string
+    url?:string,
+    hideNavBar?:boolean
 };
 type ArboretumClientState = {
     enteringLabel:boolean,
@@ -230,6 +231,12 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
     }
 
     public render():React.ReactNode {
+        const navigationBar:Array<JSX.Element> = this.props.hideNavBar ? [] : [
+            <TabList sdb={this.sdb} onSelectTab={this.onSelectTab} />,
+            <header>
+                <BrowserNavigationBar ref={this.navBarRef} onBack={this.goBack} onForward={this.goForward} onReload={this.reload} showSidebarToggle={false} onNavigate={this.navigate} />
+            </header>
+        ];
         return <div className="window" id="arboretum_client">
             <Modal isOpen={this.state.modalIsOpen}>
                 <form className='usernameInput' onSubmit={this.onSubmitUsername}>
@@ -245,10 +252,7 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
                     </div>
                 </form>
             </Modal>
-            <TabList sdb={this.sdb} onSelectTab={this.onSelectTab} />
-            <header>
-                <BrowserNavigationBar ref={this.navBarRef} onBack={this.goBack} onForward={this.goForward} onReload={this.reload} showSidebarToggle={false} onNavigate={this.navigate} />
-            </header>
+            {navigationBar}
             <div className="window-content">
                 <div className="pane-group" id="client_body">
                     <div className="pane-sm sidebar" tabIndex={0} aria-label="Chat" id="client_sidebar">

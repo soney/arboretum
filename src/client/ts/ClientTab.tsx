@@ -201,6 +201,7 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
                 this.setState({title:oi});
                 if(this.props.titleChanged) { this.props.titleChanged(this, oi); }
             } else if(property === 'url') {
+                console.log(oi);
                 this.setState({url:oi});
                 if(this.props.urlChanged) { this.props.urlChanged(this, oi); }
             } else {

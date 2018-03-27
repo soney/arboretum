@@ -95,6 +95,19 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         });
     }
     ;
+    hasUser(name) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = yield this.getData();
+            for (let i = 0; i < data.users.length; i++) {
+                const u = data.users[i];
+                if (u.displayName === name) {
+                    return true;
+                }
+            }
+            return false;
+        });
+    }
+    ;
     validateUsername(name) {
         return __awaiter(this, void 0, void 0, function* () {
             name = name.trim();
@@ -106,6 +119,9 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             }
             else if (!name.match(/^[a-z0-9\s]+$/i)) {
                 return { valid: false, feedback: 'May only contain letters, numbers, and spaces' };
+            }
+            else if (yield this.hasUser(name)) {
+                return { valid: false, feedback: `There is already a user with name ${name}` };
             }
             else {
                 return { valid: true };
