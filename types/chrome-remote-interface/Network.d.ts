@@ -34,9 +34,19 @@ declare namespace CRI {
         getResponseBody:(params:GetResponseBodyParams, callback:(err:any, data:GetResponseBodyResponse)=>any) => void
         loadingFailed:(Callback:(event:LoadingFailedEvent)=>void) => void
         loadingFinished:(Callback:(event:LoadingFinishedEvent)=>void) => void
+        emulateNetworkConditions:(EmulateNetworkConditionsArguments, callback:(error:any)=>void)=>void
     }
     namespace Network {
         type BlockedReason = 'csp' | 'mixed-content' | 'origin' | 'inspector' | 'subresource-filter' | 'other';
+        type ConnectionType = 'none' | 'cellular2g' | 'cellular3g' | 'cellular4g' | 'bluetooth' | 'ethernet' | 'wifi' | 'wimax' | 'other';
+
+        interface EmulateNetworkConditionsArguments {
+            offline:boolean,
+            latency:number,
+            downloadThroughput:number,
+            uploadThroughput:number,
+            connectionType:ConnectionType
+        }
         type LoaderID = string;
         type TimeSinceEpoch = number;
         interface Response {

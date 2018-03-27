@@ -80,6 +80,7 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
     };
     private onSelectTab = (tabID:CRI.TabID):void => {
         this.tabID = tabID;
+        console.log(this.props.url);
         if(this.props.isAdmin && this.props.url && !this.hasNavigatedInitially) {
             this.hasNavigatedInitially = true;
             this.navigate(this.props.url);
@@ -223,7 +224,7 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
             this.closeModal();
         }
     };
-    
+
     private closeModal():void {
         this.setState({modalIsOpen:false});
     }
@@ -234,7 +235,7 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
                 <form className='usernameInput' onSubmit={this.onSubmitUsername}>
                     <div className="form-group">
                         <label style={{display:'block'}}>Select a username for chat</label>
-                        <input value={this.state.usernameInputValue} onChange={this.handleUsernameInputChange} type="text" placeholder="Enter a username"></input>
+                        <input aria-label="Enter a username" value={this.state.usernameInputValue} onChange={this.handleUsernameInputChange} type="text" placeholder="Enter a username" ref={(el)=>{if(el){el.focus()}}} ></input>
                         <p>
                             {this.state.usernameFeedback}
                         </p>

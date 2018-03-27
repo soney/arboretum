@@ -67,9 +67,9 @@ export class PageActionMessageDisplay extends React.Component<PageActionMessageP
 
     public render():React.ReactNode {
         const pam:PageActionMessage = this.props.pam;
-        const {action, state} = pam;
+        const {action, state, sender} = pam;
         const {data} =  action;
-        const description:JSX.Element = <span className='description' onMouseEnter={()=>this.addHighlights(pam)} onMouseLeave={()=>this.removeHighlights(pam)}>{ArboretumChat.describePageAction(action)}</span>;
+        const pageActionDescription:string = ArboretumChat.describePageAction(action);
 
         const messageActions:Array<JSX.Element> = ArboretumChat.getActions(pam, this.props.isAdmin).map((action:PAMAction) => {
             const description:string = ArboretumChat.getActionDescription(action);
@@ -78,8 +78,9 @@ export class PageActionMessageDisplay extends React.Component<PageActionMessageP
         const stateDescription:string = ArboretumChat.getStateDescription(pam);
         const labelInput:JSX.Element = <input onKeyDown={this.onLabelKeyDown} ref={(el)=>{if(el){el.focus()}}} type="text" />;
 
-        return <li tabIndex={0} className={'chat-line action '+stateDescription}>
-            <span style={{color: pam.sender.color}} className='from'>{pam.sender.displayName}</span> wants to {description}.
+        const messageText:string = `${sender.displayName} wants to ${pageActionDescription}`;
+        return <li onMouseEnter={()=>this.addHighlights(pam)} onMouseLeave={()=>this.removeHighlights(pam)} tabIndex={0} aria-label={messageText} className={'chat-line action '+stateDescription}>
+            <span style={{color: sender.color}} className='from'>{sender.displayName}</span> wants to {pageActionDescription}.
             <div className='messageState'>{stateDescription}</div>
             <div className='messageActions'>{messageActions}</div>
             {this.state.labeling ? labelInput : null}

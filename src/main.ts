@@ -127,9 +127,10 @@ expressApp.all('/', async (req, res, next) => {
     .use('/', express.static(path.join(__dirname, 'client')))
     .all('/a', async (req, res, next) => {
         const clientOptions:any = {isAdmin:true};
-        if(req.params.url) { clientOptions.url = req.params.url; }
-        if(req.params.username) { clientOptions.username = req.params.username; }
-        const contents: string = await setClientOptions(clientOptions);
+        const {query} = req;
+        if(query.url) { clientOptions.url = query.url; }
+        if(query.username) { clientOptions.username = query.username; }
+        const contents:string = await setClientOptions(clientOptions);
         res.send(contents);
     })
     .all('/r', async (req, res, next) => {
@@ -442,7 +443,7 @@ if(DEBUG) {
 async function setClientOptions(options: {}): Promise<string> {
     let contents: string = await readFileContents(path.join(__dirname, 'client', 'index.html'));
     _.each(options, function(val, key) {
-        contents = contents.replace(key + ': false', key + ': "' + val + '"');
+        contents = contents.replace(`${key}: false`, `${key}: ${_.isString(val)?'"'+val+'"' : val}`);
     });
     return contents;
 }

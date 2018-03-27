@@ -206,18 +206,18 @@ export class ArboretumChat extends TypedEventEmitter {
         } else if(type === 'mouse_event' || type === 'keyboard_event' || type === 'element_event') {
             if(isAdmin) {
                 if(state === PageActionState.NOT_PERFORMED) {
-                    return [PAMAction.ACCEPT, PAMAction.REJECT, PAMAction.FOCUS, PAMAction.REQUEST_LABEL];
+                    return [PAMAction.ACCEPT, PAMAction.REJECT, PAMAction.FOCUS];//, PAMAction.REQUEST_LABEL];
                 } else {
-                    return [PAMAction.FOCUS, PAMAction.REQUEST_LABEL];
+                    return [PAMAction.FOCUS];//, PAMAction.REQUEST_LABEL];
                 }
             } else {
-                return [PAMAction.ADD_LABEL];
+                return [];//PAMAction.ADD_LABEL];
             }
         } else if(type === 'getLabel') {
             if(isAdmin) {
                 return [PAMAction.FOCUS];
             } else {
-                return [PAMAction.ADD_LABEL, PAMAction.FOCUS];
+                return [PAMAction.FOCUS];//, PAMAction.ADD_LABEL];
             }
         } else if(type === 'setLabel') {
             if(isAdmin) {

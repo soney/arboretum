@@ -242,14 +242,18 @@ export class ClientElementNode extends ClientNode {
         }
     };
     private addEventListeners():void {
-        this.element.addEventListener('click', this.onClick);
         const {nodeName} = this.sdbNode;
+        this.element.addEventListener('click', this.onClick);
         if(nodeName === 'INPUT' || nodeName === 'TEXTAREA') {
             this.element.addEventListener('change', this.onChange);
         }
     };
     private removeEventListeners():void {
+        const {nodeName} = this.sdbNode;
         this.element.removeEventListener('click', this.onClick);
+        if(nodeName === 'INPUT' || nodeName === 'TEXTAREA') {
+            this.element.removeEventListener('change', this.onChange);
+        }
     };
     private getNodeDescription():string {
         if(this.sdbNode.userLabel) {

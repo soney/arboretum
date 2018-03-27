@@ -128,11 +128,12 @@ expressApp.all('/', (req, res, next) => __awaiter(this, void 0, void 0, function
     .use('/', express.static(path.join(__dirname, 'client')))
     .all('/a', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
     const clientOptions = { isAdmin: true };
-    if (req.params.url) {
-        clientOptions.url = req.params.url;
+    const { query } = req;
+    if (query.url) {
+        clientOptions.url = query.url;
     }
-    if (req.params.username) {
-        clientOptions.username = req.params.username;
+    if (query.username) {
+        clientOptions.username = query.username;
     }
     const contents = yield setClientOptions(clientOptions);
     res.send(contents);
@@ -463,7 +464,7 @@ function setClientOptions(options) {
     return __awaiter(this, void 0, void 0, function* () {
         let contents = yield fileFunctions_1.readFileContents(path.join(__dirname, 'client', 'index.html'));
         _.each(options, function (val, key) {
-            contents = contents.replace(key + ': false', key + ': "' + val + '"');
+            contents = contents.replace(`${key}: false`, `${key}: ${_.isString(val) ? '"' + val + '"' : val}`);
         });
         return contents;
     });

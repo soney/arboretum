@@ -4181,14 +4181,14 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         else if (type === 'mouse_event' || type === 'keyboard_event' || type === 'element_event') {
             if (isAdmin) {
                 if (state === PageActionState.NOT_PERFORMED) {
-                    return [PAMAction.ACCEPT, PAMAction.REJECT, PAMAction.FOCUS, PAMAction.REQUEST_LABEL];
+                    return [PAMAction.ACCEPT, PAMAction.REJECT, PAMAction.FOCUS]; //, PAMAction.REQUEST_LABEL];
                 }
                 else {
-                    return [PAMAction.FOCUS, PAMAction.REQUEST_LABEL];
+                    return [PAMAction.FOCUS]; //, PAMAction.REQUEST_LABEL];
                 }
             }
             else {
-                return [PAMAction.ADD_LABEL];
+                return []; //PAMAction.ADD_LABEL];
             }
         }
         else if (type === 'getLabel') {
@@ -4196,7 +4196,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
                 return [PAMAction.FOCUS];
             }
             else {
-                return [PAMAction.ADD_LABEL, PAMAction.FOCUS];
+                return [PAMAction.FOCUS]; //, PAMAction.ADD_LABEL];
             }
         }
         else if (type === 'setLabel') {
@@ -31579,6 +31579,7 @@ class ArboretumClient extends React.Component {
         this.hasNavigatedInitially = false;
         this.onSelectTab = (tabID) => {
             this.tabID = tabID;
+            console.log(this.props.url);
             if (this.props.isAdmin && this.props.url && !this.hasNavigatedInitially) {
                 this.hasNavigatedInitially = true;
                 this.navigate(this.props.url);
@@ -31784,7 +31785,9 @@ class ArboretumClient extends React.Component {
                 React.createElement("form", { className: 'usernameInput', onSubmit: this.onSubmitUsername },
                     React.createElement("div", { className: "form-group" },
                         React.createElement("label", { style: { display: 'block' } }, "Select a username for chat"),
-                        React.createElement("input", { value: this.state.usernameInputValue, onChange: this.handleUsernameInputChange, type: "text", placeholder: "Enter a username" }),
+                        React.createElement("input", { "aria-label": "Enter a username", value: this.state.usernameInputValue, onChange: this.handleUsernameInputChange, type: "text", placeholder: "Enter a username", ref: (el) => { if (el) {
+                                el.focus();
+                            } } }),
                         React.createElement("p", null, this.state.usernameFeedback)),
                     React.createElement("div", { className: "form-actions" },
                         React.createElement("button", { type: "submit", className: "btn btn-form btn-primary" }, "OK")))),
@@ -35648,15 +35651,19 @@ class ClientElementNode extends ClientNode {
     }
     ;
     addEventListeners() {
-        this.element.addEventListener('click', this.onClick);
         const { nodeName } = this.sdbNode;
+        this.element.addEventListener('click', this.onClick);
         if (nodeName === 'INPUT' || nodeName === 'TEXTAREA') {
             this.element.addEventListener('change', this.onChange);
         }
     }
     ;
     removeEventListeners() {
+        const { nodeName } = this.sdbNode;
         this.element.removeEventListener('click', this.onClick);
+        if (nodeName === 'INPUT' || nodeName === 'TEXTAREA') {
+            this.element.removeEventListener('change', this.onChange);
+        }
     }
     ;
     getNodeDescription() {
@@ -47056,9 +47063,9 @@ class PageActionMessageDisplay extends React.Component {
     ;
     render() {
         const pam = this.props.pam;
-        const { action, state } = pam;
+        const { action, state, sender } = pam;
         const { data } = action;
-        const description = React.createElement("span", { className: 'description', onMouseEnter: () => this.addHighlights(pam), onMouseLeave: () => this.removeHighlights(pam) }, ArboretumChat_1.ArboretumChat.describePageAction(action));
+        const pageActionDescription = ArboretumChat_1.ArboretumChat.describePageAction(action);
         const messageActions = ArboretumChat_1.ArboretumChat.getActions(pam, this.props.isAdmin).map((action) => {
             const description = ArboretumChat_1.ArboretumChat.getActionDescription(action);
             return React.createElement("a", { key: action, href: "javascript:void(0)", onClick: () => this.performAction(action, pam) }, description);
@@ -47067,10 +47074,11 @@ class PageActionMessageDisplay extends React.Component {
         const labelInput = React.createElement("input", { onKeyDown: this.onLabelKeyDown, ref: (el) => { if (el) {
                 el.focus();
             } }, type: "text" });
-        return React.createElement("li", { tabIndex: 0, className: 'chat-line action ' + stateDescription },
-            React.createElement("span", { style: { color: pam.sender.color }, className: 'from' }, pam.sender.displayName),
+        const messageText = `${sender.displayName} wants to ${pageActionDescription}`;
+        return React.createElement("li", { onMouseEnter: () => this.addHighlights(pam), onMouseLeave: () => this.removeHighlights(pam), tabIndex: 0, "aria-label": messageText, className: 'chat-line action ' + stateDescription },
+            React.createElement("span", { style: { color: sender.color }, className: 'from' }, sender.displayName),
             " wants to ",
-            description,
+            pageActionDescription,
             ".",
             React.createElement("div", { className: 'messageState' }, stateDescription),
             React.createElement("div", { className: 'messageActions' }, messageActions),
