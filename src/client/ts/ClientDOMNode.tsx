@@ -273,11 +273,11 @@ export class ClientElementNode extends ClientNode {
     private onClick = (event:MouseEvent):void => {
         // if it isn't looking for a click event already
         if(this.element.hasAttribute('href') && this.sdbNode.listenedEvents.indexOf('click')<0) {
-            this.onMouseEvent(event);
+            this.onMouseEvent(event, true);
         }
     };
-    private onMouseEvent = (event:MouseEvent):void => {
-        if(this.element === event.target) {
+    private onMouseEvent = (event:MouseEvent, isTarget:boolean=(this.element===event.target)):void => {
+        if(isTarget) {
             const {type, timeStamp, clientX, clientY, which, shiftKey, altKey, ctrlKey, metaKey} = event;
             const targetNodeID = this.getNodeID();
             const nodeDescriptions = { };

@@ -651,16 +651,23 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
     getURL() { return this.info.url; }
     ;
     setTitle(title) {
-        this.info.title = title;
+        if (this.info.title === title) {
+            return false;
+        }
+        else {
+            this.info.title = title;
+            return true;
+        }
     }
     ;
     setURL(url) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (this.info.url !== url) {
-                this.info.url = url;
-                yield this.updatePriorActions();
-            }
-        });
+        if (this.info.url === url) {
+            return false;
+        }
+        else {
+            this.info.url = url;
+            this.updatePriorActions();
+        }
     }
     ;
     updatePriorActions() {
@@ -696,8 +703,9 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
     ;
     updateInfo(tabInfo) {
         const { title, url } = tabInfo;
-        this.setTitle(title);
-        this.setURL(url);
+        const titleChanged = this.setTitle(title);
+        const urlChanged = this.setURL(url);
+        return titleChanged || urlChanged;
     }
     ;
     describeNode(nodeId, depth = -1) {

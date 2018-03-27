@@ -120,12 +120,18 @@ export class ArboretumChat extends TypedEventEmitter {
             console.error(err);
         });
     };
-    private async hasUser(name:string):Promise<boolean> {
+    private async hasUser(name:string, onlyPresent:boolean=true):Promise<boolean> {
         const data:ChatDoc = await this.getData();
         for(let i = 0; i<data.users.length; i++) {
             const u = data.users[i];
             if(u.displayName === name) {
-                return true;
+                if(onlyPresent) {
+                    if(u.present) {
+                        return true;
+                    }
+                } else {
+                    return true;
+                }
             }
         }
         return false;

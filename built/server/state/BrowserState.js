@@ -187,7 +187,9 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
                     // log.trace(`Updating info for tab ${id}`);
                     tab = this.tabs.get(id);
                     existingTabs.delete(id);
-                    tab.updateInfo(tabInfo);
+                    if (tab.updateInfo(tabInfo)) {
+                        yield this.getShareDBDoc().submitObjectReplaceOp(['tabs', id], tabInfo);
+                    }
                 }
                 else {
                     // log.trace(`Creating tab ${id}`);

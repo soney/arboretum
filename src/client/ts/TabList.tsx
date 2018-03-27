@@ -32,6 +32,7 @@ export class TabList extends React.Component<TabListProps, TabListState> {
         const {tabs, selectedTab} = data;
 
         await new Promise((resolve, reject) => {
+            console.log(tabs);
             this.setState({tabs: _.values(tabs)}, resolve);
         });
         if(selectedTab) {

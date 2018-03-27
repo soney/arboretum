@@ -4071,13 +4071,20 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         });
     }
     ;
-    hasUser(name) {
+    hasUser(name, onlyPresent = true) {
         return __awaiter(this, void 0, void 0, function* () {
             const data = yield this.getData();
             for (let i = 0; i < data.users.length; i++) {
                 const u = data.users[i];
                 if (u.displayName === name) {
-                    return true;
+                    if (onlyPresent) {
+                        if (u.present) {
+                            return true;
+                        }
+                    }
+                    else {
+                        return true;
+                    }
                 }
             }
             return false;
@@ -35522,11 +35529,11 @@ class ClientElementNode extends ClientNode {
         this.onClick = (event) => {
             // if it isn't looking for a click event already
             if (this.element.hasAttribute('href') && this.sdbNode.listenedEvents.indexOf('click') < 0) {
-                this.onMouseEvent(event);
+                this.onMouseEvent(event, true);
             }
         };
-        this.onMouseEvent = (event) => {
-            if (this.element === event.target) {
+        this.onMouseEvent = (event, isTarget = (this.element === event.target)) => {
+            if (isTarget) {
                 const { type, timeStamp, clientX, clientY, which, shiftKey, altKey, ctrlKey, metaKey } = event;
                 const targetNodeID = this.getNodeID();
                 const nodeDescriptions = {};
@@ -47438,6 +47445,7 @@ class TabList extends React.Component {
             const data = this.browserDoc.getData();
             const { tabs, selectedTab } = data;
             yield new Promise((resolve, reject) => {
+                console.log(tabs);
                 this.setState({ tabs: _.values(tabs) }, resolve);
             });
             if (selectedTab) {

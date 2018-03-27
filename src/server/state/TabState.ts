@@ -309,13 +309,20 @@ export class TabState extends ShareDBSharedState<TabDoc> {
     };
     public getTitle(): string { return this.info.title; };
     public getURL(): string { return this.info.url; };
-    private setTitle(title: string): void {
-        this.info.title = title;
+    private setTitle(title: string):boolean {
+        if(this.info.title === title) {
+            return false;
+        } else {
+            this.info.title = title;
+            return true;
+        }
     };
-    private async setURL(url: string):Promise<void> {
-        if(this.info.url !== url) {
+    private setURL(url: string):boolean {
+        if(this.info.url === url) {
+            return false;
+        } else {
             this.info.url = url;
-            await this.updatePriorActions();
+            this.updatePriorActions();
         }
     };
     private async updatePriorActions():Promise<void> {
@@ -346,10 +353,12 @@ export class TabState extends ShareDBSharedState<TabDoc> {
             this.doc.submitObjectReplaceOp(this.p('suggestedActions'), uniqueRemappedPriorActions);
         }
     };
-    public updateInfo(tabInfo) {
+    public updateInfo(tabInfo:{title:string, url:string}):boolean {
         const { title, url } = tabInfo;
-        this.setTitle(title);
-        this.setURL(url);
+        const titleChanged = this.setTitle(title);
+        const urlChanged = this.setURL(url);
+        
+        return titleChanged || urlChanged;
     };
     private async describeNode(nodeId:CRI.NodeID, depth:number=-1):Promise<CRI.Node> {
         return new Promise<CRI.Node>((resolve, reject) => {

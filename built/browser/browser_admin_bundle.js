@@ -895,13 +895,20 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         });
     }
     ;
-    hasUser(name) {
+    hasUser(name, onlyPresent = true) {
         return __awaiter(this, void 0, void 0, function* () {
             const data = yield this.getData();
             for (let i = 0; i < data.users.length; i++) {
                 const u = data.users[i];
                 if (u.displayName === name) {
-                    return true;
+                    if (onlyPresent) {
+                        if (u.present) {
+                            return true;
+                        }
+                    }
+                    else {
+                        return true;
+                    }
                 }
             }
             return false;
