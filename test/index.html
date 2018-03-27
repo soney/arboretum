@@ -50,6 +50,7 @@
 		<canvas id="canvas2d"></canvas>
 		<canvas id="canvas3d"></canvas>
 		<input type='text' value='val' />
+		<a href="javascript:void(0)" id="quick">quick add/remove</a>
 	</body>
 	<script>
 		var links = document.getElementsByTagName('a'),
@@ -77,6 +78,11 @@
 			var willChange = document.getElementById('willChange');
 			willChange.setAttribute('style', 'background-color: blue');
 			$('img[src]').css('visibility', 'hidden');
+		});
+		document.getElementById('quick').addEventListener('click', function() {
+			var b = document.createElement('b');
+			document.body.appendChild(b);
+			b.parentNode.removeChild(b);
 		});
 		$(function() {
 			$('#eyeframe')[0].contentDocument.write("<h1>Injected from parent frame</h1>")

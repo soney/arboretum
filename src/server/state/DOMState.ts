@@ -29,7 +29,7 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
     private shareDBNode:ShareDBDOMNode;
     private inputValue:string = '';
     private userLabel:string = null;
-    private listenedEvents:SDBArray<string> = new SDBArray<string>();
+    private listenedEvents:Array<string> = [];
 
     private static attributesToIgnore: Array<string> = ['onload', 'onclick', 'onmouseover', 'onmouseout', 'onmouseenter', 'onmouseleave', 'action', 'oncontextmenu', 'onfocus'];
     private static shouldIncludeChild(child:DOMState):boolean {
@@ -83,8 +83,6 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
 
         await this.updateNodeValue();
 
-        this.listenedEvents.markAttachedToShareDBDoc(this.getShareDBDoc(), this.p('listenedEvents'));
-        await this.updateListenedEvents();
         this.getChildren().forEach((child:DOMState) => {
             if(DOMState.shouldIncludeChild(child)) {
                 child.markAttachedToShareDBDoc();
@@ -135,7 +133,7 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
             childFrame: this.childFrame ? this.childFrame.getFrameInfo() : null,
             inlineStyle: this.inlineStyle,
             inputValue: this.inputValue,
-            listenedEvents: this.listenedEvents.getValue(),
+            listenedEvents: this.listenedEvents,
             userLabel:this.userLabel
         };
     };
@@ -264,7 +262,7 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
                     nodeId: this.getNodeId()
                 }, (err, value) => {
                     if (err) {
-                        reject(value);
+                        reject(value['message']);
                     } else {
                         resolve(value.outerHTML);
                     }
@@ -579,7 +577,7 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
             attributesMap.forEach((val: string, key: string) => {
                 text += ` ${key} = '${val}'`;
             });
-            if(this.listenedEvents.length()>0) {
+            if(this.listenedEvents.length>0) {
                 text += ` (events: ${this.listenedEvents.join(', ')})`;
             }
             text += '>';
@@ -648,16 +646,22 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
         (await this.getEventListeners()).forEach((el) => {
             eventTypes.add(el.type);
         });
-        for(let i = 0; i<this.listenedEvents.length(); i++) {
-            const le:string = this.listenedEvents.item(i);
+        for(let i = 0; i<this.listenedEvents.length; i++) {
+            const le:string = this.listenedEvents[i];
             if(!eventTypes.has(le)) {
                 this.listenedEvents.splice(i, 1);
+                if(this.isAttachedToShareDBDoc()) {
+                    this.getShareDBDoc().submitListDeleteOp(this.p('listenedEvents').concat(i));
+                }
                 i--;
             }
         }
         eventTypes.forEach((el:string) => {
-            if(!this.listenedEvents.contains(el)) {
+            if(this.listenedEvents.indexOf(el)<0) {
                 this.listenedEvents.push(el);
+                if(this.isAttachedToShareDBDoc()) {
+                    this.getShareDBDoc().submitListPushOp(this.p('listenedEvents'), el);
+                }
             }
         });
     };
@@ -674,7 +678,7 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
     private resolveNode():Promise<CRI.Runtime.RemoteObject> {
         return new Promise<CRI.Runtime.RemoteObject>((resolve, reject) => {
             this.getChrome().DOM.resolveNode({nodeId:this.getNodeId()}, (err, value) => {
-                if(err) { reject(value); }
+                if(err) { reject(value['message']); }
                 else { resolve(value.object); }
             });
         });

@@ -13,7 +13,6 @@ const ColoredLogger_1 = require("../../utils/ColoredLogger");
 const css_parser_1 = require("../css_parser");
 const NodeCode_1 = require("../../utils/NodeCode");
 const url_transform_1 = require("../url_transform");
-const ShareDBDoc_1 = require("../../utils/ShareDBDoc");
 const _ = require("underscore");
 const timers = require("timers");
 const ShareDBSharedState_1 = require("../../utils/ShareDBSharedState");
@@ -35,7 +34,7 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         this.updateListenersInterval = null;
         this.inputValue = '';
         this.userLabel = null;
-        this.listenedEvents = new ShareDBDoc_1.SDBArray();
+        this.listenedEvents = [];
         this.onDestroyed = this.registerEvent();
         if (this.contentDocument) {
             this.contentDocument.setParent(this);
@@ -95,8 +94,6 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
                 log.debug(`DOM State ${this.getNodeId()} added to ShareDB doc`);
             }
             yield this.updateNodeValue();
-            this.listenedEvents.markAttachedToShareDBDoc(this.getShareDBDoc(), this.p('listenedEvents'));
-            yield this.updateListenedEvents();
             this.getChildren().forEach((child) => {
                 if (DOMState.shouldIncludeChild(child)) {
                     child.markAttachedToShareDBDoc();
@@ -156,7 +153,7 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
             childFrame: this.childFrame ? this.childFrame.getFrameInfo() : null,
             inlineStyle: this.inlineStyle,
             inputValue: this.inputValue,
-            listenedEvents: this.listenedEvents.getValue(),
+            listenedEvents: this.listenedEvents,
             userLabel: this.userLabel
         };
     }
@@ -314,7 +311,7 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
                         nodeId: this.getNodeId()
                     }, (err, value) => {
                         if (err) {
-                            reject(value);
+                            reject(value['message']);
                         }
                         else {
                             resolve(value.outerHTML);
@@ -667,7 +664,7 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
             attributesMap.forEach((val, key) => {
                 text += ` ${key} = '${val}'`;
             });
-            if (this.listenedEvents.length() > 0) {
+            if (this.listenedEvents.length > 0) {
                 text += ` (events: ${this.listenedEvents.join(', ')})`;
             }
             text += '>';
@@ -751,16 +748,22 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
             (yield this.getEventListeners()).forEach((el) => {
                 eventTypes.add(el.type);
             });
-            for (let i = 0; i < this.listenedEvents.length(); i++) {
-                const le = this.listenedEvents.item(i);
+            for (let i = 0; i < this.listenedEvents.length; i++) {
+                const le = this.listenedEvents[i];
                 if (!eventTypes.has(le)) {
                     this.listenedEvents.splice(i, 1);
+                    if (this.isAttachedToShareDBDoc()) {
+                        this.getShareDBDoc().submitListDeleteOp(this.p('listenedEvents').concat(i));
+                    }
                     i--;
                 }
             }
             eventTypes.forEach((el) => {
-                if (!this.listenedEvents.contains(el)) {
+                if (this.listenedEvents.indexOf(el) < 0) {
                     this.listenedEvents.push(el);
+                    if (this.isAttachedToShareDBDoc()) {
+                        this.getShareDBDoc().submitListPushOp(this.p('listenedEvents'), el);
+                    }
                 }
             });
         });
@@ -787,7 +790,7 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
         return new Promise((resolve, reject) => {
             this.getChrome().DOM.resolveNode({ nodeId: this.getNodeId() }, (err, value) => {
                 if (err) {
-                    reject(value);
+                    reject(value['message']);
                 }
                 else {
                     resolve(value.object);

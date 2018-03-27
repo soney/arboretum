@@ -6254,16 +6254,18 @@ SubmitRequest.prototype.maxRetriesError = function() {
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-
+/* WEBPACK VAR INJECTION */(function(__dirname) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(1);
 const ReactDOM = __webpack_require__(40);
 const ArboretumBrowser_1 = __webpack_require__(49);
+const path = __webpack_require__(74);
 __webpack_require__(72);
-// const START_URL:string = `file://${path.resolve(__dirname, '..', '..', 'test', 'simple.html')}`;
-const START_URL = 'http://www.umich.edu/';
+const START_URL = `file://${path.resolve(__dirname, '..', '..', 'test', 'index.html')}`;
+// const START_URL:string = 'http://www.umich.edu/';
 ReactDOM.render(React.createElement(ArboretumBrowser_1.ArboretumBrowser, { urls: [START_URL] }), document.getElementById('arboretum_main'));
 
+/* WEBPACK VAR INJECTION */}.call(exports, "src/browser"))
 
 /***/ }),
 /* 37 */
@@ -28435,6 +28437,12 @@ exports.push([module.i, "#buttonSpacer {\n  width: 70px;\n  /*border-bottom: 1px
 
 // exports
 
+
+/***/ }),
+/* 74 */
+/***/ (function(module, exports) {
+
+module.exports = require("path");
 
 /***/ })
 /******/ ]);

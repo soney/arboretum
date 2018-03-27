@@ -20,14 +20,13 @@ import {TabDoc, BrowserDoc} from './utils/state_interfaces';
 import {SDB, SDBDoc} from './utils/ShareDBDoc';
 import {readDirectory,readFileContents,writeFileContents,makeDirectoryRecursive} from './utils/fileFunctions';
 
-const OPEN_MIRROR: boolean = false;
+const DEBUG:boolean = false;
 const RDB_PORT: number = 9222;
-const USE_HTTP_PORT:boolean = true;
 const HTTP_PORT: number = 3000;
-const SAVED_STATES_DIR = path.join('savedStates');
+const OPEN_MIRROR: boolean = false;
+const USE_HTTP_PORT:boolean = true;
 const READ_PRIOR_ACTIONS:boolean = false;
-const DEBUG:boolean = true;
-
+const SAVED_STATES_DIR = path.join('savedStates');
 
 const isMac: boolean = /^dar/.test(platform());
 const defaultBrowswerWindowOptions = {
