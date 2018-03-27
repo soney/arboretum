@@ -93,10 +93,6 @@ const browserState = new BrowserState_1.BrowserState(sdb, {
     showDebug: DEBUG,
     suppressErrors: !DEBUG
 });
-// console.log('use');
-sdb.use('receive', (request, next) => {
-    console.log(request);
-});
 const expressApp = express();
 const server = http_1.createServer(expressApp);
 const wss = new WebSocket.Server({ server });
@@ -131,11 +127,11 @@ expressApp.all('/', (req, res, next) => __awaiter(this, void 0, void 0, function
 }))
     .use('/', express.static(path.join(__dirname, 'client')))
     .all('/a', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
-    const url = req.param('url') || false;
-    const contents = yield setClientOptions({
-        isAdmin: true,
-        url
-    });
+    const clientOptions = { isAdmin: true };
+    if (req.params.url) {
+        clientOptions.url = req.params.url;
+    }
+    const contents = yield setClientOptions(clientOptions);
     res.send(contents);
 }))
     .all('/r', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
@@ -191,7 +187,11 @@ function startServer() {
         }
         else {
             const port = yield new Promise((resolve, reject) => {
-                server.listen(USE_HTTP_PORT ? HTTP_PORT : undefined, () => {
+                const options = {};
+                if (USE_HTTP_PORT) {
+                    options.port = HTTP_PORT;
+                }
+                server.listen(options, () => {
                     const addy = server.address();
                     const { port } = addy;
                     resolve(port);
@@ -278,6 +278,7 @@ electron_1.ipcMain.on('asynchronous-message', (event, messageID, arg) => __await
     else if (message === 'pageAction') {
         const { a, action } = data;
         const rv = handlePageActionAction(a, action);
+        console.log(action);
         if (rv) {
             event.sender.send(replyChannel, 'ok');
         }

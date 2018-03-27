@@ -153,6 +153,10 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
         const {action} = pam;
         if(a === PAMAction.REQUEST_LABEL) {
             this.requestLabel(pam);
+        } else if(a === PAMAction.ACCEPT) {
+            this.chat.setState(pam, PageActionState.PERFORMED);
+        } else if(a === PAMAction.REJECT) {
+            this.chat.setState(pam, PageActionState.NOT_PERFORMED);
         }
         if(this.props.onAction) { this.props.onAction(a, pam.action); }
     };

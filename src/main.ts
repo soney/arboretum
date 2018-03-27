@@ -93,11 +93,6 @@ const browserState = new BrowserState(sdb, {
     suppressErrors: !DEBUG
 });
 
-// console.log('use');
-sdb.use('receive', (request, next) => {
-    console.log(request);
-});
-
 const expressApp = express();
 const server:Server = createServer(expressApp);
 const wss = new WebSocket.Server({server});
@@ -131,11 +126,11 @@ expressApp.all('/', async (req, res, next) => {
     })
     .use('/', express.static(path.join(__dirname, 'client')))
     .all('/a', async (req, res, next) => {
-        const url = req.param('url') || false;
-        const contents: string = await setClientOptions({
-            isAdmin: true,
-            url
-        });
+        const clientOptions:any = {isAdmin:true};
+        if(req.params.url) {
+            clientOptions.url = req.params.url;
+        }
+        const contents: string = await setClientOptions(clientOptions);
         res.send(contents);
     })
     .all('/r', async (req, res, next) => {
@@ -190,7 +185,9 @@ async function startServer(): Promise<{hostname:string,port:number}> {
         return {hostname, port};
     } else {
         const port = await new Promise<number>((resolve, reject) => {
-            server.listen(USE_HTTP_PORT ? HTTP_PORT : undefined, () => {
+            const options:any = {};
+            if(USE_HTTP_PORT) { options.port = HTTP_PORT; }
+            server.listen(options, () => {
                 const addy = server.address();
                 const { port } = addy;
                 resolve(port);
@@ -266,6 +263,7 @@ ipcMain.on('asynchronous-message', async (event, messageID:number, arg:{message:
     } else if (message === 'pageAction') {
         const {a, action} = data;
         const rv = handlePageActionAction(a, action);
+        console.log(action);
         if(rv) {
             event.sender.send(replyChannel, 'ok');
         } else {

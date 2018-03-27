@@ -67,6 +67,12 @@ class ArboretumChatBox extends React.Component {
             if (a === ArboretumChat_1.PAMAction.REQUEST_LABEL) {
                 this.requestLabel(pam);
             }
+            else if (a === ArboretumChat_1.PAMAction.ACCEPT) {
+                this.chat.setState(pam, ArboretumChat_1.PageActionState.PERFORMED);
+            }
+            else if (a === ArboretumChat_1.PAMAction.REJECT) {
+                this.chat.setState(pam, ArboretumChat_1.PageActionState.NOT_PERFORMED);
+            }
             if (this.props.onAction) {
                 this.props.onAction(a, pam.action);
             }
