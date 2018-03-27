@@ -12,11 +12,12 @@ type ArboretumChatProps = {
     onSendMessage?:(message:string)=>void,
     chatText?:string,
     sdb?:SDB,
-    username:string,
+    username?:string,
     onAction?:(a:PAMAction, action:PageAction) => void,
     onAddHighlight?:(nodeIDs:Array<CRI.NodeID>, color:string)=>void,
     onRemoveHighlight?:(nodeIDs:Array<CRI.NodeID>)=>void,
-    isAdmin:boolean
+    isAdmin:boolean,
+    joinOnStart?:boolean
 };
 type ArboretumChatState = {
     chatText:string,
@@ -55,7 +56,9 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
         this.chat = new ArboretumChat(this.sdb);
 
         this.chat.ready.addListener(async () => {
-            await this.chat.join(this.props.username);
+            if(this.props.joinOnStart) {
+                await this.chat.join(this.props.username);
+            }
 
             await this.updateMessagesState();
             await this.updateUsersState();
@@ -64,6 +67,7 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
             this.chat.userJoined.addListener(this.updateUsersState);
             this.chat.userNotPresent.addListener(this.updateUsersState);
             this.chat.pamStateChanged.addListener(this.updateUsersState);
+            this.chat.userNameChanged.addListener(this.updateUsersState);
         });
     };
     private messageAdded = async (event:MessageAddedEvent):Promise<void> => {

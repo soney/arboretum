@@ -127,9 +127,8 @@ expressApp.all('/', async (req, res, next) => {
     .use('/', express.static(path.join(__dirname, 'client')))
     .all('/a', async (req, res, next) => {
         const clientOptions:any = {isAdmin:true};
-        if(req.params.url) {
-            clientOptions.url = req.params.url;
-        }
+        if(req.params.url) { clientOptions.url = req.params.url; }
+        if(req.params.username) { clientOptions.username = req.params.username; }
         const contents: string = await setClientOptions(clientOptions);
         res.send(contents);
     })
@@ -263,7 +262,6 @@ ipcMain.on('asynchronous-message', async (event, messageID:number, arg:{message:
     } else if (message === 'pageAction') {
         const {a, action} = data;
         const rv = handlePageActionAction(a, action);
-        console.log(action);
         if(rv) {
             event.sender.send(replyChannel, 'ok');
         } else {

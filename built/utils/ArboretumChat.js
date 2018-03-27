@@ -48,6 +48,7 @@ var PAMAction;
 ;
 ;
 ;
+;
 class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
     constructor(sdb, browserState) {
         super();
@@ -56,6 +57,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         this.userJoined = this.registerEvent();
         this.userNotPresent = this.registerEvent();
         this.userTypingStatusChanged = this.registerEvent();
+        this.userNameChanged = this.registerEvent();
         this.messageAdded = this.registerEvent();
         this.pamStateChanged = this.registerEvent();
         this.ready = this.registerEvent();
@@ -90,6 +92,24 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         this.initialized = this.initializeDoc();
         this.initialized.catch((err) => {
             console.error(err);
+        });
+    }
+    ;
+    validateUsername(name) {
+        return __awaiter(this, void 0, void 0, function* () {
+            name = name.trim();
+            if (name.length < 2) {
+                return { valid: false, feedback: 'Must be more than 2 characters long' };
+            }
+            else if (name.length >= 20) {
+                return { valid: false, feedback: 'Must be less than 20 characters long' };
+            }
+            else if (!name.match(/^[a-z0-9\s]+$/i)) {
+                return { valid: false, feedback: 'May only contain letters, numbers, and spaces' };
+            }
+            else {
+                return { valid: true };
+            }
         });
     }
     ;
@@ -299,6 +319,12 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
                     this.userNotPresent.emit({ user });
                 }
             }
+            else if (p.length === 3 && p[2] === 'displayName') {
+                const userIndex = p[1];
+                const { oi, od } = op;
+                const user = this.doc.getData().users[userIndex];
+                this.userNameChanged.emit({ user });
+            }
         }
         else if (p[0] === 'messages') {
             if (p.length === 2) {
@@ -415,12 +441,19 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         });
     }
     ;
+    setUsername(name, user = this.getMe()) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = yield this.getData();
+            const userIndex = yield this.getUserIndex(user);
+            yield this.doc.submitObjectReplaceOp(['users', userIndex, 'displayName'], name);
+        });
+    }
+    ;
     markUserNotPresent(user) {
         return __awaiter(this, void 0, void 0, function* () {
             const data = yield this.getData();
             const userIndex = yield this.getUserIndex(user);
             yield this.doc.submitObjectReplaceOp(['users', userIndex, 'present'], false);
-            // await this.doc.submitObjectDeleteOp(['users', userIndex, 'present']);
         });
     }
     ;

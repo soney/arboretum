@@ -216,7 +216,7 @@ export class ArboretumAdminInterface extends React.Component<ArboretumAdminProps
                 </tbody>
             </table>
             <ArboretumSuggestedActions ref={(el)=>{this.suggestedActions=el;}} onAction={this.onAction} />
-            <ArboretumChatBox isAdmin={true} sdb={this.sdb} username="Admin" ref={this.chatBoxRef} onSendMessage={this.sendMessage} onAction={this.onAction} onAddHighlight={this.addHighlight} onRemoveHighlight={this.removeHighlight} />
+            <ArboretumChatBox isAdmin={true} sdb={this.sdb} joinOnStart={true} username="Admin" ref={this.chatBoxRef} onSendMessage={this.sendMessage} onAction={this.onAction} onAddHighlight={this.addHighlight} onRemoveHighlight={this.removeHighlight} />
         </div>;
     };
 };

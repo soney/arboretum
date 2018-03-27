@@ -131,6 +131,9 @@ expressApp.all('/', (req, res, next) => __awaiter(this, void 0, void 0, function
     if (req.params.url) {
         clientOptions.url = req.params.url;
     }
+    if (req.params.username) {
+        clientOptions.username = req.params.username;
+    }
     const contents = yield setClientOptions(clientOptions);
     res.send(contents);
 }))
@@ -278,7 +281,6 @@ electron_1.ipcMain.on('asynchronous-message', (event, messageID, arg) => __await
     else if (message === 'pageAction') {
         const { a, action } = data;
         const rv = handlePageActionAction(a, action);
-        console.log(action);
         if (rv) {
             event.sender.send(replyChannel, 'ok');
         }

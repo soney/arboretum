@@ -61,6 +61,10 @@ export interface MessageAddedEvent {
     message:Message,
     after?:Message
 };
+export interface UserNameChangedEvent {
+    user:User
+};
+
 export interface ReadyEvent { };
 export interface PAMStateChanged { };
 
@@ -75,6 +79,7 @@ export class ArboretumChat extends TypedEventEmitter {
     public userJoined = this.registerEvent<UserJoinedEvent>();
     public userNotPresent = this.registerEvent<UserNotPresentEvent>();
     public userTypingStatusChanged = this.registerEvent<UserTypingStatusChangedEvent>();
+    public userNameChanged = this.registerEvent<UserNameChangedEvent>();
     public messageAdded = this.registerEvent<MessageAddedEvent>();
     public pamStateChanged = this.registerEvent<PAMStateChanged>();
     public ready = this.registerEvent<ReadyEvent>();
@@ -114,6 +119,18 @@ export class ArboretumChat extends TypedEventEmitter {
         this.initialized.catch((err) => {
             console.error(err);
         });
+    };
+    public async validateUsername(name:string):Promise<{valid:boolean, feedback?:string}> {
+        name = name.trim();
+        if(name.length < 2) {
+            return {valid: false, feedback: 'Must be more than 2 characters long'};
+        } else if(name.length >= 20) {
+            return {valid: false, feedback: 'Must be less than 20 characters long'};
+        } else if(!name.match(/^[a-z0-9\s]+$/i)) {
+            return {valid: false, feedback: 'May only contain letters, numbers, and spaces'};
+        } else {
+            return {valid: true};
+        }
     };
     public static pageActionsEqual(a1:PageAction, a2:PageAction):boolean {
         if(a1.type === a2.type) {
@@ -280,6 +297,11 @@ export class ArboretumChat extends TypedEventEmitter {
                 if(oi === false) {
                     this.userNotPresent.emit({ user });
                 }
+            } else if(p.length === 3 && p[2] === 'displayName') { // display name changed
+                const userIndex = p[1];
+                const {oi, od} = op;
+                const user = this.doc.getData().users[userIndex];
+                this.userNameChanged.emit({user})
             }
         } else if(p[0] === 'messages') {
             if(p.length === 2) {
@@ -364,11 +386,15 @@ export class ArboretumChat extends TypedEventEmitter {
         }
         return -1;
     };
+    public async setUsername(name:string, user:User=this.getMe()):Promise<void> {
+        const data:ChatDoc = await this.getData();
+        const userIndex:number = await this.getUserIndex(user);
+        await this.doc.submitObjectReplaceOp(['users', userIndex, 'displayName'], name);
+    };
     public async markUserNotPresent(user:User):Promise<void> {
         const data:ChatDoc = await this.getData();
         const userIndex:number = await this.getUserIndex(user);
         await this.doc.submitObjectReplaceOp(['users', userIndex, 'present'], false);
-        // await this.doc.submitObjectDeleteOp(['users', userIndex, 'present']);
     };
     public async leave():Promise<void> {
         await this.markUserNotPresent(this.getMe());

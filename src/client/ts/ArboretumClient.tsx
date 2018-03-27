@@ -8,18 +8,26 @@ import {ArboretumChat, Message, User, TextMessage, PageActionMessage, PageAction
 import {TabList} from './TabList';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
+import * as Modal from 'react-modal';
+
+Modal.setAppElement('#client_main');
 
 type ArboretumClientProps = {
     wsAddress?:string,
-    userID?:string,
+    username?:string,
     isAdmin?:boolean,
     url?:string
 };
 type ArboretumClientState = {
-    enteringLabel:boolean
+    enteringLabel:boolean,
+    modalIsOpen:boolean,
+    usernameInputValue:string,
+    usernameValid:boolean,
+    usernameFeedback:string
 };
 
 export class ArboretumClient extends React.Component<ArboretumClientProps, ArboretumClientState> {
+    private username:string;
     private sdb:SDB;
     private tabID:CRI.TabID;
     private socket:WebSocket;
@@ -37,8 +45,13 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
     constructor(props) {
         super(props);
         this.state = {
-            enteringLabel:false
+            enteringLabel:false,
+            modalIsOpen:!this.props.username,
+            usernameInputValue:'',
+            usernameValid:false,
+            usernameFeedback:''
         };
+        this.username = this.props.username;
         this.socket = new WebSocket(this.props.wsAddress);
         this.sdb = new SDB(true, this.socket);
     };
@@ -192,8 +205,45 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
         }
     };
 
+    private handleUsernameInputChange = async (event:React.ChangeEvent<HTMLInputElement>):Promise<void> => {
+        const value = event.target.value;
+        this.setState({usernameInputValue:value});
+        const chat:ArboretumChat = this.getChat();
+        if(chat) {
+            const {valid, feedback} = await chat.validateUsername(value);
+            this.setState({usernameValid:valid, usernameFeedback:feedback});
+        }
+    };
+
+    private onSubmitUsername = async (event:React.FormEvent<HTMLElement>):Promise<void> => {
+        event.preventDefault();
+        if(this.state.usernameValid) {
+            const chat:ArboretumChat = this.getChat();
+            await chat.addUser(this.state.usernameInputValue);
+            this.closeModal();
+        }
+    };
+    
+    private closeModal():void {
+        this.setState({modalIsOpen:false});
+    }
+
     public render():React.ReactNode {
         return <div className="window" id="arboretum_client">
+            <Modal isOpen={this.state.modalIsOpen}>
+                <form className='usernameInput' onSubmit={this.onSubmitUsername}>
+                    <div className="form-group">
+                        <label style={{display:'block'}}>Select a username for chat</label>
+                        <input value={this.state.usernameInputValue} onChange={this.handleUsernameInputChange} type="text" placeholder="Enter a username"></input>
+                        <p>
+                            {this.state.usernameFeedback}
+                        </p>
+                    </div>
+                    <div className="form-actions">
+                        <button type="submit" className="btn btn-form btn-primary">OK</button>
+                    </div>
+                </form>
+            </Modal>
             <TabList sdb={this.sdb} onSelectTab={this.onSelectTab} />
             <header>
                 <BrowserNavigationBar ref={this.navBarRef} onBack={this.goBack} onForward={this.goForward} onReload={this.reload} showSidebarToggle={false} onNavigate={this.navigate} />
@@ -201,7 +251,7 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
             <div className="window-content">
                 <div className="pane-group" id="client_body">
                     <div className="pane-sm sidebar" tabIndex={0} aria-label="Chat" id="client_sidebar">
-                        <ArboretumChatBox onAction={this.onAction} onAddHighlight={this.addHighlight} onRemoveHighlight={this.removeHighlight} isAdmin={this.props.isAdmin} ref={this.chatRef} sdb={this.sdb} username="Steve" />
+                        <ArboretumChatBox onAction={this.onAction} onAddHighlight={this.addHighlight} onRemoveHighlight={this.removeHighlight} isAdmin={this.props.isAdmin} ref={this.chatRef} sdb={this.sdb} username={this.username} />
                     </div>
                     <div className="pane" id="client_content">
                         <ClientTab canGoBackChanged={this.tabCanGoBackChanged} canGoForwardChanged={this.tabCanGoForwardChanged} urlChanged={this.tabURLChanged} titleChanged={this.pageTitleChanged} isLoadingChanged={this.tabIsLoadingChanged} ref={this.clientTabRef} sdb={this.sdb} />
