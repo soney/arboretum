@@ -232,7 +232,6 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
 
     public render():React.ReactNode {
         const navigationBar:Array<JSX.Element> = this.props.hideNavBar ? [] : [
-            <TabList sdb={this.sdb} onSelectTab={this.onSelectTab} />,
             <header>
                 <BrowserNavigationBar ref={this.navBarRef} onBack={this.goBack} onForward={this.goForward} onReload={this.reload} showSidebarToggle={false} onNavigate={this.navigate} />
             </header>
@@ -252,6 +251,7 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
                     </div>
                 </form>
             </Modal>
+            <TabList sdb={this.sdb} onSelectTab={this.onSelectTab} />
             {navigationBar}
             <div className="window-content">
                 <div className="pane-group" id="client_body">

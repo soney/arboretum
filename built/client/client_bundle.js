@@ -31797,7 +31797,6 @@ class ArboretumClient extends React.Component {
     }
     render() {
         const navigationBar = this.props.hideNavBar ? [] : [
-            React.createElement(TabList_1.TabList, { sdb: this.sdb, onSelectTab: this.onSelectTab }),
             React.createElement("header", null,
                 React.createElement(BrowserNavigationBar_1.BrowserNavigationBar, { ref: this.navBarRef, onBack: this.goBack, onForward: this.goForward, onReload: this.reload, showSidebarToggle: false, onNavigate: this.navigate }))
         ];
@@ -31812,6 +31811,7 @@ class ArboretumClient extends React.Component {
                         React.createElement("p", null, this.state.usernameFeedback)),
                     React.createElement("div", { className: "form-actions" },
                         React.createElement("button", { type: "submit", className: "btn btn-form btn-primary" }, "OK")))),
+            React.createElement(TabList_1.TabList, { sdb: this.sdb, onSelectTab: this.onSelectTab }),
             navigationBar,
             React.createElement("div", { className: "window-content" },
                 React.createElement("div", { className: "pane-group", id: "client_body" },
