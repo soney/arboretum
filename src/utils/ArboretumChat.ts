@@ -24,7 +24,7 @@ export interface User {
 export interface Message {
     sender:User,
     timestamp?:number,
-    id?:number,
+    id?:string,
 };
 export interface TextMessage extends Message {
     content:string
@@ -64,6 +64,9 @@ export interface MessageAddedEvent {
 export interface UserNameChangedEvent {
     user:User
 };
+export interface MessageRemovedEvent {
+    message:Message
+};
 
 export interface ReadyEvent { };
 export interface PAMStateChanged { };
@@ -81,6 +84,7 @@ export class ArboretumChat extends TypedEventEmitter {
     public userTypingStatusChanged = this.registerEvent<UserTypingStatusChangedEvent>();
     public userNameChanged = this.registerEvent<UserNameChangedEvent>();
     public messageAdded = this.registerEvent<MessageAddedEvent>();
+    public messageRemoved = this.registerEvent<MessageRemovedEvent>();
     public pamStateChanged = this.registerEvent<PAMStateChanged>();
     public ready = this.registerEvent<ReadyEvent>();
     constructor(private sdb:SDB, private browserState?:BrowserState) {
@@ -323,15 +327,21 @@ export class ArboretumChat extends TypedEventEmitter {
             }
         } else if(p[0] === 'messages') {
             if(p.length === 2) {
-                const {li} = op;
-                if(li.action && li.data && this.browserState) {
-                    const pam = li as PageActionMessage;
-                    const relevantNodeIDs:Array<CRI.NodeID> = ArboretumChat.getRelevantNodeIDs(li.action);
-                    const relevantNodes = relevantNodeIDs.map((id) => this.browserState.getNode(id));
+                const {li, ld} = op;
+                if(li) {
+                    if(li.action && li.data && this.browserState) {
+                        const pam = li as PageActionMessage;
+                        const relevantNodeIDs:Array<CRI.NodeID> = ArboretumChat.getRelevantNodeIDs(li.action);
+                        const relevantNodes = relevantNodeIDs.map((id) => this.browserState.getNode(id));
+                    }
+                    this.messageAdded.emit({
+                        message:li
+                    });
+                } else if(ld) {
+                    this.messageRemoved.emit({
+                        message:ld
+                    });
                 }
-                this.messageAdded.emit({
-                    message:li
-                });
             }
         }
     };
@@ -365,12 +375,22 @@ export class ArboretumChat extends TypedEventEmitter {
         if(isMe) { this.meUser = user; }
         return user;
     };
-    private async addMesssage(message:Message) {
+    private async addMesssage(message:Message):Promise<void> {
         await this.initialized;
         const timestamp:number = (new Date()).getTime()
         message.timestamp = (new Date()).getTime();
-        message.id = ArboretumChat.messageCounter++;
+        message.id = guid();
         this.doc.submitListPushOp(['messages'], message);
+    };
+    public async removeMessage(message:Message):Promise<boolean> {
+        const {messages} = await this.getData();
+        for(let i = 0; i<messages.length; i++) {
+            if(messages[i].id === message.id) {
+                this.doc.submitListDeleteOp(['messages', i]);
+                return true;
+            }
+        }
+        return false;
     };
     public async addTextMessage(content:string, sender:User=this.getMe()):Promise<void> {
         const message:TextMessage = {sender, content};
@@ -403,6 +423,12 @@ export class ArboretumChat extends TypedEventEmitter {
             }
         }
         return -1;
+    };
+    public isFromUser(message:Message, user:User=this.getMe()):boolean {
+        if(user) {
+            return user.id === message.sender.id;
+        }
+        return false;
     };
     public async setUsername(name:string, user:User=this.getMe()):Promise<void> {
         const data:ChatDoc = await this.getData();

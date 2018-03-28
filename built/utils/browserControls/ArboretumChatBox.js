@@ -10,7 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = require("react");
 const ArboretumChat_1 = require("../ArboretumChat");
-const PageActionMessageDisplay_1 = require("./PageActionMessage/PageActionMessageDisplay");
+const ArboretumChatMessage_1 = require("./ArboretumChatMessage");
 require('./ArboretumChat.scss');
 const ENTER_KEY = 13;
 class ArboretumChatBox extends React.Component {
@@ -77,6 +77,9 @@ class ArboretumChatBox extends React.Component {
                 this.props.onAction(a, pam.action);
             }
         };
+        this.deleteMessage = (message) => __awaiter(this, void 0, void 0, function* () {
+            yield this.chat.removeMessage(message);
+        });
         this.onAddLabel = (nodeIDs, label, tabID, nodeDescriptions) => {
             const action = { type: 'setLabel', tabID, data: { nodeIDs, label, nodeDescriptions } };
             this.chat.addPageActionMessage(action, action.data.nodeDescriptions);
@@ -106,9 +109,10 @@ class ArboretumChatBox extends React.Component {
                 yield this.updateMessagesState();
                 yield this.updateUsersState();
                 this.chat.messageAdded.addListener(this.messageAdded);
+                this.chat.messageRemoved.addListener(this.updateMessagesState);
                 this.chat.userJoined.addListener(this.updateUsersState);
                 this.chat.userNotPresent.addListener(this.updateUsersState);
-                this.chat.pamStateChanged.addListener(this.updateUsersState);
+                this.chat.pamStateChanged.addListener(this.updateMessagesState);
                 this.chat.userNameChanged.addListener(this.updateUsersState);
             }));
         });
@@ -158,17 +162,7 @@ class ArboretumChatBox extends React.Component {
     ;
     render() {
         const messages = this.state.messages.map((m, i) => {
-            const senderStyle = { color: m.sender.color };
-            if (m['content']) {
-                const tm = m;
-                return React.createElement("li", { tabIndex: 0, key: i, className: 'chat-line' },
-                    React.createElement("span", { style: senderStyle, className: 'from' }, tm.sender.displayName),
-                    React.createElement("span", { className: 'message' }, tm.content));
-            }
-            else if (m['action']) {
-                const pam = m;
-                return React.createElement(PageActionMessageDisplay_1.PageActionMessageDisplay, { pam: pam, key: i, isAdmin: this.props.isAdmin, performAction: this.performAction, addLabel: this.onAddLabel, onAddHighlight: this.props.onAddHighlight, onRemoveHighlight: this.props.onRemoveHighlight });
-            }
+            return React.createElement(ArboretumChatMessage_1.ChatMessageDisplay, { key: i, message: m, isMyMessage: this.chat.isFromUser(m), isAdmin: this.props.isAdmin, performAction: this.performAction, onAddLabel: this.onAddLabel, onDeleteMessage: this.deleteMessage, onAddHighlight: this.props.onAddHighlight, onRemoveHighlight: this.props.onRemoveHighlight });
         });
         let meUserID;
         if (this.chat) {

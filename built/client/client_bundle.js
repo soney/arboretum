@@ -4025,6 +4025,7 @@ var PAMAction;
 ;
 ;
 ;
+;
 class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
     constructor(sdb, browserState) {
         super();
@@ -4035,6 +4036,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         this.userTypingStatusChanged = this.registerEvent();
         this.userNameChanged = this.registerEvent();
         this.messageAdded = this.registerEvent();
+        this.messageRemoved = this.registerEvent();
         this.pamStateChanged = this.registerEvent();
         this.ready = this.registerEvent();
         if (this.sdb.isServer()) {
@@ -4327,15 +4329,22 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         }
         else if (p[0] === 'messages') {
             if (p.length === 2) {
-                const { li } = op;
-                if (li.action && li.data && this.browserState) {
-                    const pam = li;
-                    const relevantNodeIDs = ArboretumChat.getRelevantNodeIDs(li.action);
-                    const relevantNodes = relevantNodeIDs.map((id) => this.browserState.getNode(id));
+                const { li, ld } = op;
+                if (li) {
+                    if (li.action && li.data && this.browserState) {
+                        const pam = li;
+                        const relevantNodeIDs = ArboretumChat.getRelevantNodeIDs(li.action);
+                        const relevantNodes = relevantNodeIDs.map((id) => this.browserState.getNode(id));
+                    }
+                    this.messageAdded.emit({
+                        message: li
+                    });
                 }
-                this.messageAdded.emit({
-                    message: li
-                });
+                else if (ld) {
+                    this.messageRemoved.emit({
+                        message: ld
+                    });
+                }
             }
         }
     }
@@ -4391,8 +4400,21 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             yield this.initialized;
             const timestamp = (new Date()).getTime();
             message.timestamp = (new Date()).getTime();
-            message.id = ArboretumChat.messageCounter++;
+            message.id = guid_1.guid();
             this.doc.submitListPushOp(['messages'], message);
+        });
+    }
+    ;
+    removeMessage(message) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { messages } = yield this.getData();
+            for (let i = 0; i < messages.length; i++) {
+                if (messages[i].id === message.id) {
+                    this.doc.submitListDeleteOp(['messages', i]);
+                    return true;
+                }
+            }
+            return false;
         });
     }
     ;
@@ -4438,6 +4460,13 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             }
             return -1;
         });
+    }
+    ;
+    isFromUser(message, user = this.getMe()) {
+        if (user) {
+            return user.id === message.sender.id;
+        }
+        return false;
     }
     ;
     setUsername(name, user = this.getMe()) {
@@ -46805,7 +46834,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(1);
 const ArboretumChat_1 = __webpack_require__(24);
-const PageActionMessageDisplay_1 = __webpack_require__(106);
+const ArboretumChatMessage_1 = __webpack_require__(130);
 __webpack_require__(107);
 const ENTER_KEY = 13;
 class ArboretumChatBox extends React.Component {
@@ -46872,6 +46901,9 @@ class ArboretumChatBox extends React.Component {
                 this.props.onAction(a, pam.action);
             }
         };
+        this.deleteMessage = (message) => __awaiter(this, void 0, void 0, function* () {
+            yield this.chat.removeMessage(message);
+        });
         this.onAddLabel = (nodeIDs, label, tabID, nodeDescriptions) => {
             const action = { type: 'setLabel', tabID, data: { nodeIDs, label, nodeDescriptions } };
             this.chat.addPageActionMessage(action, action.data.nodeDescriptions);
@@ -46901,9 +46933,10 @@ class ArboretumChatBox extends React.Component {
                 yield this.updateMessagesState();
                 yield this.updateUsersState();
                 this.chat.messageAdded.addListener(this.messageAdded);
+                this.chat.messageRemoved.addListener(this.updateMessagesState);
                 this.chat.userJoined.addListener(this.updateUsersState);
                 this.chat.userNotPresent.addListener(this.updateUsersState);
-                this.chat.pamStateChanged.addListener(this.updateUsersState);
+                this.chat.pamStateChanged.addListener(this.updateMessagesState);
                 this.chat.userNameChanged.addListener(this.updateUsersState);
             }));
         });
@@ -46953,17 +46986,7 @@ class ArboretumChatBox extends React.Component {
     ;
     render() {
         const messages = this.state.messages.map((m, i) => {
-            const senderStyle = { color: m.sender.color };
-            if (m['content']) {
-                const tm = m;
-                return React.createElement("li", { tabIndex: 0, key: i, className: 'chat-line' },
-                    React.createElement("span", { style: senderStyle, className: 'from' }, tm.sender.displayName),
-                    React.createElement("span", { className: 'message' }, tm.content));
-            }
-            else if (m['action']) {
-                const pam = m;
-                return React.createElement(PageActionMessageDisplay_1.PageActionMessageDisplay, { pam: pam, key: i, isAdmin: this.props.isAdmin, performAction: this.performAction, addLabel: this.onAddLabel, onAddHighlight: this.props.onAddHighlight, onRemoveHighlight: this.props.onRemoveHighlight });
-            }
+            return React.createElement(ArboretumChatMessage_1.ChatMessageDisplay, { key: i, message: m, isMyMessage: this.chat.isFromUser(m), isAdmin: this.props.isAdmin, performAction: this.performAction, onAddLabel: this.onAddLabel, onDeleteMessage: this.deleteMessage, onAddHighlight: this.props.onAddHighlight, onRemoveHighlight: this.props.onRemoveHighlight });
         });
         let meUserID;
         if (this.chat) {
@@ -49477,6 +49500,58 @@ var __WEBPACK_AMD_DEFINE_RESULT__;/*!
 	}
 
 }());
+
+
+/***/ }),
+/* 130 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const React = __webpack_require__(1);
+const PageActionMessageDisplay_1 = __webpack_require__(106);
+const ENTER_KEY = 13;
+class ChatMessageDisplay extends React.Component {
+    constructor(props) {
+        super(props);
+        this.onMouseEnter = (event) => {
+            this.setState({ hovering: true });
+        };
+        this.onMouseLeave = (event) => {
+            this.setState({ hovering: false });
+        };
+        this.state = {
+            hovering: false
+        };
+    }
+    ;
+    render() {
+        const { message } = this.props;
+        const senderStyle = { color: message.sender.color };
+        let display;
+        if (message['content']) {
+            const tm = message;
+            display = React.createElement("div", { tabIndex: 0, className: 'chat-line' },
+                React.createElement("span", { style: senderStyle, className: 'from' }, tm.sender.displayName),
+                React.createElement("span", { className: 'message' }, tm.content));
+        }
+        else if (message['action']) {
+            const pam = message;
+            display = React.createElement(PageActionMessageDisplay_1.PageActionMessageDisplay, { pam: pam, isAdmin: this.props.isAdmin, performAction: this.props.performAction, addLabel: this.props.onAddLabel, onAddHighlight: this.props.onAddHighlight, onRemoveHighlight: this.props.onRemoveHighlight });
+        }
+        let deleteMessage;
+        if (this.props.isMyMessage && this.state.hovering) {
+            deleteMessage = React.createElement("a", { style: { 'backgroundColor': '#EEE', position: 'absolute', top: '0px', right: '0px' }, onClick: () => this.props.onDeleteMessage(this.props.message), href: 'javascript:void(0)' }, "(delete message)");
+        }
+        return React.createElement("li", { style: { position: 'relative' }, onMouseEnter: this.onMouseEnter, onMouseLeave: this.onMouseLeave },
+            display,
+            deleteMessage);
+    }
+    ;
+}
+exports.ChatMessageDisplay = ChatMessageDisplay;
+;
 
 
 /***/ })

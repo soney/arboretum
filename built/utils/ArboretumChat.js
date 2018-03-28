@@ -49,6 +49,7 @@ var PAMAction;
 ;
 ;
 ;
+;
 class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
     constructor(sdb, browserState) {
         super();
@@ -59,6 +60,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         this.userTypingStatusChanged = this.registerEvent();
         this.userNameChanged = this.registerEvent();
         this.messageAdded = this.registerEvent();
+        this.messageRemoved = this.registerEvent();
         this.pamStateChanged = this.registerEvent();
         this.ready = this.registerEvent();
         if (this.sdb.isServer()) {
@@ -351,15 +353,22 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         }
         else if (p[0] === 'messages') {
             if (p.length === 2) {
-                const { li } = op;
-                if (li.action && li.data && this.browserState) {
-                    const pam = li;
-                    const relevantNodeIDs = ArboretumChat.getRelevantNodeIDs(li.action);
-                    const relevantNodes = relevantNodeIDs.map((id) => this.browserState.getNode(id));
+                const { li, ld } = op;
+                if (li) {
+                    if (li.action && li.data && this.browserState) {
+                        const pam = li;
+                        const relevantNodeIDs = ArboretumChat.getRelevantNodeIDs(li.action);
+                        const relevantNodes = relevantNodeIDs.map((id) => this.browserState.getNode(id));
+                    }
+                    this.messageAdded.emit({
+                        message: li
+                    });
                 }
-                this.messageAdded.emit({
-                    message: li
-                });
+                else if (ld) {
+                    this.messageRemoved.emit({
+                        message: ld
+                    });
+                }
             }
         }
     }
@@ -415,8 +424,21 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             yield this.initialized;
             const timestamp = (new Date()).getTime();
             message.timestamp = (new Date()).getTime();
-            message.id = ArboretumChat.messageCounter++;
+            message.id = guid_1.guid();
             this.doc.submitListPushOp(['messages'], message);
+        });
+    }
+    ;
+    removeMessage(message) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { messages } = yield this.getData();
+            for (let i = 0; i < messages.length; i++) {
+                if (messages[i].id === message.id) {
+                    this.doc.submitListDeleteOp(['messages', i]);
+                    return true;
+                }
+            }
+            return false;
         });
     }
     ;
@@ -462,6 +484,13 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             }
             return -1;
         });
+    }
+    ;
+    isFromUser(message, user = this.getMe()) {
+        if (user) {
+            return user.id === message.sender.id;
+        }
+        return false;
     }
     ;
     setUsername(name, user = this.getMe()) {

@@ -3,6 +3,7 @@ import {SDB, SDBDoc} from '../ShareDBDoc';
 import {ArboretumChat, Message, User, TextMessage, PageActionMessage, PageAction, PageActionState, MessageAddedEvent, PAMAction} from '../ArboretumChat';
 import {RegisteredEvent} from '../TypedEventEmitter';
 import {PageActionMessageDisplay} from './PageActionMessage/PageActionMessageDisplay';
+import {ChatMessageDisplay} from './ArboretumChatMessage';
 
 require('./ArboretumChat.scss');
 
@@ -64,9 +65,10 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
             await this.updateUsersState();
 
             this.chat.messageAdded.addListener(this.messageAdded);
+            this.chat.messageRemoved.addListener(this.updateMessagesState);
             this.chat.userJoined.addListener(this.updateUsersState);
             this.chat.userNotPresent.addListener(this.updateUsersState);
-            this.chat.pamStateChanged.addListener(this.updateUsersState);
+            this.chat.pamStateChanged.addListener(this.updateMessagesState);
             this.chat.userNameChanged.addListener(this.updateUsersState);
         });
     };
@@ -164,6 +166,9 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
         }
         if(this.props.onAction) { this.props.onAction(a, pam.action); }
     };
+    private deleteMessage = async (message:Message):Promise<void> => {
+        await this.chat.removeMessage(message);
+    };
     private requestLabel(pam:PageActionMessage):void {
         const action:PageAction = {type:'getLabel', tabID: pam.action.tabID, data: pam.action.data}
         this.chat.addPageActionMessage(action, action.data.nodeDescriptions);
@@ -175,14 +180,7 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
 
     public render():React.ReactNode {
         const messages = this.state.messages.map((m:Message, i:number) => {
-            const senderStyle = {color: m.sender.color};
-            if(m['content']) {
-                const tm:TextMessage = m as TextMessage;
-                return <li tabIndex={0} key={i} className='chat-line'><span style={senderStyle} className='from'>{tm.sender.displayName}</span><span className='message'>{tm.content}</span></li>;
-            } else if(m['action']) {
-                const pam:PageActionMessage = m as PageActionMessage;
-                return <PageActionMessageDisplay pam={pam} key={i} isAdmin={this.props.isAdmin} performAction={this.performAction} addLabel={this.onAddLabel} onAddHighlight={this.props.onAddHighlight} onRemoveHighlight={this.props.onRemoveHighlight} />
-            }
+            return <ChatMessageDisplay key={i} message={m} isMyMessage={this.chat.isFromUser(m)} isAdmin={this.props.isAdmin} performAction={this.performAction} onAddLabel={this.onAddLabel} onDeleteMessage={this.deleteMessage} onAddHighlight={this.props.onAddHighlight} onRemoveHighlight={this.props.onRemoveHighlight} />
         });
 
         let meUserID;
