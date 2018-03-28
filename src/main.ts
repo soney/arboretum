@@ -28,6 +28,10 @@ const USE_HTTP_PORT:boolean = true;
 const READ_PRIOR_ACTIONS:boolean = false;
 const SAVED_STATES_DIR = path.join('savedStates');
 
+if(DEBUG) {
+    require('longjohn');
+}
+
 const isMac: boolean = /^dar/.test(platform());
 const defaultBrowswerWindowOptions = {
     'remote-debugging-port': RDB_PORT,

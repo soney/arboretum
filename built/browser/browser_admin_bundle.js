@@ -6525,7 +6525,7 @@ var singleton = null;
 var	singletonCounter = 0;
 var	stylesInsertedAtTop = [];
 
-var	fixUrls = __webpack_require__(80);
+var	fixUrls = __webpack_require__(81);
 
 module.exports = function(list, options) {
 	if (typeof DEBUG !== "undefined" && DEBUG) {
@@ -6850,7 +6850,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(0);
 const ReactDOM = __webpack_require__(41);
 const ArboretumAdminInterface_1 = __webpack_require__(50);
-__webpack_require__(82);
+__webpack_require__(83);
 ReactDOM.render(React.createElement("div", { className: "window" },
     React.createElement("div", { className: "window-content" },
         React.createElement("div", { className: "pane-group" },
@@ -24165,7 +24165,7 @@ const ShareDBDoc_1 = __webpack_require__(53);
 const react_switch_1 = __webpack_require__(66);
 const copyToClipboard_1 = __webpack_require__(72);
 const ArboretumChatBox_1 = __webpack_require__(73);
-const ArboretumSuggestedActions_1 = __webpack_require__(81);
+const ArboretumSuggestedActions_1 = __webpack_require__(82);
 ;
 class ArboretumAdminInterface extends React.Component {
     constructor(props) {
@@ -28035,8 +28035,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(0);
 const ArboretumChat_1 = __webpack_require__(14);
-const ArboretumChatMessage_1 = __webpack_require__(84);
-__webpack_require__(78);
+const ArboretumChatMessage_1 = __webpack_require__(77);
+__webpack_require__(79);
 const ENTER_KEY = 13;
 class ArboretumChatBox extends React.Component {
     constructor(props) {
@@ -29902,6 +29902,58 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;//     Underscor
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(0);
+const PageActionMessageDisplay_1 = __webpack_require__(78);
+const ENTER_KEY = 13;
+class ChatMessageDisplay extends React.Component {
+    constructor(props) {
+        super(props);
+        this.onMouseEnter = (event) => {
+            this.setState({ hovering: true });
+        };
+        this.onMouseLeave = (event) => {
+            this.setState({ hovering: false });
+        };
+        this.state = {
+            hovering: false
+        };
+    }
+    ;
+    render() {
+        const { message } = this.props;
+        const senderStyle = { color: message.sender.color };
+        let display;
+        if (message['content']) {
+            const tm = message;
+            display = React.createElement("div", { tabIndex: 0, className: 'chat-line' },
+                React.createElement("span", { style: senderStyle, className: 'from' }, tm.sender.displayName),
+                React.createElement("span", { className: 'message' }, tm.content));
+        }
+        else if (message['action']) {
+            const pam = message;
+            display = React.createElement(PageActionMessageDisplay_1.PageActionMessageDisplay, { pam: pam, isAdmin: this.props.isAdmin, performAction: this.props.performAction, addLabel: this.props.onAddLabel, onAddHighlight: this.props.onAddHighlight, onRemoveHighlight: this.props.onRemoveHighlight });
+        }
+        let deleteMessage;
+        if (this.props.isMyMessage && this.state.hovering) {
+            deleteMessage = React.createElement("a", { style: { 'backgroundColor': '#EEE', position: 'absolute', top: '0px', right: '0px' }, onClick: () => this.props.onDeleteMessage(this.props.message), href: 'javascript:void(0)' }, "(delete message)");
+        }
+        return React.createElement("li", { style: { position: 'relative' }, onMouseEnter: this.onMouseEnter, onMouseLeave: this.onMouseLeave },
+            display,
+            deleteMessage);
+    }
+    ;
+}
+exports.ChatMessageDisplay = ChatMessageDisplay;
+;
+
+
+/***/ }),
+/* 78 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const React = __webpack_require__(0);
 const ArboretumChat_1 = __webpack_require__(14);
 const ENTER_KEY = 13;
 class PageActionMessageDisplay extends React.Component {
@@ -29984,11 +30036,11 @@ exports.PageActionMessageDisplay = PageActionMessageDisplay;
 
 
 /***/ }),
-/* 78 */
+/* 79 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
-var content = __webpack_require__(79);
+var content = __webpack_require__(80);
 
 if(typeof content === 'string') content = [[module.i, content, '']];
 
@@ -30034,7 +30086,7 @@ if(false) {
 }
 
 /***/ }),
-/* 79 */
+/* 80 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(36)(true);
@@ -30048,7 +30100,7 @@ exports.push([module.i, ".chat {\n  font-family: system, -apple-system, \".SFNSD
 
 
 /***/ }),
-/* 80 */
+/* 81 */
 /***/ (function(module, exports) {
 
 
@@ -30143,7 +30195,7 @@ module.exports = function (css) {
 
 
 /***/ }),
-/* 81 */
+/* 82 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -30238,11 +30290,11 @@ exports.ArboretumSuggestedActions = ArboretumSuggestedActions;
 
 
 /***/ }),
-/* 82 */
+/* 83 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
-var content = __webpack_require__(83);
+var content = __webpack_require__(84);
 
 if(typeof content === 'string') content = [[module.i, content, '']];
 
@@ -30288,7 +30340,7 @@ if(false) {
 }
 
 /***/ }),
-/* 83 */
+/* 84 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(36)(true);
@@ -30299,58 +30351,6 @@ exports = module.exports = __webpack_require__(36)(true);
 exports.push([module.i, "#buttonSpacer {\n  width: 70px;\n  /*border-bottom: 1px solid #AAA;*/\n  /*background: linear-gradient(to bottom, #BBB 80%, #AAA);*/ }\n\n#tabsBar {\n  display: flex;\n  flex-direction: row;\n  font-size: 13px;\n  font-family: sans-serif;\n  margin: 0px;\n  /*padding: 0px 0px 0px 70px;*/\n  padding: 0px;\n  box-sizing: border-box;\n  -webkit-user-select: none;\n  -webkit-app-region: drag;\n  color: #777;\n  /*height: 23px;*/\n  box-sizing: border-box; }\n  #tabsBar #addTab {\n    display: inline-block;\n    margin: 0;\n    background: linear-gradient(to bottom, #BBB 80%, #AAA); }\n\n/*#tabsBar #addTab:hover {\n    color: #fff;\n    background: rgb(99, 190, 229);\n}\n\n#addTab i {\n    font-size: 12.5px\n}*/\n#tabs {\n  display: flex;\n  flex: 1;\n  padding: 0px;\n  margin: 0px;\n  overflow: hidden; }\n\n.tab {\n  flex: 1;\n  display: flex;\n  border-left: 1px solid #AAA;\n  /*border: 1px solid black;*/\n  list-style: none;\n  white-space: nowrap;\n  /*font-size: 3em;*/\n  border-bottom: 1px solid #aaa;\n  color: #BBB;\n  overflow: hidden;\n  text-overflow: ellipsis; }\n\n.tab:last-child {\n  border-right: 1px solid #AAA; }\n\n.tab.not-selected {\n  background: linear-gradient(to bottom, #BBB 80%, #AAA); }\n\n.tab.not-selected .closeTab {\n  color: #999; }\n\n.tab.selected {\n  /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n  border-bottom: none;\n  color: #777; }\n\n.tab .tab-img {\n  opacity: 0.4; }\n\n.tab.selected .tab-img {\n  opacity: 1.0;\n  flex: 2; }\n\n.tab-img {\n  height: 18px;\n  max-width: 28px;\n  margin: 2px;\n  margin-right: 2px;\n  display: none; }\n\n.tab-title {\n  /*flex: 1;*/\n  /*padding: 5px 0px 4px 3px;*/ }\n\n.closeTab {\n  /*float: right;*/\n  /*color: red;*/\n  /*text-shadow: 0 0 1px rgba(50, 1, 1, 1);*/\n  padding: 5px; }\n\n.closeTab i {\n  font-size: 12.5px; }\n\n.closeTab:hover {\n  background: #f57777;\n  color: #FFF; }\n\n.tab .tab-title {\n  /*font-size: 5em;*/\n  color: #777;\n  text-overflow: ellipsis;\n  overflow: hidden; }\n\n.tab.selected .tab-title {\n  color: #555; }\n\n#adminPane {\n  display: flex;\n  flex-direction: column;\n  height: 100%; }\n  #adminPane .suggestedActions {\n    padding: 5px; }\n    #adminPane .suggestedActions .nav-group-title {\n      padding: 0px; }\n    #adminPane .suggestedActions ul {\n      font-size: 0.9em;\n      padding: 0px; }\n      #adminPane .suggestedActions ul li {\n        list-style: none; }\n\ntable#server-controls {\n  flex-shrink: 0; }\n  table#server-controls .nav-group-title {\n    padding: 0px; }\n  table#server-controls thead td {\n    text-align: center; }\n  table#server-controls td {\n    padding-left: 5px;\n    padding-right: 0px;\n    margin: auto;\n    vertical-align: top; }\n  table#server-controls tr:active {\n    color: inherit;\n    background-color: inherit;\n    /* color: #fff; */\n    /* background-color: #116cd6; */ }\n  table#server-controls #control_content td {\n    padding-bottom: 0px; }\n  table#server-controls label {\n    margin-bottom: 0px;\n    padding-bottom: 0px; }\n\n.sidebar {\n  width: 350px;\n  height: 100%;\n  display: flex;\n  flex-direction: column; }\n\n.copy_area input {\n  background-color: #FAFAFA;\n  border: 1px solid #CCC;\n  padding: 2px;\n  font-size: 0.9em;\n  text-align: center;\n  width: 90px; }\n\n.copy_area .copy_area .icon {\n  cursor: pointer;\n  color: #AAA; }\n  .copy_area .copy_area .icon:hover {\n    color: #999; }\n\n#browser-pane {\n  border-left: none; }\n\nhtml {\n  height: 100%; }\n  html .unselected {\n    display: none; }\n  html #content {\n    height: 100%;\n    overflow: hidden; }\n  html .tab_content {\n    height: 100%; }\n  html webview {\n    display: inline-flex;\n    width: 100%;\n    height: 100%; }\n    html webview.hidden {\n      display: none; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/browser/css/src/browser/css/browser-tabs.scss","/home/soney/code/arboretum/src/browser/css/src/browser/css/browser-sidebar.scss","/home/soney/code/arboretum/src/browser/css/src/browser/css/browser.scss"],"names":[],"mappings":"AAAA;EACI,YAAW;EACX,kCAAkC;EAClC,2DAA2D,EAC9D;;AAED;EACI,cAAa;EACb,oBAAmB;EACnB,gBAAe;EACf,wBAAuB;EACvB,YAAW;EACX,8BAA8B;EAC9B,aAAY;EACZ,uBAAsB;EACtB,0BAAyB;EACzB,yBAAwB;EAExB,YAAW;EACX,iBAAiB;EACjB,uBAAsB,EAMzB;EApBD;IAgBQ,sBAAqB;IACrB,UAAS;IACT,uDAAsD,EACzD;;AAIL;;;;;;;GAOG;AAEH;EACI,cAAa;EACb,QAAO;EACP,aAAY;EACZ,YAAW;EACX,iBAAgB,EACnB;;AAED;EACI,QAAO;EACP,cAAa;EACb,4BAA2B;EAC3B,4BAA4B;EAC5B,iBAAgB;EAChB,oBAAmB;EACnB,mBAAmB;EACnB,8BAA6B;EAC7B,YAAW;EACX,iBAAgB;EAChB,wBAAuB,EAC1B;;AACD;EACI,6BAA4B,EAC/B;;AACD;EACI,uDAAsD,EACzD;;AACD;EACI,YAAW,EACd;;AACD;EACI,8DAA8D;EAC9D,oBAAmB;EACnB,YAAW,EACd;;AAED;EACI,aAAY,EACf;;AACD;EACI,aAAY;EACZ,QAAO,EACV;;AAED;EACI,aAAY;EACZ,gBAAe;EACf,YAAW;EACX,kBAAiB;EACjB,cAAa,EAChB;;AAED;EACI,YAAY;EACZ,6BAA6B,EAChC;;AAED;EACI,iBAAiB;EACjB,eAAe;EACf,2CAA2C;EAC3C,aAAY,EACf;;AAED;EACI,kBACJ,EAAE;;AAEF;EACI,oBAA8B;EAC9B,YAAW,EACd;;AAGD;EACI,mBAAmB;EACnB,YAAW;EACX,wBAAuB;EACvB,iBAAgB,EACnB;;AACD;EACI,YAAW,EACd;;ACxHD;EACI,cAAY;EACZ,uBAAqB;EACrB,aAAW,EAed;EAlBD;IAMQ,aAAY,EAWf;IAjBL;MAQY,aAAY,EACf;IATT;MAWY,iBAAe;MACf,aAAW,EAId;MAhBT;QAcgB,iBAAgB,EACnB;;AAIb;EACI,eAAc,EA6BjB;EA9BD;IAGQ,aAAY,EACf;EAJL;IAMQ,mBAAkB,EACrB;EAPL;IAUQ,kBAAiB;IACjB,mBAAkB;IAClB,aAAY;IACZ,oBAAmB,EACtB;EAdL;IAiBY,eAAc;IACd,0BAAyB;IACzB,kBAAkB;IAClB,gCAAgC,EACnC;EArBT;IAwBQ,oBAAmB,EACtB;EAzBL;IA2BQ,mBAAkB;IAClB,oBAAmB,EACtB;;AAIL;EACI,aAAY;EACZ,aAAY;EACZ,cAAa;EACb,uBAAsB,EACzB;;AAID;EAEQ,0BAAyB;EACzB,uBAAsB;EACtB,aAAW;EACX,iBAAgB;EAChB,mBAAkB;EAClB,YAAW,EACd;;AARL;EAUQ,gBAAe;EACf,YAAW,EAId;EAfL;IAaY,YAAW,EACd;;AAKT;EACI,kBAAiB,EACpB;;AC9ED;EACI,aAAY,EAwBf;EAzBD;IAIQ,cAAa,EAChB;EALL;IAOQ,aAAY;IACZ,iBAAgB,EACnB;EATL;IAaQ,aAAY,EACf;EAdL;IAiBQ,qBAAoB;IACpB,YAAW;IACX,aAAY,EAKf;IAxBL;MAsBY,cAAY,EACf","file":"browser.scss","sourcesContent":["#buttonSpacer {\n    width: 70px;\n    /*border-bottom: 1px solid #AAA;*/\n    /*background: linear-gradient(to bottom, #BBB 80%, #AAA);*/\n}\n\n#tabsBar {\n    display: flex;\n    flex-direction: row;\n    font-size: 13px;\n    font-family: sans-serif;\n    margin: 0px;\n    /*padding: 0px 0px 0px 70px;*/\n    padding: 0px;\n    box-sizing: border-box;\n    -webkit-user-select: none;\n    -webkit-app-region: drag;\n\n    color: #777;\n    /*height: 23px;*/\n    box-sizing: border-box;\n    #addTab {\n        display: inline-block;\n        margin: 0;\n        background: linear-gradient(to bottom, #BBB 80%, #AAA);\n    }\n}\n\n\n/*#tabsBar #addTab:hover {\n    color: #fff;\n    background: rgb(99, 190, 229);\n}\n\n#addTab i {\n    font-size: 12.5px\n}*/\n\n#tabs {\n    display: flex;\n    flex: 1;\n    padding: 0px;\n    margin: 0px;\n    overflow: hidden;\n}\n\n.tab {\n    flex: 1;\n    display: flex;\n    border-left: 1px solid #AAA;\n    /*border: 1px solid black;*/\n    list-style: none;\n    white-space: nowrap;\n    /*font-size: 3em;*/\n    border-bottom: 1px solid #aaa;\n    color: #BBB;\n    overflow: hidden;\n    text-overflow: ellipsis;\n}\n.tab:last-child {\n    border-right: 1px solid #AAA;\n}\n.tab.not-selected {\n    background: linear-gradient(to bottom, #BBB 80%, #AAA);\n}\n.tab.not-selected .closeTab {\n    color: #999;\n}\n.tab.selected {\n    /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n    border-bottom: none;\n    color: #777;\n}\n\n.tab .tab-img {\n    opacity: 0.4;\n}\n.tab.selected .tab-img {\n    opacity: 1.0;\n    flex: 2;\n}\n\n.tab-img {\n    height: 18px;\n    max-width: 28px;\n    margin: 2px;\n    margin-right: 2px;\n    display: none;\n}\n\n.tab-title {\n    /*flex: 1;*/\n    /*padding: 5px 0px 4px 3px;*/\n}\n\n.closeTab {\n    /*float: right;*/\n    /*color: red;*/\n    /*text-shadow: 0 0 1px rgba(50, 1, 1, 1);*/\n    padding: 5px;\n}\n\n.closeTab i {\n    font-size: 12.5px\n}\n\n.closeTab:hover {\n    background: rgb(245, 119, 119);\n    color: #FFF;\n}\n\n\n.tab .tab-title {\n    /*font-size: 5em;*/\n    color: #777;\n    text-overflow: ellipsis;\n    overflow: hidden;\n}\n.tab.selected .tab-title {\n    color: #555;\n}\n","#adminPane {\n    display:flex;\n    flex-direction:column;\n    height:100%;\n\n    .suggestedActions {\n        padding: 5px;\n        .nav-group-title {\n            padding: 0px;\n        }\n        ul {\n            font-size:0.9em;\n            padding:0px;\n            li {\n                list-style: none;\n            }\n        }\n    }\n}\ntable#server-controls {\n    flex-shrink: 0;\n    .nav-group-title {\n        padding: 0px;\n    }\n    thead td {\n        text-align: center;\n    }\n\n    td {\n        padding-left: 5px;\n        padding-right: 0px;\n        margin: auto;\n        vertical-align: top;\n    }\n    tr {\n        &:active {\n            color: inherit;\n            background-color: inherit;\n            /* color: #fff; */\n            /* background-color: #116cd6; */\n        }\n    }\n    #control_content td {\n        padding-bottom: 0px;\n    }\n    label {\n        margin-bottom: 0px;\n        padding-bottom: 0px;\n    }\n}\n\n\n.sidebar {\n    width: 350px;\n    height: 100%;\n    display: flex;\n    flex-direction: column;\n}\n\n\n\n.copy_area {\n    input {\n        background-color: #FAFAFA;\n        border: 1px solid #CCC;\n        padding:2px;\n        font-size: 0.9em;\n        text-align: center;\n        width: 90px;\n    }\n    .copy_area .icon {\n        cursor: pointer;\n        color: #AAA;\n        &:hover {\n            color: #999;\n        }\n    }\n}\n\n\n#browser-pane {\n    border-left: none;\n}\n","@import \"./browser-tabs\";\n@import \"./browser-sidebar\";\n\n// @import \"../../utils/browserControls/ArboretumChat.scss\";\nhtml {\n    height: 100%;\n\n    .unselected {\n        display: none;\n    }\n    #content {\n        height: 100%;\n        overflow: hidden;\n    }\n\n\n    .tab_content {\n        height: 100%;\n    }\n\n    webview {\n        display: inline-flex;\n        width: 100%;\n        height: 100%;\n\n        &.hidden {\n            display:none;\n        }\n    }\n}\n"],"sourceRoot":""}]);
 
 // exports
-
-
-/***/ }),
-/* 84 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const React = __webpack_require__(0);
-const PageActionMessageDisplay_1 = __webpack_require__(77);
-const ENTER_KEY = 13;
-class ChatMessageDisplay extends React.Component {
-    constructor(props) {
-        super(props);
-        this.onMouseEnter = (event) => {
-            this.setState({ hovering: true });
-        };
-        this.onMouseLeave = (event) => {
-            this.setState({ hovering: false });
-        };
-        this.state = {
-            hovering: false
-        };
-    }
-    ;
-    render() {
-        const { message } = this.props;
-        const senderStyle = { color: message.sender.color };
-        let display;
-        if (message['content']) {
-            const tm = message;
-            display = React.createElement("div", { tabIndex: 0, className: 'chat-line' },
-                React.createElement("span", { style: senderStyle, className: 'from' }, tm.sender.displayName),
-                React.createElement("span", { className: 'message' }, tm.content));
-        }
-        else if (message['action']) {
-            const pam = message;
-            display = React.createElement(PageActionMessageDisplay_1.PageActionMessageDisplay, { pam: pam, isAdmin: this.props.isAdmin, performAction: this.props.performAction, addLabel: this.props.onAddLabel, onAddHighlight: this.props.onAddHighlight, onRemoveHighlight: this.props.onRemoveHighlight });
-        }
-        let deleteMessage;
-        if (this.props.isMyMessage && this.state.hovering) {
-            deleteMessage = React.createElement("a", { style: { 'backgroundColor': '#EEE', position: 'absolute', top: '0px', right: '0px' }, onClick: () => this.props.onDeleteMessage(this.props.message), href: 'javascript:void(0)' }, "(delete message)");
-        }
-        return React.createElement("li", { style: { position: 'relative' }, onMouseEnter: this.onMouseEnter, onMouseLeave: this.onMouseLeave },
-            display,
-            deleteMessage);
-    }
-    ;
-}
-exports.ChatMessageDisplay = ChatMessageDisplay;
-;
 
 
 /***/ })

@@ -26,13 +26,16 @@ const URL = require("url");
 const ArboretumChat_1 = require("./utils/ArboretumChat");
 const ShareDBDoc_1 = require("./utils/ShareDBDoc");
 const fileFunctions_1 = require("./utils/fileFunctions");
-const DEBUG = false;
+const DEBUG = true;
 const RDB_PORT = 9222;
 const HTTP_PORT = 3000;
 const OPEN_MIRROR = false;
 const USE_HTTP_PORT = true;
 const READ_PRIOR_ACTIONS = false;
 const SAVED_STATES_DIR = path.join('savedStates');
+if (DEBUG) {
+    require('longjohn');
+}
 const isMac = /^dar/.test(os_1.platform());
 const defaultBrowswerWindowOptions = {
     'remote-debugging-port': RDB_PORT,

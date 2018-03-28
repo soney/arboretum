@@ -7,7 +7,7 @@ import { DOMState } from './DOMState';
 import * as express from 'express';
 import * as http from 'http';
 import * as WebSocket from 'ws';
-import * as WebSocketJSONStream from 'websocket-json-stream';
+import {WebSocketJSONStream} from '../../utils/WebSocketJSONStream';
 import * as stream from 'stream';
 import { getColoredLogger, level, setLevel } from '../../utils/ColoredLogger';
 import { EventEmitter } from 'events';

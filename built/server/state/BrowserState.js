@@ -13,7 +13,7 @@ const _ = require("underscore");
 const fileUrl = require("file-url");
 const path = require("path");
 const TabState_1 = require("./TabState");
-const WebSocketJSONStream = require("websocket-json-stream");
+const WebSocketJSONStream_1 = require("../../utils/WebSocketJSONStream");
 const ColoredLogger_1 = require("../../utils/ColoredLogger");
 const ShareDBDoc_1 = require("../../utils/ShareDBDoc");
 const ArboretumChat_1 = require("../../utils/ArboretumChat");
@@ -170,7 +170,7 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
     }
     ;
     shareDBListen(ws) {
-        const stream = new WebSocketJSONStream(ws);
+        const stream = new WebSocketJSONStream_1.WebSocketJSONStream(ws);
         this.sdb.listen(stream);
     }
     ;
