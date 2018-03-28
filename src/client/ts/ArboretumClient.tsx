@@ -274,9 +274,7 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
                     <input type='hidden' name='workerId' value={getURLParameter('workerId')} />
                     <input type='hidden' name='hitId' value={getURLParameter('hitId')} />
                     <div className="form-group">
-                        <p>
-                            Thank you!
-                        </p>
+                        <p>You have succesfully completed this HIT. Thank you!</p>
                     </div>
                     <div className="form-actions">
                         <button type="submit" className="btn btn-form btn-primary">Done</button>

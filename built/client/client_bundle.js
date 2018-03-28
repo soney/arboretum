@@ -32080,7 +32080,7 @@ class ArboretumClient extends React.Component {
                     React.createElement("input", { type: 'hidden', name: 'workerId', value: getURLParameter('workerId') }),
                     React.createElement("input", { type: 'hidden', name: 'hitId', value: getURLParameter('hitId') }),
                     React.createElement("div", { className: "form-group" },
-                        React.createElement("p", null, "Thank you!")),
+                        React.createElement("p", null, "You have succesfully completed this HIT. Thank you!")),
                     React.createElement("div", { className: "form-actions" },
                         React.createElement("button", { type: "submit", className: "btn btn-form btn-primary" }, "Done")))),
             React.createElement(TabList_1.TabList, { sdb: this.sdb, onSelectTab: this.onSelectTab }),
