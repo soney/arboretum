@@ -24186,10 +24186,11 @@ class ArboretumAdminInterface extends React.Component {
         this.setServerActive = (active) => __awaiter(this, void 0, void 0, function* () {
             let shareURL, adminURL;
             if (active) {
-                const { hostname, port } = yield this.sendIPCMessage({ message: 'startServer' });
-                const fullShareURL = url.format({ protocol: 'http', hostname, port });
-                const fullAdminURL = url.format({ protocol: 'http', hostname, port, pathname: '/admin' });
-                const wsAddress = url.format({ protocol: 'ws', hostname, port });
+                const { protocol, hostname, port } = yield this.sendIPCMessage({ message: 'startServer' });
+                const wsProtocol = protocol === 'https' ? 'wss' : 'ws';
+                const fullShareURL = url.format({ protocol, hostname, port });
+                const fullAdminURL = url.format({ protocol, hostname, port, pathname: '/a' });
+                const wsAddress = url.format({ protocol: wsProtocol, hostname, port });
                 this.socket = new WebSocket(wsAddress);
                 this.sdb = new ShareDBDoc_1.SDB(true, this.socket);
                 [shareURL, adminURL] = yield Promise.all([

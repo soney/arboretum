@@ -32097,7 +32097,7 @@ class ArboretumClient extends React.Component {
 ArboretumClient.defaultProps = {
     url: null,
     isAdmin: false,
-    wsAddress: `ws://${window.location.hostname}:${window.location.port}`
+    wsAddress: `${window.location.protocol.toLowerCase() === 'https:' ? 'wss' : 'ws'}://${window.location.hostname}:${window.location.port}`
 };
 ArboretumClient.wsMessageID = 1;
 exports.ArboretumClient = ArboretumClient;

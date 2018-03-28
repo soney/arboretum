@@ -41,7 +41,7 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
     protected static defaultProps:ArboretumClientProps = {
         url:null,
         isAdmin:false,
-        wsAddress: `ws://${window.location.hostname}:${window.location.port}`
+        wsAddress: `${window.location.protocol.toLowerCase()==='https:' ? 'wss' : 'ws'}://${window.location.hostname}:${window.location.port}`
     };
 
     constructor(props) {

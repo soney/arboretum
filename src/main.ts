@@ -1,7 +1,8 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import * as _ from 'underscore';
 import { platform } from 'os';
-import { createServer, Server } from 'http';
+import * as http from 'http';
+import * as https from 'https';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as child from 'child_process';
@@ -20,6 +21,10 @@ import {TabDoc, BrowserDoc} from './utils/state_interfaces';
 import {SDB, SDBDoc} from './utils/ShareDBDoc';
 import {readDirectory,readFileContents,writeFileContents,makeDirectoryRecursive} from './utils/fileFunctions';
 
+const HTTPS:boolean = false;
+const CERTS_DIRECTORY:string = path.resolve(__dirname, '..', 'certificates');
+const CERT_FILENAME:string = 'cert.pem';
+const PRIVATEKEY_FILENAME:string = 'privkey.pem';
 const DEBUG:boolean = false;
 const RDB_PORT: number = 9222;
 const HTTP_PORT: number = 3000;
@@ -90,7 +95,31 @@ app.on('ready', () => {
 
 
 const expressApp = express();
-const server:Server = createServer(expressApp);
+let server:http.Server|https.Server;
+if(HTTPS) {
+    const certFilename = path.join(CERTS_DIRECTORY, CERT_FILENAME);
+    const pkFilename = path.join(CERTS_DIRECTORY, PRIVATEKEY_FILENAME);
+    let cert:string;
+    let key:string;
+    try {
+        cert = fs.readFileSync(certFilename, 'utf8');
+    } catch(e) {
+        console.error(`Could not read certificate file ${certFilename}`);
+        process.exit(1);
+        // throw(e);
+    }
+    try {
+        key = fs.readFileSync(pkFilename, 'utf8');
+    } catch(e) {
+        console.error(`Could not read certificate file ${pkFilename}`);
+        process.exit(1);
+        // throw(e);
+    }
+
+    server = https.createServer({key, cert}, expressApp);
+} else {
+    server = http.createServer(expressApp);
+}
 const wss = new WebSocket.Server({server});
 const browserState = new BrowserState(wss, {
     port: RDB_PORT,
@@ -178,15 +207,16 @@ function getIPAddress(): string {
     return ip.address();
 };
 
-let serverState:{running:boolean, hostname:string, port:number} = {
+let serverState:{protocol:string, running:boolean, hostname:string, port:number} = {
     running: false,
     hostname: '',
-    port: -1
+    port: -1,
+    protocol: null
 };
-async function startServer(): Promise<{hostname:string,port:number}> {
+async function startServer(): Promise<{protocol:string, hostname:string,port:number}> {
     if(serverState.running) {
-        const {hostname, port} = serverState;
-        return {hostname, port};
+        const { protocol, hostname, port} = serverState;
+        return { protocol, hostname, port};
     } else {
         const port = await new Promise<number>((resolve, reject) => {
             const options:any = {};
@@ -198,15 +228,15 @@ async function startServer(): Promise<{hostname:string,port:number}> {
             });
         });
         const hostname = getIPAddress();
+        const protocol = HTTPS ? 'https:' : 'http:';
         serverState = {
             running:true,
-            hostname: hostname,
-            port: port
+            protocol, hostname, port
         };
         if (OPEN_MIRROR) {
-            opn(`http://${hostname}:${port}`, { app: 'google-chrome' }); // open browser
+            opn(`${protocol}//${hostname}:${port}`, { app: 'google-chrome' }); // open browser
         }
-        return({ hostname, port });
+        return({ protocol, hostname, port });
     }
 };
 async function stopServer(): Promise<void> {
@@ -222,7 +252,8 @@ async function stopServer(): Promise<void> {
     serverState = {
         running: false,
         hostname: '',
-        port: -1
+        port: -1,
+        protocol: null
     }
 };
 
@@ -254,9 +285,9 @@ ipcMain.on('asynchronous-message', async (event, messageID:number, arg:{message:
     if (message === 'startServer') {
         const info = await startServer();
         event.sender.send(replyChannel, info);
-        console.log(chalk.bgWhite.bold.black(`Listening at ${info.hostname} port ${info.port}`));
+        console.log(chalk.bgWhite.bold.black(`Listening at ${info.protocol}//${info.hostname}:${info.port}`));
         if(OPEN_MIRROR) {
-            chromeProcess = await opn(`http://${info.hostname}:${info.port}/`, { app: 'google-chrome' }); // open browser
+            chromeProcess = await opn(`${info.protocol}//${info.hostname}:${info.port}/`, { app: 'google-chrome' }); // open browser
         }
         ipcMain.emit('server-active', {active:true});
     } else if (message === 'stopServer') {

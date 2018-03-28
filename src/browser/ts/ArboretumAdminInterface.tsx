@@ -71,10 +71,11 @@ export class ArboretumAdminInterface extends React.Component<ArboretumAdminProps
     private setServerActive = async (active:boolean):Promise<SetServerActiveValue> => {
         let shareURL:string, adminURL:string;
         if(active) {
-            const {hostname, port} = await this.sendIPCMessage({message: 'startServer'});
-            const fullShareURL = url.format({ protocol:'http', hostname, port });
-            const fullAdminURL = url.format({ protocol:'http', hostname, port, pathname:'/admin' });
-            const wsAddress    = url.format({ protocol:'ws', hostname, port });
+            const {protocol, hostname, port} = await this.sendIPCMessage({message: 'startServer'});
+            const wsProtocol = protocol === 'https' ? 'wss' : 'ws';
+            const fullShareURL = url.format({ protocol, hostname, port });
+            const fullAdminURL = url.format({ protocol, hostname, port, pathname:'/a' });
+            const wsAddress    = url.format({ protocol: wsProtocol, hostname, port });
             this.socket = new WebSocket(wsAddress);
             this.sdb = new SDB(true, this.socket);
 

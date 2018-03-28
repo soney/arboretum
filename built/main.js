@@ -11,7 +11,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
 const _ = require("underscore");
 const os_1 = require("os");
-const http_1 = require("http");
+const http = require("http");
+const https = require("https");
 const fs = require("fs");
 const path = require("path");
 const express = require("express");
@@ -25,6 +26,10 @@ const request = require("request");
 const URL = require("url");
 const ArboretumChat_1 = require("./utils/ArboretumChat");
 const fileFunctions_1 = require("./utils/fileFunctions");
+const HTTPS = false;
+const CERTS_DIRECTORY = path.resolve(__dirname, '..', 'certificates');
+const CERT_FILENAME = 'cert.pem';
+const PRIVATEKEY_FILENAME = 'privkey.pem';
 const DEBUG = false;
 const RDB_PORT = 9222;
 const HTTP_PORT = 3000;
@@ -88,7 +93,33 @@ electron_1.app.on('ready', () => {
     adminWindow = createAdminWindow();
 });
 const expressApp = express();
-const server = http_1.createServer(expressApp);
+let server;
+if (HTTPS) {
+    const certFilename = path.join(CERTS_DIRECTORY, CERT_FILENAME);
+    const pkFilename = path.join(CERTS_DIRECTORY, PRIVATEKEY_FILENAME);
+    let cert;
+    let key;
+    try {
+        cert = fs.readFileSync(certFilename, 'utf8');
+    }
+    catch (e) {
+        console.error(`Could not read certificate file ${certFilename}`);
+        process.exit(1);
+        // throw(e);
+    }
+    try {
+        key = fs.readFileSync(pkFilename, 'utf8');
+    }
+    catch (e) {
+        console.error(`Could not read certificate file ${pkFilename}`);
+        process.exit(1);
+        // throw(e);
+    }
+    server = https.createServer({ key, cert }, expressApp);
+}
+else {
+    server = http.createServer(expressApp);
+}
 const wss = new WebSocket.Server({ server });
 const browserState = new BrowserState_1.BrowserState(wss, {
     port: RDB_PORT,
@@ -183,13 +214,14 @@ function getIPAddress() {
 let serverState = {
     running: false,
     hostname: '',
-    port: -1
+    port: -1,
+    protocol: null
 };
 function startServer() {
     return __awaiter(this, void 0, void 0, function* () {
         if (serverState.running) {
-            const { hostname, port } = serverState;
-            return { hostname, port };
+            const { protocol, hostname, port } = serverState;
+            return { protocol, hostname, port };
         }
         else {
             const port = yield new Promise((resolve, reject) => {
@@ -204,15 +236,15 @@ function startServer() {
                 });
             });
             const hostname = getIPAddress();
+            const protocol = HTTPS ? 'https:' : 'http:';
             serverState = {
                 running: true,
-                hostname: hostname,
-                port: port
+                protocol, hostname, port
             };
             if (OPEN_MIRROR) {
-                opn(`http://${hostname}:${port}`, { app: 'google-chrome' }); // open browser
+                opn(`${protocol}//${hostname}:${port}`, { app: 'google-chrome' }); // open browser
             }
-            return ({ hostname, port });
+            return ({ protocol, hostname, port });
         }
     });
 }
@@ -231,7 +263,8 @@ function stopServer() {
         serverState = {
             running: false,
             hostname: '',
-            port: -1
+            port: -1,
+            protocol: null
         };
     });
 }
@@ -269,9 +302,9 @@ electron_1.ipcMain.on('asynchronous-message', (event, messageID, arg) => __await
     if (message === 'startServer') {
         const info = yield startServer();
         event.sender.send(replyChannel, info);
-        console.log(chalk_1.default.bgWhite.bold.black(`Listening at ${info.hostname} port ${info.port}`));
+        console.log(chalk_1.default.bgWhite.bold.black(`Listening at ${info.protocol}//${info.hostname}:${info.port}`));
         if (OPEN_MIRROR) {
-            chromeProcess = yield opn(`http://${info.hostname}:${info.port}/`, { app: 'google-chrome' }); // open browser
+            chromeProcess = yield opn(`${info.protocol}//${info.hostname}:${info.port}/`, { app: 'google-chrome' }); // open browser
         }
         electron_1.ipcMain.emit('server-active', { active: true });
     }
