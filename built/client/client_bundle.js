@@ -31942,15 +31942,21 @@ class ArboretumClient extends React.Component {
             }
         };
         this.onAction = (a, action) => {
-            if (this.props.isAdmin) {
-                this.sendWebsocketMessage({
-                    message: 'pageAction',
-                    data: { a, action }
-                });
+            if (a === ArboretumChat_1.PAMAction.FOCUS) {
+                const relevantNodeIDs = ArboretumChat_1.ArboretumChat.getRelevantNodeIDs(action);
+                this.clientTab.focusOn(relevantNodeIDs);
             }
             else {
-                if (a === ArboretumChat_1.PAMAction.ADD_LABEL) {
-                    this.onLabel(action);
+                if (this.props.isAdmin) {
+                    this.sendWebsocketMessage({
+                        message: 'pageAction',
+                        data: { a, action }
+                    });
+                }
+                else {
+                    if (a === ArboretumChat_1.PAMAction.ADD_LABEL) {
+                        this.onLabel(action);
+                    }
                 }
             }
         };
@@ -35354,6 +35360,14 @@ class ClientTab extends React.Component {
     ;
     getTabID() { return this.state.tabID; }
     ;
+    focusOn(nodeIDs) {
+        if (nodeIDs.length > 0) {
+            const nodeID = nodeIDs[0];
+            const node = this.getNode(nodeID);
+            node.focus();
+        }
+    }
+    ;
     hasTabID() { return !!this.getTabID(); }
     ;
     setTabID(tabID) {
@@ -35680,6 +35694,8 @@ class ClientNode extends TypedEventEmitter_1.TypedEventEmitter {
         });
     }
     ;
+    focus() { }
+    ;
     highlight() { }
     ;
     addHighlight(highlightColor) { }
@@ -36001,6 +36017,13 @@ class ClientElementNode extends ClientNode {
         this.removeEventListeners();
         if (this.contentDocument) {
             this.contentDocument.destroy();
+        }
+    }
+    ;
+    focus() {
+        console.log(this.element);
+        if (this.element instanceof HTMLElement) {
+            this.element.focus();
         }
     }
     ;

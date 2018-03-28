@@ -91,6 +91,7 @@ export abstract class ClientNode extends TypedEventEmitter {
             c.destroy();
         });
     };
+    public focus():void { };
     public highlight():void { };
     public addHighlight(highlightColor:string):void {};
     public removeHighlight():void {};
@@ -359,6 +360,12 @@ export class ClientElementNode extends ClientNode {
         this.removeEventListeners();
         if(this.contentDocument) {
             this.contentDocument.destroy();
+        }
+    };
+    public focus():void {
+        console.log(this.element);
+        if(this.element instanceof HTMLElement) {
+            this.element.focus();
         }
     };
 };

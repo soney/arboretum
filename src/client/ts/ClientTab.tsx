@@ -46,6 +46,13 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
         // this.setTabID(this.props.tabID);
     };
     public getTabID():CRI.TabID { return this.state.tabID; };
+    public focusOn(nodeIDs:CRI.NodeID[]):void {
+        if(nodeIDs.length > 0) {
+            const nodeID:CRI.NodeID = nodeIDs[0];
+            const node = this.getNode(nodeID);
+            node.focus();
+        }
+    };
     private hasTabID():boolean { return !!this.getTabID(); };
     public async setTabID(tabID:CRI.TabID):Promise<void> {
         await new Promise((resolve, reject) => {

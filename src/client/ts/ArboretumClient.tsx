@@ -182,14 +182,19 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
         }
     };
     private onAction = (a:PAMAction, action:PageAction):void => {
-        if(this.props.isAdmin) {
-            this.sendWebsocketMessage({
-                message: 'pageAction',
-                data: {a, action}
-            });
+        if(a === PAMAction.FOCUS) {
+            const relevantNodeIDs = ArboretumChat.getRelevantNodeIDs(action);
+            this.clientTab.focusOn(relevantNodeIDs);
         } else {
-            if(a === PAMAction.ADD_LABEL) {
-                this.onLabel(action);
+            if(this.props.isAdmin) {
+                this.sendWebsocketMessage({
+                    message: 'pageAction',
+                    data: {a, action}
+                });
+            } else {
+                if(a === PAMAction.ADD_LABEL) {
+                    this.onLabel(action);
+                }
             }
         }
     }
