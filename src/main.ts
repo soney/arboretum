@@ -96,6 +96,9 @@ const browserState = new BrowserState(sdb, {
 const expressApp = express();
 const server:Server = createServer(expressApp);
 const wss = new WebSocket.Server({server});
+wss.on('error', (err) => {
+    console.error(err);
+});
 wss.on('connection', (ws:WebSocket, req) => {
      browserState.shareDBListen(ws);
     ws.on('message', (event) => {
