@@ -33,7 +33,7 @@ class ChatMessageDisplay extends React.Component {
         }
         let deleteMessage;
         if (this.props.isMyMessage && this.state.hovering) {
-            deleteMessage = React.createElement("a", { style: { position: 'absolute', top: '0px', right: '0px' }, onClick: () => this.props.onDeleteMessage(this.props.message), href: 'javascript:void' }, "(delete message)");
+            deleteMessage = React.createElement("a", { style: { 'backgroundColor': '#EEE', position: 'absolute', top: '0px', right: '0px' }, onClick: () => this.props.onDeleteMessage(this.props.message), href: 'javascript:void(0)' }, "(delete message)");
         }
         return React.createElement("li", { style: { position: 'relative' }, onMouseEnter: this.onMouseEnter, onMouseLeave: this.onMouseLeave },
             display,
