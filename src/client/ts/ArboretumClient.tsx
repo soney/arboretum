@@ -58,9 +58,10 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
         this.socket = new WebSocket(this.props.wsAddress);
         this.socket.addEventListener('message', (event) => {
             const messageData = JSON.parse(event.data);
-            console.log(messageData);
             if(messageData.message === 'taskDone') {
-                this.setState({workerDone:true});
+                if(!this.props.isAdmin) {
+                    this.setState({workerDone:true});
+                }
             }
         });
         this.sdb = new SDB(true, this.socket);
@@ -243,6 +244,8 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
     private closeModal():void {
         this.setState({modalIsOpen:false});
     }
+    private onSubmitDone = (event:React.FormEvent<HTMLElement>):void => {
+    };
 
     public render():React.ReactNode {
         const navigationBar:Array<JSX.Element> = this.props.hideNavBar ? [] : [
@@ -266,7 +269,7 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
                 </form>
             </Modal>
             <Modal isOpen={this.state.workerDone}>
-                <form className='usernameInput' method='POST' action={getURLParameter('turkSubmitTo')}>
+                <form className='usernameInput' method='POST' onSubmit={this.onSubmitDone}  action={getURLParameter('turkSubmitTo')}>
                     <input type='hidden' name='assignmentId' value={getURLParameter('assignmentId')} />
                     <input type='hidden' name='workerId' value={getURLParameter('workerId')} />
                     <input type='hidden' name='hitId' value={getURLParameter('hitId')} />

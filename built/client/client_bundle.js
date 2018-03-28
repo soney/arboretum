@@ -31989,6 +31989,8 @@ class ArboretumClient extends React.Component {
                 this.closeModal();
             }
         });
+        this.onSubmitDone = (event) => {
+        };
         this.state = {
             enteringLabel: false,
             modalIsOpen: !this.props.username,
@@ -32001,9 +32003,10 @@ class ArboretumClient extends React.Component {
         this.socket = new WebSocket(this.props.wsAddress);
         this.socket.addEventListener('message', (event) => {
             const messageData = JSON.parse(event.data);
-            console.log(messageData);
             if (messageData.message === 'taskDone') {
-                this.setState({ workerDone: true });
+                if (!this.props.isAdmin) {
+                    this.setState({ workerDone: true });
+                }
             }
         });
         this.sdb = new ShareDBDoc_1.SDB(true, this.socket);
@@ -32072,7 +32075,7 @@ class ArboretumClient extends React.Component {
                     React.createElement("div", { className: "form-actions" },
                         React.createElement("button", { type: "submit", className: "btn btn-form btn-primary" }, "OK")))),
             React.createElement(Modal, { isOpen: this.state.workerDone },
-                React.createElement("form", { className: 'usernameInput', method: 'POST', action: getURLParameter('turkSubmitTo') },
+                React.createElement("form", { className: 'usernameInput', method: 'POST', onSubmit: this.onSubmitDone, action: getURLParameter('turkSubmitTo') },
                     React.createElement("input", { type: 'hidden', name: 'assignmentId', value: getURLParameter('assignmentId') }),
                     React.createElement("input", { type: 'hidden', name: 'workerId', value: getURLParameter('workerId') }),
                     React.createElement("input", { type: 'hidden', name: 'hitId', value: getURLParameter('hitId') }),
