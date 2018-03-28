@@ -36021,7 +36021,6 @@ class ClientElementNode extends ClientNode {
     }
     ;
     focus() {
-        console.log(this.element);
         if (this.element instanceof HTMLElement) {
             this.element.focus();
         }

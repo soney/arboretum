@@ -363,7 +363,6 @@ export class ClientElementNode extends ClientNode {
         }
     };
     public focus():void {
-        console.log(this.element);
         if(this.element instanceof HTMLElement) {
             this.element.focus();
         }
