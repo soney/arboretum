@@ -27,9 +27,9 @@ const log = ColoredLogger_1.getColoredLogger('red');
 ;
 const projectFileURLPath = fileUrl(path.join(path.resolve(__dirname, '..', '..'), 'browser'));
 class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
-    constructor(sdb, extraOptions) {
+    constructor(wss, extraOptions) {
         super();
-        this.sdb = sdb;
+        this.wss = wss;
         this.actionPerformed = new TypedEventEmitter_1.RegisteredEvent();
         this.tabs = new Map();
         this.options = {
@@ -42,6 +42,7 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
         };
         this.sessionID = guid_1.guid();
         this.performedActions = [];
+        this.sdb = new ShareDBDoc_1.SDB(false);
         _.extend(this.options, extraOptions);
         this.initialized = this.initialize();
     }
@@ -62,11 +63,13 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
     ;
     initialize() {
         return __awaiter(this, void 0, void 0, function* () {
-            this.sdb = new ShareDBDoc_1.SDB(false);
             this.doc = this.sdb.get('arboretum', 'browser');
             yield this.doc.createIfEmpty({
                 tabs: {},
                 selectedTab: null
+            });
+            this.wss.on('connection', (ws, req) => {
+                this.shareDBListen(ws);
             });
             this.markAttachedToShareDBDoc();
             this.chat = new ArboretumChat_1.ArboretumChat(this.sdb, this);
@@ -74,6 +77,14 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
             if (this.showDebug()) {
                 log.debug('=== CREATED BROWSER ===');
             }
+        });
+    }
+    ;
+    emitTaskDone() {
+        this.wss.clients.forEach((ws) => {
+            ws.send(JSON.stringify({
+                message: 'taskDone'
+            }));
         });
     }
     ;

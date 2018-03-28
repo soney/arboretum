@@ -24,7 +24,6 @@ const opn = require("opn");
 const request = require("request");
 const URL = require("url");
 const ArboretumChat_1 = require("./utils/ArboretumChat");
-const ShareDBDoc_1 = require("./utils/ShareDBDoc");
 const fileFunctions_1 = require("./utils/fileFunctions");
 const DEBUG = false;
 const RDB_PORT = 9222;
@@ -88,22 +87,19 @@ electron_1.app.on('ready', () => {
     browserWindow = createBrowserWindow();
     adminWindow = createAdminWindow();
 });
-const sdb = new ShareDBDoc_1.SDB(false);
-// const browserState = null;
-const browserState = new BrowserState_1.BrowserState(sdb, {
+const expressApp = express();
+const server = http_1.createServer(expressApp);
+const wss = new WebSocket.Server({ server });
+const browserState = new BrowserState_1.BrowserState(wss, {
     port: RDB_PORT,
     priorActions: READ_PRIOR_ACTIONS,
     showDebug: DEBUG,
     suppressErrors: !DEBUG
 });
-const expressApp = express();
-const server = http_1.createServer(expressApp);
-const wss = new WebSocket.Server({ server });
 wss.on('error', (err) => {
     console.error(err);
 });
 wss.on('connection', (ws, req) => {
-    browserState.shareDBListen(ws);
     ws.on('message', (event) => {
         const messageData = JSON.parse(event);
         if (!messageData.a) {
@@ -293,6 +289,12 @@ electron_1.ipcMain.on('asynchronous-message', (event, messageID, arg) => __await
         }
         else {
             event.sender.send(replyChannel, 'not ok');
+        }
+    }
+    else if (message === 'chatCommand') {
+        const { command } = data;
+        if (command === 'done') {
+            browserState.emitTaskDone();
         }
     }
     else {

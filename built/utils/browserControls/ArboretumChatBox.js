@@ -41,13 +41,23 @@ class ArboretumChatBox extends React.Component {
             const { keyCode, ctrlKey, altKey, metaKey, shiftKey } = event;
             if (keyCode === ENTER_KEY && !(ctrlKey || altKey || metaKey || shiftKey)) {
                 event.preventDefault();
-                const { chatText } = this.state;
+                let { chatText } = this.state;
                 if (chatText !== '') {
-                    if (this.props.onSendMessage) {
-                        this.props.onSendMessage(chatText);
+                    let isCommand = chatText[0] === '/';
+                    if (chatText.slice(0, 2) === '\\/') {
+                        chatText = `/${chatText.slice(1)}`;
                     }
-                    if (this.chat) {
-                        this.chat.addTextMessage(chatText);
+                    if (isCommand) {
+                        const command = chatText.slice(1);
+                        this.chat.doCommand(command);
+                    }
+                    else {
+                        if (this.props.onSendMessage) {
+                            this.props.onSendMessage(chatText);
+                        }
+                        if (this.chat) {
+                            this.chat.addTextMessage(chatText);
+                        }
                     }
                     this.setState({ chatText: '' });
                 }
@@ -102,6 +112,11 @@ class ArboretumChatBox extends React.Component {
         return __awaiter(this, void 0, void 0, function* () {
             this.sdb = sdb;
             this.chat = new ArboretumChat_1.ArboretumChat(this.sdb);
+            this.chat.commandIssued.addListener((event) => {
+                if (this.props.onCommand) {
+                    this.props.onCommand(event);
+                }
+            });
             this.chat.ready.addListener(() => __awaiter(this, void 0, void 0, function* () {
                 if (this.props.joinOnStart) {
                     yield this.chat.join(this.props.username);

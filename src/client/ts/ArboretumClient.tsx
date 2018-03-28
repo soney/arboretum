@@ -24,7 +24,8 @@ type ArboretumClientState = {
     modalIsOpen:boolean,
     usernameInputValue:string,
     usernameValid:boolean,
-    usernameFeedback:string
+    usernameFeedback:string,
+    workerDone:boolean
 };
 
 export class ArboretumClient extends React.Component<ArboretumClientProps, ArboretumClientState> {
@@ -50,10 +51,18 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
             modalIsOpen:!this.props.username,
             usernameInputValue:'',
             usernameValid:false,
-            usernameFeedback:''
+            usernameFeedback:'',
+            workerDone:false
         };
         this.username = this.props.username;
         this.socket = new WebSocket(this.props.wsAddress);
+        this.socket.addEventListener('message', (event) => {
+            const messageData = JSON.parse(event.data);
+            console.log(messageData);
+            if(messageData.message === 'taskDone') {
+                this.setState({workerDone:true});
+            }
+        });
         this.sdb = new SDB(true, this.socket);
     };
     private static wsMessageID=1;
@@ -256,6 +265,21 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
                     </div>
                 </form>
             </Modal>
+            <Modal isOpen={this.state.workerDone}>
+                <form className='usernameInput' method='POST' action={getURLParameter('turkSubmitTo')}>
+                    <input type='hidden' name='assignmentId' value={getURLParameter('assignmentId')} />
+                    <input type='hidden' name='workerId' value={getURLParameter('workerId')} />
+                    <input type='hidden' name='hitId' value={getURLParameter('hitId')} />
+                    <div className="form-group">
+                        <p>
+                            Thank you!
+                        </p>
+                    </div>
+                    <div className="form-actions">
+                        <button type="submit" className="btn btn-form btn-primary">Done</button>
+                    </div>
+                </form>
+            </Modal>
             <TabList sdb={this.sdb} onSelectTab={this.onSelectTab} />
             {navigationBar}
             <div className="window-content">
@@ -271,3 +295,14 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
         </div>;
     };
 };
+
+function getURLParameter(sParam:string):string {
+    const sPageURL = window.location.search.substring(1);
+    const sURLVariables = sPageURL.split('&');
+    for (let i = 0; i < sURLVariables.length; i++) {
+        const sParameterName = sURLVariables[i].split('=');
+        if (sParameterName[0] == sParam) {
+            return sParameterName[1]
+        }
+    }
+}

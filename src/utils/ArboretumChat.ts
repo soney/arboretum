@@ -13,6 +13,8 @@ export enum PageActionState { NOT_PERFORMED, PERFORMED, REJECTED };
 export type PageActionType ='navigate'|'goBack'|'goForward'|'mouse_event'|'keyboard_event'|'element_event'|'focus_event'|'reload'|'getLabel'|'setLabel';
 export enum PAMAction { ACCEPT, REJECT, FOCUS, REQUEST_LABEL, ADD_LABEL};
 
+export type ChatCommandType ='help'|'done'|'setname';
+
 export type UserID = string;
 export interface User {
     id:UserID,
@@ -67,6 +69,9 @@ export interface UserNameChangedEvent {
 export interface MessageRemovedEvent {
     message:Message
 };
+export interface ChatCommandEvent {
+    command:ChatCommandType
+};
 
 export interface ReadyEvent { };
 export interface PAMStateChanged { };
@@ -86,6 +91,7 @@ export class ArboretumChat extends TypedEventEmitter {
     public messageAdded = this.registerEvent<MessageAddedEvent>();
     public messageRemoved = this.registerEvent<MessageRemovedEvent>();
     public pamStateChanged = this.registerEvent<PAMStateChanged>();
+    public commandIssued = this.registerEvent<ChatCommandEvent>();
     public ready = this.registerEvent<ReadyEvent>();
     constructor(private sdb:SDB, private browserState?:BrowserState) {
         super();
@@ -467,5 +473,13 @@ export class ArboretumChat extends TypedEventEmitter {
     };
     public async stringify():Promise<string> {
         return JSON.stringify(await this.getData());
+    };
+    public doCommand(command:string):boolean {
+        if(command === 'done') {
+            this.commandIssued.emit({command:'done'});
+            return true;
+        } else {
+            return false;
+        }
     };
 };

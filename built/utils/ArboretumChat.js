@@ -50,6 +50,7 @@ var PAMAction;
 ;
 ;
 ;
+;
 class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
     constructor(sdb, browserState) {
         super();
@@ -62,6 +63,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         this.messageAdded = this.registerEvent();
         this.messageRemoved = this.registerEvent();
         this.pamStateChanged = this.registerEvent();
+        this.commandIssued = this.registerEvent();
         this.ready = this.registerEvent();
         if (this.sdb.isServer()) {
             this.sdb.use('op', (request, next) => {
@@ -554,6 +556,16 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         return __awaiter(this, void 0, void 0, function* () {
             return JSON.stringify(yield this.getData());
         });
+    }
+    ;
+    doCommand(command) {
+        if (command === 'done') {
+            this.commandIssued.emit({ command: 'done' });
+            return true;
+        }
+        else {
+            return false;
+        }
     }
     ;
 }

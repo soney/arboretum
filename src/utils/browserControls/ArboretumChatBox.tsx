@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {SDB, SDBDoc} from '../ShareDBDoc';
-import {ArboretumChat, Message, User, TextMessage, PageActionMessage, PageAction, PageActionState, MessageAddedEvent, PAMAction} from '../ArboretumChat';
+import {ArboretumChat, ChatCommandEvent, ChatCommandType, Message, User, TextMessage, PageActionMessage, PageAction, PageActionState, MessageAddedEvent, PAMAction} from '../ArboretumChat';
 import {RegisteredEvent} from '../TypedEventEmitter';
 import {PageActionMessageDisplay} from './PageActionMessage/PageActionMessageDisplay';
 import {ChatMessageDisplay} from './ArboretumChatMessage';
@@ -14,6 +14,7 @@ type ArboretumChatProps = {
     chatText?:string,
     sdb?:SDB,
     username?:string,
+    onCommand?:(event:ChatCommandEvent) => void,
     onAction?:(a:PAMAction, action:PageAction) => void,
     onAddHighlight?:(nodeIDs:Array<CRI.NodeID>, color:string)=>void,
     onRemoveHighlight?:(nodeIDs:Array<CRI.NodeID>)=>void,
@@ -55,6 +56,11 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
     public async setSDB(sdb:SDB):Promise<void> {
         this.sdb = sdb;
         this.chat = new ArboretumChat(this.sdb);
+        this.chat.commandIssued.addListener((event) => {
+            if(this.props.onCommand) {
+                this.props.onCommand(event);
+            }
+        });
 
         this.chat.ready.addListener(async () => {
             if(this.props.joinOnStart) {
@@ -98,13 +104,23 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
         const {keyCode, ctrlKey, altKey, metaKey, shiftKey} = event;
         if(keyCode === ENTER_KEY && !(ctrlKey || altKey || metaKey || shiftKey)) {
             event.preventDefault();
-            const {chatText} = this.state;
+            let {chatText} = this.state;
             if(chatText !== '') {
-                if(this.props.onSendMessage) {
-                    this.props.onSendMessage(chatText);
+                let isCommand:boolean = chatText[0] === '/';
+                if(chatText.slice(0, 2) === '\\/') {
+                    chatText = `/${chatText.slice(1)}`;
                 }
-                if(this.chat) {
-                    this.chat.addTextMessage(chatText);
+
+                if(isCommand) {
+                    const command = chatText.slice(1);
+                    this.chat.doCommand(command);
+                } else {
+                    if(this.props.onSendMessage) {
+                        this.props.onSendMessage(chatText);
+                    }
+                    if(this.chat) {
+                        this.chat.addTextMessage(chatText);
+                    }
                 }
                 this.setState({chatText:''});
             }

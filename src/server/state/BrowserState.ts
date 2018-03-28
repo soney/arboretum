@@ -13,7 +13,7 @@ import { getColoredLogger, level, setLevel } from '../../utils/ColoredLogger';
 import { EventEmitter } from 'events';
 import { ipcMain } from 'electron';
 import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
-import {ArboretumChat, PageActionMessage, PageAction} from '../../utils/ArboretumChat';
+import {ArboretumChat, PageActionMessage, PageAction, ChatCommandEvent, ChatCommandType} from '../../utils/ArboretumChat';
 import * as ShareDB from 'sharedb';
 import {BrowserDoc,TabDoc} from '../../utils/state_interfaces';
 import * as timers from 'timers';
@@ -56,7 +56,9 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
     private initialized:Promise<void>;
     private sessionID:string = guid();
     private performedActions:Array<ActionPerformed> = [];
-    constructor(private sdb:SDB, extraOptions?:BrowserOptions) {
+    private sdb:SDB = new SDB(false);
+
+    constructor(private wss:WebSocket.Server, extraOptions?:BrowserOptions) {
         super();
         _.extend(this.options, extraOptions);
         this.initialized = this.initialize();
@@ -70,11 +72,13 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
         }
     };
     private async initialize():Promise<void> {
-        this.sdb = new SDB(false);
         this.doc = this.sdb.get<BrowserDoc>('arboretum', 'browser');
         await this.doc.createIfEmpty({
             tabs: {},
             selectedTab:null
+        });
+        this.wss.on('connection', (ws:WebSocket, req) => {
+            this.shareDBListen(ws);
         });
         this.markAttachedToShareDBDoc();
         this.chat = new ArboretumChat(this.sdb, this);
@@ -82,6 +86,13 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
         if(this.showDebug()) {
             log.debug('=== CREATED BROWSER ===');
         }
+    };
+    public emitTaskDone():void {
+        this.wss.clients.forEach((ws:WebSocket) => {
+            ws.send(JSON.stringify({
+                message: 'taskDone'
+            }));
+        });
     };
     public showingPriorActions():boolean {
         return this.options.priorActions;

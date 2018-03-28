@@ -88,23 +88,20 @@ app.on('ready', () => {
     adminWindow = createAdminWindow();
 });
 
-const sdb:SDB = new SDB(false);
-// const browserState = null;
-const browserState = new BrowserState(sdb, {
+
+const expressApp = express();
+const server:Server = createServer(expressApp);
+const wss = new WebSocket.Server({server});
+const browserState = new BrowserState(wss, {
     port: RDB_PORT,
     priorActions: READ_PRIOR_ACTIONS,
     showDebug: DEBUG,
     suppressErrors: !DEBUG
 });
-
-const expressApp = express();
-const server:Server = createServer(expressApp);
-const wss = new WebSocket.Server({server});
 wss.on('error', (err) => {
     console.error(err);
 });
 wss.on('connection', (ws:WebSocket, req) => {
-     browserState.shareDBListen(ws);
     ws.on('message', (event) => {
         const messageData = JSON.parse(event as string);
         if(!messageData.a) { // is a shareDB message
@@ -274,6 +271,11 @@ ipcMain.on('asynchronous-message', async (event, messageID:number, arg:{message:
             event.sender.send(replyChannel, 'ok');
         } else {
             event.sender.send(replyChannel, 'not ok');
+        }
+    } else if (message === 'chatCommand') {
+        const {command} = data;
+        if(command === 'done') {
+            browserState.emitTaskDone();
         }
     } else {
         event.sender.send(replyChannel, 'not recognized');

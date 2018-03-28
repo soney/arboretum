@@ -9,7 +9,7 @@ import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
 import Switch from 'react-switch';
 import * as ShareDB from 'sharedb';
 import {BrowserDoc} from '../../utils/state_interfaces';
-import {ArboretumChat, Message, User, TextMessage, PageActionMessage, PageAction, PAMAction} from '../../utils/ArboretumChat';
+import {ArboretumChat, ChatCommandEvent, Message, User, TextMessage, PageActionMessage, PageAction, PAMAction} from '../../utils/ArboretumChat';
 import {copyToClipboard} from '../../utils/copyToClipboard';
 import {ArboretumChatBox} from '../../utils/browserControls/ArboretumChatBox';
 import {ArboretumSuggestedActions} from './ArboretumSuggestedActions';
@@ -74,7 +74,7 @@ export class ArboretumAdminInterface extends React.Component<ArboretumAdminProps
             const {hostname, port} = await this.sendIPCMessage({message: 'startServer'});
             const fullShareURL = url.format({ protocol:'http', hostname, port });
             const fullAdminURL = url.format({ protocol:'http', hostname, port, pathname:'/admin' });
-            const wsAddress = url.format({ protocol:'ws', hostname, port });
+            const wsAddress    = url.format({ protocol:'ws', hostname, port });
             this.socket = new WebSocket(wsAddress);
             this.sdb = new SDB(true, this.socket);
 
@@ -188,6 +188,12 @@ export class ArboretumAdminInterface extends React.Component<ArboretumAdminProps
     private removeHighlight = (nodeIds:Array<CRI.NodeID>):void => {
         // console.log(nodeIds);
     };
+    private onCommand = (event:ChatCommandEvent) => {
+        this.sendIPCMessage({
+            message:'chatCommand',
+            data: event
+        });
+    };
     public async componentWillUnmount():Promise<void> {
         await this.chatbox.leave();
     };
@@ -216,7 +222,7 @@ export class ArboretumAdminInterface extends React.Component<ArboretumAdminProps
                 </tbody>
             </table>
             <ArboretumSuggestedActions ref={(el)=>{this.suggestedActions=el;}} onAction={this.onAction} />
-            <ArboretumChatBox isAdmin={true} sdb={this.sdb} joinOnStart={true} username="Admin" ref={this.chatBoxRef} onSendMessage={this.sendMessage} onAction={this.onAction} onAddHighlight={this.addHighlight} onRemoveHighlight={this.removeHighlight} />
+            <ArboretumChatBox onCommand={this.onCommand} isAdmin={true} sdb={this.sdb} joinOnStart={true} username="Admin" ref={this.chatBoxRef} onSendMessage={this.sendMessage} onAction={this.onAction} onAddHighlight={this.addHighlight} onRemoveHighlight={this.removeHighlight} />
         </div>;
     };
 };

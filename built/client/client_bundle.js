@@ -4112,6 +4112,7 @@ var PAMAction;
 ;
 ;
 ;
+;
 class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
     constructor(sdb, browserState) {
         super();
@@ -4124,6 +4125,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         this.messageAdded = this.registerEvent();
         this.messageRemoved = this.registerEvent();
         this.pamStateChanged = this.registerEvent();
+        this.commandIssued = this.registerEvent();
         this.ready = this.registerEvent();
         if (this.sdb.isServer()) {
             this.sdb.use('op', (request, next) => {
@@ -4616,6 +4618,16 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         return __awaiter(this, void 0, void 0, function* () {
             return JSON.stringify(yield this.getData());
         });
+    }
+    ;
+    doCommand(command) {
+        if (command === 'done') {
+            this.commandIssued.emit({ command: 'done' });
+            return true;
+        }
+        else {
+            return false;
+        }
     }
     ;
 }
@@ -31982,10 +31994,18 @@ class ArboretumClient extends React.Component {
             modalIsOpen: !this.props.username,
             usernameInputValue: '',
             usernameValid: false,
-            usernameFeedback: ''
+            usernameFeedback: '',
+            workerDone: false
         };
         this.username = this.props.username;
         this.socket = new WebSocket(this.props.wsAddress);
+        this.socket.addEventListener('message', (event) => {
+            const messageData = JSON.parse(event.data);
+            console.log(messageData);
+            if (messageData.message === 'taskDone') {
+                this.setState({ workerDone: true });
+            }
+        });
         this.sdb = new ShareDBDoc_1.SDB(true, this.socket);
     }
     ;
@@ -32051,6 +32071,15 @@ class ArboretumClient extends React.Component {
                         React.createElement("p", null, this.state.usernameFeedback)),
                     React.createElement("div", { className: "form-actions" },
                         React.createElement("button", { type: "submit", className: "btn btn-form btn-primary" }, "OK")))),
+            React.createElement(Modal, { isOpen: this.state.workerDone },
+                React.createElement("form", { className: 'usernameInput', method: 'POST', action: getURLParameter('turkSubmitTo') },
+                    React.createElement("input", { type: 'hidden', name: 'assignmentId', value: getURLParameter('assignmentId') }),
+                    React.createElement("input", { type: 'hidden', name: 'workerId', value: getURLParameter('workerId') }),
+                    React.createElement("input", { type: 'hidden', name: 'hitId', value: getURLParameter('hitId') }),
+                    React.createElement("div", { className: "form-group" },
+                        React.createElement("p", null, "Thank you!")),
+                    React.createElement("div", { className: "form-actions" },
+                        React.createElement("button", { type: "submit", className: "btn btn-form btn-primary" }, "Done")))),
             React.createElement(TabList_1.TabList, { sdb: this.sdb, onSelectTab: this.onSelectTab }),
             navigationBar,
             React.createElement("div", { className: "window-content" },
@@ -32070,6 +32099,16 @@ ArboretumClient.defaultProps = {
 ArboretumClient.wsMessageID = 1;
 exports.ArboretumClient = ArboretumClient;
 ;
+function getURLParameter(sParam) {
+    const sPageURL = window.location.search.substring(1);
+    const sURLVariables = sPageURL.split('&');
+    for (let i = 0; i < sURLVariables.length; i++) {
+        const sParameterName = sURLVariables[i].split('=');
+        if (sParameterName[0] == sParam) {
+            return sParameterName[1];
+        }
+    }
+}
 
 
 /***/ }),
@@ -47085,13 +47124,23 @@ class ArboretumChatBox extends React.Component {
             const { keyCode, ctrlKey, altKey, metaKey, shiftKey } = event;
             if (keyCode === ENTER_KEY && !(ctrlKey || altKey || metaKey || shiftKey)) {
                 event.preventDefault();
-                const { chatText } = this.state;
+                let { chatText } = this.state;
                 if (chatText !== '') {
-                    if (this.props.onSendMessage) {
-                        this.props.onSendMessage(chatText);
+                    let isCommand = chatText[0] === '/';
+                    if (chatText.slice(0, 2) === '\\/') {
+                        chatText = `/${chatText.slice(1)}`;
                     }
-                    if (this.chat) {
-                        this.chat.addTextMessage(chatText);
+                    if (isCommand) {
+                        const command = chatText.slice(1);
+                        this.chat.doCommand(command);
+                    }
+                    else {
+                        if (this.props.onSendMessage) {
+                            this.props.onSendMessage(chatText);
+                        }
+                        if (this.chat) {
+                            this.chat.addTextMessage(chatText);
+                        }
                     }
                     this.setState({ chatText: '' });
                 }
@@ -47146,6 +47195,11 @@ class ArboretumChatBox extends React.Component {
         return __awaiter(this, void 0, void 0, function* () {
             this.sdb = sdb;
             this.chat = new ArboretumChat_1.ArboretumChat(this.sdb);
+            this.chat.commandIssued.addListener((event) => {
+                if (this.props.onCommand) {
+                    this.props.onCommand(event);
+                }
+            });
             this.chat.ready.addListener(() => __awaiter(this, void 0, void 0, function* () {
                 if (this.props.joinOnStart) {
                     yield this.chat.join(this.props.username);
