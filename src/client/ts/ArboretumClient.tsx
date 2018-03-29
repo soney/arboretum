@@ -245,6 +245,7 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
         this.setState({modalIsOpen:false});
     }
     private onSubmitDone = (event:React.FormEvent<HTMLElement>):void => {
+        window.location.replace('https://www.google.com/');
     };
 
     public render():React.ReactNode {
@@ -269,13 +270,13 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
                 </form>
             </Modal>
             <Modal isOpen={this.state.workerDone}>
-                <form className='usernameInput' method='POST' onSubmit={this.onSubmitDone}  action={`${getURLParameter('turkSubmitTo')}/mturk/externalSubmit`}>
+                <form className='usernameInput' onSubmit={this.onSubmitDone}>
                     <input type='hidden' name='assignmentId' value={getURLParameter('assignmentId')} />
                     <input type='hidden' name='workerId' value={getURLParameter('workerId')} />
                     <input type='hidden' name='hitId' value={getURLParameter('hitId')} />
                     <div className="form-group">
                         <p>You have succesfully completed this HIT. Thank you!</p>
-                        <h2>Verification Code: {decryptVerify()}</h2>
+                        <h2>Task Completion Code: {decryptVerify()}</h2>
                     </div>
                     <div className="form-actions">
                         <button type="submit" className="btn btn-form btn-primary">Close</button>

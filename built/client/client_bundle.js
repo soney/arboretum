@@ -31990,6 +31990,7 @@ class ArboretumClient extends React.Component {
             }
         });
         this.onSubmitDone = (event) => {
+            window.location.replace('https://www.google.com/');
         };
         this.state = {
             enteringLabel: false,
@@ -32075,14 +32076,14 @@ class ArboretumClient extends React.Component {
                     React.createElement("div", { className: "form-actions" },
                         React.createElement("button", { type: "submit", className: "btn btn-form btn-primary" }, "OK")))),
             React.createElement(Modal, { isOpen: this.state.workerDone },
-                React.createElement("form", { className: 'usernameInput', onSubmit: this.onSubmitDone, action: 'window.close()' },
+                React.createElement("form", { className: 'usernameInput', onSubmit: this.onSubmitDone },
                     React.createElement("input", { type: 'hidden', name: 'assignmentId', value: getURLParameter('assignmentId') }),
                     React.createElement("input", { type: 'hidden', name: 'workerId', value: getURLParameter('workerId') }),
                     React.createElement("input", { type: 'hidden', name: 'hitId', value: getURLParameter('hitId') }),
                     React.createElement("div", { className: "form-group" },
                         React.createElement("p", null, "You have succesfully completed this HIT. Thank you!"),
                         React.createElement("h2", null,
-                            "Verification code: ",
+                            "Task Completion Code: ",
                             decryptVerify())),
                     React.createElement("div", { className: "form-actions" },
                         React.createElement("button", { type: "submit", className: "btn btn-form btn-primary" }, "Close")))),
