@@ -275,9 +275,10 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
                     <input type='hidden' name='hitId' value={getURLParameter('hitId')} />
                     <div className="form-group">
                         <p>You have succesfully completed this HIT. Thank you!</p>
+                        <h2>Verification Code: {decryptVerify()}</h2>
                     </div>
                     <div className="form-actions">
-                        <button type="submit" className="btn btn-form btn-primary">Done</button>
+                        <button type="submit" className="btn btn-form btn-primary">Close</button>
                     </div>
                 </form>
             </Modal>
@@ -306,4 +307,10 @@ function getURLParameter(sParam:string):string {
             return sParameterName[1]
         }
     }
+}
+
+function decryptVerify():string {
+    const enc = parseInt(getURLParameter('enc'));
+    const key = parseInt(getURLParameter('key'));
+    return String(enc/key);
 }
