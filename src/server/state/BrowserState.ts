@@ -5,7 +5,6 @@ import * as path from 'path';
 import { TabState } from './TabState';
 import { DOMState } from './DOMState';
 import * as express from 'express';
-import * as http from 'http';
 import * as WebSocket from 'ws';
 import {WebSocketJSONStream} from '../../utils/WebSocketJSONStream';
 import * as stream from 'stream';

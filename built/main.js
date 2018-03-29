@@ -26,17 +26,12 @@ const request = require("request");
 const URL = require("url");
 const ArboretumChat_1 = require("./utils/ArboretumChat");
 const fileFunctions_1 = require("./utils/fileFunctions");
-const HTTPS = false;
-const CERTS_DIRECTORY = path.resolve(__dirname, '..', 'certificates');
-const CERT_FILENAME = 'cert.pem';
-const PRIVATEKEY_FILENAME = 'privkey.pem';
-const DEBUG = false;
+const CONFIG = JSON.parse(fs.readFileSync(path.resolve(__dirname, '..', 'config.json'), 'utf8'));
+const { HTTPS, HTTPS_INFO, DEBUG, HTTP_PORT, READ_PRIOR_ACTIONS, PRIOR_ACTIONS_DIR } = CONFIG;
+const { CERTS_DIRECTORY, CERT_FILENAME, PRIVATEKEY_FILENAME } = HTTPS_INFO;
 const RDB_PORT = 9222;
-const HTTP_PORT = 3000;
 const OPEN_MIRROR = false;
-const USE_HTTP_PORT = true;
-const READ_PRIOR_ACTIONS = false;
-const SAVED_STATES_DIR = path.join('savedStates');
+const USE_HTTP_PORT = HTTP_PORT >= 0;
 if (DEBUG) {
     require('longjohn');
 }
@@ -95,8 +90,8 @@ electron_1.app.on('ready', () => {
 const expressApp = express();
 let server;
 if (HTTPS) {
-    const certFilename = path.join(CERTS_DIRECTORY, CERT_FILENAME);
-    const pkFilename = path.join(CERTS_DIRECTORY, PRIVATEKEY_FILENAME);
+    const certFilename = path.resolve(__dirname, '..', CERTS_DIRECTORY, CERT_FILENAME);
+    const pkFilename = path.resolve(__dirname, '..', CERTS_DIRECTORY, PRIVATEKEY_FILENAME);
     let cert;
     let key;
     try {

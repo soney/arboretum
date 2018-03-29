@@ -21,17 +21,13 @@ import {TabDoc, BrowserDoc} from './utils/state_interfaces';
 import {SDB, SDBDoc} from './utils/ShareDBDoc';
 import {readDirectory,readFileContents,writeFileContents,makeDirectoryRecursive} from './utils/fileFunctions';
 
-const HTTPS:boolean = false;
-const CERTS_DIRECTORY:string = path.resolve(__dirname, '..', 'certificates');
-const CERT_FILENAME:string = 'cert.pem';
-const PRIVATEKEY_FILENAME:string = 'privkey.pem';
-const DEBUG:boolean = false;
+const CONFIG:any = JSON.parse(fs.readFileSync(path.resolve(__dirname, '..', 'config.json'), 'utf8'));
+
+const {HTTPS, HTTPS_INFO, DEBUG, HTTP_PORT, READ_PRIOR_ACTIONS, PRIOR_ACTIONS_DIR} = CONFIG;
+const {CERTS_DIRECTORY, CERT_FILENAME, PRIVATEKEY_FILENAME} = HTTPS_INFO;
 const RDB_PORT: number = 9222;
-const HTTP_PORT: number = 3000;
 const OPEN_MIRROR: boolean = false;
-const USE_HTTP_PORT:boolean = true;
-const READ_PRIOR_ACTIONS:boolean = false;
-const SAVED_STATES_DIR = path.join('savedStates');
+const USE_HTTP_PORT:boolean = HTTP_PORT>=0;
 
 if(DEBUG) {
     require('longjohn');
@@ -97,8 +93,8 @@ app.on('ready', () => {
 const expressApp = express();
 let server:http.Server|https.Server;
 if(HTTPS) {
-    const certFilename = path.join(CERTS_DIRECTORY, CERT_FILENAME);
-    const pkFilename = path.join(CERTS_DIRECTORY, PRIVATEKEY_FILENAME);
+    const certFilename = path.resolve(__dirname, '..', CERTS_DIRECTORY, CERT_FILENAME);
+    const pkFilename = path.resolve(__dirname, '..', CERTS_DIRECTORY, PRIVATEKEY_FILENAME);
     let cert:string;
     let key:string;
     try {
