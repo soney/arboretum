@@ -91,7 +91,6 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
     };
     private onSelectTab = (tabID:CRI.TabID):void => {
         this.tabID = tabID;
-        console.log(this.props.url);
         if(this.props.isAdmin && this.props.url && !this.hasNavigatedInitially) {
             this.hasNavigatedInitially = true;
             this.navigate(this.props.url);
