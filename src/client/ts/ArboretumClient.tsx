@@ -269,7 +269,7 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
                 </form>
             </Modal>
             <Modal isOpen={this.state.workerDone}>
-                <form className='usernameInput' method='POST' onSubmit={this.onSubmitDone}  action={getURLParameter('turkSubmitTo')}>
+                <form className='usernameInput' method='POST' onSubmit={this.onSubmitDone}  action={`${getURLParameter('turkSubmitTo')}/mturk/externalSubmit`}>
                     <input type='hidden' name='assignmentId' value={getURLParameter('assignmentId')} />
                     <input type='hidden' name='workerId' value={getURLParameter('workerId')} />
                     <input type='hidden' name='hitId' value={getURLParameter('hitId')} />

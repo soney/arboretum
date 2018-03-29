@@ -32075,7 +32075,7 @@ class ArboretumClient extends React.Component {
                     React.createElement("div", { className: "form-actions" },
                         React.createElement("button", { type: "submit", className: "btn btn-form btn-primary" }, "OK")))),
             React.createElement(Modal, { isOpen: this.state.workerDone },
-                React.createElement("form", { className: 'usernameInput', method: 'POST', onSubmit: this.onSubmitDone, action: getURLParameter('turkSubmitTo') },
+                React.createElement("form", { className: 'usernameInput', method: 'POST', onSubmit: this.onSubmitDone, action: `${getURLParameter('turkSubmitTo')}/mturk/externalSubmit` },
                     React.createElement("input", { type: 'hidden', name: 'assignmentId', value: getURLParameter('assignmentId') }),
                     React.createElement("input", { type: 'hidden', name: 'workerId', value: getURLParameter('workerId') }),
                     React.createElement("input", { type: 'hidden', name: 'hitId', value: getURLParameter('hitId') }),
