@@ -236,10 +236,14 @@ async function startServer(): Promise<{protocol:string, hostname:string,port:num
     }
 };
 async function stopServer(): Promise<void> {
+    wss.clients.forEach((ws) => {
+        ws.close();
+    });
+
     await new Promise<string>((resolve, reject) => {
         server.close(() => {
             resolve();
-        })
+        });
     });
     if(chromeProcess) {
         chromeProcess.kill();
@@ -300,16 +304,17 @@ ipcMain.on('asynchronous-message', async (event, messageID:number, arg:{message:
             event.sender.send(replyChannel, 'not ok');
         }
     } else if (message === 'chatCommand') {
-        const {command} = data;
-        if(command === 'done') {
-            browserState.emitTaskDone();
-        }
+        const {command, data:cmdData} = data;
+        browserState.handleCommand(command, cmdData);
     } else {
         event.sender.send(replyChannel, 'not recognized');
     }
 });
 
 
+process.on('exit', async (code) => {
+    stopServer();
+});
 if(DEBUG) {
     keypress(process.stdin);
     process.stdin.on('keypress', async (ch, key) => {

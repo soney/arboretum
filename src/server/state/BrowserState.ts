@@ -86,11 +86,20 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
             log.debug('=== CREATED BROWSER ===');
         }
     };
-    public emitTaskDone():void {
-        this.wss.clients.forEach((ws:WebSocket) => {
-            ws.send(JSON.stringify({
-                message: 'taskDone'
+    public handleCommand(type:ChatCommandType, data?:any):void {
+        if(type === 'done') {
+            this.emitToWSClients(JSON.stringify({
+                message: 'taskDone', data
             }));
+        } else if(type === 'boot') {
+            this.emitToWSClients(JSON.stringify({
+                message: 'boot', data
+            }));
+        }
+    };
+    public emitToWSClients(data:any):void {
+        this.wss.clients.forEach((ws:WebSocket) => {
+            ws.send(data);
         });
     };
     public showingPriorActions():boolean {

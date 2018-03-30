@@ -64,7 +64,7 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
 
         this.chat.ready.addListener(async () => {
             if(this.props.joinOnStart) {
-                await this.chat.join(this.props.username);
+                await this.chat.join(this.props.username, 'admin');
             }
 
             await this.updateMessagesState();

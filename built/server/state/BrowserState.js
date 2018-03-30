@@ -80,11 +80,22 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
         });
     }
     ;
-    emitTaskDone() {
-        this.wss.clients.forEach((ws) => {
-            ws.send(JSON.stringify({
-                message: 'taskDone'
+    handleCommand(type, data) {
+        if (type === 'done') {
+            this.emitToWSClients(JSON.stringify({
+                message: 'taskDone', data
             }));
+        }
+        else if (type === 'boot') {
+            this.emitToWSClients(JSON.stringify({
+                message: 'boot', data
+            }));
+        }
+    }
+    ;
+    emitToWSClients(data) {
+        this.wss.clients.forEach((ws) => {
+            ws.send(data);
         });
     }
     ;

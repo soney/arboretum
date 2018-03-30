@@ -4,7 +4,7 @@ import {SDB, SDBDoc} from '../../utils/ShareDBDoc';
 import {ClientTab} from './ClientTab';
 import {ArboretumChatBox} from '../../utils/browserControls/ArboretumChatBox';
 import {BrowserNavigationBar} from '../../utils/browserControls/BrowserNavigationBar';
-import {ArboretumChat, Message, User, TextMessage, PageActionMessage, PageAction, PAMAction} from '../../utils/ArboretumChat';
+import {ArboretumChat, Message, User, TextMessage, PageActionMessage, PageAction, PAMAction, UserRole} from '../../utils/ArboretumChat';
 import {TabList} from './TabList';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
@@ -27,7 +27,7 @@ type ArboretumClientState = {
     usernameFeedback:string,
     workerDone:boolean,
     disabled:boolean,
-    disabledMessage:string
+    disabledMessages:string[]
 };
 
 export class ArboretumClient extends React.Component<ArboretumClientProps, ArboretumClientState> {
@@ -56,7 +56,7 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
             usernameFeedback:'',
             workerDone:false,
             disabled: false,
-            disabledMessage: ''
+            disabledMessages: [] 
         };
         this.username = this.props.username;
         this.socket = new WebSocket(this.props.wsAddress);
@@ -64,11 +64,25 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
             const messageData = JSON.parse(event.data);
             if(messageData.message === 'taskDone') {
                 if(!this.props.isAdmin) {
-                    this.setState({workerDone:true});
+                    // this.setState({workerDone:true});
+                    this.closeClient(`You have succesfully completed this HIT. Thank you!`, `Verification Code: ${decryptVerify()}`)
+                }
+            } else if(messageData.message === 'boot') {
+                const {data} = messageData;
+                const {user, message} = data;
+                const me = this.getChat().getMe();
+                if(me.displayName === user) {
+                    this.closeClient(message || 'Thank you for participating!');
                 }
             }
         });
+        this.socket.addEventListener('close', () => {
+            this.closeClient();
+        });
         this.sdb = new SDB(true, this.socket);
+        window.addEventListener('beforeunload', () => {
+            this.closeClient();
+        });
     };
     private static wsMessageID=1;
     private async sendWebsocketMessage(message:{message:string, data?:any}):Promise<any> {
@@ -90,7 +104,9 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
         return response;
     };
     public async componentWillUnmount():Promise<void> {
-        await this.arboretumChat.leave();
+        if(this.arboretumChat) {
+            await this.arboretumChat.leave();
+        }
         this.sdb.close();
     };
     private onSelectTab = (tabID:CRI.TabID):void => {
@@ -105,20 +121,22 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
     };
     private clientTabRef = (clientTab:ClientTab):void => {
         this.clientTab = clientTab;
-        if(this.tabID) {
-            this.clientTab.setTabID(this.tabID);
-        }
-        this.clientTab.pageAction.addListener((action:PageAction) => {
-            if(this.props.isAdmin) {
-                this.sendWebsocketMessage({
-                    message: 'pageAction',
-                    data: {a:PAMAction.ACCEPT, action}
-                });
-            } else {
-                const chat = this.getChat();
-                chat.addPageActionMessage(action, action.data.nodeDescriptions);
+        if(this.clientTab) {
+            if(this.tabID) {
+                this.clientTab.setTabID(this.tabID);
             }
-        });
+            this.clientTab.pageAction.addListener((action:PageAction) => {
+                if(this.props.isAdmin) {
+                    this.sendWebsocketMessage({
+                        message: 'pageAction',
+                        data: {a:PAMAction.ACCEPT, action}
+                    });
+                } else {
+                    const chat = this.getChat();
+                    chat.addPageActionMessage(action, action.data.nodeDescriptions);
+                }
+            });
+        }
     };
     private navBarRef = (navBar:BrowserNavigationBar):void => {
         this.navBar = navBar;
@@ -239,7 +257,9 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
         event.preventDefault();
         if(this.state.usernameValid) {
             const chat:ArboretumChat = this.getChat();
-            await chat.addUser(this.state.usernameInputValue);
+            const role:UserRole = this.props.isAdmin ? 'user':'helper';
+            await chat.join(this.state.usernameInputValue, role);
+
             this.closeModal();
         }
     };
@@ -250,8 +270,8 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
     private onSubmitDone = (event:React.FormEvent<HTMLElement>):void => {
     };
 
-    public async closeClient(disabledMessage:string='Thank you for participating'):Promise<void> {
-        this.setState({disabled: true, disabledMessage});
+    public async closeClient(...messages:string[]):Promise<void> {
+        this.setState({disabled: true, disabledMessages:messages});
         const chat = this.getChat();
         if(chat) {
             await chat.leave();
@@ -262,7 +282,7 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
     public render():React.ReactNode {
         if(this.state.disabled) {
             return <div className="window">
-                <h1>{this.state.disabledMessage}</h1>
+                {this.state.disabledMessages.map((m) => <h1>{m}</h1> )}
             </div>
         }
         const navigationBar:Array<JSX.Element> = this.props.hideNavBar ? [] : [

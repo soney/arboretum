@@ -13,11 +13,13 @@ export enum PageActionState { NOT_PERFORMED, PERFORMED, REJECTED };
 export type PageActionType ='navigate'|'goBack'|'goForward'|'mouse_event'|'keyboard_event'|'element_event'|'focus_event'|'reload'|'getLabel'|'setLabel';
 export enum PAMAction { ACCEPT, REJECT, FOCUS, REQUEST_LABEL, ADD_LABEL};
 
-export type ChatCommandType ='help'|'done'|'setname';
+export type ChatCommandType ='help'|'done'|'setname'|'boot';
+export type UserRole = 'admin' | 'user' | 'helper';
 
 export type UserID = string;
 export interface User {
     id:UserID,
+    role:UserRole,
     displayName:string,
     present:boolean,
     typing:TypingStatus,
@@ -70,7 +72,8 @@ export interface MessageRemovedEvent {
     message:Message
 };
 export interface ChatCommandEvent {
-    command:ChatCommandType
+    command:ChatCommandType,
+    data?:any
 };
 
 export interface ReadyEvent { };
@@ -152,8 +155,8 @@ export class ArboretumChat extends TypedEventEmitter {
             return {valid: false, feedback: 'Must be more than 2 characters long'};
         } else if(name.length >= 20) {
             return {valid: false, feedback: 'Must be less than 20 characters long'};
-        } else if(!name.match(/^[a-z0-9\s]+$/i)) {
-            return {valid: false, feedback: 'May only contain letters, numbers, and spaces'};
+        } else if(!name.match(/^[a-z0-9_\\-]+$/i)) {
+            return {valid: false, feedback: 'May only contain letters, numbers, and dashes'};
         } else if(await this.hasUser(name)) {
             return {valid: false, feedback: `There is already a user with name ${name}`};
         } else {
@@ -368,13 +371,13 @@ export class ArboretumChat extends TypedEventEmitter {
         const index = guidIndex(id) % colors.length;
         return colors[index];
     };
-    public async join(displayName:string):Promise<User> {
-        return this.addUser(displayName);
+    public async join(displayName:string, role:UserRole):Promise<User> {
+        return this.addUser(displayName, role);
     };
-    public async addUser(displayName:string, isMe:boolean=true, present=true):Promise<User> {
+    public async addUser(displayName:string, role:UserRole, isMe:boolean=true, present=true):Promise<User> {
         const id:UserID = guid();
         const color:Color = await this.getColor(id);
-        const user:User = {id, color, displayName, present, typing:TypingStatus.IDLE};
+        const user:User = {id, color, displayName, present, role, typing:TypingStatus.IDLE};
         await this.initialized;
 
         await this.doc.submitListPushOp(['users'], user);
@@ -474,9 +477,18 @@ export class ArboretumChat extends TypedEventEmitter {
     public async stringify():Promise<string> {
         return JSON.stringify(await this.getData());
     };
-    public doCommand(command:string):boolean {
+    public doCommand(chatStr:string):boolean {
+        const [command, ...params] = chatStr.split(' ');
         if(command === 'done') {
             this.commandIssued.emit({command:'done'});
+            return true;
+        } else if(command === 'boot') {
+            const data:any = {user: params[0]};
+            const message = params.slice(1).filter((s) => s.trim().length>0).join(' ');
+            if(message) {
+                data.message = message;
+            }
+            this.commandIssued.emit({command:'boot', data});
             return true;
         } else {
             return false;

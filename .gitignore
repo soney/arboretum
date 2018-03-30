@@ -45,3 +45,5 @@ credentials.json
 mturk_creds.json
 savedStates/
 certificates/*
+
+.vscode

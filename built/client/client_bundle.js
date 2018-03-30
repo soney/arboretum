@@ -4190,8 +4190,8 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             else if (name.length >= 20) {
                 return { valid: false, feedback: 'Must be less than 20 characters long' };
             }
-            else if (!name.match(/^[a-z0-9\s]+$/i)) {
-                return { valid: false, feedback: 'May only contain letters, numbers, and spaces' };
+            else if (!name.match(/^[a-z0-9_\\-]+$/i)) {
+                return { valid: false, feedback: 'May only contain letters, numbers, and dashes' };
             }
             else if (yield this.hasUser(name)) {
                 return { valid: false, feedback: `There is already a user with name ${name}` };
@@ -4463,17 +4463,17 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         });
     }
     ;
-    join(displayName) {
+    join(displayName, role) {
         return __awaiter(this, void 0, void 0, function* () {
-            return this.addUser(displayName);
+            return this.addUser(displayName, role);
         });
     }
     ;
-    addUser(displayName, isMe = true, present = true) {
+    addUser(displayName, role, isMe = true, present = true) {
         return __awaiter(this, void 0, void 0, function* () {
             const id = guid_1.guid();
             const color = yield this.getColor(id);
-            const user = { id, color, displayName, present, typing: TypingStatus.IDLE };
+            const user = { id, color, displayName, present, role, typing: TypingStatus.IDLE };
             yield this.initialized;
             yield this.doc.submitListPushOp(['users'], user);
             if (isMe) {
@@ -4620,9 +4620,19 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         });
     }
     ;
-    doCommand(command) {
+    doCommand(chatStr) {
+        const [command, ...params] = chatStr.split(' ');
         if (command === 'done') {
             this.commandIssued.emit({ command: 'done' });
+            return true;
+        }
+        else if (command === 'boot') {
+            const data = { user: params[0] };
+            const message = params.slice(1).filter((s) => s.trim().length > 0).join(' ');
+            if (message) {
+                data.message = message;
+            }
+            this.commandIssued.emit({ command: 'boot', data });
             return true;
         }
         else {
@@ -31851,21 +31861,23 @@ class ArboretumClient extends React.Component {
         };
         this.clientTabRef = (clientTab) => {
             this.clientTab = clientTab;
-            if (this.tabID) {
-                this.clientTab.setTabID(this.tabID);
+            if (this.clientTab) {
+                if (this.tabID) {
+                    this.clientTab.setTabID(this.tabID);
+                }
+                this.clientTab.pageAction.addListener((action) => {
+                    if (this.props.isAdmin) {
+                        this.sendWebsocketMessage({
+                            message: 'pageAction',
+                            data: { a: ArboretumChat_1.PAMAction.ACCEPT, action }
+                        });
+                    }
+                    else {
+                        const chat = this.getChat();
+                        chat.addPageActionMessage(action, action.data.nodeDescriptions);
+                    }
+                });
             }
-            this.clientTab.pageAction.addListener((action) => {
-                if (this.props.isAdmin) {
-                    this.sendWebsocketMessage({
-                        message: 'pageAction',
-                        data: { a: ArboretumChat_1.PAMAction.ACCEPT, action }
-                    });
-                }
-                else {
-                    const chat = this.getChat();
-                    chat.addPageActionMessage(action, action.data.nodeDescriptions);
-                }
-            });
         };
         this.navBarRef = (navBar) => {
             this.navBar = navBar;
@@ -31984,7 +31996,8 @@ class ArboretumClient extends React.Component {
             event.preventDefault();
             if (this.state.usernameValid) {
                 const chat = this.getChat();
-                yield chat.addUser(this.state.usernameInputValue);
+                const role = this.props.isAdmin ? 'user' : 'helper';
+                yield chat.join(this.state.usernameInputValue, role);
                 this.closeModal();
             }
         });
@@ -31998,7 +32011,7 @@ class ArboretumClient extends React.Component {
             usernameFeedback: '',
             workerDone: false,
             disabled: false,
-            disabledMessage: ''
+            disabledMessages: []
         };
         this.username = this.props.username;
         this.socket = new WebSocket(this.props.wsAddress);
@@ -32006,11 +32019,26 @@ class ArboretumClient extends React.Component {
             const messageData = JSON.parse(event.data);
             if (messageData.message === 'taskDone') {
                 if (!this.props.isAdmin) {
-                    this.setState({ workerDone: true });
+                    // this.setState({workerDone:true});
+                    this.closeClient(`You have succesfully completed this HIT. Thank you!`, `Verification Code: ${decryptVerify()}`);
+                }
+            }
+            else if (messageData.message === 'boot') {
+                const { data } = messageData;
+                const { user, message } = data;
+                const me = this.getChat().getMe();
+                if (me.displayName === user) {
+                    this.closeClient(message || 'Thank you for participating!');
                 }
             }
         });
+        this.socket.addEventListener('close', () => {
+            this.closeClient();
+        });
         this.sdb = new ShareDBDoc_1.SDB(true, this.socket);
+        window.addEventListener('beforeunload', () => {
+            this.closeClient();
+        });
     }
     ;
     sendWebsocketMessage(message) {
@@ -32036,7 +32064,9 @@ class ArboretumClient extends React.Component {
     ;
     componentWillUnmount() {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.arboretumChat.leave();
+            if (this.arboretumChat) {
+                yield this.arboretumChat.leave();
+            }
             this.sdb.close();
         });
     }
@@ -32059,9 +32089,9 @@ class ArboretumClient extends React.Component {
     closeModal() {
         this.setState({ modalIsOpen: false });
     }
-    closeClient(disabledMessage = 'Thank you for participating') {
+    closeClient(...messages) {
         return __awaiter(this, void 0, void 0, function* () {
-            this.setState({ disabled: true, disabledMessage });
+            this.setState({ disabled: true, disabledMessages: messages });
             const chat = this.getChat();
             if (chat) {
                 yield chat.leave();
@@ -32072,8 +32102,7 @@ class ArboretumClient extends React.Component {
     ;
     render() {
         if (this.state.disabled) {
-            return React.createElement("div", { className: "window" },
-                React.createElement("h1", null, this.state.disabledMessage));
+            return React.createElement("div", { className: "window" }, this.state.disabledMessages.map((m) => React.createElement("h1", null, m)));
         }
         const navigationBar = this.props.hideNavBar ? [] : [
             React.createElement("header", null,
@@ -33290,6 +33319,7 @@ var text = __webpack_require__(78);
 
 json.registerSubtype(text);
 module.exports = json;
+
 
 
 /***/ }),
@@ -47232,7 +47262,7 @@ class ArboretumChatBox extends React.Component {
             });
             this.chat.ready.addListener(() => __awaiter(this, void 0, void 0, function* () {
                 if (this.props.joinOnStart) {
-                    yield this.chat.join(this.props.username);
+                    yield this.chat.join(this.props.username, 'admin');
                 }
                 yield this.updateMessagesState();
                 yield this.updateUsersState();
@@ -47555,7 +47585,7 @@ exports = module.exports = __webpack_require__(27)(true);
 
 
 // module
-exports.push([module.i, ".chat {\n  font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n  flex: 1;\n  display: flex;\n  flex-direction: column; }\n  .chat #task_title {\n    flex: 0 0;\n    box-sizing: border-box;\n    padding: 5px 10px 5px;\n    margin: 0px; }\n  .chat #chat-participants {\n    flex: 0 0;\n    border-bottom: 1px solid #CCC;\n    padding: 5px 10px 5px;\n    box-sizing: border-box; }\n    .chat #chat-participants .participant {\n      margin: 2px; }\n      .chat #chat-participants .participant.me {\n        font-weight: bold;\n        text-decoration: underline; }\n  .chat #chat-lines {\n    flex: 2;\n    box-sizing: border-box;\n    padding: 0px 10px 0px;\n    margin: 0px;\n    overflow-y: auto; }\n    .chat #chat-lines li {\n      list-style-type: none; }\n    .chat #chat-lines .chat-line {\n      font-size: 0.9em;\n      list-style-type: none;\n      list-style-type: none;\n      margin-top: 2px;\n      padding-top: 2px;\n      margin-bottom: 2px;\n      padding-bottom: 2px;\n      color: #555; }\n      .chat #chat-lines .chat-line.action {\n        color: #888; }\n        .chat #chat-lines .chat-line.action.not_admin .messageActions {\n          display: none; }\n        .chat #chat-lines .chat-line.action .messageActions a {\n          margin: 2px; }\n          .chat #chat-lines .chat-line.action .messageActions a:first-child {\n            margin-left: 0px; }\n          .chat #chat-lines .chat-line.action .messageActions a::before {\n            content: '('; }\n          .chat #chat-lines .chat-line.action .messageActions a::after {\n            content: ')'; }\n      .chat #chat-lines .chat-line:not(.action) .from {\n        font-weight: bold; }\n      .chat #chat-lines .chat-line:not(.action) .from::after {\n        content: \": \"; }\n  .chat #chat-form {\n    padding: 0px 2px 0px;\n    flex: 0; }\n    .chat #chat-form textarea#chat-box {\n      box-sizing: border-box;\n      resize: none;\n      flex-grow: 1;\n      width: 100%;\n      font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n      padding: 5px 10px 5px; }\n    .chat #chat-form .form-actions {\n      text-align: right; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/utils/browserControls/src/utils/browserControls/ArboretumChat.scss"],"names":[],"mappings":"AAAA;EACI,gHAA+G;EAC/G,QAAO;EACP,cAAa;EACb,uBAAsB,EAgFzB;EApFD;IAOQ,UAAS;IACT,uBAAsB;IACtB,sBAAqB;IACrB,YAAW,EACd;EAXL;IAaQ,UAAS;IACT,8BAA6B;IAC7B,sBAAqB;IACrB,uBAAsB,EAQzB;IAxBL;MAkBY,YAAW,EAKd;MAvBT;QAoBgB,kBAAiB;QACjB,2BAA0B,EAC7B;EAtBb;IA0BQ,QAAO;IACP,uBAAsB;IACtB,sBAAqB;IACrB,YAAW;IACX,iBAAgB,EAsCnB;IApEL;MAgCY,sBAAqB,EACxB;IAjCT;MAmCY,iBAAgB;MAChB,sBAAqB;MACrB,sBAAqB;MACrB,gBAAe;MACf,iBAAgB;MAChB,mBAAkB;MAClB,oBAAmB;MACnB,YAAW,EAyBd;MAnET;QA4CgB,YAAW,EAcd;QA1Db;UA+CwB,cAAa,EAChB;QAhDrB;UAoDwB,YAAU,EAIb;UAxDrB;YAqDwC,iBAAgB,EAAK;UArD7D;YAsDoC,aAAa,EAAG;UAtDpD;YAuDmC,aAAa,EAAG;MAvDnD;QA6DoB,kBAAiB,EACpB;MA9DjB;QAgEoB,cAAa,EAChB;EAjEjB;IAsEQ,qBAAoB;IACpB,QAAO,EAYV;IAnFL;MAyEY,uBAAsB;MACtB,aAAY;MACZ,aAAY;MACZ,YAAW;MACX,gHAA+G;MAC/G,sBAAqB,EACxB;IA/ET;MAiFY,kBAAiB,EACpB","file":"ArboretumChat.scss","sourcesContent":[".chat {\n    font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n    flex: 1;\n    display: flex;\n    flex-direction: column;\n\n    #task_title {\n        flex: 0 0;\n        box-sizing: border-box;\n        padding: 5px 10px 5px;\n        margin: 0px;\n    }\n    #chat-participants {\n        flex: 0 0;\n        border-bottom: 1px solid #CCC;\n        padding: 5px 10px 5px;\n        box-sizing: border-box;\n        .participant {\n            margin: 2px;\n            &.me {\n                font-weight: bold;\n                text-decoration: underline;\n            }\n        }\n    }\n    #chat-lines {\n        flex: 2;\n        box-sizing: border-box;\n        padding: 0px 10px 0px;\n        margin: 0px;\n        overflow-y: auto;\n        li {\n            list-style-type: none;\n        }\n        .chat-line {\n            font-size: 0.9em;\n            list-style-type: none;\n            list-style-type: none;\n            margin-top: 2px;\n            padding-top: 2px;\n            margin-bottom: 2px;\n            padding-bottom: 2px;\n            color: #555;\n            &.action{\n                color: #888;\n                &.not_admin {\n                    .messageActions {\n                        display: none;\n                    }\n                }\n                .messageActions {\n                    a {\n                        margin:2px;\n                        &:first-child { margin-left: 0px; }\n                        &::before { content: '(' }\n                        &::after { content: ')' }\n                    }\n                }\n            }\n            &:not(.action) {\n                .from {\n                    font-weight: bold;\n                }\n                .from::after {\n                    content: \": \";\n                }\n            }\n        }\n    }\n    #chat-form {\n        padding: 0px 2px 0px;\n        flex: 0;\n        textarea#chat-box {\n            box-sizing: border-box;\n            resize: none;\n            flex-grow: 1;\n            width: 100%;\n            font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n            padding: 5px 10px 5px;\n        }\n        .form-actions {\n            text-align: right;\n        }\n    }\n}\n"],"sourceRoot":""}]);
+exports.push([module.i, ".chat {\n  font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n  flex: 1;\n  display: flex;\n  flex-direction: column; }\n  .chat #task_title {\n    flex: 0 0;\n    box-sizing: border-box;\n    padding: 5px 10px 5px;\n    margin: 0px; }\n  .chat #chat-participants {\n    flex: 0 0;\n    border-bottom: 1px solid #CCC;\n    padding: 5px 10px 5px;\n    box-sizing: border-box; }\n    .chat #chat-participants .participant {\n      margin: 2px; }\n      .chat #chat-participants .participant.me {\n        font-weight: bold;\n        text-decoration: underline; }\n  .chat #chat-lines {\n    flex: 2;\n    box-sizing: border-box;\n    padding: 0px 10px 0px;\n    margin: 0px;\n    overflow-y: auto; }\n    .chat #chat-lines li {\n      list-style-type: none; }\n    .chat #chat-lines .chat-line {\n      font-size: 0.9em;\n      list-style-type: none;\n      list-style-type: none;\n      margin-top: 2px;\n      padding-top: 2px;\n      margin-bottom: 2px;\n      padding-bottom: 2px;\n      color: #555; }\n      .chat #chat-lines .chat-line.action {\n        color: #888; }\n        .chat #chat-lines .chat-line.action.not_admin .messageActions {\n          display: none; }\n        .chat #chat-lines .chat-line.action .messageActions a {\n          margin: 2px; }\n          .chat #chat-lines .chat-line.action .messageActions a:first-child {\n            margin-left: 0px; }\n          .chat #chat-lines .chat-line.action .messageActions a::before {\n            content: '('; }\n          .chat #chat-lines .chat-line.action .messageActions a::after {\n            content: ')'; }\n      .chat #chat-lines .chat-line:not(.action) .from {\n        font-weight: bold; }\n      .chat #chat-lines .chat-line:not(.action) .from::after {\n        content: \": \"; }\n  .chat #chat-form {\n    padding: 0px 2px 0px;\n    flex: 0; }\n    .chat #chat-form textarea#chat-box {\n      box-sizing: border-box;\n      resize: none;\n      flex-grow: 1;\n      width: 100%;\n      font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n      padding: 5px 10px 5px; }\n    .chat #chat-form .form-actions {\n      text-align: right; }\n", "", {"version":3,"sources":["C:/Users/soney/code/arboretum/src/utils/browserControls/src/utils/browserControls/ArboretumChat.scss"],"names":[],"mappings":"AAAA;EACI,gHAA+G;EAC/G,QAAO;EACP,cAAa;EACb,uBAAsB,EAgFzB;EApFD;IAOQ,UAAS;IACT,uBAAsB;IACtB,sBAAqB;IACrB,YAAW,EACd;EAXL;IAaQ,UAAS;IACT,8BAA6B;IAC7B,sBAAqB;IACrB,uBAAsB,EAQzB;IAxBL;MAkBY,YAAW,EAKd;MAvBT;QAoBgB,kBAAiB;QACjB,2BAA0B,EAC7B;EAtBb;IA0BQ,QAAO;IACP,uBAAsB;IACtB,sBAAqB;IACrB,YAAW;IACX,iBAAgB,EAsCnB;IApEL;MAgCY,sBAAqB,EACxB;IAjCT;MAmCY,iBAAgB;MAChB,sBAAqB;MACrB,sBAAqB;MACrB,gBAAe;MACf,iBAAgB;MAChB,mBAAkB;MAClB,oBAAmB;MACnB,YAAW,EAyBd;MAnET;QA4CgB,YAAW,EAcd;QA1Db;UA+CwB,cAAa,EAChB;QAhDrB;UAoDwB,YAAU,EAIb;UAxDrB;YAqDwC,iBAAgB,EAAK;UArD7D;YAsDoC,aAAa,EAAG;UAtDpD;YAuDmC,aAAa,EAAG;MAvDnD;QA6DoB,kBAAiB,EACpB;MA9DjB;QAgEoB,cAAa,EAChB;EAjEjB;IAsEQ,qBAAoB;IACpB,QAAO,EAYV;IAnFL;MAyEY,uBAAsB;MACtB,aAAY;MACZ,aAAY;MACZ,YAAW;MACX,gHAA+G;MAC/G,sBAAqB,EACxB;IA/ET;MAiFY,kBAAiB,EACpB","file":"ArboretumChat.scss","sourcesContent":[".chat {\r\n    font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\r\n    flex: 1;\r\n    display: flex;\r\n    flex-direction: column;\r\n\r\n    #task_title {\r\n        flex: 0 0;\r\n        box-sizing: border-box;\r\n        padding: 5px 10px 5px;\r\n        margin: 0px;\r\n    }\r\n    #chat-participants {\r\n        flex: 0 0;\r\n        border-bottom: 1px solid #CCC;\r\n        padding: 5px 10px 5px;\r\n        box-sizing: border-box;\r\n        .participant {\r\n            margin: 2px;\r\n            &.me {\r\n                font-weight: bold;\r\n                text-decoration: underline;\r\n            }\r\n        }\r\n    }\r\n    #chat-lines {\r\n        flex: 2;\r\n        box-sizing: border-box;\r\n        padding: 0px 10px 0px;\r\n        margin: 0px;\r\n        overflow-y: auto;\r\n        li {\r\n            list-style-type: none;\r\n        }\r\n        .chat-line {\r\n            font-size: 0.9em;\r\n            list-style-type: none;\r\n            list-style-type: none;\r\n            margin-top: 2px;\r\n            padding-top: 2px;\r\n            margin-bottom: 2px;\r\n            padding-bottom: 2px;\r\n            color: #555;\r\n            &.action{\r\n                color: #888;\r\n                &.not_admin {\r\n                    .messageActions {\r\n                        display: none;\r\n                    }\r\n                }\r\n                .messageActions {\r\n                    a {\r\n                        margin:2px;\r\n                        &:first-child { margin-left: 0px; }\r\n                        &::before { content: '(' }\r\n                        &::after { content: ')' }\r\n                    }\r\n                }\r\n            }\r\n            &:not(.action) {\r\n                .from {\r\n                    font-weight: bold;\r\n                }\r\n                .from::after {\r\n                    content: \": \";\r\n                }\r\n            }\r\n        }\r\n    }\r\n    #chat-form {\r\n        padding: 0px 2px 0px;\r\n        flex: 0;\r\n        textarea#chat-box {\r\n            box-sizing: border-box;\r\n            resize: none;\r\n            flex-grow: 1;\r\n            width: 100%;\r\n            font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\r\n            padding: 5px 10px 5px;\r\n        }\r\n        .form-actions {\r\n            text-align: right;\r\n        }\r\n    }\r\n}\r\n"],"sourceRoot":""}]);
 
 // exports
 
@@ -47795,7 +47825,7 @@ exports = module.exports = __webpack_require__(27)(true);
 
 
 // module
-exports.push([module.i, "#navBar {\n  display: flex; }\n  #navBar input#url {\n    flex: 1;\n    /*margin: 4px 2px 3px 2px;*/\n    /*font-size: 12px;*/\n    /*padding: 0px 0px 0px 0px;*/\n    padding: 3px;\n    /*height: 100%;*/\n    /*height: 20px;*/\n    box-shadow: inset 0px 1px 2px rgba(0, 0, 0, 0.2);\n    border: 0px;\n    border-left: 1px solid #bbb;\n    border-top-left-radius: 3px;\n    border-bottom-left-radius: 3px;\n    color: #808080;\n    outline: 0;\n    background: #FFF;\n    /*font-weight: lighter;*/ }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/utils/browserControls/src/utils/browserControls/BrowserNavigationBar.scss"],"names":[],"mappings":"AAAA;EACI,cAAa,EAmBhB;EApBD;IAGQ,QAAO;IACP,4BAA4B;IAC5B,oBAAoB;IACpB,6BAA6B;IAC7B,aAAY;IACZ,iBAAiB;IACjB,iBAAiB;IACjB,iDAAgD;IAChD,YAAW;IACX,4BAA2B;IAC3B,4BAA2B;IAC3B,+BAA8B;IAC9B,eAAc;IACd,WAAU;IACV,iBAAgB;IAChB,yBAAyB,EAC5B","file":"BrowserNavigationBar.scss","sourcesContent":["#navBar {\n    display: flex;\n    input#url {\n        flex: 1;\n        /*margin: 4px 2px 3px 2px;*/\n        /*font-size: 12px;*/\n        /*padding: 0px 0px 0px 0px;*/\n        padding: 3px;\n        /*height: 100%;*/\n        /*height: 20px;*/\n        box-shadow: inset 0px 1px 2px rgba(0, 0, 0, 0.2);\n        border: 0px;\n        border-left: 1px solid #bbb;\n        border-top-left-radius: 3px;\n        border-bottom-left-radius: 3px;\n        color: #808080;\n        outline: 0;\n        background: #FFF;\n        /*font-weight: lighter;*/\n    }\n}\n"],"sourceRoot":""}]);
+exports.push([module.i, "#navBar {\n  display: flex; }\n  #navBar input#url {\n    flex: 1;\n    /*margin: 4px 2px 3px 2px;*/\n    /*font-size: 12px;*/\n    /*padding: 0px 0px 0px 0px;*/\n    padding: 3px;\n    /*height: 100%;*/\n    /*height: 20px;*/\n    box-shadow: inset 0px 1px 2px rgba(0, 0, 0, 0.2);\n    border: 0px;\n    border-left: 1px solid #bbb;\n    border-top-left-radius: 3px;\n    border-bottom-left-radius: 3px;\n    color: #808080;\n    outline: 0;\n    background: #FFF;\n    /*font-weight: lighter;*/ }\n", "", {"version":3,"sources":["C:/Users/soney/code/arboretum/src/utils/browserControls/src/utils/browserControls/BrowserNavigationBar.scss"],"names":[],"mappings":"AAAA;EACI,cAAa,EAmBhB;EApBD;IAGQ,QAAO;IACP,4BAA4B;IAC5B,oBAAoB;IACpB,6BAA6B;IAC7B,aAAY;IACZ,iBAAiB;IACjB,iBAAiB;IACjB,iDAAgD;IAChD,YAAW;IACX,4BAA2B;IAC3B,4BAA2B;IAC3B,+BAA8B;IAC9B,eAAc;IACd,WAAU;IACV,iBAAgB;IAChB,yBAAyB,EAC5B","file":"BrowserNavigationBar.scss","sourcesContent":["#navBar {\r\n    display: flex;\r\n    input#url {\r\n        flex: 1;\r\n        /*margin: 4px 2px 3px 2px;*/\r\n        /*font-size: 12px;*/\r\n        /*padding: 0px 0px 0px 0px;*/\r\n        padding: 3px;\r\n        /*height: 100%;*/\r\n        /*height: 20px;*/\r\n        box-shadow: inset 0px 1px 2px rgba(0, 0, 0, 0.2);\r\n        border: 0px;\r\n        border-left: 1px solid #bbb;\r\n        border-top-left-radius: 3px;\r\n        border-bottom-left-radius: 3px;\r\n        color: #808080;\r\n        outline: 0;\r\n        background: #FFF;\r\n        /*font-weight: lighter;*/\r\n    }\r\n}\r\n"],"sourceRoot":""}]);
 
 // exports
 
@@ -49654,7 +49684,7 @@ exports = module.exports = __webpack_require__(27)(true);
 
 
 // module
-exports.push([module.i, "html, body, #client_main, #arboretum_client {\n  margin: 0px;\n  padding: 0px;\n  height: 100%;\n  width: 100%;\n  overflow: hidden; }\n\nbody {\n  font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n  background-color: #333; }\n  body #arboretum_client #client_header {\n    max-height: 40px;\n    background-color: #e8e6e8;\n    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #e8e6e8), color-stop(100%, #d1cfd1));\n    background-image: -webkit-linear-gradient(top, #e8e6e8 0%, #d1cfd1 100%);\n    background-image: linear-gradient(to bottom, #e8e6e8 0%, #d1cfd1 100%); }\n    body #arboretum_client #client_header #tabs {\n      padding: 0px;\n      margin: 0px;\n      overflow: hidden; }\n      body #arboretum_client #client_header #tabs .tab {\n        text-align: center;\n        border-left: 1px solid #989698;\n        background-color: #b8b6b8;\n        background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #b8b6b8), color-stop(100%, #b0aeb0));\n        background-image: -webkit-linear-gradient(top, #b8b6b8 0%, #b0aeb0 100%);\n        background-image: linear-gradient(to bottom, #b8b6b8 0%, #b0aeb0 100%);\n        border-left: 1px solid #AAA;\n        list-style: none;\n        white-space: nowrap;\n        border-bottom: 1px solid #aaa;\n        overflow: hidden;\n        text-overflow: ellipsis;\n        color: #333; }\n      body #arboretum_client #client_header #tabs:last-child {\n        border-right: 1px solid #AAA; }\n      body #arboretum_client #client_header #tabs.not-selected {\n        background: linear-gradient(to bottom, #BBB 80%, #AAA); }\n        body #arboretum_client #client_header #tabs.not-selected .closeTab {\n          color: #999; }\n      body #arboretum_client #client_header #tabs.tab.selected {\n        background-color: #d4d2d4;\n        background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #d4d2d4), color-stop(100%, #cccacc));\n        background-image: -webkit-linear-gradient(top, #d4d2d4 0%, #cccacc 100%);\n        background-image: linear-gradient(to bottom, #d4d2d4 0%, #cccacc 100%);\n        /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n        border-bottom: none;\n        color: #777; }\n  body #arboretum_client #client_body #client_sidebar .chat {\n    height: 100%; }\n  body #arboretum_client #client_body #client_content {\n    overflow: hidden; }\n    body #arboretum_client #client_body #client_content iframe#content {\n      border: none;\n      width: 100%;\n      height: 100%; }\n", "", {"version":3,"sources":["/home/soney/code/arboretum/src/client/css/src/client/css/client.scss"],"names":[],"mappings":"AAUA;EACI,YAAW;EACX,aAAY;EACZ,aAAY;EACZ,YAAW;EACX,iBAAgB,EACnB;;AACD;EACI,gHAA+G;EAC/G,uBAAsB,EAuDzB;EAzDD;IAKY,iBAdQ;IALhB,0BAoBwC;IAnBxC,sHAAyH;IACzH,yEAA8E;IAC9E,uEAA4E,EAmDvE;IAxCT;MASgB,aAAY;MACZ,YAAW;MACX,iBAAgB,EA4BnB;MAvCb;QAaoB,mBAAkB;QAClB,+BAA8B;QA5B9C,0BA6BgD;QA5BhD,sHAAyH;QACzH,yEAA8E;QAC9E,uEAA4E;QA2B5D,4BAA2B;QAC3B,iBAAgB;QAChB,oBAAmB;QACnB,8BAA6B;QAC7B,iBAAgB;QAChB,wBAAuB;QACvB,YAAW,EACd;MAvBjB;QAyBoB,6BAA4B,EAC/B;MA1BjB;QA4BoB,uDAAsD,EAIzD;QAhCjB;UA8BwB,YAAW,EACd;MA/BrB;QAdI,0BAgDgD;QA/ChD,sHAAyH;QACzH,yEAA8E;QAC9E,uEAA4E;QA8C5D,8DAA8D;QAC9D,oBAAmB;QACnB,YAAW,EACd;EAtCjB;IA4CoB,aAAY,EACf;EA7CjB;IAgDgB,iBAAe,EAMlB;IAtDb;MAkDoB,aAAY;MACZ,YAAW;MACX,aAAY,EACf","file":"client.scss","sourcesContent":["// @import \"../../utils/browserControls/ArboretumChat.scss\";\n// From top to bottom\n@mixin linear-gradient($color-from, $color-to) {\n    background-color: $color-from; // Old browsers\n    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%,$color-from), color-stop(100%,$color-to)); // Chrome, Safari4+\n    background-image: -webkit-linear-gradient(top, $color-from 0%, $color-to 100%);           // Chrome10+, Safari5.1+\n    background-image: linear-gradient(to bottom, $color-from 0%, $color-to 100%);  // W3C\n}\n$header_height: 40px;\n$sidebar_width: 250px;\nhtml, body, #client_main, #arboretum_client {\n    margin: 0px;\n    padding: 0px;\n    height: 100%;\n    width: 100%;\n    overflow: hidden;\n}\nbody {\n    font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n    background-color: #333;\n    #arboretum_client {\n        #client_header {\n            max-height: $header_height;\n            @include linear-gradient(#e8e6e8, #d1cfd1);\n\n            #tabs {\n                padding: 0px;\n                margin: 0px;\n                overflow: hidden;\n                .tab {\n                    text-align: center;\n                    border-left: 1px solid #989698;\n                    @include linear-gradient(#b8b6b8, #b0aeb0);\n                    border-left: 1px solid #AAA;\n                    list-style: none;\n                    white-space: nowrap;\n                    border-bottom: 1px solid #aaa;\n                    overflow: hidden;\n                    text-overflow: ellipsis;\n                    color: #333;\n                }\n                &:last-child {\n                    border-right: 1px solid #AAA;\n                }\n                &.not-selected {\n                    background: linear-gradient(to bottom, #BBB 80%, #AAA);\n                    .closeTab {\n                        color: #999;\n                    }\n                }\n                &.tab.selected {\n                    @include linear-gradient(#d4d2d4, #cccacc);\n                    /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n                    border-bottom: none;\n                    color: #777;\n                }\n            }\n        }\n        #client_body {\n            #client_sidebar {\n                .chat {\n                    height: 100%;\n                }\n            }\n            #client_content {\n                overflow:hidden;\n                iframe#content {\n                    border: none;\n                    width: 100%;\n                    height: 100%;\n                }\n            }\n        }\n    }\n}\n"],"sourceRoot":""}]);
+exports.push([module.i, "html, body, #client_main, #arboretum_client {\n  margin: 0px;\n  padding: 0px;\n  height: 100%;\n  width: 100%;\n  overflow: hidden; }\n\nbody {\n  font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\n  background-color: #333; }\n  body #arboretum_client #client_header {\n    max-height: 40px;\n    background-color: #e8e6e8;\n    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #e8e6e8), color-stop(100%, #d1cfd1));\n    background-image: -webkit-linear-gradient(top, #e8e6e8 0%, #d1cfd1 100%);\n    background-image: linear-gradient(to bottom, #e8e6e8 0%, #d1cfd1 100%); }\n    body #arboretum_client #client_header #tabs {\n      padding: 0px;\n      margin: 0px;\n      overflow: hidden; }\n      body #arboretum_client #client_header #tabs .tab {\n        text-align: center;\n        border-left: 1px solid #989698;\n        background-color: #b8b6b8;\n        background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #b8b6b8), color-stop(100%, #b0aeb0));\n        background-image: -webkit-linear-gradient(top, #b8b6b8 0%, #b0aeb0 100%);\n        background-image: linear-gradient(to bottom, #b8b6b8 0%, #b0aeb0 100%);\n        border-left: 1px solid #AAA;\n        list-style: none;\n        white-space: nowrap;\n        border-bottom: 1px solid #aaa;\n        overflow: hidden;\n        text-overflow: ellipsis;\n        color: #333; }\n      body #arboretum_client #client_header #tabs:last-child {\n        border-right: 1px solid #AAA; }\n      body #arboretum_client #client_header #tabs.not-selected {\n        background: linear-gradient(to bottom, #BBB 80%, #AAA); }\n        body #arboretum_client #client_header #tabs.not-selected .closeTab {\n          color: #999; }\n      body #arboretum_client #client_header #tabs.tab.selected {\n        background-color: #d4d2d4;\n        background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #d4d2d4), color-stop(100%, #cccacc));\n        background-image: -webkit-linear-gradient(top, #d4d2d4 0%, #cccacc 100%);\n        background-image: linear-gradient(to bottom, #d4d2d4 0%, #cccacc 100%);\n        /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\n        border-bottom: none;\n        color: #777; }\n  body #arboretum_client #client_body #client_sidebar .chat {\n    height: 100%; }\n  body #arboretum_client #client_body #client_content {\n    overflow: hidden; }\n    body #arboretum_client #client_body #client_content iframe#content {\n      border: none;\n      width: 100%;\n      height: 100%; }\n", "", {"version":3,"sources":["C:/Users/soney/code/arboretum/src/client/css/src/client/css/client.scss"],"names":[],"mappings":"AAUA;EACI,YAAW;EACX,aAAY;EACZ,aAAY;EACZ,YAAW;EACX,iBAAgB,EACnB;;AACD;EACI,gHAA+G;EAC/G,uBAAsB,EAuDzB;EAzDD;IAKY,iBAdQ;IALhB,0BAoBwC;IAnBxC,sHAAyH;IACzH,yEAA8E;IAC9E,uEAA4E,EAmDvE;IAxCT;MASgB,aAAY;MACZ,YAAW;MACX,iBAAgB,EA4BnB;MAvCb;QAaoB,mBAAkB;QAClB,+BAA8B;QA5B9C,0BA6BgD;QA5BhD,sHAAyH;QACzH,yEAA8E;QAC9E,uEAA4E;QA2B5D,4BAA2B;QAC3B,iBAAgB;QAChB,oBAAmB;QACnB,8BAA6B;QAC7B,iBAAgB;QAChB,wBAAuB;QACvB,YAAW,EACd;MAvBjB;QAyBoB,6BAA4B,EAC/B;MA1BjB;QA4BoB,uDAAsD,EAIzD;QAhCjB;UA8BwB,YAAW,EACd;MA/BrB;QAdI,0BAgDgD;QA/ChD,sHAAyH;QACzH,yEAA8E;QAC9E,uEAA4E;QA8C5D,8DAA8D;QAC9D,oBAAmB;QACnB,YAAW,EACd;EAtCjB;IA4CoB,aAAY,EACf;EA7CjB;IAgDgB,iBAAe,EAMlB;IAtDb;MAkDoB,aAAY;MACZ,YAAW;MACX,aAAY,EACf","file":"client.scss","sourcesContent":["// @import \"../../utils/browserControls/ArboretumChat.scss\";\r\n// From top to bottom\r\n@mixin linear-gradient($color-from, $color-to) {\r\n    background-color: $color-from; // Old browsers\r\n    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%,$color-from), color-stop(100%,$color-to)); // Chrome, Safari4+\r\n    background-image: -webkit-linear-gradient(top, $color-from 0%, $color-to 100%);           // Chrome10+, Safari5.1+\r\n    background-image: linear-gradient(to bottom, $color-from 0%, $color-to 100%);  // W3C\r\n}\r\n$header_height: 40px;\r\n$sidebar_width: 250px;\r\nhtml, body, #client_main, #arboretum_client {\r\n    margin: 0px;\r\n    padding: 0px;\r\n    height: 100%;\r\n    width: 100%;\r\n    overflow: hidden;\r\n}\r\nbody {\r\n    font-family: system, -apple-system, \".SFNSDisplay-Regular\", \"Helvetica Neue\", Helvetica, \"Segoe UI\", sans-serif;\r\n    background-color: #333;\r\n    #arboretum_client {\r\n        #client_header {\r\n            max-height: $header_height;\r\n            @include linear-gradient(#e8e6e8, #d1cfd1);\r\n\r\n            #tabs {\r\n                padding: 0px;\r\n                margin: 0px;\r\n                overflow: hidden;\r\n                .tab {\r\n                    text-align: center;\r\n                    border-left: 1px solid #989698;\r\n                    @include linear-gradient(#b8b6b8, #b0aeb0);\r\n                    border-left: 1px solid #AAA;\r\n                    list-style: none;\r\n                    white-space: nowrap;\r\n                    border-bottom: 1px solid #aaa;\r\n                    overflow: hidden;\r\n                    text-overflow: ellipsis;\r\n                    color: #333;\r\n                }\r\n                &:last-child {\r\n                    border-right: 1px solid #AAA;\r\n                }\r\n                &.not-selected {\r\n                    background: linear-gradient(to bottom, #BBB 80%, #AAA);\r\n                    .closeTab {\r\n                        color: #999;\r\n                    }\r\n                }\r\n                &.tab.selected {\r\n                    @include linear-gradient(#d4d2d4, #cccacc);\r\n                    /*background: linear-gradient(to bottom, #e5e5e5 90%, #ddd);*/\r\n                    border-bottom: none;\r\n                    color: #777;\r\n                }\r\n            }\r\n        }\r\n        #client_body {\r\n            #client_sidebar {\r\n                .chat {\r\n                    height: 100%;\r\n                }\r\n            }\r\n            #client_content {\r\n                overflow:hidden;\r\n                iframe#content {\r\n                    border: none;\r\n                    width: 100%;\r\n                    height: 100%;\r\n                }\r\n            }\r\n        }\r\n    }\r\n}\r\n"],"sourceRoot":""}]);
 
 // exports
 

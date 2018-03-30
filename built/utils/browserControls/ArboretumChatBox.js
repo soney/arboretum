@@ -119,7 +119,7 @@ class ArboretumChatBox extends React.Component {
             });
             this.chat.ready.addListener(() => __awaiter(this, void 0, void 0, function* () {
                 if (this.props.joinOnStart) {
-                    yield this.chat.join(this.props.username);
+                    yield this.chat.join(this.props.username, 'admin');
                 }
                 yield this.updateMessagesState();
                 yield this.updateUsersState();

@@ -246,6 +246,9 @@ function startServer() {
 ;
 function stopServer() {
     return __awaiter(this, void 0, void 0, function* () {
+        wss.clients.forEach((ws) => {
+            ws.close();
+        });
         yield new Promise((resolve, reject) => {
             server.close(() => {
                 resolve();
@@ -320,14 +323,15 @@ electron_1.ipcMain.on('asynchronous-message', (event, messageID, arg) => __await
         }
     }
     else if (message === 'chatCommand') {
-        const { command } = data;
-        if (command === 'done') {
-            browserState.emitTaskDone();
-        }
+        const { command, data: cmdData } = data;
+        browserState.handleCommand(command, cmdData);
     }
     else {
         event.sender.send(replyChannel, 'not recognized');
     }
+}));
+process.on('exit', (code) => __awaiter(this, void 0, void 0, function* () {
+    stopServer();
 }));
 if (DEBUG) {
     keypress(process.stdin);

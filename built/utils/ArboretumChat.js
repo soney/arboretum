@@ -128,8 +128,8 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             else if (name.length >= 20) {
                 return { valid: false, feedback: 'Must be less than 20 characters long' };
             }
-            else if (!name.match(/^[a-z0-9\s]+$/i)) {
-                return { valid: false, feedback: 'May only contain letters, numbers, and spaces' };
+            else if (!name.match(/^[a-z0-9_\\-]+$/i)) {
+                return { valid: false, feedback: 'May only contain letters, numbers, and dashes' };
             }
             else if (yield this.hasUser(name)) {
                 return { valid: false, feedback: `There is already a user with name ${name}` };
@@ -401,17 +401,17 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         });
     }
     ;
-    join(displayName) {
+    join(displayName, role) {
         return __awaiter(this, void 0, void 0, function* () {
-            return this.addUser(displayName);
+            return this.addUser(displayName, role);
         });
     }
     ;
-    addUser(displayName, isMe = true, present = true) {
+    addUser(displayName, role, isMe = true, present = true) {
         return __awaiter(this, void 0, void 0, function* () {
             const id = guid_1.guid();
             const color = yield this.getColor(id);
-            const user = { id, color, displayName, present, typing: TypingStatus.IDLE };
+            const user = { id, color, displayName, present, role, typing: TypingStatus.IDLE };
             yield this.initialized;
             yield this.doc.submitListPushOp(['users'], user);
             if (isMe) {
@@ -558,9 +558,19 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         });
     }
     ;
-    doCommand(command) {
+    doCommand(chatStr) {
+        const [command, ...params] = chatStr.split(' ');
         if (command === 'done') {
             this.commandIssued.emit({ command: 'done' });
+            return true;
+        }
+        else if (command === 'boot') {
+            const data = { user: params[0] };
+            const message = params.slice(1).filter((s) => s.trim().length > 0).join(' ');
+            if (message) {
+                data.message = message;
+            }
+            this.commandIssued.emit({ command: 'boot', data });
             return true;
         }
         else {

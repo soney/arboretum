@@ -67,7 +67,7 @@ class PageActionMessageDisplay extends React.Component {
                 el.focus();
             } }, type: "text" });
         const messageText = `${sender.displayName} wants to ${pageActionDescription}`;
-        return React.createElement("li", { onMouseEnter: () => this.addHighlights(pam), onMouseLeave: () => this.removeHighlights(pam), tabIndex: 0, "aria-label": messageText, className: 'chat-line action ' + stateDescription },
+        return React.createElement("div", { onMouseEnter: () => this.addHighlights(pam), onMouseLeave: () => this.removeHighlights(pam), tabIndex: 0, "aria-label": messageText, className: 'chat-line action ' + stateDescription },
             React.createElement("span", { style: { color: sender.color }, className: 'from' }, sender.displayName),
             " wants to ",
             pageActionDescription,
