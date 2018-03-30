@@ -279,6 +279,7 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
         this.setState({modalIsOpen:false});
     }
     private onSubmitDone = (event:React.FormEvent<HTMLElement>):void => {
+        window.location.replace('https://www.google.com/');
     };
 
     public async closeClient(...messages:string[]):Promise<void> {
@@ -328,6 +329,23 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
                     </div>
                 </form>
             </Modal>
+<<<<<<< HEAD
+=======
+            <Modal isOpen={this.state.workerDone}>
+                <form className='usernameInput' onSubmit={this.onSubmitDone}>
+                    <input type='hidden' name='assignmentId' value={getURLParameter('assignmentId')} />
+                    <input type='hidden' name='workerId' value={getURLParameter('workerId')} />
+                    <input type='hidden' name='hitId' value={getURLParameter('hitId')} />
+                    <div className="form-group">
+                        <p>You have succesfully completed this HIT. Thank you!</p>
+                        <h2>Task Completion Code: {decryptVerify()}</h2>
+                    </div>
+                    <div className="form-actions">
+                        <button type="submit" className="btn btn-form btn-primary">Close</button>
+                    </div>
+                </form>
+            </Modal>
+>>>>>>> 4bd05b7ddc77304f9523c6b9f49f762ea1cc544c
             <TabList sdb={this.sdb} onSelectTab={this.onSelectTab} />
             {navigationBar}
             <div className="window-content">
