@@ -198,7 +198,10 @@ export class ClientElementNode extends ClientNode {
         return result;
     };
     private async initialize():Promise<void> {
-        const {nodeName} = this.sdbNode;
+        const {nodeName, inlineStyle} = this.sdbNode;
+        if(inlineStyle) {
+            this.setInlineStyle(inlineStyle);
+        }
         this.getAttributes().forEach((attr) => {
             const [name, value] = attr;
             this.setAttribute(name, value);

@@ -25,7 +25,9 @@ type ArboretumClientState = {
     usernameInputValue:string,
     usernameValid:boolean,
     usernameFeedback:string,
-    workerDone:boolean
+    workerDone:boolean,
+    disabled:boolean,
+    disabledMessage:string
 };
 
 export class ArboretumClient extends React.Component<ArboretumClientProps, ArboretumClientState> {
@@ -52,7 +54,9 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
             usernameInputValue:'',
             usernameValid:false,
             usernameFeedback:'',
-            workerDone:false
+            workerDone:false,
+            disabled: false,
+            disabledMessage: ''
         };
         this.username = this.props.username;
         this.socket = new WebSocket(this.props.wsAddress);
@@ -91,7 +95,6 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
     };
     private onSelectTab = (tabID:CRI.TabID):void => {
         this.tabID = tabID;
-        console.log(this.props.url);
         if(this.props.isAdmin && this.props.url && !this.hasNavigatedInitially) {
             this.hasNavigatedInitially = true;
             this.navigate(this.props.url);
@@ -248,7 +251,21 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
         window.location.replace('https://www.google.com/');
     };
 
+    public async closeClient(disabledMessage:string='Thank you for participating'):Promise<void> {
+        this.setState({disabled: true, disabledMessage});
+        const chat = this.getChat();
+        if(chat) {
+            await chat.leave();
+        }
+        await this.sdb.close();
+    };
+
     public render():React.ReactNode {
+        if(this.state.disabled) {
+            return <div className="window">
+                <h1>{this.state.disabledMessage}</h1>
+            </div>
+        }
         const navigationBar:Array<JSX.Element> = this.props.hideNavBar ? [] : [
             <header>
                 <BrowserNavigationBar ref={this.navBarRef} onBack={this.goBack} onForward={this.goForward} onReload={this.reload} showSidebarToggle={false} onNavigate={this.navigate} />

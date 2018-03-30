@@ -79,11 +79,11 @@ export class PageActionMessageDisplay extends React.Component<PageActionMessageP
         const labelInput:JSX.Element = <input onKeyDown={this.onLabelKeyDown} ref={(el)=>{if(el){el.focus()}}} type="text" />;
 
         const messageText:string = `${sender.displayName} wants to ${pageActionDescription}`;
-        return <li onMouseEnter={()=>this.addHighlights(pam)} onMouseLeave={()=>this.removeHighlights(pam)} tabIndex={0} aria-label={messageText} className={'chat-line action '+stateDescription}>
+        return <div onMouseEnter={()=>this.addHighlights(pam)} onMouseLeave={()=>this.removeHighlights(pam)} tabIndex={0} aria-label={messageText} className={'chat-line action '+stateDescription}>
             <span style={{color: sender.color}} className='from'>{sender.displayName}</span> wants to {pageActionDescription}.
             <div className='messageState'>{stateDescription}</div>
             <div className='messageActions'>{messageActions}</div>
             {this.state.labeling ? labelInput : null}
-        </li>;
+        </div>;
     };
 };
