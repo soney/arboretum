@@ -127,7 +127,6 @@ export class ArboretumChat extends TypedEventEmitter {
             });
         }
 
-        this.doc = this.sdb.get<ChatDoc>(ArboretumChat.COLLECTION, ArboretumChat.DOC_ID);
         this.initialized = this.initializeDoc();
         this.initialized.catch((err) => {
             console.error(err);
@@ -299,7 +298,14 @@ export class ArboretumChat extends TypedEventEmitter {
             return [];
         }
     };
+    public destroy():void {
+        this.leave();
+        if(this.doc) {
+            this.doc.destroy();
+        }
+    };
     private async initializeDoc():Promise<void> {
+        this.doc = this.sdb.get<ChatDoc>(ArboretumChat.COLLECTION, ArboretumChat.DOC_ID);
         await this.doc.createIfEmpty({
             users: [],
             messages: [],

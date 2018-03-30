@@ -21,10 +21,10 @@ export class TabList extends React.Component<TabListProps, TabListState> {
             tabs: [],
             selectedTab: null
         };
-        this.browserDoc = this.props.sdb.get('arboretum', 'browser');
         this.initialize();
     };
     private initialize():void {
+        this.browserDoc = this.props.sdb.get('arboretum', 'browser');
         this.browserDoc.subscribe(this.onBrowserDocUpdated);
     };
     private onBrowserDocUpdated = async ():Promise<void> => {
@@ -36,6 +36,12 @@ export class TabList extends React.Component<TabListProps, TabListState> {
         });
         if(selectedTab) {
             this.selectTab(selectedTab);
+        }
+    };
+    public componentWillUnmount():void {
+        if(this.browserDoc) {
+            this.browserDoc.destroy();
+            this.browserDoc = null;
         }
     };
     private async selectTab(selectedTab:CRI.TabID):Promise<void> {

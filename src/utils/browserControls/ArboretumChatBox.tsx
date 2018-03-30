@@ -147,7 +147,10 @@ export class ArboretumChatBox extends React.Component<ArboretumChatProps, Arbore
     };
 
     public componentWillUnmount():void {
-        this.leave();
+        if(this.chat) {
+            this.chat.destroy();
+            this.chat = null;
+        }
     };
 
     public componentDidUpdate():void {

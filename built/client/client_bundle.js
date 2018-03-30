@@ -4154,7 +4154,6 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
                 next();
             });
         }
-        this.doc = this.sdb.get(ArboretumChat.COLLECTION, ArboretumChat.DOC_ID);
         this.initialized = this.initializeDoc();
         this.initialized.catch((err) => {
             console.error(err);
@@ -4373,8 +4372,16 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         }
     }
     ;
+    destroy() {
+        this.leave();
+        if (this.doc) {
+            this.doc.destroy();
+        }
+    }
+    ;
     initializeDoc() {
         return __awaiter(this, void 0, void 0, function* () {
+            this.doc = this.sdb.get(ArboretumChat.COLLECTION, ArboretumChat.DOC_ID);
             yield this.doc.createIfEmpty({
                 users: [],
                 messages: [],
@@ -35471,17 +35478,24 @@ class ClientTab extends React.Component {
             yield new Promise((resolve, reject) => {
                 this.setState({ tabID }, resolve);
             });
-            if (this.tabDoc) {
-                this.tabDoc.destroy();
-            }
+            this.destroyTabDoc();
             if (this.state.tabID) {
                 this.tabDoc = this.props.sdb.get('tab', this.state.tabID);
                 this.tabDoc.subscribe(this.docUpdated);
-                window['tabDoc'] = this.tabDoc;
             }
         });
     }
     ;
+    destroyTabDoc() {
+        if (this.tabDoc) {
+            this.tabDoc.destroy();
+            this.tabDoc = null;
+        }
+    }
+    ;
+    componentWillUnmount() {
+        this.destroyTabDoc();
+    }
     getNode(nodeId) {
         return this.clientNodes.get(nodeId);
     }
@@ -47292,7 +47306,10 @@ class ArboretumChatBox extends React.Component {
     }
     ;
     componentWillUnmount() {
-        this.leave();
+        if (this.chat) {
+            this.chat.destroy();
+            this.chat = null;
+        }
     }
     ;
     componentDidUpdate() {
@@ -47870,12 +47887,19 @@ class TabList extends React.Component {
             tabs: [],
             selectedTab: null
         };
-        this.browserDoc = this.props.sdb.get('arboretum', 'browser');
         this.initialize();
     }
     ;
     initialize() {
+        this.browserDoc = this.props.sdb.get('arboretum', 'browser');
         this.browserDoc.subscribe(this.onBrowserDocUpdated);
+    }
+    ;
+    componentWillUnmount() {
+        if (this.browserDoc) {
+            this.browserDoc.destroy();
+            this.browserDoc = null;
+        }
     }
     ;
     selectTab(selectedTab) {

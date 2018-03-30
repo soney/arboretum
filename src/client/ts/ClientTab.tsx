@@ -59,16 +59,22 @@ export class ClientTab extends React.Component<ClientTabProps, ClientTabState> {
             this.setState({tabID}, resolve);
         });
 
-        if(this.tabDoc) {
-            this.tabDoc.destroy();
-        }
+        this.destroyTabDoc();
 
         if(this.state.tabID) {
             this.tabDoc = this.props.sdb.get<TabDoc>('tab', this.state.tabID);
             this.tabDoc.subscribe(this.docUpdated);
-            window['tabDoc'] = this.tabDoc;
         }
     };
+    private destroyTabDoc():void {
+        if(this.tabDoc) {
+            this.tabDoc.destroy();
+            this.tabDoc = null;
+        }
+    };
+    public componentWillUnmount():void {
+        this.destroyTabDoc();
+    }
     public getNode(nodeId:CRI.NodeID):ClientNode {
         return this.clientNodes.get(nodeId);
     };

@@ -892,7 +892,6 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
                 next();
             });
         }
-        this.doc = this.sdb.get(ArboretumChat.COLLECTION, ArboretumChat.DOC_ID);
         this.initialized = this.initializeDoc();
         this.initialized.catch((err) => {
             console.error(err);
@@ -1111,8 +1110,16 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         }
     }
     ;
+    destroy() {
+        this.leave();
+        if (this.doc) {
+            this.doc.destroy();
+        }
+    }
+    ;
     initializeDoc() {
         return __awaiter(this, void 0, void 0, function* () {
+            this.doc = this.sdb.get(ArboretumChat.COLLECTION, ArboretumChat.DOC_ID);
             yield this.doc.createIfEmpty({
                 users: [],
                 messages: [],
@@ -28204,7 +28211,10 @@ class ArboretumChatBox extends React.Component {
     }
     ;
     componentWillUnmount() {
-        this.leave();
+        if (this.chat) {
+            this.chat.destroy();
+            this.chat = null;
+        }
     }
     ;
     componentDidUpdate() {
