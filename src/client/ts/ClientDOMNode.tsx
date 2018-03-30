@@ -233,7 +233,7 @@ export class ClientElementNode extends ClientNode {
         } else if(keyboardEvents.indexOf(eventName)>=0) {
             this.element.addEventListener(eventName, this.onKeyboardEvent);
         } else {
-            this.element.addEventListener(eventName, this.onElementEvent);
+            // this.element.addEventListener(eventName, this.onElementEvent);
         }
     };
     public removeListenedEvent(eventName:string):void {

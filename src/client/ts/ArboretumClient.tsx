@@ -9,6 +9,7 @@ import {TabList} from './TabList';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import * as Modal from 'react-modal';
+import * as store from 'store';
 
 Modal.setAppElement('#client_main');
 
@@ -47,10 +48,11 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
 
     constructor(props) {
         super(props);
+        const displayName = store.get('displayName', '');
         this.state = {
             enteringLabel:false,
             modalIsOpen:!this.props.username,
-            usernameInputValue:'',
+            usernameInputValue:store.get('displayName', ''),
             usernameValid:false,
             usernameFeedback:'',
             disabled: false,
@@ -77,9 +79,9 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
             this.closeClient();
         });
         this.sdb = new SDB(true, this.socket);
-        window.addEventListener('beforeunload', () => {
-            this.closeClient();
-        });
+        // window.addEventListener('beforeunload', () => {
+            // this.closeClient();
+        // });
     };
     private static wsMessageID=1;
     private async sendWebsocketMessage(message:{message:string, data?:any}):Promise<any> {
@@ -138,8 +140,13 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
     private navBarRef = (navBar:BrowserNavigationBar):void => {
         this.navBar = navBar;
     };
-    private chatRef = (arboretumChat:ArboretumChatBox):void => {
+    private chatRef = async (arboretumChat:ArboretumChatBox):Promise<void> => {
         this.arboretumChat = arboretumChat;
+        if(this.arboretumChat) {
+            const displayName = this.state.usernameInputValue;
+            const {valid, feedback} = await this.getChat().validateUsername(displayName);
+            this.setState({usernameValid:valid, usernameFeedback:feedback});
+        }
     };
     private goBack = ():void => {
         const action:PageAction = {type:'goBack', tabID: this.tabID, data:{}};
@@ -253,11 +260,13 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
     private onSubmitUsername = async (event:React.FormEvent<HTMLElement>):Promise<void> => {
         event.preventDefault();
         if(this.state.usernameValid) {
-            const username:string = this.state.usernameInputValue;
+            const displayName:string = this.state.usernameInputValue;
             const chat:ArboretumChat = this.getChat();
             const role:UserRole = this.props.isAdmin ? 'user':'helper';
-            await chat.join(username, role);
+            await chat.join(displayName, role);
             const users:User[] = await chat.getUsers();
+
+            store.set('displayName', displayName);
 
             if(role === 'helper') {
                 let enduser:string;
@@ -267,7 +276,7 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
                     }
                 });
                 if(enduser) {
-                    chat.addTextMessage(`Hi ${enduser}, I'm ${username}, a worker from MTurk. What can I do for you?`);
+                    chat.addTextMessage(`Hi ${enduser}, I'm ${displayName}, a worker from MTurk. What can I do for you?`);
                 }
             }
 
