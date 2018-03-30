@@ -236,15 +236,19 @@ async function startServer(): Promise<{protocol:string, hostname:string,port:num
     }
 };
 async function stopServer(): Promise<void> {
-    wss.clients.forEach((ws) => {
-        ws.close();
-    });
-
-    await new Promise<string>((resolve, reject) => {
-        server.close(() => {
-            resolve();
+    try {
+        wss.clients.forEach((ws) => {
+            ws.close();
         });
-    });
+
+        await new Promise<string>((resolve, reject) => {
+            server.close(() => {
+                resolve();
+            });
+        });
+    } catch(err) {
+        console.error(err);
+    }
     if(chromeProcess) {
         chromeProcess.kill();
         chromeProcess = null;

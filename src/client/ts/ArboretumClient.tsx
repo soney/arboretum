@@ -25,7 +25,6 @@ type ArboretumClientState = {
     usernameInputValue:string,
     usernameValid:boolean,
     usernameFeedback:string,
-    workerDone:boolean,
     disabled:boolean,
     disabledMessages:string[]
 };
@@ -54,7 +53,6 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
             usernameInputValue:'',
             usernameValid:false,
             usernameFeedback:'',
-            workerDone:false,
             disabled: false,
             disabledMessages: [] 
         };
@@ -64,7 +62,6 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
             const messageData = JSON.parse(event.data);
             if(messageData.message === 'taskDone') {
                 if(!this.props.isAdmin) {
-                    // this.setState({workerDone:true});
                     this.closeClient(`You have succesfully completed this HIT. Thank you!`, `Verification Code: ${decryptVerify()}`)
                 }
             } else if(messageData.message === 'boot') {
@@ -256,9 +253,23 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
     private onSubmitUsername = async (event:React.FormEvent<HTMLElement>):Promise<void> => {
         event.preventDefault();
         if(this.state.usernameValid) {
+            const username:string = this.state.usernameInputValue;
             const chat:ArboretumChat = this.getChat();
             const role:UserRole = this.props.isAdmin ? 'user':'helper';
-            await chat.join(this.state.usernameInputValue, role);
+            await chat.join(username, role);
+            const users:User[] = await chat.getUsers();
+
+            if(role === 'helper') {
+                let enduser:string;
+                users.forEach((u) => {
+                    if(u.role==='user') {
+                        enduser = u.displayName;
+                    }
+                });
+                if(enduser) {
+                    chat.addTextMessage(`Hi ${enduser}, I'm ${username}, a worker from MTurk. What can I do for you?`);
+                }
+            }
 
             this.closeModal();
         }
@@ -282,6 +293,18 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
     public render():React.ReactNode {
         if(this.state.disabled) {
             return <div className="window">
+                {/* <form className='usernameInput' method='POST' onSubmit={this.onSubmitDone}  action={`${getURLParameter('turkSubmitTo')}/mturk/externalSubmit`}>
+                    <input type='hidden' name='assignmentId' value={getURLParameter('assignmentId')} />
+                    <input type='hidden' name='workerId' value={getURLParameter('workerId')} />
+                    <input type='hidden' name='hitId' value={getURLParameter('hitId')} />
+                    <div className="form-group">
+                        <p>You have succesfully completed this HIT. Thank you!</p>
+                        <h2>Verification Code: {decryptVerify()}</h2>
+                    </div>
+                    <div className="form-actions">
+                        <button type="submit" className="btn btn-form btn-primary">Close</button>
+                    </div>
+                </form> */}
                 {this.state.disabledMessages.map((m) => <h1>{m}</h1> )}
             </div>
         }
@@ -302,20 +325,6 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
                     </div>
                     <div className="form-actions">
                         <button type="submit" className="btn btn-form btn-primary">OK</button>
-                    </div>
-                </form>
-            </Modal>
-            <Modal isOpen={this.state.workerDone}>
-                <form className='usernameInput' method='POST' onSubmit={this.onSubmitDone}  action={`${getURLParameter('turkSubmitTo')}/mturk/externalSubmit`}>
-                    <input type='hidden' name='assignmentId' value={getURLParameter('assignmentId')} />
-                    <input type='hidden' name='workerId' value={getURLParameter('workerId')} />
-                    <input type='hidden' name='hitId' value={getURLParameter('hitId')} />
-                    <div className="form-group">
-                        <p>You have succesfully completed this HIT. Thank you!</p>
-                        <h2>Verification Code: {decryptVerify()}</h2>
-                    </div>
-                    <div className="form-actions">
-                        <button type="submit" className="btn btn-form btn-primary">Close</button>
                     </div>
                 </form>
             </Modal>

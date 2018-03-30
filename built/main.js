@@ -246,14 +246,19 @@ function startServer() {
 ;
 function stopServer() {
     return __awaiter(this, void 0, void 0, function* () {
-        wss.clients.forEach((ws) => {
-            ws.close();
-        });
-        yield new Promise((resolve, reject) => {
-            server.close(() => {
-                resolve();
+        try {
+            wss.clients.forEach((ws) => {
+                ws.close();
             });
-        });
+            yield new Promise((resolve, reject) => {
+                server.close(() => {
+                    resolve();
+                });
+            });
+        }
+        catch (err) {
+            console.error(err);
+        }
         if (chromeProcess) {
             chromeProcess.kill();
             chromeProcess = null;

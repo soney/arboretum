@@ -31995,9 +31995,22 @@ class ArboretumClient extends React.Component {
         this.onSubmitUsername = (event) => __awaiter(this, void 0, void 0, function* () {
             event.preventDefault();
             if (this.state.usernameValid) {
+                const username = this.state.usernameInputValue;
                 const chat = this.getChat();
                 const role = this.props.isAdmin ? 'user' : 'helper';
-                yield chat.join(this.state.usernameInputValue, role);
+                yield chat.join(username, role);
+                const users = yield chat.getUsers();
+                if (role === 'helper') {
+                    let enduser;
+                    users.forEach((u) => {
+                        if (u.role === 'user') {
+                            enduser = u.displayName;
+                        }
+                    });
+                    if (enduser) {
+                        chat.addTextMessage(`Hi ${enduser}, I'm ${username}, a worker from MTurk. What can I do for you?`);
+                    }
+                }
                 this.closeModal();
             }
         });
@@ -32009,7 +32022,6 @@ class ArboretumClient extends React.Component {
             usernameInputValue: '',
             usernameValid: false,
             usernameFeedback: '',
-            workerDone: false,
             disabled: false,
             disabledMessages: []
         };
@@ -32019,7 +32031,6 @@ class ArboretumClient extends React.Component {
             const messageData = JSON.parse(event.data);
             if (messageData.message === 'taskDone') {
                 if (!this.props.isAdmin) {
-                    // this.setState({workerDone:true});
                     this.closeClient(`You have succesfully completed this HIT. Thank you!`, `Verification Code: ${decryptVerify()}`);
                 }
             }
@@ -32119,18 +32130,6 @@ class ArboretumClient extends React.Component {
                         React.createElement("p", null, this.state.usernameFeedback)),
                     React.createElement("div", { className: "form-actions" },
                         React.createElement("button", { type: "submit", className: "btn btn-form btn-primary" }, "OK")))),
-            React.createElement(Modal, { isOpen: this.state.workerDone },
-                React.createElement("form", { className: 'usernameInput', method: 'POST', onSubmit: this.onSubmitDone, action: `${getURLParameter('turkSubmitTo')}/mturk/externalSubmit` },
-                    React.createElement("input", { type: 'hidden', name: 'assignmentId', value: getURLParameter('assignmentId') }),
-                    React.createElement("input", { type: 'hidden', name: 'workerId', value: getURLParameter('workerId') }),
-                    React.createElement("input", { type: 'hidden', name: 'hitId', value: getURLParameter('hitId') }),
-                    React.createElement("div", { className: "form-group" },
-                        React.createElement("p", null, "You have succesfully completed this HIT. Thank you!"),
-                        React.createElement("h2", null,
-                            "Verification Code: ",
-                            decryptVerify())),
-                    React.createElement("div", { className: "form-actions" },
-                        React.createElement("button", { type: "submit", className: "btn btn-form btn-primary" }, "Close")))),
             React.createElement(TabList_1.TabList, { sdb: this.sdb, onSelectTab: this.onSelectTab }),
             navigationBar,
             React.createElement("div", { className: "window-content" },
