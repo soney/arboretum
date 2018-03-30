@@ -31996,7 +31996,9 @@ class ArboretumClient extends React.Component {
             usernameInputValue: '',
             usernameValid: false,
             usernameFeedback: '',
-            workerDone: false
+            workerDone: false,
+            disabled: false,
+            disabledMessage: ''
         };
         this.username = this.props.username;
         this.socket = new WebSocket(this.props.wsAddress);
@@ -32057,7 +32059,22 @@ class ArboretumClient extends React.Component {
     closeModal() {
         this.setState({ modalIsOpen: false });
     }
+    closeClient(disabledMessage = 'Thank you for participating') {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.setState({ disabled: true, disabledMessage });
+            const chat = this.getChat();
+            if (chat) {
+                yield chat.leave();
+            }
+            yield this.sdb.close();
+        });
+    }
+    ;
     render() {
+        if (this.state.disabled) {
+            return React.createElement("div", { className: "window" },
+                React.createElement("h1", null, this.state.disabledMessage));
+        }
         const navigationBar = this.props.hideNavBar ? [] : [
             React.createElement("header", null,
                 React.createElement(BrowserNavigationBar_1.BrowserNavigationBar, { ref: this.navBarRef, onBack: this.goBack, onForward: this.goForward, onReload: this.reload, showSidebarToggle: false, onNavigate: this.navigate }))
