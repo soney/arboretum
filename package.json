@@ -78,6 +78,7 @@
     "longjohn": "^0.2.12",
     "node-sass": "^4.7.2",
     "opn": "^5.2.0",
+    "phantomjs": "^2.1.7",
     "sass-loader": "^6.0.6",
     "source-map-loader": "^0.2.3",
     "style-loader": "^0.20.1",

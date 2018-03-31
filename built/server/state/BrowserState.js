@@ -13,6 +13,7 @@ const _ = require("underscore");
 const fileUrl = require("file-url");
 const path = require("path");
 const TabState_1 = require("./TabState");
+const WebSocket = require("ws");
 const WebSocketJSONStream_1 = require("../../utils/WebSocketJSONStream");
 const ColoredLogger_1 = require("../../utils/ColoredLogger");
 const ShareDBDoc_1 = require("../../utils/ShareDBDoc");
@@ -70,6 +71,9 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
             });
             this.wss.on('connection', (ws, req) => {
                 this.shareDBListen(ws);
+                ws.on('error', (err) => {
+                    console.error(err);
+                });
             });
             this.markAttachedToShareDBDoc();
             this.chat = new ArboretumChat_1.ArboretumChat(this.sdb, this);
@@ -82,20 +86,22 @@ class BrowserState extends ShareDBSharedState_1.ShareDBSharedState {
     ;
     handleCommand(type, data) {
         if (type === 'done') {
-            this.emitToWSClients(JSON.stringify({
+            this.wsBroadcast(JSON.stringify({
                 message: 'taskDone', data
             }));
         }
         else if (type === 'boot') {
-            this.emitToWSClients(JSON.stringify({
+            this.wsBroadcast(JSON.stringify({
                 message: 'boot', data
             }));
         }
     }
     ;
-    emitToWSClients(data) {
+    wsBroadcast(data) {
         this.wss.clients.forEach((ws) => {
-            ws.send(data);
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(data);
+            }
         });
     }
     ;

@@ -192,11 +192,7 @@ class ArboretumChatBox extends React.Component {
         const users = this.state.users.map((u) => {
             const isMe = u.id === meUserID;
             const style = { color: u.color };
-            return React.createElement("span", { key: u.id, className: `participant ${isMe ? 'me' : ''}`, style: style },
-                u.displayName,
-                "(",
-                u.id,
-                ")");
+            return React.createElement("span", { key: u.id, className: `participant ${isMe ? 'me' : ''}`, style: style }, u.displayName);
         });
         return React.createElement("div", { className: 'chat' },
             React.createElement("div", { id: "chat-participants", tabIndex: 0, "aria-label": "Chat participants" },

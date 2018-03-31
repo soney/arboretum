@@ -11,6 +11,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const TypedEventEmitter_1 = require("./TypedEventEmitter");
 const guid_1 = require("./guid");
 const _ = require("underscore");
+const ColoredLogger_1 = require("./ColoredLogger");
+const log = ColoredLogger_1.getColoredLogger('red');
 exports.userColors = [
     ['#A80000', '#B05E0D', '#C19C00', '#107C10', '#038387', '#004E8C', '#5C126B']
 ];
@@ -67,20 +69,32 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         this.ready = this.registerEvent();
         if (this.sdb.isServer()) {
             this.sdb.use('op', (request, next) => {
-                if (request.collection === ArboretumChat.COLLECTION && request.id === ArboretumChat.DOC_ID) {
-                    if (request.op) {
+                const { collection, id, agent } = request;
+                const { clientId, stream } = agent;
+                if (collection === ArboretumChat.COLLECTION && id === ArboretumChat.DOC_ID) {
+                    if (request.op && request.op.src === clientId) {
                         const ops = request.op.op;
+                        const { src } = request.op;
                         ops.forEach((op) => {
                             const { p } = op;
                             if (p[0] === 'users') {
                                 const li = op['li'];
                                 if (p.length === 2 && li) {
-                                    const { agent } = request;
-                                    const { stream } = agent;
                                     const { ws } = stream;
                                     if (ws) {
+                                        if (this.showDebug()) {
+                                            log.debug(p);
+                                            log.debug(li);
+                                        }
+                                        if (this.showDebug()) {
+                                            log.debug(`User ${li.displayName} is on socket ${ws.id}`);
+                                        }
                                         ws.once('close', () => __awaiter(this, void 0, void 0, function* () {
                                             const user = yield this.getUserByID(li.id);
+                                            if (this.showDebug()) {
+                                                log.debug(`Socket ${ws.id} closed`);
+                                                log.debug(`Marking ${user.displayName} as not present due to socket close`);
+                                            }
                                             this.markUserNotPresent(user);
                                         }));
                                     }
@@ -420,6 +434,9 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             const color = yield this.getColor(id);
             const user = { id, color, displayName, present, role, typing: TypingStatus.IDLE };
             yield this.initialized;
+            if (this.showDebug()) {
+                log.debug(`Adding user ${user.displayName}`);
+            }
             yield this.doc.submitListPushOp(['users'], user);
             if (isMe) {
                 this.meUser = user;
@@ -434,7 +451,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             const timestamp = (new Date()).getTime();
             message.timestamp = (new Date()).getTime();
             message.id = guid_1.guid();
-            this.doc.submitListPushOp(['messages'], message);
+            yield this.doc.submitListPushOp(['messages'], message);
         });
     }
     ;
@@ -443,7 +460,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             const { messages } = yield this.getData();
             for (let i = 0; i < messages.length; i++) {
                 if (messages[i].id === message.id) {
-                    this.doc.submitListDeleteOp(['messages', i]);
+                    yield this.doc.submitListDeleteOp(['messages', i]);
                     return true;
                 }
             }
@@ -474,8 +491,7 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
             for (let i = 0; i < messages.length; i++) {
                 const message = messages[i];
                 if (message.id === id) {
-                    this.doc.submitObjectReplaceOp(['messages', i, 'state'], state);
-                    this.pamStateChanged.emit({});
+                    yield this.doc.submitObjectReplaceOp(['messages', i, 'state'], state);
                     break;
                 }
             }
@@ -585,6 +601,10 @@ class ArboretumChat extends TypedEventEmitter_1.TypedEventEmitter {
         }
     }
     ;
+    shouldSuppressErrors() { return this.browserState ? this.browserState.shouldSuppressErrors() : true; }
+    shouldShowErrors() { return !this.shouldSuppressErrors(); }
+    showDebug() { return this.browserState ? this.browserState.showDebug() : true; }
+    hideDebug() { return !this.showDebug(); }
 }
 ArboretumChat.COLLECTION = 'arboretum';
 ArboretumChat.DOC_ID = 'chat';

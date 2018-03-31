@@ -44,6 +44,12 @@ export const urlTransform = {
 			}
 		},
 	},
+	'input': {
+		'src': {
+			strategy: Strategy.TRANSFORM,
+			transform: transformURL
+		}
+	},
 
 	'img': {
 		'src': {

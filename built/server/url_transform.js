@@ -44,6 +44,12 @@ exports.urlTransform = {
             }
         },
     },
+    'input': {
+        'src': {
+            strategy: Strategy.TRANSFORM,
+            transform: transformURL
+        }
+    },
     'img': {
         'src': {
             strategy: Strategy.TRANSFORM,

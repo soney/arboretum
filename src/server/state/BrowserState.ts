@@ -78,6 +78,9 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
         });
         this.wss.on('connection', (ws:WebSocket, req) => {
             this.shareDBListen(ws);
+            ws.on('error', (err) => {
+                console.error(err);
+            });
         });
         this.markAttachedToShareDBDoc();
         this.chat = new ArboretumChat(this.sdb, this);
@@ -88,18 +91,20 @@ export class BrowserState extends ShareDBSharedState<BrowserDoc> {
     };
     public handleCommand(type:ChatCommandType, data?:any):void {
         if(type === 'done') {
-            this.emitToWSClients(JSON.stringify({
+            this.wsBroadcast(JSON.stringify({
                 message: 'taskDone', data
             }));
         } else if(type === 'boot') {
-            this.emitToWSClients(JSON.stringify({
+            this.wsBroadcast(JSON.stringify({
                 message: 'boot', data
             }));
         }
     };
-    public emitToWSClients(data:any):void {
+    public wsBroadcast(data:any):void {
         this.wss.clients.forEach((ws:WebSocket) => {
-            ws.send(data);
+            if(ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(data);
+            }
         });
     };
     public showingPriorActions():boolean {

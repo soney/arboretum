@@ -205,7 +205,7 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
         if(this.navBar) { this.navBar.setState({urlText: url}); }
     };
     private pageTitleChanged = (tab:ClientTab, title:string):void => { };
-    private getChat():ArboretumChat { return this.arboretumChat.getChat(); }
+    private getChat():ArboretumChat { return this.arboretumChat ? this.arboretumChat.getChat() : null; }
     private addHighlight = (nodeIds:Array<CRI.NodeID>, color:string):void => {
         if(this.clientTab) {
             this.clientTab.addHighlight(nodeIds, color);

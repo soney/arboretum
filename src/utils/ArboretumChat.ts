@@ -3,6 +3,9 @@ import {TypedEventEmitter} from './TypedEventEmitter';
 import {guid, guidIndex} from './guid';
 import * as _ from 'underscore';
 import {BrowserState} from '../server/state/BrowserState';
+import { getColoredLogger, level, setLevel } from './ColoredLogger';
+
+const log = getColoredLogger('red');
 
 export type Color = string;
 export const userColors:Array<Array<Color>> = [
@@ -101,20 +104,32 @@ export class ArboretumChat extends TypedEventEmitter {
 
         if(this.sdb.isServer()) {
             this.sdb.use('op', (request, next) => {
-                if(request.collection === ArboretumChat.COLLECTION && request.id === ArboretumChat.DOC_ID) {
-                    if(request.op) {
+                const {collection, id, agent} = request;
+                const {clientId, stream} = agent;
+                if(collection === ArboretumChat.COLLECTION && id === ArboretumChat.DOC_ID) {
+                    if(request.op && request.op.src === clientId) {
                         const ops = request.op.op;
+                        const {src} = request.op;
                         ops.forEach((op) => {
                             const {p} = op;
                             if(p[0] === 'users') {
                                 const li = op['li'];
                                 if(p.length === 2 && li) { // user added
-                                    const {agent} = request;
-                                    const {stream} = agent;
                                     const {ws} = stream;
                                     if(ws) {
+                                        if(this.showDebug()) {
+                                            log.debug(p);
+                                            log.debug(li);
+                                        }
+                                        if(this.showDebug()) {
+                                            log.debug(`User ${li.displayName} is on socket ${ws.id}`);
+                                        }
                                         ws.once('close', async () => {
                                             const user:User = await this.getUserByID(li.id);
+                                            if(this.showDebug()) {
+                                                log.debug(`Socket ${ws.id} closed`);
+                                                log.debug(`Marking ${user.displayName} as not present due to socket close`);
+                                            }
                                             this.markUserNotPresent(user);
                                         });
                                     }
@@ -386,6 +401,9 @@ export class ArboretumChat extends TypedEventEmitter {
         const user:User = {id, color, displayName, present, role, typing:TypingStatus.IDLE};
         await this.initialized;
 
+        if(this.showDebug()) {
+            log.debug(`Adding user ${user.displayName}`)
+        }
         await this.doc.submitListPushOp(['users'], user);
         if(isMe) { this.meUser = user; }
         return user;
@@ -395,13 +413,13 @@ export class ArboretumChat extends TypedEventEmitter {
         const timestamp:number = (new Date()).getTime()
         message.timestamp = (new Date()).getTime();
         message.id = guid();
-        this.doc.submitListPushOp(['messages'], message);
+        await this.doc.submitListPushOp(['messages'], message);
     };
     public async removeMessage(message:Message):Promise<boolean> {
         const {messages} = await this.getData();
         for(let i = 0; i<messages.length; i++) {
             if(messages[i].id === message.id) {
-                this.doc.submitListDeleteOp(['messages', i]);
+                await this.doc.submitListDeleteOp(['messages', i]);
                 return true;
             }
         }
@@ -423,8 +441,7 @@ export class ArboretumChat extends TypedEventEmitter {
         for(let i = 0; i<messages.length; i++) {
             const message:Message = messages[i];
             if(message.id === id) {
-                this.doc.submitObjectReplaceOp(['messages', i, 'state'], state);
-                this.pamStateChanged.emit({});
+                await this.doc.submitObjectReplaceOp(['messages', i, 'state'], state);
                 break;
             }
         }
@@ -500,4 +517,8 @@ export class ArboretumChat extends TypedEventEmitter {
             return false;
         }
     };
+    public shouldSuppressErrors():boolean { return this.browserState ? this.browserState.shouldSuppressErrors() : true; }
+    public shouldShowErrors():boolean { return !this.shouldSuppressErrors(); }
+    public showDebug():boolean { return this.browserState ? this.browserState.showDebug() : true; }
+    public hideDebug():boolean { return !this.showDebug(); }
 };
