@@ -272,6 +272,7 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
             }
         }).catch((err) => {
             if(this.shouldShowErrors()) {
+                console.error('Get full string');
                 log.error(err);
                 throw (err);
             }
@@ -540,6 +541,7 @@ export class DOMState extends ShareDBSharedState<TabDoc> {
                 });
             }).catch((err) => {
                 if(this.shouldShowErrors()) {
+                    console.error('Request inline style');
                     log.error(err);
                     throw (err);
                 }

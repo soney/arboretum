@@ -323,6 +323,7 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
                 }
             }).catch((err) => {
                 if (this.shouldShowErrors()) {
+                    console.error('Get full string');
                     log.error(err);
                     throw (err);
                 }
@@ -622,6 +623,7 @@ class DOMState extends ShareDBSharedState_1.ShareDBSharedState {
                     });
                 }).catch((err) => {
                     if (this.shouldShowErrors()) {
+                        console.error('Request inline style');
                         log.error(err);
                         throw (err);
                     }

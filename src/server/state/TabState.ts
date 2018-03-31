@@ -301,6 +301,7 @@ export class TabState extends ShareDBSharedState<TabDoc> {
             });
         }).catch((err) => {
             if(this.shouldShowErrors()) {
+                console.error('Request child nodes');
                 log.error(err);
                 throw (err);
             }
@@ -370,6 +371,7 @@ export class TabState extends ShareDBSharedState<TabDoc> {
             });
         }).catch((err) => {
             if(this.shouldShowErrors()) {
+                console.error('Describe node');
                 console.error(err);
                 throw(err);
             }
@@ -387,6 +389,7 @@ export class TabState extends ShareDBSharedState<TabDoc> {
             })
         }).catch((err) => {
             if(this.showDebug()) {
+                console.error('Navigate');
                 log.error(err);
                 throw (err);
             }
@@ -504,12 +507,16 @@ export class TabState extends ShareDBSharedState<TabDoc> {
                 else { resolve(value); }
             });
         }).catch((err) => {
-            if(err.code && err.code === -32000) { // No resource with given url
-                throw (err);
-            } else {
-                log.error(err);
-                throw (err);
+            if(this.showDebug()) {
+                console.error('Get resource content');
+                if(err.code && err.code === -32000) { // No resource with given url
+                    throw (err);
+                } else {
+                    log.error(err);
+                    throw (err);
+                }
             }
+            return null;
         });
     };
 
@@ -520,8 +527,12 @@ export class TabState extends ShareDBSharedState<TabDoc> {
                 else { resolve(value); }
             });
         }).catch((err) => {
-            log.error(err);
-            throw (err);
+            if(this.showDebug()) {
+                console.error('Get resource content');
+                log.error(err);
+                throw (err);
+            }
+            return null;
         });
     };
     public async getDocument(depth=-1, pierce=false): Promise<CRI.Node> {
