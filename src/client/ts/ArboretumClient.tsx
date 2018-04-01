@@ -277,6 +277,8 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
                 });
                 if(enduser) {
                     chat.addTextMessage(`Hi ${enduser}, I'm ${displayName}, a worker from MTurk. What can I do for you?`);
+                } else {
+                    chat.addTextMessage(`Hi, I'm ${displayName}, a worker from MTurk. What can I do for you?`);
                 }
             }
 
