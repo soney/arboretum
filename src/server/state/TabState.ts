@@ -361,23 +361,33 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         
         return titleChanged || urlChanged;
     };
-    private async describeNode(nodeId:CRI.NodeID, depth:number=-1):Promise<CRI.Node> {
-        return new Promise<CRI.Node>((resolve, reject) => {
-            this.chrome.DOM.describeNode({
-                nodeId, depth
+    private async getOuterHTML(nodeId:CRI.NodeID):Promise<string> {
+        return new Promise<string>((resolve, reject) => {
+            this.chrome.DOM.getOuterHTML({
+                nodeId
             }, (err, result) => {
                 if(err) { reject(result); }
-                else { resolve(result.node); }
-            });
-        }).catch((err) => {
-            if(this.shouldShowErrors()) {
-                console.error('Describe node');
-                console.error(err);
-                throw(err);
-            }
-            return null;
+                else { resolve(result.outerHTML); }
+            })
         });
     };
+    // private async describeNode(nodeId:CRI.NodeID, depth:number=-1):Promise<CRI.Node> {
+    //     return new Promise<CRI.Node>((resolve, reject) => {
+    //         this.chrome.DOM.describeNode({
+    //             nodeId, depth
+    //         }, (err, result) => {
+    //             if(err) { reject(result); }
+    //             else { resolve(result.node); }
+    //         });
+    //     }).catch((err) => {
+    //         if(this.shouldShowErrors()) {
+    //             console.error('Describe node');
+    //             console.error(err);
+    //             throw(err);
+    //         }
+    //         return null;
+    //     });
+    // };
     public async navigate(url: string): Promise<CRI.FrameID> {
         const parsedURL = parse(url);
         if (!parsedURL.protocol) { parsedURL.protocol = 'http'; }
@@ -698,7 +708,11 @@ export class TabState extends ShareDBSharedState<TabDoc> {
             }
         } else {
             if(this.shouldShowErrors()) {
-                log.error(`Could not find ${nodeId} for childNodeCouldUpdated`);
+                // if(this.showDebug()) {
+                    // const str = await this.getOuterHTML(nodeId);
+                    // console.log(str);
+                // }
+                log.error(`Could not find ${nodeId} for childNodeCountUpdated`);
                 throw new Error(`Could not find ${nodeId}`);
             }
         }
@@ -708,9 +722,11 @@ export class TabState extends ShareDBSharedState<TabDoc> {
         const parentDomState = this.getDOMStateWithID(parentNodeId);
         if (parentDomState) {
             const { previousNodeId, node } = event;
-            const { nodeId } = node;
+            const { nodeId, contentDocument, frameId } = node;
+            const frame:FrameState = frameId ? this.getFrame(frameId) : null;
             const previousDomState: DOMState = previousNodeId > 0 ? this.getDOMStateWithID(previousNodeId) : null;
-            const domState = this.getOrCreateDOMState(node, null, null, parentDomState, previousDomState);
+            const contentDocState = contentDocument ? this.getOrCreateDOMState(contentDocument) : null;
+            const domState = this.getOrCreateDOMState(node, contentDocState, frame, parentDomState, previousDomState);
             try {
                 await parentDomState.insertChild(domState, previousDomState);
             } catch(err) {

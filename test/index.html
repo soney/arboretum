@@ -84,6 +84,9 @@
 			document.body.appendChild(b);
 			b.parentNode.removeChild(b);
 		});
+		setTimeout(() => {
+			const iframe = $('<iframe src="frame_content.html" />').appendTo(document.body);
+		}, 6000);
 		$(function() {
 			$('#eyeframe')[0].contentDocument.write("<h1>Injected from parent frame</h1>")
 

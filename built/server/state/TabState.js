@@ -209,7 +209,11 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             }
             else {
                 if (this.shouldShowErrors()) {
-                    log.error(`Could not find ${nodeId} for childNodeCouldUpdated`);
+                    // if(this.showDebug()) {
+                    // const str = await this.getOuterHTML(nodeId);
+                    // console.log(str);
+                    // }
+                    log.error(`Could not find ${nodeId} for childNodeCountUpdated`);
                     throw new Error(`Could not find ${nodeId}`);
                 }
             }
@@ -219,9 +223,11 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
             const parentDomState = this.getDOMStateWithID(parentNodeId);
             if (parentDomState) {
                 const { previousNodeId, node } = event;
-                const { nodeId } = node;
+                const { nodeId, contentDocument, frameId } = node;
+                const frame = frameId ? this.getFrame(frameId) : null;
                 const previousDomState = previousNodeId > 0 ? this.getDOMStateWithID(previousNodeId) : null;
-                const domState = this.getOrCreateDOMState(node, null, null, parentDomState, previousDomState);
+                const contentDocState = contentDocument ? this.getOrCreateDOMState(contentDocument) : null;
+                const domState = this.getOrCreateDOMState(node, contentDocState, frame, parentDomState, previousDomState);
                 try {
                     yield parentDomState.insertChild(domState, previousDomState);
                 }
@@ -709,30 +715,40 @@ class TabState extends ShareDBSharedState_1.ShareDBSharedState {
         return titleChanged || urlChanged;
     }
     ;
-    describeNode(nodeId, depth = -1) {
+    getOuterHTML(nodeId) {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((resolve, reject) => {
-                this.chrome.DOM.describeNode({
-                    nodeId, depth
+                this.chrome.DOM.getOuterHTML({
+                    nodeId
                 }, (err, result) => {
                     if (err) {
                         reject(result);
                     }
                     else {
-                        resolve(result.node);
+                        resolve(result.outerHTML);
                     }
                 });
-            }).catch((err) => {
-                if (this.shouldShowErrors()) {
-                    console.error('Describe node');
-                    console.error(err);
-                    throw (err);
-                }
-                return null;
             });
         });
     }
     ;
+    // private async describeNode(nodeId:CRI.NodeID, depth:number=-1):Promise<CRI.Node> {
+    //     return new Promise<CRI.Node>((resolve, reject) => {
+    //         this.chrome.DOM.describeNode({
+    //             nodeId, depth
+    //         }, (err, result) => {
+    //             if(err) { reject(result); }
+    //             else { resolve(result.node); }
+    //         });
+    //     }).catch((err) => {
+    //         if(this.shouldShowErrors()) {
+    //             console.error('Describe node');
+    //             console.error(err);
+    //             throw(err);
+    //         }
+    //         return null;
+    //     });
+    // };
     navigate(url) {
         return __awaiter(this, void 0, void 0, function* () {
             const parsedURL = url_1.parse(url);

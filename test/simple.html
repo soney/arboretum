@@ -1,10 +1,11 @@
-<!doctype html>
 <html>
-	<head>
-		<title>Test page</title>
-	</head>
 	<body>
-		<iframe src='simple_iframe_content.html'></iframe>
-		<input type="text" />
 	</body>
+	<script>
+		setTimeout(() => {
+			var iframe = document.createElement('iframe');
+			iframe.setAttribute('src', 'simple_iframe_content.html');
+			document.body.appendChild(iframe);
+		}, 6000);
+	</script>
 </html>

@@ -6260,7 +6260,7 @@ const React = __webpack_require__(1);
 const ReactDOM = __webpack_require__(40);
 const ArboretumBrowser_1 = __webpack_require__(49);
 __webpack_require__(73);
-// const START_URL:string = `file://${path.resolve(__dirname, '..', '..', 'test', 'simple_frame_contents.html')}`;
+// const START_URL:string = `file://${path.resolve(__dirname, '..', '..', 'test', 'simple.html')}`;
 const START_URL = 'http://www.umich.edu/';
 // const START_URL:string = 'http://www.msu.edu/';
 // const START_URL:string = 'http://cromalab.net:7654/arb/foxnews.html';

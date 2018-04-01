@@ -93,7 +93,6 @@ app.on('ready', () => {
     adminWindow = createAdminWindow();
 });
 
-
 const expressApp = express();
 let server:http.Server|https.Server;
 if(HTTPS) {

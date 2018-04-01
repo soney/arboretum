@@ -4,7 +4,7 @@ import {ArboretumBrowser} from './ts/ArboretumBrowser';
 import * as path from 'path';
 
 require('./css/browser.scss');
-// const START_URL:string = `file://${path.resolve(__dirname, '..', '..', 'test', 'simple_frame_contents.html')}`;
+// const START_URL:string = `file://${path.resolve(__dirname, '..', '..', 'test', 'simple.html')}`;
 const START_URL:string = 'http://www.umich.edu/';
 // const START_URL:string = 'http://www.msu.edu/';
 // const START_URL:string = 'http://cromalab.net:7654/arb/foxnews.html';
