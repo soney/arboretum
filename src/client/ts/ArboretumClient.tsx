@@ -71,7 +71,7 @@ export class ArboretumClient extends React.Component<ArboretumClientProps, Arbor
                 const {user, message} = data;
                 const me = this.getChat().getMe();
                 if(me.displayName === user) {
-                    this.closeClient(message || 'Thank you for participating!');
+                    this.closeClient(message || 'Thank you for participating!', `Verification Code: ${decryptVerify()}`);
                 }
             }
         });
